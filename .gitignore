@@ -1,1 +1,4 @@
-# referenceRepo/
+referenceRepo/package/
+referenceRepo/parseltongue*
+referenceRepo/*.tgz
+referenceRepo/analysis/cli-beautified.js
