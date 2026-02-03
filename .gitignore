@@ -1,9 +1,3 @@
 # Ignore everything in referenceRepo except zzArchive
-referenceRepo/*
-!referenceRepo/zzArchive/
-
-# Also ignore any hidden files/directories in referenceRepo
-referenceRepo/.*
-
-# Exception for zzArchive (allow it)
+referenceRepo/
 !referenceRepo/zzArchive/
