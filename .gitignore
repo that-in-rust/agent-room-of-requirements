@@ -1,3 +1,11 @@
-# Ignore everything in referenceRepo except zzArchive
-referenceRepo/
+# Ignore specific items in referenceRepo except zzArchive
+referenceRepo/PROJECT-STATUS.txt
+referenceRepo/analysis/
+referenceRepo/anthropic-ai-claude-code-*.tgz
+referenceRepo/package/
+referenceRepo/parseltongue*
+referenceRepo/rails-framework/
+referenceRepo/ruby-lang/
+
+# Allow zzArchive
 !referenceRepo/zzArchive/
