@@ -15,6 +15,7 @@ Research and analysis on the feasibility of transpiling Ruby code to pure Rust b
 | `03-Transpilable-Subset-Definition.md` | Definition of "Ruby--" - the transpilable subset |
 | `04-Concrete-Transpilation-Example.md` | Working example with Ruby input and Rust output |
 | `05-Verdict-and-Recommendations.md` | Final verdict and recommended path forward |
+| `06-Thesis-Rails-DSL-Compiler-to-Rust.md` | **KEY THESIS**: Rails DSL Compiler approach - compile Rails DSLs (not Ruby) to Rust |
 
 ## Key Findings
 
@@ -23,6 +24,7 @@ Research and analysis on the feasibility of transpiling Ruby code to pure Rust b
 - The 7.1% is concentrated in **core framework components** (ActiveRecord, ActiveSupport)
 - Rails applications **cannot** be transpiled without a Ruby runtime
 - **Ruby--** (Ruby minus metaprogramming) is a viable target for transpilation
+- **Critical pivot**: Rails metaprogramming is configuration-driven (schema.rb, routes.rb are static files) - a Rails DSL Compiler can resolve these at compile time
 
 ## Tools Used
 
