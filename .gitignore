@@ -2,3 +2,5 @@ referenceRepo/package/
 referenceRepo/parseltongue*
 referenceRepo/*.tgz
 referenceRepo/analysis/cli-beautified.js
+referenceRepo/ruby-lang/
+referenceRepo/rails-framework/
