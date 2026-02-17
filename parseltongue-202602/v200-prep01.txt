@@ -1,0 +1,167 @@
+Let me think through this honestly by looking at what each tool actually is and what it actually does.
+                                                                                                                                                                                                                                                                              
+  What pt01, pt02, pt03 Actually Are                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                                              
+  pt01:  tree-sitter → CozoDB (RocksDB on disk)                                                                                                                                                                                                                               
+         STATUS: Works. Ships. 22 endpoints serve from it.                                                                                                                                                                                                                    
+                                                                                               
+  pt02:  tree-sitter → CozoDB (in-memory) → MessagePack file (.ptgraph)                                                                                                      
+         STATUS: Partially built. EXISTS BECAUSE ROCKSDB FAILS ON WINDOWS.                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                              
+  pt03:  tree-sitter → JSON export                                                                                                                                           
+         STATUS: PRD already killed it. "It's a --format flag if ever needed."
+
+  The PRD is explicit about WHY pt02 exists: "CozoDB RocksDB fails on Windows because Windows Defender locks SST files during write-heavy ingestion. Six attempts (v1.6.7-v1.7.2) tried to fix this. All failed."
+
+  So pt02 is a Windows workaround. Not a new capability. Not richer data. Not better queries. The same tree-sitter skeleton data, serialized differently so it doesn't touch RocksDB.
+
+  What pt04 Would Be
+
+  pt04:  tree-sitter (ENRICHED) + rust-analyzer → Ascent + TypedAnalysisStore
+         STATUS: Not built. But architecturally it IS the next generation.
+
+  Now here's the thing you're seeing:
+
+  pt02 solves:  "Store the same data without RocksDB"
+  pt04 solves:  "Store RICHER data without RocksDB"
+
+  pt02 = sideways move   (same intelligence, different container)
+  pt04 = forward move     (more intelligence, better container)
+
+  AND pt04 ALSO solves the Windows problem as a SIDE EFFECT:
+    - No RocksDB → no Windows Defender SST lock issue
+    - Ascent + HashMaps + MessagePack = pure Rust, works everywhere
+
+  So pt02 is solving a problem that pt04 solves automatically by being a better architecture. Every line written for pt02 is investment in CozoDB's serialization format — a format that pt04 would not use.
+
+  What pt01 Actually Does That Matters
+
+  Let me separate what pt01 does from what CozoDB does:
+
+  pt01's JOB:
+    1. Walk the directory (walkdir/ignore crate)
+    2. For each file, call tree-sitter parser
+    3. Extract entities (fn, struct, trait, class...)
+    4. Extract edges (calls, uses, implements)
+    5. Write to CozoDB
+
+  pt08's JOB:
+    1. Read entities and edges FROM CozoDB
+    2. Build AdjacencyListGraphRepresentation (pure Rust HashMap)
+    3. Run 7 graph algorithms ON THE HASHMAP (not on CozoDB)
+    4. Return JSON via HTTP
+
+  The key realization: CozoDB is a PASS-THROUGH.
+    Data goes IN (pt01 writes).
+    Data comes OUT (pt08 reads).
+    No Datalog queries run between those two steps.
+    The graph algorithms run on a Rust HashMap that was populated
+    FROM CozoDB but doesn't NEED CozoDB.
+
+  CozoDB's actual job in the current architecture is serialization — it persists the data to disk and gives it back. That's it. We don't use Datalog's recursive query power. We don't use CozoDB's graph traversal. We extract to Rust data structures and compute there.
+
+  The taint analysis section in the PRD proposes using CozoDB Datalog for recursive reachability queries — that's the first time we'd actually USE Datalog's power. But Ascent does that same thing, compiled to native Rust, faster.
+
+  The Honest Assessment of pt02's Value
+
+  WHAT PT02 ADDS:
+    ✓ Windows compatibility (no RocksDB)
+    ✓ Portable .ptgraph files
+    ✓ Faster cold start (MessagePack load vs RocksDB open)
+
+  WHAT PT02 DOES NOT ADD:
+    ✗ No richer data extraction
+    ✗ No typed storage
+    ✗ No new query capabilities
+    ✗ No cross-language reasoning
+    ✗ No rust-analyzer integration
+    ✗ No tree-sitter enrichment
+
+  WHAT PT02 COSTS:
+    - New crate to maintain
+    - .ptgraph file format to version and evolve
+    - /mem/ vs /db/ mode complexity in pt08
+    - Route prefix logic (/db/ vs /mem/)
+    - Two code paths in every handler
+    - Testing matrix doubles (every endpoint × 2 modes)
+
+  What You'd Actually Build Instead
+
+  KEEP PT01 AS-IS:
+    tree-sitter (current extraction) → CozoDB → pt08 serves 22 endpoints
+    This is your BASELINE. It works. Don't touch it.
+
+  BUILD PT04 AS INDEPENDENT PIPELINE:
+    tree-sitter (ENRICHED extraction)     ← same 12 languages
+      + generics, bounds, visibility,
+        async/unsafe, attributes,
+        return types, param types,
+        string literals, import paths
+    + rust-analyzer (Rust only)           ← compiler truth
+      + resolved types, trait impls,
+        closures, lifetimes, layouts
+    → Ascent (typed Datalog rules)        ← recursive reasoning
+    → TypedAnalysisStore (HashMaps)       ← indexed for HTTP lookup
+    → its OWN HTTP server                 ← new endpoints + all 22 originals
+    → serializes to MessagePack           ← portable, no RocksDB, works on Windows
+
+  pt04 gives you everything pt02 promised (no RocksDB, portable, Windows) PLUS everything pt02 couldn't (typed data, richer extraction, cross-language edges, recursive Datalog reasoning).
+
+  What About The PRD's Other Features?
+
+  The PRD has a lot of stuff. Let me sort it:
+
+  STILL NEEDED (orthogonal to pt02 vs pt04):
+    ✓ Coverage bug fixes (5 bugs, 1 root cause) — fix in pt08, helps pt01
+    ✓ Debug eprintln cleanup — fix in pt01
+    ✓ .gitignore respect (walkdir → ignore crate) — fix in pt01
+    ✓ XML-tagged response categories — fix in pt08
+    ✓ Token counts (bpe-openai) — fix in pt01 + pt08
+    ✓ MCP (pt09) — independent of storage, wraps HTTP
+    ✓ Tauri desktop app — independent of storage, consumes HTTP
+    ✓ Taint analysis — BUT via Ascent in pt04, not CozoDB Datalog
+
+  BECOMES UNNECESSARY IF PT04 REPLACES PT02:
+    ✗ pt02 crate (the whole thing)
+    ✗ .ptgraph file format (pt04 has its own serialization)
+    ✗ /mem/ vs /db/ mode distinction in pt08
+    ✗ Route prefix nesting (/db/ vs /mem/)
+    ✗ Dual handler code paths
+    ✗ CozoDB mem-only mode
+    ✗ Snapshot loader in pt08
+
+    That's roughly build items 4, 7, 12, 14 from the PRD —
+    plus all the complexity of maintaining two modes.
+
+  The Deeper Question: Does pt01 Even Need CozoDB Long-Term?
+
+  If pt04 proves that Ascent + HashMaps + MessagePack is a better architecture, then the natural evolution is:
+
+  TODAY:
+    pt01 (tree-sitter → CozoDB) → pt08 (serves from CozoDB)
+
+  NEAR TERM:
+    pt01 (tree-sitter → CozoDB) → pt08 (serves from CozoDB)  ← unchanged
+    pt04 (tree-sitter+ → Ascent) → pt0X (serves from TypedStore) ← new
+
+  LONG TERM:
+    pt04 becomes the only ingestion pipeline
+    pt01 deprecated
+    CozoDB removed from dependencies entirely
+    One pipeline. One store. One server.
+
+  You wouldn't rip out pt01 immediately. It works, users depend on it. But you'd stop investing in it. No new CozoDB relations. No new CozoDB queries. All new features go into pt04.
+
+  The Real Question Behind Your Question
+
+  You're asking: "Am I building scaffolding around a temporary foundation?"
+
+  And the answer is yes. pt02 is scaffolding around CozoDB's limitations. pt04 replaces the foundation. Building scaffolding (pt02) when you know the foundation is changing (pt04) is wasted work.
+
+  The move is:
+  1. Keep pt01 alive as the stable baseline
+  2. Fix the pt08 bugs that matter (coverage, cleanup, .gitignore, tokens)
+  3. Build pt09 (MCP) because it's independent of storage
+  4. Skip pt02 and pt03 entirely
+  5. Build pt04 as the next-generation pipeline with its own server
+  6. Let pt04 organically replace pt01 as it matures
