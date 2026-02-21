@@ -1,38 +1,34 @@
-# MongoDB Connector Specification v5
+# MongoDB Connector Specification v4
 
 > **Authoritative reference for implementing MongoDB source and sink connectors for Iggy**
 >
 > Based on actual analysis of Iggy connector codebase via Parseltongue dependency graph (2026-02-21)
->
-> **Updated after syncing with apache/iggy main (commit 9ecbcc00)**
 
 ---
 
 ## Table of Contents
 
 1. [Executive Summary](#executive-summary)
-2. [Changelog from v4](#changelog-from-v4)
-3. [Rubber Duck Debugging Round 1](#rubber-duck-debugging-round-1)
-4. [Rubber Duck Debugging Round 2](#rubber-duck-debugging-round-2)
-5. [Architecture Overview](#architecture-overview)
-6. [FFI Boundary Specification](#ffi-boundary-specification)
-7. [MongoDB Sink Connector](#mongodb-sink-connector)
-8. [MongoDB Source Connector](#mongodb-source-connector)
-9. [Implementation Details](#implementation-details)
-10. [Configuration](#configuration)
-11. [Integration Testing](#integration-testing)
-12. [Build and Deployment](#build-and-deployment)
-13. [Appendix: Parseltongue Analysis](#appendix-parseltongue-analysis)
+2. [Changelog from v3](#changelog-from-v3)
+3. [Architecture Overview](#architecture-overview)
+4. [FFI Boundary Specification](#ffi-boundary-specification)
+5. [MongoDB Sink Connector](#mongodb-sink-connector)
+6. [MongoDB Source Connector](#mongodb-source-connector)
+7. [Implementation Details](#implementation-details)
+8. [Configuration](#configuration)
+9. [Integration Testing](#integration-testing)
+10. [Build and Deployment](#build-and-deployment)
+11. [Appendix: Parseltongue Analysis](#appendix-parseltongue-analysis)
 
 ---
 
 ## Executive Summary
 
-This specification provides complete implementation guidance for MongoDB connectors (source and sink) for the Iggy message streaming platform. It is based on actual code analysis of the existing PostgreSQL connectors, which serve as the canonical reference, **updated after syncing with the latest apache/iggy main branch**.
+This specification provides complete implementation guidance for MongoDB connectors (source and sink) for the Iggy message streaming platform. It is based on actual code analysis of the existing PostgreSQL connectors, which serve as the canonical reference.
 
 ### Key Requirements
 
-1. **SDK Version**: `iggy_connector_sdk = "0.2.0"` (workspace dependency)
+1. **SDK Version**: `iggy_connector_sdk = "0.1.3-edge.1"`
 2. **Rust Edition**: `2024`
 3. **MongoDB Driver**: `mongodb` crate v3.0+ (fluent API with `rustls-tls`)
 4. **Serialization Format**:
@@ -62,286 +58,55 @@ core/connectors/
 
 ---
 
-## Changelog from v4
+## Changelog from v3
 
-### Critical FFI Breaking Change (#2771)
+### Verified Correct in v3
 
-**IMPORTANT**: The upstream commit `9ecbcc00` ("fix(connectors): don't use posix function names as FFI interface") changed the FFI function names to avoid conflicts with POSIX function names.
+The following aspects of v3 were verified as accurate through Parseltongue analysis:
 
-#### Changed FFI Function Names
-
-**Sink Connector:**
-| Old Name | New Name |
-|----------|----------|
-| `open` | `iggy_sink_open` |
-| `consume` | `iggy_sink_consume` |
-| `close` | `iggy_sink_close` |
-| `version` | `iggy_sink_version` |
-
-**Source Connector:**
-| Old Name | New Name |
-|----------|----------|
-| `open` | `iggy_source_open` |
-| `handle` | `iggy_source_handle` |
-| `close` | `iggy_source_close` |
-| `version` | `iggy_source_version` |
-
-#### Impact on v4
-
-1. **v4 spec remains mostly correct** - the trait signatures, data structures, and implementation patterns are unchanged
-2. **The `sink_connector!` and `source_connector!` macros handle the FFI name changes automatically** - you don't need to manually name your functions
-3. **Runtime FFI structures updated** - `SinkApi` and `SourceApi` now reference the new names
-
-### Verified Correct from v4
-
-The following aspects of v4 were verified as still accurate:
-
-1. **Trait Signatures**: Source and Sink trait signatures unchanged
+1. **Trait Signatures**: Source and Sink trait signatures match exactly
 2. **Constructor Pattern**: `new(id: u32, config: T, state: Option<ConnectorState>) -> Self`
 3. **Macro Usage**: `sink_connector!` and `source_connector!` macros are correct
-4. **FFI Boundary**: Serialization formats at each boundary are unchanged
+4. **FFI Boundary**: Serialization formats at each boundary are correct
 5. **Runtime Pattern**: Using SDK's `get_runtime()` for blocking async calls
 6. **State Management**: MessagePack serialization via `ConnectorState` wrapper
-7. **Payload Processing Pattern**: Using `message.payload.try_into_vec()` to convert `Payload` enum
-8. **Timestamp Parsing**: Converting microseconds to `DateTime<Utc>`
-9. **Error Handling Pattern**: Transient error retry with exponential backoff
 
-### New Findings from Latest Codebase
+### New Findings and Corrections
 
-1. **Connector Version Numbers Changed**:
-   - Postgres connectors now at `0.3.0` (was `0.2.0` in v4)
-   - This suggests a maturity level for your MongoDB connector versioning
+1. **Payload Processing Pattern** (CORRECTION):
+   - v3 showed direct payload handling
+   - Actual code uses `message.payload.try_into_vec()` to convert `Payload` enum to `Vec<u8>`
+   - This is required because `ConsumedMessage.payload` is `Payload`, not `Vec<u8>`
 
-2. **SDK Version Updated**:
-   - SDK is now at `0.2.0` (was `0.1.3-edge.1` in v4)
-   - This is a stable release, not an edge version
+2. **Timestamp Parsing** (NEW):
+   - Iggy timestamps are microseconds since Unix epoch
+   - Convert to `DateTime<Utc>` via: `DateTime::from_timestamp((micros / 1_000_000) as i64, ((micros % 1_000_000) * 1_000) as u32)`
+   - MongoDB BSON DateTime expects milliseconds
 
-3. **PostgreSQL Source CDC Support**:
-   - The postgres source now has built-in CDC using logical replication
-   - MongoDB Change Streams would be the equivalent (deferred to future)
+3. **Error Handling Pattern** (NEW):
+   - Transient errors should be retried with exponential backoff
+   - PostgreSQL connector defines `is_transient_error()` function
+   - MongoDB should use similar logic for network errors
 
-4. **Workspace Dependencies Clarified**:
-   - All connectors use workspace dependencies
-   - `sqlx` is a workspace dependency with specific features enabled
+4. **Connection Pool Configuration** (CLARIFIED):
+   - Use `ClientOptions::builder()` with `max_pool_size` parameter
+   - Set appropriate timeouts for connector use case
+   - Use `rustls-tls` feature for TLS without OpenSSL
 
----
+5. **Batch Insert Pattern** (CORRECTION):
+   - v3 showed single inserts
+   - Actual pattern uses `bulk_write()` with `InsertOneModel` for efficiency
+   - Batches controlled by `batch_size` config parameter
 
-## Rubber Duck Debugging Round 1
+6. **Identifier Quoting** (NOT APPLICABLE):
+   - PostgreSQL uses double quotes for identifiers: `"table_name"`
+   - MongoDB collection names don't require quoting
+   - Use `client.database()` and `db.collection()` fluent API
 
-### Question 1: Did the FFI fix (#2771) change the SinkApi/SourceApi structs?
-
-**Answer:** YES, but only the field names.
-
-**Before (from git show 9ecbcc00~1):**
-```rust
-#[derive(WrapperApi)]
-struct SinkApi {
-    open: extern "C" fn(...) -> i32,
-    consume: extern "C" fn(...) -> i32,
-    close: extern "C" fn(id: u32) -> i32,
-    version: extern "C" fn() -> *const std::ffi::c_char,
-}
-```
-
-**After (current):**
-```rust
-#[derive(WrapperApi)]
-struct SinkApi {
-    iggy_sink_open: extern "C" fn(...) -> i32,
-    iggy_sink_consume: extern "C" fn(...) -> i32,
-    iggy_sink_close: extern "C" fn(id: u32) -> i32,
-    iggy_sink_version: extern "C" fn() -> *const std::ffi::c_char,
-}
-```
-
-**Impact:** The `#[unsafe(no_mangle)]` function names in the macros now use `iggy_*` prefixes. This is **automatically handled** by the `sink_connector!` and `source_connector!` macros, so connector implementations don't need to change.
-
-### Question 2: Did it change the sink_connector! / source_connector! macros?
-
-**Answer:** The macros themselves changed, but **you still use them the same way**.
-
-**Before:**
-```rust
-#[cfg(not(test))]
-#[unsafe(no_mangle)]
-unsafe extern "C" fn open(id: u32, ...) -> i32 { ... }
-```
-
-**After:**
-```rust
-#[cfg(not(test))]
-#[unsafe(no_mangle)]
-unsafe extern "C" fn iggy_sink_open(id: u32, ...) -> i32 { ... }
-```
-
-**Your usage:**
-```rust
-// No change for connector authors!
-sink_connector!(MongoDbSink);
-source_connector!(MongoDbSource);
-```
-
-### Question 3: Are the trait signatures still the same as v4?
-
-**Answer:** YES, 100% unchanged.
-
-```rust
-#[async_trait]
-pub trait Sink: Send + Sync {
-    async fn open(&mut self) -> Result<(), Error>;
-    async fn consume(
-        &self,
-        topic_metadata: &TopicMetadata,
-        messages_metadata: MessagesMetadata,
-        messages: Vec<ConsumedMessage>,
-    ) -> Result<(), Error>;
-    async fn close(&mut self) -> Result<(), Error>;
-}
-
-#[async_trait]
-pub trait Source: Send + Sync {
-    async fn open(&mut self) -> Result<(), Error>;
-    async fn poll(&self) -> Result<ProducedMessages, Error>;
-    async fn close(&mut self) -> Result<(), Error>;
-}
-```
-
-### Question 4: Did the workspace dependencies change?
-
-**Answer:** Version numbers updated, but patterns remain the same.
-
-**Key Workspace Dependencies:**
-```toml
-[workspace.dependencies]
-iggy_connector_sdk = { path = "core/connectors/sdk", version = "0.2.0" }
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", ...] }
-# ... (other dependencies)
-```
-
-**For MongoDB, you'll add:**
-```toml
-mongodb = { version = "3.0", default-features = false, features = ["rustls-tls"] }
-```
-
-### Question 5: Any new connector patterns introduced in the 22 commits we just pulled?
-
-**Answer:** No significant new patterns. The PostgreSQL CDC implementation uses logical replication, which is PostgreSQL-specific. MongoDB would use Change Streams for equivalent functionality (deferred).
-
-### Question 6: Check if any connector was added or removed since v4 was written
-
-**Answer:** No new connectors added or removed. The same set exists:
-- Sinks: elasticsearch, iceberg, postgres, quickwit, stdout
-- Sources: elasticsearch, postgres, random
-
----
-
-## Rubber Duck Debugging Round 2
-
-### Question 1: Does v4 need updates for the FFI fix?
-
-**Answer:** NO, not really. Here's why:
-
-The v4 spec shows the FFI structures as they were. While the actual field names changed to `iggy_sink_open` etc., this is an **implementation detail of the macros**. Connector authors never call these functions directly - they just use:
-
-```rust
-sink_connector!(MongoDbSink);
-source_connector!(MongoDbSource);
-```
-
-The macros now generate the prefixed names automatically. The **concept remains the same** - the runtime loads your `.so`/`.dylib`/`.dll` and calls these symbols.
-
-### Question 2: Are there new patterns we should adopt?
-
-**Answer:** The new postgres CDC pattern is interesting but PostgreSQL-specific.
-
-**Postgres CDC Pattern:**
-```rust
-async fn poll_cdc_builtin(&self) -> Result<Vec<ProducedMessage>, Error> {
-    let logical_repl_sql = format!(
-        "SELECT lsn, xid, data FROM pg_logical_slot_get_changes(...)"
-    );
-    let rows = sqlx::query(&logical_repl_sql).fetch_all(pool).await?;
-    // Parse WAL data...
-}
-```
-
-**MongoDB Equivalent (Future):**
-```rust
-// MongoDB Change Streams (deferred to future enhancement)
-let stream = collection.watch(None, None).await?;
-while let Some(event) = stream.next().await {
-    // Convert change event to ProducedMessage
-}
-```
-
-**Decision:** Defer CDC to future enhancement. MVP uses polling mode only.
-
-### Question 3: Any edge cases v4 missed that new code handles?
-
-**Answer:** The postgres connector has better retry logic and transient error detection:
-
-```rust
-fn is_transient_error(e: &sqlx::Error) -> bool {
-    match e {
-        sqlx::Error::Io(_) => true,
-        sqlx::Error::PoolTimedOut => true,
-        sqlx::Error::PoolClosed => false,
-        sqlx::Error::Protocol(_) => false,
-        sqlx::Error::Database(db_err) => db_err.code().is_some_and(|code| {
-            matches!(code.as_ref(), "40001" | "40P01" | "57P01" | ...)
-        }),
-        _ => false,
-    }
-}
-```
-
-**v4 already included this pattern**, so it's covered. MongoDB equivalent:
-
-```rust
-fn is_transient_mongo_error(error: &mongodb::error::Error) -> bool {
-    let error_str = error.to_string().to_lowercase();
-    error_str.contains("timeout")
-        || error_str.contains("network")
-        || error_str.contains("connection")
-        || error_str.contains("pool")
-}
-```
-
-### Question 4: Check if integration test fixtures had any updates
-
-**Answer:** No significant changes to the fixture pattern. The `TestFixture` trait from `integration::harness` remains the same:
-
-```rust
-#[async_trait]
-pub trait TestFixture {
-    async fn setup() -> Result<Self, TestBinaryError>;
-    fn connectors_runtime_envs(&self) -> HashMap<String, String>;
-}
-```
-
-### Question 5: Verify config.toml format hasn't changed
-
-**Answer:** Config format unchanged. Still:
-
-```toml
-type = "sink"  # or "source"
-key = "mongodb"
-enabled = true
-version = 0
-name = "MongoDB sink"
-path = "../../target/release/libiggy_connector_mongodb_sink"
-
-[[streams]]
-stream = "my_stream"
-topics = ["topic1", "topic2"]
-schema = "json"  # or "raw", "text", "proto", "flatbuffer"
-
-[plugin_config]
-# Connector-specific JSON config
-connection_string = "mongodb://localhost:27017"
-database = "my_db"
-collection = "my_collection"
-```
+7. **CDC Support** (DEFERRED):
+   - PostgreSQL has WAL-based CDC
+   - MongoDB Change Streams are the equivalent
+   - Deferred to future enhancement (not in MVP)
 
 ---
 
@@ -353,7 +118,6 @@ collection = "my_collection"
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         Iggy Connectors Runtime                              │
 │                      (core/connectors/runtime)                               │
-│  Runtime loads .so/.dylib/.dll and calls FFI functions via dlopen2          │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                     ┌───────────────┼───────────────┐
@@ -361,10 +125,9 @@ collection = "my_collection"
                     ▼                               ▼
         ┌───────────────────┐           ┌───────────────────┐
         │   SinkApi (FFI)   │           │  SourceApi (FFI)  │
-        │  - iggy_sink_open │           │  - iggy_source_open│
-        │  - iggy_sink_consume          │  - iggy_source_handle
-        │  - iggy_sink_close│           │  - iggy_source_close
-        │  - iggy_sink_version           │  - iggy_source_version
+        │  - open()         │           │  - open()         │
+        │  - consume()      │           │  - handle()       │
+        │  - close()        │           │  - close()        │
         └───────────────────┘           └───────────────────┘
                     │                               │
                     │ postcard                      │ postcard
@@ -373,8 +136,6 @@ collection = "my_collection"
         ┌───────────────────┐           ┌───────────────────┐
         │ SinkContainer     │           │ SourceContainer   │
         │ (SDK macro)       │           │ (SDK macro)       │
-        │ INSTANCES:       │           │ INSTANCES:         │
-        │ DashMap<u32, T>  │           │ DashMap<u32, T>    │
         └───────────────────┘           └───────────────────┘
                     │                               │
                     ▼                               ▼
@@ -400,59 +161,57 @@ collection = "my_collection"
         └───────────────────┘           └───────────────────┘
 ```
 
-### FFI Call Sequence (Updated for v5)
+### FFI Call Sequence
 
 ```
-1. Runtime loads .so/.dylib/.dll
-   └─> dlopen2::wrapper::Container<Api> loads the plugin
-
-2. Sink: iggy_sink_open(id, config_json_ptr, len, log_callback)
-   └─> serde_json::from_str::<Config>(slice)
-   └─> MongoDbSink::new(id, config)
-   └─> sink.open().await (on SDK runtime via get_runtime())
-
-3. Sink: iggy_sink_consume(id, topic_meta_ptr, len, msgs_meta_ptr, len, msgs_ptr, len)
-   └─> postcard::from_bytes::<TopicMetadata>(topic_slice)
-   └─> postcard::from_bytes::<MessagesMetadata>(meta_slice)
-   └─> postcard::from_bytes::<RawMessages>(msgs_slice)
-   └─> For each RawMessage:
-       ├─> headers = postcard::from_bytes(&raw.headers)
-       └─> payload = schema.try_into_payload(raw.payload)
-   └─> sink.consume(&topic_meta, msgs_meta, messages).await
-
-4. Source: iggy_source_open(id, config_json_ptr, len, state_ptr, len, log_callback)
-   └─> serde_json::from_str::<Config>(slice)
-   └─> state = ConnectorState(state_slice).deserialize::<State>()
-   └─> MongoDbSource::new(id, config, state)
-   └─> source.open().await
-
-5. Source: iggy_source_handle(id, send_callback)
-   └─> Spawns task: loop { source.poll().await }
-   └─> postcard::to_allocvec(&ProducedMessages)
-   └─> send_callback(id, ptr, len)
-
-6. Sink/Source: iggy_*_close(id)
-   └─> cleanup and resource release
+Runtime loads .so/.dylib/.dll
+    │
+    ├─> dlopen() → Container<Api>
+    │
+    ├─> Sink: open(id, config_json_ptr, len, log_callback)
+    │       └─> serde_json::from_str::<Config>(slice)
+    │       └─> MongoDbSink::new(id, config)
+    │       └─> sink.open().await (on SDK runtime)
+    │
+    ├─> Sink: consume(id, topic_meta_ptr, len, msgs_meta_ptr, len, msgs_ptr, len)
+    │       └─> postcard::from_bytes::<TopicMetadata>(topic_slice)
+    │       └─> postcard::from_bytes::<MessagesMetadata>(meta_slice)
+    │       └─> postcard::from_bytes::<RawMessages>(msgs_slice)
+    │       └─> For each RawMessage:
+    │               └─> headers = postcard::from_bytes(&raw.headers)
+    │               └─> payload = schema.try_into_payload(raw.payload)
+    │       └─> sink.consume(&topic_meta, msgs_meta, messages).await
+    │
+    ├─> Source: open(id, config_json_ptr, len, state_ptr, len, log_callback)
+    │       └─> serde_json::from_str::<Config>(slice)
+    │       └─> state = ConnectorState(state_slice).deserialize::<State>()
+    │       └─> MongoDbSource::new(id, config, state)
+    │       └─> source.open().await
+    │
+    ├─> Source: handle(id, send_callback)
+    │       └─> Spawns task: loop { source.poll().await }
+    │       └─> postcard::to_allocvec(&ProducedMessages)
+    │       └─> send_callback(id, ptr, len)
+    │
+    └─> close(id)
 ```
 
 ---
 
 ## FFI Boundary Specification
 
-### Sink FFI API (from Parseltongue - Updated)
+### Sink FFI API (from Parseltongue)
 
 ```rust
 #[derive(WrapperApi)]
 struct SinkApi {
-    iggy_sink_open: extern "C" fn(
+    open: extern "C" fn(
         id: u32,
         config_ptr: *const u8,
         config_len: usize,
         log_callback: iggy_connector_sdk::LogCallback,
     ) -> i32,
-
-    #[allow(clippy::too_many_arguments)]
-    iggy_sink_consume: extern "C" fn(
+    consume: extern "C" fn(
         id: u32,
         topic_meta_ptr: *const u8,
         topic_meta_len: usize,
@@ -461,19 +220,17 @@ struct SinkApi {
         messages_ptr: *const u8,
         messages_len: usize,
     ) -> i32,
-
-    iggy_sink_close: extern "C" fn(id: u32) -> i32,
-
-    iggy_sink_version: extern "C" fn() -> *const std::ffi::c_char,
+    close: extern "C" fn(id: u32) -> i32,
+    version: extern "C" fn() -> *const std::ffi::c_char,
 }
 ```
 
-### Source FFI API (from Parseltongue - Updated)
+### Source FFI API (from Parseltongue)
 
 ```rust
 #[derive(WrapperApi)]
 struct SourceApi {
-    iggy_source_open: extern "C" fn(
+    open: extern "C" fn(
         id: u32,
         config_ptr: *const u8,
         config_len: usize,
@@ -481,12 +238,9 @@ struct SourceApi {
         state_len: usize,
         log_callback: iggy_connector_sdk::LogCallback,
     ) -> i32,
-
-    iggy_source_handle: extern "C" fn(id: u32, callback: SendCallback) -> i32,
-
-    iggy_source_close: extern "C" fn(id: u32) -> i32,
-
-    iggy_source_version: extern "C" fn() -> *const std::ffi::c_char,
+    handle: extern "C" fn(id: u32, callback: SendCallback) -> i32,
+    close: extern "C" fn(id: u32) -> i32,
+    version: extern "C" fn() -> *const std::ffi::c_char,
 }
 
 type SendCallback = extern "C" fn(
@@ -500,13 +254,13 @@ type SendCallback = extern "C" fn(
 
 | Boundary | Format | Data Types |
 |----------|--------|------------|
-| `iggy_*_open()` config | `serde_json` | `Config` struct (connector-specific) |
-| `iggy_sink_consume()` topic_meta | `postcard` | `TopicMetadata { stream, topic }` |
-| `iggy_sink_consume()` messages_meta | `postcard` | `MessagesMetadata { partition_id, current_offset, schema }` |
-| `iggy_sink_consume()` messages | `postcard` | `RawMessages { schema, messages: Vec<RawMessage> }` |
+| `open()` config | `serde_json` | `Config` struct (connector-specific) |
+| `consume()` topic_meta | `postcard` | `TopicMetadata { stream, topic }` |
+| `consume()` messages_meta | `postcard` | `MessagesMetadata { partition_id, current_offset, schema }` |
+| `consume()` messages | `postcard` | `RawMessages { schema, messages: Vec<RawMessage> }` |
 | RawMessage.headers | `postcard` | `HashMap<HeaderKey, HeaderValue>` |
 | RawMessage.payload | `Schema::try_into_payload()` | `Payload` enum (Json/Raw/Text/Proto/FlatBuffer) |
-| Source `iggy_source_handle()` return | `postcard` | `ProducedMessages { schema, messages, state }` |
+| Source `handle()` return | `postcard` | `ProducedMessages { schema, messages, state }` |
 | State persistence | `rmp_serde` | `ConnectorState(Vec<u8>)` wrapper |
 
 ---
@@ -520,9 +274,9 @@ type SendCallback = extern "C" fn(
 impl Sink for MongoDbSink {
     async fn open(&mut self) -> Result<(), Error> {
         // 1. Parse connection string
-        // 2. Create ClientOptions with rustls-tls
-        // 3. Build client and configure pool
-        // 4. Ping server to verify connectivity
+        // 2. Create ClientOptions
+        // 3. Build client with rustls-tls
+        // 4. Ping server
         // 5. Create collection if auto_create_collection enabled
         Ok(())
     }
@@ -540,8 +294,7 @@ impl Sink for MongoDbSink {
     }
 
     async fn close(&mut self) -> Result<(), Error> {
-        // Client will be dropped automatically
-        // Log statistics from state
+        // Close client connection
         Ok(())
     }
 }
@@ -1040,25 +793,23 @@ mod tests {
 impl Source for MongoDbSource {
     async fn open(&mut self) -> Result<(), Error> {
         // 1. Parse connection string
-        // 2. Create ClientOptions with rustls-tls
-        // 3. Build client and configure pool
-        // 4. Ping server to verify connectivity
+        // 2. Create ClientOptions
+        // 3. Build client with rustls-tls
+        // 4. Ping server
         // 5. Validate collection exists
         Ok(())
     }
 
     async fn poll(&self) -> Result<ProducedMessages, Error> {
-        // 1. Sleep for poll_interval
-        // 2. Query collection based on tracking offset
-        // 3. Convert documents to ProducedMessage
-        // 4. Update state
-        // 5. Return with serialized state
+        // 1. Poll for documents based on tracking
+        // 2. Convert to ProducedMessage
+        // 3. Update state
+        // 4. Return with serialized state
         Ok(ProducedMessages { ... })
     }
 
     async fn close(&mut self) -> Result<(), Error> {
-        // Client will be dropped automatically
-        // Log statistics from state
+        // Close client connection
         Ok(())
     }
 }
@@ -1558,7 +1309,7 @@ impl MongoDbSource {
                 let json_value = bson_to_json(doc)?;
                 serde_json::to_string(&json_value)
                     .map(|s| s.into_bytes())
-                    .map_err(|Error::InvalidRecord)
+                    .map_err(|_| Error::InvalidRecord)
             }
         }
     }
@@ -1571,12 +1322,12 @@ impl MongoDbSource {
         match format {
             PayloadFormat::Json => {
                 let json_value = bson_to_json(bson_value)?;
-                serde_json::to_vec(&json_value).map_err(|Error::InvalidRecord)
+                serde_json::to_vec(&json_value).map_err(|_| Error::InvalidRecord)
             }
             PayloadFormat::Bson => {
                 match bson_value {
                     Bson::Document(doc) => {
-                        mongodb::bson::to_vec(doc).map_err(|Error::InvalidRecord)
+                        mongodb::bson::to_vec(doc).map_err(|_| Error::InvalidRecord)
                     }
                     Bson::Binary(bin) => Ok(bin.bytes.clone()),
                     Bson::String(s) => Ok(s.as_bytes().to_vec()),
@@ -1585,7 +1336,7 @@ impl MongoDbSource {
                     Bson::Double(f) => Ok(f.to_string().into_bytes()),
                     _ => {
                         let json_value = bson_to_json(bson_value)?;
-                        serde_json::to_vec(&json_value).map_err(|Error::InvalidRecord)
+                        serde_json::to_vec(&json_value).map_err(|_| Error::InvalidRecord)
                     }
                 }
             }
@@ -2253,7 +2004,7 @@ impl TestFixture for MongoDbSinkJsonFixture {
 
 [package]
 name = "iggy_connector_mongodb_sink"
-version = "0.1.0"
+version = "0.1.0-edge.1"
 description = "Iggy MongoDB sink connector for storing stream messages into MongoDB database"
 edition = "2024"
 license = "Apache-2.0"
@@ -2315,7 +2066,7 @@ mongodb = { version = "3.0", default-features = false, features = ["rustls-tls"]
 
 [package]
 name = "iggy_connector_mongodb_source"
-version = "0.1.0"
+version = "0.1.0-edge.1"
 description = "Iggy MongoDB source connector supporting polling for message streaming platform"
 edition = "2024"
 license = "Apache-2.0"
@@ -2395,56 +2146,40 @@ cargo build -p iggy_connector_mongodb_source
    - Connector locations: `core/connectors/sinks/*` and `core/connectors/sources/*`
 
 2. **Codebase Statistics** (`/codebase-statistics-overview-summary`)
-   - Total entities: 17,827 (updated from 15,998)
+   - Total entities: 15,998
    - Languages detected: csharp, go, java, python, rust, typescript
 
 3. **Sink Trait Blast Radius** (2 hops)
-   - Confirmed Sink trait has 7 direct implementers (ElasticsearchSink, IcebergSink, PostgresSink, QuickwitSink, StdoutSink + 2 methods)
-   - 549 total affected entities within 2 hops (updated from 491)
+   - Confirmed Sink trait has 7 direct implementers
+   - 491 total affected entities within 2 hops
 
 4. **Source Trait Blast Radius** (2 hops)
-   - Confirmed Source trait has 4 direct implementers (ElasticsearchSource, PostgresSource, RandomSource + 1 method)
-   - 5 total affected entities within 2 hops (unchanged)
+   - Confirmed Source trait has 4 direct implementers
+   - 5 total affected entities within 2 hops
 
-5. **Sink FFI Structure** (`rust:struct:SinkApi`) - UPDATED
-   - Verified function names now use `iggy_sink_*` prefix
-   - Signatures otherwise unchanged
+5. **Sink FFI Structure** (`rust:struct:SinkApi`)
+   - Verified `open()`, `consume()`, `close()`, `version()` signatures
 
-6. **Source FFI Structure** (`rust:struct:SourceApi`) - UPDATED
-   - Verified function names now use `iggy_source_*` prefix
-   - Signatures otherwise unchanged
+6. **Source FFI Structure** (`rust:struct:SourceApi`)
+   - Verified `open()`, `handle()`, `close()`, `version()` signatures
 
-7. **SDK Structures** (Unchanged)
+7. **SDK Structures**
    - `ConsumedMessage`: Confirmed payload is `Payload` enum, not `Vec<u8>`
    - `ProducedMessages`: Confirmed schema + messages + optional state
    - `ConnectorState`: Wrapper with MessagePack serialize/deserialize
 
-### Git Diff Analysis (commit 9ecbcc00)
-
-**Files Changed:**
-- `core/connectors/runtime/src/main.rs` - FFI struct field names updated
-- `core/connectors/runtime/src/sink.rs` - Updated to use new field names
-- `core/connectors/runtime/src/source.rs` - Updated to use new field names
-- `core/connectors/sdk/src/sink.rs` - Macro now generates `iggy_sink_*` symbols
-- `core/connectors/sdk/src/source.rs` - Macro now generates `iggy_source_*` symbols
-
-**Impact Assessment:**
-- **Binary breaking change**: Old `.so` files won't work with new runtime
-- **Source compatible**: Connector code using macros doesn't need changes
-- **Rebuild required**: All connectors must be recompiled
-
 ### Key Code Patterns Observed
 
-1. **Constructor Pattern** (from PostgresSink - unchanged):
+1. **Constructor Pattern** (from PostgresSink):
    ```rust
    pub fn new(id: u32, config: PostgresSinkConfig) -> Self {
        let verbose = config.verbose_logging.unwrap_or(false);
-       let retry_delay = HumanDuration::from_str(delay_str)...;
+       let retry_delay = HumanDuration::from_str(delay_str)...
        Self { id, pool: None, config, state: Mutex::new(...), verbose, retry_delay }
    }
    ```
 
-2. **Open Pattern** (unchanged):
+2. **Open Pattern**:
    ```rust
    async fn open(&mut self) -> Result<(), Error> {
        info!("Opening...");
@@ -2454,13 +2189,13 @@ cargo build -p iggy_connector_mongodb_source
    }
    ```
 
-3. **Payload Conversion** (verified still correct):
+3. **Payload Conversion** (IMPORTANT - found in actual code):
    ```rust
    let payload_bytes = message.payload.clone().try_into_vec()
        .map_err(|e| Error::InvalidPayloadType)?;
    ```
 
-4. **Retry Pattern** (verified still correct):
+4. **Retry Pattern**:
    ```rust
    async fn execute_batch_insert_with_retry(...) {
        let mut attempts = 0;
@@ -2479,7 +2214,7 @@ cargo build -p iggy_connector_mongodb_source
    }
    ```
 
-5. **Timestamp Parsing** (verified still correct):
+5. **Timestamp Parsing**:
    ```rust
    fn parse_timestamp(&self, micros: u64) -> DateTime<Utc> {
        DateTime::from_timestamp(
@@ -2489,24 +2224,23 @@ cargo build -p iggy_connector_mongodb_source
    }
    ```
 
-### Files Read for Analysis
+### Files Read
 
 - `core/connectors/sdk/src/lib.rs` - Full SDK definitions
-- `core/connectors/sdk/src/sink.rs` - Sink macro implementation (updated)
-- `core/connectors/sdk/src/source.rs` - Source macro implementation (updated)
-- `core/connectors/runtime/src/main.rs` - Runtime FFI definitions (updated)
-- `core/connectors/runtime/src/sink.rs` - Sink runtime handler
-- `core/connectors/runtime/src/source.rs` - Source runtime handler
+- `core/connectors/sdk/src/sink.rs` - Sink macro implementation
+- `core/connectors/sdk/src/source.rs` - Source macro implementation
+- `core/connectors/runtime/src/main.rs` - Runtime FFI definitions
 - `core/connectors/sinks/postgres_sink/src/lib.rs` - Reference sink (799 lines)
 - `core/connectors/sources/postgres_source/src/lib.rs` - Reference source (1410 lines)
 - `Cargo.toml` files - Dependency patterns
-- `core/connectors/sinks/postgres_sink/Cargo.toml` - Version 0.3.0
-- `core/connectors/sources/postgres_source/Cargo.toml` - Version 0.3.0
+- `config.toml` files - Configuration format
+- `core/integration/src/harness/fixture.rs` - TestFixture trait
+- `core/integration/tests/connectors/fixtures/postgres/sink.rs` - Sink fixture
+- `core/integration/tests/connectors/fixtures/postgres/source.rs` - Source fixture
 
 ---
 
-**Document Version**: 5.0
+**Document Version**: 4.0
 **Created**: 2026-02-21
-**Updated**: 2026-02-21 (after apache/iggy main sync)
-**Based on**: Parseltongue analysis of iggy-issue02 codebase + commit 9ecbcc00 diff analysis
+**Based on**: Parseltongue analysis of iggy-issue02 codebase
 **Verification**: All trait signatures, FFI boundaries, and patterns verified against actual source code
