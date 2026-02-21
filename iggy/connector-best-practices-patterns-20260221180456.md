@@ -536,6 +536,303 @@ From Parseltongue analysis, the Java Flink connector follows Flink's standard So
 
 ---
 
+## 12. MongoDB Connector Specification
+
+**Added**: February 21, 2026
+**Status**: Revised spec based on gap analysis of implementation vs original spec vs industry research
+**Supersedes**: `mongodb-connector-spec.md` (v5) and `mongodb-connector-implementation-thesis.md`
+
+### 12.1 Design Decisions (Resolved via Industry Research)
+
+| Decision | Choice | Industry Evidence |
+|---|---|---|
+| **Connection field name** | `connection_uri` for both sink and source | MongoDB Kafka Connector uses `connection.uri`; Confluent same. Debezium uses `mongodb.connection.string`. In Rust snake_case, `connection_uri` is closest to MongoDB's own convention. |
+| **Batch insert API** | `insert_many()` (not `bulk_write()`) | MongoDB Rust driver `bulk_write()` requires Server 8.0+. `insert_many()` internally calls `bulkWrite()` — identical performance. Broader server compatibility for append-only workloads. Switch to `bulk_write()` only when CDC (mixed insert/update/delete) is added. |
+| **Collection validation on source open()** | Warn and continue (do NOT fail) | Kafka Connect, Debezium, Flink all do NOT validate collection existence. MongoDB collections are created lazily. Source may start before the writing application. |
+| **State schema** | `HashMap<String, String>` for tracking offsets | iggy PostgreSQL source already uses this exact pattern. Polling-based `find()` access requires per-collection cursors. Forward-compatible for multi-collection support. Kafka Connect and Debezium both use maps for offsets. |
+| **Error swallowing in sink** | Log errors, increment counter, return `Ok(())` | This is the established iggy pattern. PostgreSQL sink, Elasticsearch sink all do the same. The runtime handles retries at a higher level. |
+| **Unused config fields** | Wire all declared fields (no dead config) | Industry expects declared configuration to function. Silent misconfiguration is worse than a missing feature. |
+
+### 12.2 Corrections to Original Spec (v5)
+
+The original `mongodb-connector-spec.md` had these errors, now corrected:
+
+| Original Spec Said | Correction | Reason |
+|---|---|---|
+| `connection_string` field name | `connection_uri` | Aligns with MongoDB's own naming (`connection.uri`) |
+| `tracking_offset: Option<String>` (single scalar) | `tracking_offsets: HashMap<String, String>` | Matches iggy PostgreSQL source pattern; polling requires per-collection offsets |
+| `validate_collection()` should return `Err()` | Should `warn!()` and continue | Industry standard; MongoDB creates collections lazily |
+| `bulk_write()` with `InsertOneModel` | Keep `insert_many()` | `bulk_write` needs Server 8.0+; identical perf for insert-only |
+| `processed_count` field in State | `processed_documents` | More descriptive for MongoDB context |
+| Claims "exponential backoff" | Implementation is linear backoff (`retry_delay * attempt`) | Either fix the code or fix the docs; linear is acceptable |
+
+### 12.3 Corrections to Implementation Thesis
+
+The thesis (`mongodb-connector-implementation-thesis.md`) had inflated assessments:
+
+| Thesis Claimed | Reality |
+|---|---|
+| "95% pattern compliance" | ~80% — 4 unused config fields, naming inconsistency, missing source retry |
+| "All deviations architecturally justified" | `initial_offset`, `snake_case_fields`, `payload_format`, `include_metadata` are unjustified dead code |
+| `validate_collection()` marked PASS | Behavioral divergence from spec (warn vs error) — thesis checked existence not behavior |
+| "100%+ test coverage" | Test count is high but code paths like `payload_format` in source have zero coverage |
+| "exponential backoff" | Code does linear backoff (`retry_delay * attempts`) |
+
+### 12.4 MongoDB Sink Connector
+
+**Crate**: `core/connectors/sinks/mongodb_sink/`
+**Entity count**: 4 (MongoDbSink, MongoDbSinkConfig, PayloadFormat, State)
+
+#### Config Struct
+
+```rust
+pub struct MongoDbSinkConfig {
+    pub connection_uri: String,           // Required. MongoDB connection URI
+    pub database: String,                 // Required. Target database
+    pub collection: String,               // Required. Target collection
+    pub batch_size: Option<u32>,          // Default: 100
+    pub max_pool_size: Option<u32>,       // Default: driver default. Requires ClientOptions pattern.
+    pub auto_create_collection: Option<bool>, // Default: false. Create collection in open() if missing.
+    pub include_metadata: Option<bool>,   // Default: true
+    pub include_checksum: Option<bool>,   // Default: true
+    pub include_origin_timestamp: Option<bool>, // Default: true
+    pub payload_format: Option<String>,   // Default: "binary". Values: "binary", "json", "string"/"text"
+    pub verbose_logging: Option<bool>,    // Default: false
+    pub max_retries: Option<u32>,         // Default: 3
+    pub retry_delay: Option<String>,      // Default: "1s". Humantime format.
+}
+```
+
+#### Connection Pattern
+
+Must use `ClientOptions::parse()` + `Client::with_options()` (not `Client::with_uri_str()`). This enables `max_pool_size` configuration:
+
+```rust
+async fn connect(&mut self) -> Result<(), Error> {
+    let mut client_options = ClientOptions::parse(&self.config.connection_uri).await?;
+    if let Some(pool_size) = self.config.max_pool_size {
+        client_options.max_pool_size = Some(pool_size);
+    }
+    let client = Client::with_options(client_options)?;
+    // ping to verify...
+}
+```
+
+#### Batch Insert
+
+Use `insert_many()` with retry. Clone docs once before the retry loop:
+
+```rust
+async fn insert_batch_with_retry(&self, collection, docs: &[Document]) -> Result<(), Error> {
+    let owned_docs = docs.to_vec(); // Clone ONCE
+    let mut attempts = 0;
+    loop {
+        match collection.insert_many(owned_docs.clone()).await {
+            Ok(_) => return Ok(()),
+            Err(e) if is_transient_error(&e) && attempts < max_retries => {
+                attempts += 1;
+                sleep(retry_delay * attempts).await;
+            }
+            Err(e) => return Err(Error::CannotStoreData(...)),
+        }
+    }
+}
+```
+
+#### Transient Error Detection
+
+```rust
+fn is_transient_error(error: &mongodb::error::Error) -> bool {
+    let msg = error.to_string().to_lowercase();
+    msg.contains("timeout") || msg.contains("network")
+        || msg.contains("connection") || msg.contains("pool")
+}
+```
+
+### 12.5 MongoDB Source Connector
+
+**Crate**: `core/connectors/sources/mongodb_source/`
+**Entity count**: 4 (MongoDbSource, MongoDbSourceConfig, PayloadFormat, State)
+
+#### Config Struct
+
+All fields must be wired to actual functionality (no dead config):
+
+```rust
+pub struct MongoDbSourceConfig {
+    pub connection_uri: String,           // Required. (renamed from connection_string)
+    pub database: String,                 // Required.
+    pub collection: String,               // Required.
+    pub poll_interval: Option<String>,    // Default: "10s"
+    pub batch_size: Option<u32>,          // Default: 1000
+    pub max_pool_size: Option<u32>,       // Wired to ClientOptions
+    pub tracking_field: Option<String>,   // Default: "_id"
+    pub initial_offset: Option<String>,   // WIRE: seed tracking_offsets when no persisted state
+    pub query_filter: Option<String>,     // JSON string merged into find() filter
+    pub projection: Option<String>,       // JSON string for field projection
+    pub snake_case_fields: Option<bool>,  // WIRE: convert doc field names to snake_case
+    pub include_metadata: Option<bool>,   // WIRE: add iggy_* metadata to produced messages
+    pub delete_after_read: Option<bool>,  // Default: false
+    pub processed_field: Option<String>,  // Field name to mark as processed
+    pub payload_field: Option<String>,    // Extract specific field as payload
+    pub payload_format: Option<String>,   // WIRE: "json" (default), "bson"/"binary", "string"/"text"
+    pub verbose_logging: Option<bool>,    // Default: false
+    pub max_retries: Option<u32>,         // Default: 3. WIRE to poll_collection() retry loop.
+    pub retry_delay: Option<String>,      // Default: "1s". WIRE to poll_collection() retry loop.
+}
+```
+
+#### PayloadFormat Enum (must exist in source, not just sink)
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PayloadFormat {
+    #[default]
+    Json,      // Source default is Json (sink default is Binary)
+    Bson,      // Aliases: "binary"
+    String,    // Aliases: "text"
+}
+```
+
+Maps to SDK `Schema`:
+- `PayloadFormat::Json` → `Schema::Json`
+- `PayloadFormat::Bson` → `Schema::Raw`
+- `PayloadFormat::String` → `Schema::Text`
+
+#### State Struct
+
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct State {
+    last_poll_time: DateTime<Utc>,
+    tracking_offsets: HashMap<String, String>,  // Per-collection offset tracking
+    processed_documents: u64,
+}
+```
+
+#### Retry in poll_collection()
+
+The source MUST have retry logic wrapping the `find()` + cursor collect:
+
+```rust
+async fn poll_collection(&self) -> Result<Vec<ProducedMessage>, Error> {
+    let max_retries = self.get_max_retries();
+    let mut attempts = 0;
+    loop {
+        match self.execute_poll().await {
+            Ok(messages) => return Ok(messages),
+            Err(e) if is_transient_error_str(&e.to_string()) && attempts < max_retries => {
+                attempts += 1;
+                warn!("Poll failed (attempt {attempts}/{max_retries}): {e}. Retrying...");
+                sleep(self.retry_delay * attempts).await;
+            }
+            Err(e) => return Err(e),
+        }
+    }
+}
+```
+
+#### Error Types (corrected)
+
+| Context | Error Type | NOT |
+|---|---|---|
+| Connection setup in `open()` | `Error::InitError` | |
+| Query failure during `poll()` | `Error::Storage(String)` | NOT `Error::InitError` |
+| Connection drop during `poll()` | `Error::Connection(String)` | NOT `Error::InitError` |
+| Document conversion failure | `Error::InvalidRecord` | |
+| Config JSON parse failure | `Error::InvalidConfig` | NOT `Error::InitError` |
+
+#### Timestamp Handling (corrected)
+
+`document_to_message()` should extract timestamps from the document, not default to `Utc::now()`:
+
+1. If tracking field is `_id` and value is `ObjectId`, extract embedded timestamp via `oid.timestamp()`
+2. If a timestamp field exists in the document, use it
+3. Fall back to `Utc::now()` only when no document timestamp is available
+
+#### validate_collection() Log Message (corrected)
+
+```rust
+// WRONG: "will be created on first write" (sources don't write)
+// CORRECT:
+warn!(
+    "Collection '{}.{}' does not exist yet - polling will return empty results until the collection is created",
+    self.config.database, self.config.collection
+);
+```
+
+### 12.6 E2E Integration Test Design
+
+Both connectors MUST have integration tests using the existing `#[iggy_harness]` infrastructure.
+
+#### Required Files
+
+```
+core/integration/tests/connectors/
+  fixtures/mongodb/
+    container.rs          # MongoDbContainer (GenericImage pattern from Elasticsearch)
+    sink.rs               # MongoDbSinkFixture + payload format variants
+    source.rs             # MongoDbSourceFixture with seed()
+    mod.rs
+  mongodb/
+    mod.rs
+    mongodb_sink.rs       # Sink E2E tests
+    mongodb_source.rs     # Source E2E tests
+    sink.toml             # Sink connector config
+    source.toml           # Source connector config
+```
+
+#### Root Cargo.toml Change
+
+```toml
+testcontainers-modules = { version = "0.14.0", features = ["postgres", "mongodb"] }
+```
+
+#### Sink Test Cases
+
+1. JSON messages sink correctly to MongoDB collection
+2. Binary payload format stores as BSON Binary
+3. Metadata fields included when `include_metadata = true`
+4. Batch processing works for message count > `batch_size`
+5. `auto_create_collection` creates collection on `open()`
+
+#### Source Test Cases
+
+1. Source polls documents and produces to iggy stream
+2. Offset tracking persists across polls (second poll returns only new documents)
+3. `delete_after_read` mode removes processed documents
+4. `processed_field` mode marks documents as processed
+5. `payload_format = "json"` emits `Schema::Json`
+
+#### Test Helper Methods
+
+```rust
+// Sink fixture
+async fn wait_for_collection(&self, expected_count: usize) -> Vec<Document>
+async fn fetch_documents_as<T: DeserializeOwned>(&self, expected_count: usize) -> Vec<T>
+
+// Source fixture
+async fn seed(&self, client: &IggyClient) -> Result<(), SeedError>  // Insert test docs into MongoDB
+```
+
+### 12.7 Unit Test Naming Convention
+
+All tests MUST follow `given_{precondition}_should_{expected_behavior}`:
+
+```rust
+// CORRECT:
+fn given_no_initial_offset_should_use_empty_tracking_offsets() { ... }
+fn given_bson_payload_format_should_return_schema_raw() { ... }
+fn given_transient_error_should_retry_up_to_max_retries() { ... }
+
+// WRONG:
+fn test_default_batch_size() { ... }
+fn test_serialize_state() { ... }
+```
+
+---
+
 *Generated using Parseltongue v1.5.6 dependency graph analysis*
 *Codebase: 15,637 entities, 76,133 edges, 0 circular dependencies*
 *Workspace: parseltongue20260208133459*
+*MongoDB section added: February 21, 2026 — based on gap analysis, industry research, and implementation review*
