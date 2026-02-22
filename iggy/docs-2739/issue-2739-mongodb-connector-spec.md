@@ -1,10 +1,35 @@
 # MongoDB Connector Specification for Apache Iggy
 
-**Version**: 2.0
-**Date**: February 21, 2026
-**Status**: PRD / Design Document (pre-implementation review)
-**Supersedes**: mongodb-connector-spec.md (v5)
-**Context**: Proposes MongoDB sink and source connectors for the Iggy connectors runtime
+**Version**: 2.0 | **Date**: February 21, 2026 | **Status**: PRD (pre-implementation review)
+
+---
+
+## TL;DR
+
+MongoDB sink and source connectors for iggy, built as standalone cdylib plugins following the existing connector SDK.
+
+**Key decisions:**
+- `connection_uri` (not `connection_string`) -- follows MongoDB's own naming convention
+- `insert_many()` (not `bulk_write()`) -- identical performance for append-only workloads, works on MongoDB < 8.0
+- Warn on missing collection, don't fail -- every major connector (Kafka Connect, Debezium, Flink) does this
+
+**What changed from the prototype:**
+- Source: added retry logic to `poll_collection()`, wired 4 dead config fields (`initial_offset`, `snake_case_fields`, `payload_format`, `include_metadata`), fixed error types, extracted timestamps from ObjectId
+- Sink: rewrote `connect()` to support `max_pool_size`, added `auto_create_collection`
+- Both: 52 unit tests passing (33 source + 19 sink), all following `given_*_should_*` convention
+
+**What's NOT in v1:** Change Streams (CDC), aggregation pipelines, multi-collection source
+
+---
+
+## References
+
+| Link | Description |
+|---|---|
+| [apache/iggy#2739](https://github.com/apache/iggy/issues/2739) | MongoDB Connector issue |
+| [apache/iggy#1670](https://github.com/apache/iggy/discussions/1670) | Connectors plugin system architecture discussion |
+| [core/connectors/](https://github.com/apache/iggy/tree/master/core/connectors) | Connector runtime + SDK codebase |
+| [Connectors Runtime blog post](https://iggy.apache.org/blogs/2025/06/06/connectors-runtime) | Architecture overview from maintainers |
 
 ---
 
@@ -50,8 +75,8 @@ Each decision below was evaluated against industry practice and existing iggy pa
 
 **Why**:
 - The MongoDB Rust driver's `bulk_write()` requires **MongoDB Server 8.0+**. Requiring the latest server version would limit adoption.
-- MongoDB's own documentation states: *"Internally, `insertMany` uses `bulkWrite`, so there's no difference — it's just for convenience."*
-- For append-only workloads (which is what a sink connector does — no updates or deletes), `insert_many()` is the idiomatic choice.
+- MongoDB's own documentation states: *"Internally, `insertMany` uses `bulkWrite`, so there's no difference -- it's just for convenience."*
+- For append-only workloads (which is what a sink connector does -- no updates or deletes), `insert_many()` is the idiomatic choice.
 - Every major production connector (Kafka Connect, Debezium) uses `bulkWrite()` because they handle **mixed operations** (insert + update + delete from CDC). Our sink is insert-only.
 
 **When to revisit**: If/when CDC support (MongoDB Change Streams) is added to the sink, switch to `bulk_write()` to handle mixed operation types in a single batch.
@@ -69,7 +94,7 @@ Each decision below was evaluated against industry practice and existing iggy pa
 | Apache Flink MongoDB | Returns zero documents. No error. |
 | Flink CDC MongoDB | Opens change streams. Handles gracefully. |
 
-**Why**: MongoDB creates collections lazily (on first insert). In microservices architectures, the source connector may start before the application that creates the collection. Failing hard would require manual restart after collection creation — an operational burden with no safety benefit.
+**Why**: MongoDB creates collections lazily (on first insert). In microservices architectures, the source connector may start before the application that creates the collection. Failing hard would require manual restart after collection creation -- an operational burden with no safety benefit.
 
 **Corrected log message**: The prototype had "will be created on first write" which is misleading for a source (sources read, they don't write). Corrected to: "polling will return empty results until the collection is created."
 
@@ -78,9 +103,9 @@ Each decision below was evaluated against industry practice and existing iggy pa
 **Decision**: Use `tracking_offsets: HashMap<String, String>` in the source State struct.
 
 **Why**:
-- iggy's PostgreSQL source already uses `tracking_offsets: HashMap<String, String>` — this is the established pattern for polling-based source connectors that may track multiple entities.
+- iggy's PostgreSQL source already uses `tracking_offsets: HashMap<String, String>` -- this is the established pattern for polling-based source connectors that may track multiple entities.
 - Polling with `find()` requires per-collection cursors. A single `Option<String>` would only work if multi-collection support is never added.
-- `HashMap` provides forward compatibility — adding multi-collection support later requires no state migration.
+- `HashMap` provides forward compatibility -- adding multi-collection support later requires no state migration.
 - Kafka Connect and Debezium both use maps for offset storage, even when conceptually tracking a single cursor.
 
 **Note**: The original spec (v5) used `tracking_offset: Option<String>`. This was incorrect and has been superseded.
@@ -175,15 +200,15 @@ Each iggy message becomes one MongoDB document:
 
 ```json
 {
-    "_id": "340282366920938463463374607431768211456",  // message.id (u128 as string)
-    "iggy_offset": 42,                                 // when include_metadata = true
-    "iggy_timestamp": ISODate("2026-02-21T..."),       // microseconds / 1000 → BSON DateTime
+    "_id": "340282366920938463463374607431768211456",
+    "iggy_offset": 42,
+    "iggy_timestamp": ISODate("2026-02-21T..."),
     "iggy_stream": "my-stream",
     "iggy_topic": "my-topic",
     "iggy_partition_id": 0,
-    "iggy_checksum": 12345678,                         // when include_checksum = true
-    "iggy_origin_timestamp": ISODate("2026-02-21T..."),// when include_origin_timestamp = true
-    "payload": <Binary|Document|String>                // per payload_format
+    "iggy_checksum": 12345678,
+    "iggy_origin_timestamp": ISODate("2026-02-21T..."),
+    "payload": "<Binary|Document|String>"
 }
 ```
 
@@ -349,7 +374,7 @@ async fn poll_collection(&self) -> Result<Vec<ProducedMessage>, Error> {
 }
 ```
 
-**Why this matters**: Without retry, a single transient network error (VPC timeout, rolling restart, pool exhaustion) kills the source permanently. The PostgreSQL source has retry. The Elasticsearch source does not — and that's a gap in Elasticsearch too.
+**Why this matters**: Without retry, a single transient network error (VPC timeout, rolling restart, pool exhaustion) kills the source permanently. The PostgreSQL source has retry. The Elasticsearch source does not -- and that's a gap in Elasticsearch too.
 
 ### 4.6 Timestamp Handling
 
@@ -481,7 +506,7 @@ impl MongoDbContainer {
 | Test | What It Verifies |
 |---|---|
 | `source_polls_documents_to_iggy` | Seed 3 docs in MongoDB, verify they appear in iggy stream |
-| `offset_tracking_across_polls` | Insert docs, poll once, insert more, poll again — second poll returns only new docs |
+| `offset_tracking_across_polls` | Insert docs, poll once, insert more, poll again -- second poll returns only new docs |
 | `delete_after_read_removes_documents` | After polling, documents are deleted from MongoDB |
 | `mark_processed_sets_field` | After polling, `processed` field is set to `true` |
 | `payload_format_json_emits_schema_json` | Schema on produced messages is `Schema::Json` |
@@ -564,44 +589,44 @@ chrono = { workspace = true }       # If needed for timestamp handling
 
 ---
 
-## 9. Change Surface — Interfaces & Libraries Affected
+## 9. Change Surface -- Interfaces & Libraries Affected
 
 *Derived from parseltongue dependency graph (1,540 entities, 4,996 edges across `core/connectors/`).*
 
 ### 9.1 Architecture at a Glance
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                   connectors runtime                         │
-│  (291 entities)                                              │
-│  main.rs: SinkConnector, SourceConnector, *Plugin, *Wrapper │
-│  local_provider.rs: BaseConnectorConfig, ConnectorEnvProvider│
-│                                                              │
-│  Loads cdylib plugins via FFI                                │
-├─────────────┬───────────────────────────────┬────────────────┤
-│             │     connectors SDK            │                │
-│             │  (164 entities)               │                │
-│             │  Sink trait: open/consume/close│                │
-│             │  Source trait: open/poll/close │                │
-│             │  Error enum (9 variants)      │                │
-│             │  ConnectorState (msgpack)      │                │
-│             │  ProducedMessage, Schema       │                │
-│             ├───────────────────────────────┤                │
-│             │         ▲ implements          │                │
-│  ┌──────────┴──┐                    ┌──────┴──────────┐     │
-│  │ mongodb_sink│                    │ mongodb_source  │     │
-│  │ (36 entities)                    │ (30 entities)   │     │
-│  │ MongoDbSink │                    │ MongoDbSource   │     │
-│  │  → Sink     │                    │  → Source       │     │
-│  └─────────────┘                    └─────────────────┘     │
-└─────────────────────────────────────────────────────────────┘
-         │                                      │
-         ▼                                      ▼
-   ┌──────────┐                          ┌──────────┐
-   │ mongodb  │  (driver crate v3.x)     │ mongodb  │
-   │ driver   │  ClientOptions, Client,  │ driver   │
-   │          │  Collection, insert_many │          │
-   └──────────┘                          └──────────┘
++-------------------------------------------------------------+
+|                   connectors runtime                         |
+|  (291 entities)                                              |
+|  main.rs: SinkConnector, SourceConnector, *Plugin, *Wrapper  |
+|  local_provider.rs: BaseConnectorConfig, ConnectorEnvProvider|
+|                                                              |
+|  Loads cdylib plugins via FFI                                |
++-------------+-------------------------------+----------------+
+|             |     connectors SDK            |                |
+|             |  (164 entities)               |                |
+|             |  Sink trait: open/consume/close|                |
+|             |  Source trait: open/poll/close  |                |
+|             |  Error enum (9 variants)      |                |
+|             |  ConnectorState (msgpack)      |                |
+|             |  ProducedMessage, Schema       |                |
+|             +-------------------------------+                |
+|             |         ^ implements          |                |
+|  +----------+--+                    +-------+---------+      |
+|  | mongodb_sink|                    | mongodb_source  |      |
+|  | (36 entities)                    | (30 entities)   |      |
+|  | MongoDbSink |                    | MongoDbSource   |      |
+|  |  -> Sink    |                    |  -> Source      |      |
+|  +-------------+                    +-----------------+      |
++-------------------------------------------------------------+
+         |                                      |
+         v                                      v
+   +----------+                          +----------+
+   | mongodb  |  (driver crate v3.x)    | mongodb  |
+   | driver   |  ClientOptions, Client, | driver   |
+   |          |  Collection, insert_many|          |
+   +----------+                          +----------+
 ```
 
 ### 9.2 Crates Modified
@@ -617,8 +642,8 @@ chrono = { workspace = true }       # If needed for timestamp handling
 
 | Interface | Used By | How |
 |---|---|---|
-| `Sink` trait | mongodb_sink | `impl Sink for MongoDbSink` — `open()`, `consume()`, `close()` |
-| `Source` trait | mongodb_source | `impl Source for MongoDbSource` — `open()`, `poll()`, `close()` |
+| `Sink` trait | mongodb_sink | `impl Sink for MongoDbSink` -- `open()`, `consume()`, `close()` |
+| `Source` trait | mongodb_source | `impl Source for MongoDbSource` -- `open()`, `poll()`, `close()` |
 | `Error` enum | Both | Sink currently only uses `InitError`. Must expand to `Connection`, `Storage`, `InvalidRecord` |
 | `ConnectorState` | Both | MessagePack serialization of `State` struct. Source state schema is HashMap-based. |
 | `ProducedMessage` | Source | Constructed in `document_to_message()`. Fields: `id`, `payload`, `schema`, `timestamp` |
@@ -636,15 +661,15 @@ chrono = { workspace = true }       # If needed for timestamp handling
 | `humantime` | workspace | Both | Parse `retry_delay` and `poll_interval` duration strings |
 | `tracing` | workspace | Both | `info!`, `warn!`, `error!` logging |
 | `rmp_serde` | (via SDK) | Both | MessagePack state serialization (through `ConnectorState`) |
-| `chrono` | workspace | Source | `DateTime<Utc>`, `Utc::now()`, ObjectId → timestamp conversion |
+| `chrono` | workspace | Source | `DateTime<Utc>`, `Utc::now()`, ObjectId -> timestamp conversion |
 | `testcontainers` | 0.14.0 | E2E tests | `GenericImage`, `ContainerAsync` for spinning up MongoDB in tests |
 
 ### 9.5 Runtime Registration (not auto-discovered)
 
 The connectors runtime does **not** auto-discover plugins. Two runtime files reference connector types:
 
-- `core/connectors/runtime/src/main.rs` — `SinkConnectorPlugin`, `SourceConnectorPlugin` wrappers load `.so`/`.dylib` at path from config
-- `core/connectors/runtime/src/configs/connectors/local_provider.rs` — `BaseConnectorConfig`, `ConnectorEnvProvider` parse TOML + env vars
+- `core/connectors/runtime/src/main.rs` -- `SinkConnectorPlugin`, `SourceConnectorPlugin` wrappers load `.so`/`.dylib` at path from config
+- `core/connectors/runtime/src/configs/connectors/local_provider.rs` -- `BaseConnectorConfig`, `ConnectorEnvProvider` parse TOML + env vars
 
 **No changes needed to runtime for MongoDB.** The runtime loads any cdylib that exports the `sink_connector!()` or `source_connector!()` FFI symbols. Config paths are specified in TOML. This is the same plugin model used by all existing connectors.
 
@@ -653,7 +678,7 @@ The connectors runtime does **not** auto-discover plugins. Two runtime files ref
 | Component | Why Untouched |
 |---|---|
 | `connectors SDK` (164 entities) | We consume its interfaces, don't modify them |
-| `connectors runtime` (291 entities) | Plugin model is generic — no MongoDB-specific code needed |
+| `connectors runtime` (291 entities) | Plugin model is generic -- no MongoDB-specific code needed |
 | Other sink/source crates | Independent plugins, no shared state |
 | `iggy_common` | Used for message types, no changes |
 | MongoDB driver internals | We use the public API only |
