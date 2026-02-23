@@ -31,21 +31,25 @@ Single PR, Simulation D: ship it with tests. 58 unit tests (33 source + 25 sink)
 ## Maintainer Engagement Strategy: 4 Simulations
 
 ### Simulation A: "Design-First Comment" (safest, slowest)
+
 1. Comment on issue 2739 with 3 design decisions before any code
 2. Wait for response (hours to days), adjust, then submit PR
 3. **Pro**: Zero wasted effort. **Con**: Slowest. May not get a response.
 
 ### Simulation B: "PR With Context" (balanced)
+
 1. Submit PR directly with thorough description + design decisions in body
 2. Reference Discussion 1670 for architectural awareness
 3. **Pro**: Fast, code speaks. **Con**: Rework if they disagree on a decision.
 
 ### Simulation C: "Comment + PR Same Day" (assertive)
+
 1. Post "Working on this, PR incoming" on issue 2739
 2. Submit PR within same hour
 3. **Pro**: Initiative without blocking. **Con**: Slightly aggressive for first contribution.
 
 ### Simulation D: "Ship It With Tests" (strongest, recommended)
+
 1. Submit PR directly -- all 66 tests (58 unit + 8 E2E) pass locally
 2. PR description headline: "66 tests all passing: 58 unit (33 source + 25 sink) + 8 E2E integration tests against real MongoDB 7 container"
 3. Include design decisions as a section, but let test coverage be the lead
@@ -63,6 +67,7 @@ Single PR, Simulation D: ship it with tests. 58 unit tests (33 source + 25 sink)
 ## Blocking Fixes Before Submit
 
 ### Fix 1: cargo fmt (3 issues in mongodb_sink/src/lib.rs)
+
 - Import ordering (line 24)
 - Multi-line `info!` macro should collapse to single line (line 200)
 - Binary struct brace wrapping (line 307)
@@ -76,6 +81,7 @@ Single PR, Simulation D: ship it with tests. 58 unit tests (33 source + 25 sink)
 | `mongodb_sink/src/lib.rs` | `unnecessary_cast`: `attempts as u32` when already u32 | Remove the cast |
 
 ### Fix 3: Missing mongodb_source/README.md
+
 - Every other source connector has a README (postgres_source, elasticsearch_source, random_source)
 - Follow the format of `core/connectors/sources/postgres_source/README.md`
 
@@ -86,6 +92,7 @@ Single PR, Simulation D: ship it with tests. 58 unit tests (33 source + 25 sink)
 The PR triggers 10 common checks + 8 Rust tasks. Run all of them locally first.
 
 ### Tools to Install
+
 ```bash
 cargo install cargo-sort --locked
 cargo install cargo-machete --locked
@@ -95,6 +102,7 @@ brew install taplo  # macOS
 ```
 
 ### Tier 1: Common Checks (always run on every PR)
+
 ```bash
 ./scripts/ci/license-headers.sh --check           # Apache 2.0 headers on all files
 ./scripts/ci/trailing-whitespace.sh --check --ci   # no trailing whitespace
@@ -107,6 +115,7 @@ brew install taplo  # macOS
 ```
 
 ### Tier 2: Rust Checks (triggered by connector code changes)
+
 ```bash
 cargo check --all --all-features                            # compilation
 cargo fmt --all -- --check                                  # formatting
@@ -121,6 +130,7 @@ cargo test --test mod --no-run                              # E2E compilation ga
 ```
 
 ### Tier 3: Pre-commit Hooks
+
 ```bash
 prek install
 # Then hooks run automatically on `git commit`
@@ -130,6 +140,7 @@ prek install
 ```
 
 ### Tier 4: PR Title Validation (GitHub-specific, can't run locally)
+
 - Must follow `type(scope): subject` format
 - Allowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert, deps
 - Allowed scopes: connectors, connector, integration (plus many others)
@@ -208,11 +219,13 @@ cargo sort --workspace           # clean
 ## Commit Strategy
 
 ### Message format (from CONTRIBUTING.md)
+
 ```
 feat(connectors): add MongoDB sink and source connectors
 ```
 
 ### Commands
+
 ```bash
 git add <all files>
 git commit -m "feat(connectors): add MongoDB sink and source connectors"
@@ -226,7 +239,8 @@ gh pr create --repo apache/iggy --base master --head amuldotexe:ab_202602_issue0
 
 ## What Makes This PR "Flawless" -- The Homework
 
-### Already done:
+### Already done
+
 - [x] Sink connector with 25 unit tests (19 original + 6 for is_transient_error coverage)
 - [x] Source connector with 33 unit tests (all `given_*_should_*`)
 - [x] Retry logic with transient error detection (source + sink) -- sink blind-retry bug fixed by rust-coder-01
@@ -239,7 +253,8 @@ gh pr create --repo apache/iggy --base master --head amuldotexe:ab_202602_issue0
 - [x] E2E testing learnings document with rubberduck review
 - [x] Docs folder with issue-2739 prefix naming
 
-### Still to do (updated 2026-02-22):
+### Still to do (updated 2026-02-22)
+
 - [x] cargo fmt -- 3 issues in sink (DONE by rust-coder-01)
 - [x] cargo clippy -- 2 warnings (wrong_self_convention, unnecessary_cast) (DONE by rust-coder-01)
 - [x] Create mongodb_source/README.md (DONE by rust-coder-01)
@@ -437,6 +452,7 @@ gh pr create --repo apache/iggy --base master --head amuldotexe:ab_202602_issue0
 ### Step: Stage modified files from Phase 2 and Phase 3 fixes
 
 Files staged:
+
 - `Cargo.lock` (cargo-machete removed iggy_common dep)
 - `core/connectors/sinks/mongodb_sink/Cargo.toml` (removed iggy_common, deps sorted)
 - `core/connectors/sinks/mongodb_sink/README.md` (MD060 and MD013 fixes)
@@ -481,6 +497,7 @@ Files staged:
 
 The following files are currently STAGED but are PRIVATE DEVELOPER NOTES that should
 NOT go into the apache/iggy PR:
+
 - `core/connectors/sources/mongodb_source/docs/issue-2739-e2e-testing-learnings.md` (1633 lines)
 - `core/connectors/sources/mongodb_source/docs/issue-2739-mongodb-connector-spec.md` (715 lines)
 - `core/connectors/sources/mongodb_source/docs/tdd-state-mongodb-e2e-tests.md` (672 lines)
@@ -490,6 +507,7 @@ has a `docs/` subdirectory. These files contain research notes, rubberduck revie
 TDD session state. The apache/iggy maintainers do not need them.
 
 RECOMMENDATION: Before submitting the PR, run:
+
 ```bash
 git restore --staged core/connectors/sources/mongodb_source/docs/
 ```
@@ -500,6 +518,7 @@ and should also NOT be staged for the apache/iggy PR.
 ### Current staging status: READY for commit (pending docs/ decision)
 
 All checks PASS:
+
 - cargo fmt: PASS
 - cargo clippy: PASS
 - cargo test (52 unit tests): PASS
@@ -613,6 +632,7 @@ All corrective actions were completed. See Phase 6 for full journal.
   back to `i64` for `$gt` comparisons. The post-processing path (delete/mark) did NOT.
 - **Action**: Applied the same numeric parse logic used in the query filter to both
   `delete_processed_documents()` and `mark_documents_processed()`:
+
   ```rust
   let filter = if let Ok(n) = offset.parse::<i64>() {
       doc! {tracking_field: {"$lte": n}}
@@ -620,6 +640,7 @@ All corrective actions were completed. See Phase 6 for full journal.
       doc! {tracking_field: {"$lte": &offset}}
   };
   ```
+
 - **File changed**: `core/connectors/sources/mongodb_source/src/lib.rs`
   (methods at lines 537-558 and 560-585)
 
@@ -627,6 +648,7 @@ All corrective actions were completed. See Phase 6 for full journal.
 
 - **Command**: `cargo test --test mod -- mongodb`
 - **Result**: PASS -- 8/8 tests pass
+
   ```
   test connectors::mongodb::mongodb_source::delete_after_read_removes_documents ... ok
   test connectors::mongodb::mongodb_source::mark_processed_sets_field ... ok

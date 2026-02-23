@@ -22,6 +22,7 @@ The Apache Iggy connectors framework has undergone significant development since
 ### 2.1 Foundation Phase (Jun 2025)
 
 #### Issue #1826 - Connectors Runtime (PR #1826)
+
 - **Merged**: June 1, 2025
 - **Scope**: +3,960 / -14 across 39 files
 - **Description**: The foundational PR that introduced the entire connector runtime. Established the plugin-based architecture using C FFI for maximum performance. Created the `Sink` and `Source` traits, the runtime lifecycle (`new` -> `open` -> `consume/poll` -> `close`), and data transformation pipeline.
@@ -32,6 +33,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - Blast radius of `Source` trait: 5 entities at 2 hops
 
 #### Issue #1848 - Extend JSON Field Transformations (PR ~Jun 2025)
+
 - **Closed**: June 16, 2025
 - **Description**: Extended the data transformation pipeline beyond the initial `add_fields` and `delete_fields` transforms. Added `update_fields` and `filter_fields` with support for key/value/regex-based filtering.
 - **Code Impact (Parseltongue)**:
@@ -40,6 +42,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - Each transform has: struct definition, config struct, `Transform` impl, `new`/`transform` methods
 
 #### Issue #1845 - Protobuf Payload Support
+
 - **Closed**: June 29, 2025
 - **Description**: Implemented `StreamDecoder` and `StreamEncoder` for Protocol Buffers, with schema support via custom configuration and JSON conversion.
 - **Code Impact (Parseltongue)**:
@@ -48,6 +51,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - Each pair follows identical pattern: struct + 2 method impls (`encode`/`decode`, `new`)
 
 #### Issue #1844 - FlatBuffers Payload Support
+
 - **Closed**: July 2, 2025
 - **Description**: Implemented `StreamDecoder` and `StreamEncoder` for FlatBuffers with schema configuration.
 - **Code Impact (Parseltongue)**:
@@ -59,6 +63,7 @@ The Apache Iggy connectors framework has undergone significant development since
 ### 2.2 Connector Implementation Phase (Sep-Nov 2025)
 
 #### Issue #1849 - PostgreSQL Connectors (PR #2579 extended)
+
 - **Closed**: October 16, 2025
 - **Description**: Full bidirectional PostgreSQL connector with CDC (Change Data Capture), table-based data fetching, and stream message storage.
 - **Code Impact (Parseltongue)**:
@@ -68,6 +73,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - Extended in PR #2579 (Jan 2026): +3,726 / -1,474 across 34 files adding JSON/raw format support, multiple processing modes (mark/delete), bytea column handling, comprehensive integration tests
 
 #### Issue #1851 - Elasticsearch Connectors (PR #1872)
+
 - **Closed (PR merged)**: November 18, 2025
 - **Scope**: +2,079 / -36 across 17 files
 - **Description**: Bidirectional Elasticsearch connector with batch processing, index management, and state tracking.
@@ -77,6 +83,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - Note: Issue #1851 remains OPEN (full feature scope not yet complete)
 
 #### Issue #1850 - Apache Iceberg Connectors (PR #2191)
+
 - **Closed**: November 19, 2025
 - **Scope**: +1,906 / -11 across 14 files
 - **Description**: Iceberg sink connector with S3-compatible storage, REST catalogs, single-table and multi-table fan-out routing (static and dynamic).
@@ -92,6 +99,7 @@ The Apache Iggy connectors framework has undergone significant development since
 ### 2.3 Infrastructure & Configuration Phase (Nov-Dec 2025)
 
 #### Issue #2318 - Split Connector Configs (PR #2317)
+
 - **Closed**: November 10, 2025
 - **Scope**: +409 / -149 across 16 files
 - **Description**: Separated per-connector TOML configurations from the monolithic runtime config file. Each connector now has its own config file in organized directories.
@@ -102,11 +110,13 @@ The Apache Iggy connectors framework has undergone significant development since
   - Local provider complexity: 105 total coupling (outbound)
 
 #### Issue #2319 - TCP TLS Config for Connectors and MCP
+
 - **Closed**: November 11, 2025
 - **Description**: Added optional TLS configuration for TCP connections to the Iggy server, shared between Connectors Runtime and MCP server.
 - **Code Impact**: TLS config struct additions to runtime configuration
 
 #### Issue #2388 - HTTP-based Config Provider (PR ~Nov 2025)
+
 - **Closed**: November 28, 2025
 - **Description**: HTTP-based configuration provider allowing connectors to fetch configs from remote APIs, supporting RESTful, query-based, and wrapped response formats.
 - **Code Impact (Parseltongue)**:
@@ -114,12 +124,14 @@ The Apache Iggy connectors framework has undergone significant development since
   - Extends `ConnectorsConfigProvider` trait
 
 #### Issue #2416 - Retry Mechanism for HTTP Config (PR #2437)
+
 - **Closed**: December 3, 2025
 - **Scope**: +84 / -5 across 6 files
 - **Description**: Exponential backoff retry logic for HTTP config provider requests, handling transient network issues and rate limiting.
 - **Code Impact**: Added to HTTP config provider implementation
 
 #### Issue #2507 - TOML-Only Config Reading
+
 - **Closed**: December 19, 2025
 - **Description**: Local config provider now only reads `.toml` files from the config directory instead of attempting to parse all files.
 - **Code Impact**: Filter change in `local_provider.rs`
@@ -129,6 +141,7 @@ The Apache Iggy connectors framework has undergone significant development since
 ### 2.4 Testing & Observability Phase (Jan-Feb 2026)
 
 #### Issue #2594 - E2E Tests for Quickwit Sink (PR ~Jan 2026)
+
 - **Closed**: January 30, 2026
 - **Description**: End-to-end integration tests for the Quickwit sink connector following the Postgres pattern from PR #2579.
 - **Code Impact (Parseltongue)**:
@@ -136,6 +149,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - Integration test harness: 18 entities in `core/integration/src/harness/handle/`, 3 in `harness/config`
 
 #### PR #2633 - Prometheus Metrics and Stats Endpoints
+
 - **Merged**: January 28, 2026
 - **Scope**: +1,082 / -22 across 23 files
 - **Description**: Added `/metrics` (Prometheus) and `/stats` (JSON) endpoints. Tracks runtime gauges (sources/sinks total/running), per-connector counters (messages produced/sent/consumed/processed/errors), CPU/memory usage, uptime.
@@ -145,6 +159,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - `runtime/metrics/`: 32 entities (cluster #59 - metrics module)
 
 #### PR #2660 - Connector Version to Stats
+
 - **Merged**: February 3, 2026
 - **Scope**: +148 / -33 across 25 files
 - **Description**: Added `version()` FFI export to SDK connector macros, exposing per-connector version info in stats response.
@@ -154,11 +169,13 @@ The Apache Iggy connectors framework has undergone significant development since
 ## 3. Supporting Infrastructure (Existing Connectors)
 
 ### 3.1 StdoutSink (Reference Implementation)
+
 - **Entity Count**: 8 (simplest sink)
 - **Entities**: `StdoutSink` struct, `StdoutSinkConfig`, `State`, methods: `new`, `open`, `consume`, `close`
 - **Purpose**: Minimal reference implementation for learning the Sink pattern
 
 ### 3.2 RandomSource (Reference Implementation)
+
 - **Entity Count**: 11 (simplest source)
 - **Entities**: `RandomSource` struct, `RandomSourceConfig`, `Record`, `State`, methods: `new`, `open`, `poll`, `close`, `generate_messages`, `generate_random_text`
 - **Purpose**: Minimal reference implementation for learning the Source pattern
@@ -168,6 +185,7 @@ The Apache Iggy connectors framework has undergone significant development since
 ## 4. Codebase Architecture Summary (Parseltongue)
 
 ### 4.1 Entity Distribution
+
 | Component | Entities | Role |
 |-----------|----------|------|
 | `core/connectors/sdk/` | 151 | Trait definitions, encoders/decoders, transforms |
@@ -184,6 +202,7 @@ The Apache Iggy connectors framework has undergone significant development since
 | `foreign/java/.../iggy-connector-pinot/` | 72 | Pinot connector (Java) |
 
 ### 4.2 Dependency Graph Health
+
 - **Circular Dependencies**: 0 (clean architecture)
 - **Complexity Hotspots** (connector-related):
   - `sources/postgres_source/src/lib.rs`: 147 total coupling (highest)
@@ -192,6 +211,7 @@ The Apache Iggy connectors framework has undergone significant development since
   - `runtime/src/configs/.../local_provider.rs`: 105 total coupling
 
 ### 4.3 Core Traits (in `sdk/src/lib.rs`)
+
 | Trait | Purpose | Implementations |
 |-------|---------|----------------|
 | `Sink` | Consume messages from Iggy to external system | ElasticsearchSink, IcebergSink, PostgresSink, QuickwitSink, StdoutSink |

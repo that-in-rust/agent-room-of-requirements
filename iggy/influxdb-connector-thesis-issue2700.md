@@ -17,12 +17,14 @@
 ## 1. Issue Requirements
 
 From issue #2700 (by @kparisa, Feb 7, 2026):
+
 - **Sink**: Stream data from Iggy into InfluxDB (primary deliverable)
 - **Source**: Ingest data from InfluxDB into Iggy (secondary, "design that can later support")
 - **Use cases**: Metrics, observability, IoT, financial ticks, real-time analytics
 - **Testing requirement** (from @hubcio, contributor): "finished task should contain extensive tests using testcontainers"
 
 ### Critical Context
+
 - Issue is **already assigned** to @ryerraguntla as of Feb 15, 2026
 - Any contribution should coordinate, not duplicate
 
@@ -334,6 +336,7 @@ Build it custom. The line protocol format is simple (one function), the escaping
 ### 5.4 Source Polling Strategy
 
 InfluxDB has no subscription/streaming API. Must poll. Follow the ElasticsearchSource pattern from Parseltongue:
+
 - `StateManager` in a separate `state_manager.rs` (entity: `rust:impl:StateManager:____core_connectors_sources_elasticsearch_source_src_state_manager:T1729629500`)
 - Persist high-water mark (last processed timestamp) to survive restarts
 - Buffer duration: don't query too close to "now" to avoid reading in-flight data
@@ -341,6 +344,7 @@ InfluxDB has no subscription/streaming API. Must poll. Follow the ElasticsearchS
 ### 5.5 Version Compatibility
 
 Target `/api/v2/write` — it's universal. Auto-detect InfluxDB version via `/health` for query path:
+
 - v3 detected → use SQL via `/api/v3/query_sql`
 - v2 detected → use Flux via `/api/v2/query`
 - InfluxQL available as fallback for both
@@ -352,11 +356,13 @@ Target `/api/v2/write` — it's universal. Auto-detect InfluxDB version via `/he
 ### 6.1 Unit Tests (in `lib.rs`)
 
 Follow the PostgresSink naming convention from Parseltongue:
+
 ```
 given_{precondition}_should_{expected_behavior}
 ```
 
 **Sink unit tests:**
+
 - `given_json_message_with_all_fields_should_build_correct_line_protocol`
 - `given_message_with_special_chars_should_escape_tags_and_fields`
 - `given_measurement_from_topic_should_use_topic_name`
@@ -371,6 +377,7 @@ given_{precondition}_should_{expected_behavior}
 - `given_multiple_messages_should_batch_into_single_request`
 
 **Source unit tests:**
+
 - `given_json_response_should_parse_into_messages`
 - `given_empty_response_should_return_empty_vec`
 - `given_watermark_should_query_from_last_position`
@@ -382,11 +389,13 @@ given_{precondition}_should_{expected_behavior}
 ### 6.2 Integration Tests (using testcontainers)
 
 From Parseltongue, the test infrastructure uses:
+
 - `iggy_harness` proc macro (`core/harness_derive/src/lib.rs`)
 - `testcontainers_modules` with `AsyncRunner` and `HealthWaitStrategy`
 - Fixtures in `core/integration/src/harness/`
 
 **Integration test plan:**
+
 - Spin up InfluxDB 2.x container via testcontainers
 - Test: write single point → verify in InfluxDB
 - Test: batch write → verify all points
@@ -427,6 +436,7 @@ Follow PR #2579 (Postgres e2e) and #2594 (Quickwit e2e) patterns.
 ## 8. Implementation Order
 
 ### Phase 1: Sink (MVP)
+
 1. Create `core/connectors/sinks/influxdb_sink/` crate with Cargo.toml
 2. Implement `InfluxdbSink` struct with `new()`, `open()`, `consume()`, `close()`
 3. Implement `build_line_protocol()` for JSON → line protocol conversion
@@ -436,18 +446,20 @@ Follow PR #2579 (Postgres e2e) and #2594 (Quickwit e2e) patterns.
 7. Write integration tests with testcontainers (~5 tests)
 
 ### Phase 2: Source
-8. Create `core/connectors/sources/influxdb_source/` crate
-9. Implement `InfluxdbSource` with time-range polling
-10. Implement `StateManager` for watermark persistence
-11. Add version detection (v2 vs v3 query path)
-12. Write unit tests (~8 tests)
-13. Write integration tests (~3-5 tests)
+
+1. Create `core/connectors/sources/influxdb_source/` crate
+2. Implement `InfluxdbSource` with time-range polling
+3. Implement `StateManager` for watermark persistence
+4. Add version detection (v2 vs v3 query path)
+5. Write unit tests (~8 tests)
+6. Write integration tests (~3-5 tests)
 
 ### Phase 3: Polish
-14. Add to Cargo workspace
-15. Register in runtime plugin resolution
-16. Add version FFI export via SDK macros
-17. Documentation and config examples
+
+1. Add to Cargo workspace
+2. Register in runtime plugin resolution
+3. Add version FFI export via SDK macros
+4. Documentation and config examples
 
 ---
 
@@ -468,6 +480,7 @@ Follow PR #2579 (Postgres e2e) and #2594 (Quickwit e2e) patterns.
 **Governing Thought**: InfluxDB is an HTTP-based time-series database. The Iggy connector should follow the QuickwitSink/ElasticsearchSink pattern (HTTP bulk API, ~11 entities for sink), not the PostgresSink pattern (connection pool, CDC, 54 entities). The key technical challenge is the JSON-to-line-protocol transformation, which is a single well-defined function.
 
 **Supporting Arguments**:
+
 1. InfluxDB's write API is a single POST endpoint with line protocol in the body — identical in structure to Quickwit's bulk ingest API
 2. No official Rust client exists; `reqwest` (already a dependency per Parseltongue) is the right tool
 3. The source connector requires time-range polling with watermark (no streaming API in InfluxDB) — follow ElasticsearchSource pattern from `state_manager.rs`

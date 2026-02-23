@@ -79,6 +79,7 @@ flowchart TB
 **The Implication:** You must bias LLMs with the right keywords. When you name a function `filter_implementation_entities_only()`, you're not just naming for humans—you're creating optimal retrieval tokens for the LLM.
 
 **The Pattern:**
+
 - Treat prompts as search queries
 - Use consistent, semantic naming
 - Provide structured context, not raw dumps
@@ -89,6 +90,7 @@ flowchart TB
 **First outputs are rarely optimal.** LLMs require iterative refinement to arrive at high-quality code. Each iteration adds context and constraint, converging toward correctness.
 
 **The Pattern:**
+
 - Round 1: Broad exploration
 - Round 2: Constraint application
 - Round 3: Refinement and optimization
@@ -101,6 +103,7 @@ flowchart TB
 **The sliding window forgets.** As conversations extend, early context is lost. Summary documents serve as "memory checkpoints" that maintain continuity.
 
 **The Pattern:**
+
 - Create summary documents after each major milestone
 - Keep summaries synchronized with code state
 - Reference summaries in new prompts
@@ -111,6 +114,7 @@ flowchart TB
 **LLMs need to find their own logical fallacies.** By asking LLMs to "think step by step" or "find flaws in this reasoning," you enable rubber duck debugging at scale.
 
 **The Pattern:**
+
 - Ask for chain-of-thought explanations
 - Request self-critique: "What's wrong with this approach?"
 - Use "verify your assumptions" prompts
@@ -121,6 +125,7 @@ flowchart TB
 **Past bugs are gold mines.** By providing reference files of anti-patterns to avoid, you prevent LLMs from repeating known mistakes.
 
 **The Pattern:**
+
 - Maintain `avoidBustBugs.txt` or similar files
 - Document past failures with root causes
 - Include anti-patterns in project context
@@ -131,6 +136,7 @@ flowchart TB
 **Tests transform ambiguous requirements into precise contracts.** When you write tests first, you create an easier prediction problem: the LLM knows exactly what to build.
 
 **The Pattern:**
+
 - STUB → RED → GREEN → REFACTOR cycle
 - Tests as executable specifications
 - WHEN...THEN...SHALL format for requirements
@@ -141,6 +147,7 @@ flowchart TB
 **Document everything.** Every prompt, every iteration, every learning should be documented. Prompt engineering becomes organizational memory.
 
 **The Pattern:**
+
 - Maintain prompt libraries
 - Document what works vs. what fails
 - Create reusable prompt templates
@@ -226,6 +233,7 @@ The Parseltongue project tracked compile attempts before and after adopting 4WNC
 | After 4WNC | 1.6 | **67% faster** |
 
 **Why:** Consistent naming enables:
+
 - Predictive autocomplete
 - Pattern matching across codebase
 - Accurate semantic search
@@ -383,6 +391,7 @@ Transform requirements into testable contracts:
 ## The Context Window Problem
 
 LLM context windows are finite. As conversations extend, early context is lost through the sliding window mechanism. This causes:
+
 - Repetition of earlier points
 - Inconsistency with previous decisions
 - Loss of important context
@@ -557,6 +566,7 @@ async fn process_data() {
 ```
 
 ✅ RIGHT:
+
 ```rust
 async fn process_data() {
     tokio::time::sleep(Duration::from_secs(1)).await; // Yields
@@ -566,6 +576,7 @@ async fn process_data() {
 ## Anti-Pattern: Ignoring Send/Sync Bounds
 
 ❌ WRONG:
+
 ```rust
 use std::rc::Rc; // Not Send/Sync
 fn spawn_task<T>(data: Rc<T>) {
@@ -574,12 +585,14 @@ fn spawn_task<T>(data: Rc<T>) {
 ```
 
 ✅ RIGHT:
+
 ```rust
 use std::sync::Arc; // Send/Sync safe
 fn spawn_task<T: Send + Sync>(data: Arc<T>) {
     tokio::spawn(async move { /* works */ });
 }
 ```
+
 ```
 
 ---
@@ -615,6 +628,7 @@ flowchart TB
 - Newtype pattern
 
 **Example:**
+
 ```rust
 // L1: Pure core, no external dependencies
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -639,6 +653,7 @@ impl EntityId {
 - Thread safety (Send, Sync)
 
 **Example:**
+
 ```rust
 // L2: Uses stdlib idioms
 use std::collections::{HashMap, HashSet};
@@ -659,6 +674,7 @@ pub struct EntityRegistry {
 - Web frameworks (Axum)
 
 **Example:**
+
 ```rust
 // L3: External dependencies
 use tokio::sync::RwLock;
@@ -743,6 +759,7 @@ flowchart TB
 ## Low-Drama Communication Style
 
 Technical communication should be:
+
 - **Understated:** Let results speak
 - **Direct:** Say what you mean
 - **Factual:** Claims backed by data
@@ -827,6 +844,7 @@ fn test_req_mvp_001_performance() {
     assert_eq!(result.allocated_bytes(), 0); // Zero heap in hot path
 }
 ```
+
 ```
 
 ### 2. Tag for Traceability
@@ -1088,6 +1106,7 @@ AI-native engineering is not about using AI tools—it's about **writing softwar
 The Four-Word Naming Convention, TDD-First methodology, executable specifications, and smart context optimization are not independent tricks. They form a coherent philosophy for development in the age of LLMs.
 
 **The results speak for themselves:**
+
 - 67% faster development
 - 90% fewer production bugs
 - 95% context accuracy
@@ -1117,7 +1136,7 @@ This is the future of software engineering. The question is not whether to adopt
 
 ### Proof of Work
 
-- **Parseltongue Dependency Graph Generator** https://github.com/that-in-rust/parseltongue-dependency-graph-generator/
+- **Parseltongue Dependency Graph Generator** <https://github.com/that-in-rust/parseltongue-dependency-graph-generator/>
   - 50MB single binary
   - 12 languages supported
   - 15 HTTP endpoints

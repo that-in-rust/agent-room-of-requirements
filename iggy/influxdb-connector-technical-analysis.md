@@ -26,6 +26,7 @@ InfluxDB uses a time-series data model with four core components:
 | **Timestamp** | No (auto-assigned) | Yes | Unix timestamp associated with the data point. Supports nanosecond to second precision. |
 
 **Key design principles:**
+
 - Tags are **indexed**; fields are **not**. Querying by tag is fast; querying by field requires a full scan.
 - A **series** is the unique combination of measurement + tag set. This is the fundamental unit of identity.
 - A **point** is uniquely identified by measurement + tag set + timestamp. Writing a point with the same identity merges field sets (last-write-wins for conflicts).
@@ -67,6 +68,7 @@ metrics,host=db01 connections=142i,healthy=true,bytes_sent=98234u 16305253580000
 | Boolean | `t`/`T`/`true`/`True`/`TRUE` (or `f`/`F`/`false`/`False`/`FALSE`) | `value=true` |
 
 **Whitespace rules:**
+
 - First unescaped space separates measurement+tags from field set.
 - Second unescaped space separates field set from timestamp.
 - Commas separate tags within the tag set and fields within the field set.
@@ -94,6 +96,7 @@ Organization
   - An associated organization
 
 **InfluxDB 3.x** further simplifies:
+
 - Uses **databases** (similar to buckets) and **tables** (similar to measurements).
 - The v2-compatible API still accepts bucket/org parameters.
 - The v3-native API uses database/table terminology.
@@ -101,6 +104,7 @@ Organization
 ### 1.4 Retention Policies
 
 **InfluxDB 2.x:**
+
 - Retention is configured per-bucket at creation time.
 - Can be infinite (data never expires) or as short as 1 hour.
 - InfluxDB deletes data in **shard groups**, not individual points. A shard group is deleted only when its entire time range exceeds the retention period.
@@ -108,6 +112,7 @@ Organization
 - DBRP (Database and Retention Policy) mappings exist for backward compatibility with InfluxDB 1.x.
 
 **InfluxDB 3.x:**
+
 - Retention periods are configurable per-database.
 - Data is stored as Parquet files on object storage with configurable lifecycle management.
 
@@ -134,6 +139,7 @@ Organization
 **Repository:** [github.com/influxdb-rs/influxdb-rust](https://github.com/influxdb-rs/influxdb-rust)
 
 **Features:**
+
 - Read and write to InfluxDB
 - Optional Serde support for deserialization
 - Multiple queries in one request
@@ -147,6 +153,7 @@ Organization
 **Limitation:** Can only interact with InfluxDB 2.0 in "compatibility mode" -- does not natively support the v2 token/org/bucket API.
 
 **Usage example:**
+
 ```rust
 use influxdb::{Client, Query, Timestamp, ReadQuery};
 
@@ -169,6 +176,7 @@ let result = client.query(read_query).await?;
 **Repository:** [github.com/aprimadi/influxdb2](https://github.com/aprimadi/influxdb2)
 
 **Features:**
+
 - Native InfluxDB 2.0 API (token auth, org/bucket)
 - Fork from the official `influxdb_iox/influxdb2_client`
 - Uses reqwest under the hood
@@ -182,6 +190,7 @@ let result = client.query(read_query).await?;
 **docs.rs:** [docs.rs/influxdb3](https://docs.rs/influxdb3/latest/influxdb3/)
 
 Very new (published December 2025). Expected API surface (based on the InfluxDB 3 client library pattern across languages):
+
 - Write via line protocol (HTTP `/api/v2/write` or v3 `/api/v3/write_lp`)
 - Query via SQL (Apache Arrow Flight or HTTP `/api/v3/query_sql`)
 - Query via InfluxQL
@@ -190,6 +199,7 @@ Very new (published December 2025). Expected API surface (based on the InfluxDB 
 #### `influxdb3_client` -- Internal InfluxDB Crate
 
 Located in the [influxdata/influxdb](https://github.com/influxdata/influxdb) repository under `influxdb3_client/`. This is the client used internally by the `influxdb3` CLI binary. It provides:
+
 - `write_line_protocol()` -- write data in line protocol format
 - `api_v3_query_sql()` -- query with SQL via the v3 API
 - `api_v3_query_influxql()` -- query with InfluxQL
@@ -202,6 +212,7 @@ A pure Rust line protocol parser from the InfluxDB IOx project. Useful if buildi
 ### 2.3 Does InfluxDB Have an Official Rust Client?
 
 **No official standalone Rust client library exists.** InfluxData maintains official v3 client libraries for Python, Go, Java, JavaScript/TypeScript, and C#, but Rust is not among them. The closest official Rust code is:
+
 - `influxdb3_client` -- internal crate in the main InfluxDB repo (not published separately on crates.io)
 - `influxdb-line-protocol` -- parser crate from the IOx project
 
@@ -220,16 +231,19 @@ A pure Rust line protocol parser from the InfluxDB IOx project. Useful if buildi
 ### 3.1 HTTP API Endpoint
 
 **InfluxDB 2.x endpoint:**
+
 ```
 POST /api/v2/write?org={org}&bucket={bucket}&precision={precision}
 ```
 
 **InfluxDB 3.x v2-compatible endpoint (same as above):**
+
 ```
 POST /api/v2/write?org={org}&bucket={bucket}&precision={precision}
 ```
 
 **InfluxDB 3.x native v3 endpoint:**
+
 ```
 POST /api/v3/write_lp?db={database}&precision={precision}
 ```
@@ -237,6 +251,7 @@ POST /api/v3/write_lp?db={database}&precision={precision}
 ### 3.2 Request Format
 
 **Required headers:**
+
 ```http
 POST /api/v2/write?org=my-org&bucket=my-bucket&precision=ns HTTP/1.1
 Host: localhost:8086
@@ -246,6 +261,7 @@ Accept: application/json
 ```
 
 **Optional compression header:**
+
 ```http
 Content-Encoding: gzip
 ```
@@ -262,6 +278,7 @@ Content-Encoding: gzip
 **Request body:** Line protocol, one point per line, newline (`\n`) separated.
 
 **Complete curl example:**
+
 ```bash
 curl --request POST \
   "http://localhost:8086/api/v2/write?org=my-org&bucket=my-bucket&precision=s" \
@@ -287,6 +304,7 @@ memory,host=server01 used_percent=64.2,available=8192i 1630525358
 **Additional optimization techniques:**
 
 1. **Sort tags by key lexicographically** before writing. InfluxDB can process pre-sorted tags more efficiently.
+
    ```
    # Good (sorted)
    cpu,host=server01,region=us-west usage=98.3
@@ -320,6 +338,7 @@ memory,host=server01 used_percent=64.2,available=8192i 1630525358
 | `503 Service Unavailable` | Server overloaded | **Yes** | Retry after `Retry-After` header duration |
 
 **Error response format (JSON):**
+
 ```json
 {
   "code": "invalid",
@@ -328,6 +347,7 @@ memory,host=server01 used_percent=64.2,available=8192i 1630525358
 ```
 
 **Critical considerations for the connector:**
+
 - **400/422 errors are non-retriable.** The data itself is malformed or conflicts with the schema. Log these, send to a dead-letter queue, and continue.
 - **5xx and 429 errors are retriable.** Use exponential backoff with jitter.
 - **Partial writes:** In InfluxDB 2.x, a `400` rejects the entire batch. There is no partial write on `400`. However, `422` can indicate partial rejection (some points accepted, others rejected due to schema conflicts). In InfluxDB Cloud (TSM), data might not yet be queryable when you receive `204` -- it is async.
@@ -371,6 +391,7 @@ from(bucket: "my-bucket")
 ```
 
 **API endpoint:**
+
 ```
 POST /api/v2/query?org={org}
 Content-Type: application/vnd.flux
@@ -394,6 +415,7 @@ GROUP BY time(5m), "host"
 ```
 
 **Key limitations:**
+
 - No JOIN support
 - No DatePart-like queries
 - Strong at schema exploration (`SHOW MEASUREMENTS`, `SHOW TAG KEYS`, `SHOW FIELD KEYS`)
@@ -418,6 +440,7 @@ LIMIT 100
 ```
 
 **API endpoint (v3):**
+
 ```
 POST /api/v3/query_sql
 Content-Type: application/json
@@ -431,6 +454,7 @@ Authorization: Token <token>
 ```
 
 **Query via Apache Arrow Flight (preferred for performance):**
+
 ```rust
 // Pseudocode for Arrow Flight query
 let flight_client = FlightClient::connect("http://localhost:8086").await?;
@@ -483,6 +507,7 @@ Since InfluxDB lacks a streaming API, the source connector must poll for new dat
 ```
 
 **Key considerations:**
+
 - **Buffer duration (step 2):** Subtract a small buffer (e.g., 5-10 seconds) from `now()` to avoid reading data that might still be in-flight or not yet flushed to queryable storage. InfluxDB Cloud (TSM) writes are async -- data may not be queryable immediately after `204`.
 - **Pagination:** Use `LIMIT` and `OFFSET` or cursor-based pagination via the time column to handle large result sets.
 - **Deduplication:** Since points are identified by measurement + tags + timestamp, polling the same time range again should return the same results (unless fields were updated). The connector should track the exact high-water mark to avoid reprocessing.
@@ -497,6 +522,7 @@ Since InfluxDB lacks a streaming API, the source connector must poll for new dat
 The [Confluent InfluxDB Sink Connector](https://docs.confluent.io/kafka-connectors/influxdb/current/influx-db-sink-connector/overview.html) is a mature, production-grade connector built on Kafka Connect.
 
 **Architecture:**
+
 - Built on the Kafka Connect framework (Java).
 - Available as self-managed (Confluent Platform) and fully-managed (Confluent Cloud).
 - Supports InfluxDB 1.x, 2.x, and 3.x (separate connector versions for 2 and 3).
@@ -525,6 +551,7 @@ Kafka Record
 | `retry.backoff.ms` | Backoff duration between retries |
 
 **Batching behavior:**
+
 - Records with the same measurement, time, and tags within a batch are **merged** (combined into a single point).
 - At-least-once delivery guarantee.
 - Dead Letter Queue (DLQ) support for failed records.
@@ -532,6 +559,7 @@ Kafka Record
 **Schema support:** AVRO, PROTOBUF, JSON_SR (JSON Schema), and schemaless JSON.
 
 **Lessons for the Iggy connector:**
+
 1. Support both "measurement from record field" and "measurement from topic name" approaches.
 2. Tags should be extractable from a nested map/object in the message.
 3. Timestamp should default to the message timestamp but be overridable from a field.
@@ -550,6 +578,7 @@ Input Plugins  -->  Processor Plugins  -->  Aggregator Plugins  -->  Output Plug
 ```
 
 **Four plugin types:**
+
 1. **Input Plugins** (~300+): Collect metrics from systems, services, APIs. Two subtypes:
    - **Regular**: Executed at each collection interval (poll-based).
    - **Service**: Run as a background service (event-based, e.g., listening on a socket).
@@ -560,6 +589,7 @@ Input Plugins  -->  Processor Plugins  -->  Aggregator Plugins  -->  Output Plug
 **Internal data model:** Telegraf uses InfluxDB's data model internally (measurement, tags, fields, timestamp). Input plugins use an `Accumulator` interface to add measurements.
 
 **InfluxDB v2 output plugin configuration:**
+
 ```toml
 [[outputs.influxdb_v2]]
   urls = ["http://localhost:8086"]
@@ -571,6 +601,7 @@ Input Plugins  -->  Processor Plugins  -->  Aggregator Plugins  -->  Output Plug
 ```
 
 **Relevance to the Iggy connector:**
+
 - Telegraf's plugin model (Input -> Process -> Aggregate -> Output) is similar to a connector pipeline.
 - Telegraf's Kafka consumer input + InfluxDB output is a common alternative to a direct Kafka-InfluxDB connector.
 - The Telegraf `tail` input plugin demonstrates a "file tailing" pattern that is analogous to a streaming source.
@@ -581,6 +612,7 @@ Input Plugins  -->  Processor Plugins  -->  Aggregator Plugins  -->  Output Plug
 **There are no existing open-source Rust-based streaming-platform-to-InfluxDB connectors.** The Rust ecosystem for InfluxDB is limited to client libraries. The Iggy connector would be the first known Rust-based streaming connector for InfluxDB.
 
 Relevant related projects:
+
 - [questdb/c-questdb-client](https://github.com/questdb/c-questdb-client) -- Rust/C/C++ client for QuestDB using InfluxDB Line Protocol (demonstrates line protocol generation in Rust for a compatible TSDB).
 - [influxdata/rskafka](https://github.com/influxdata/rskafka) -- InfluxData's minimal Rust Kafka client (demonstrates InfluxData's investment in Rust for streaming).
 
@@ -653,6 +685,7 @@ gzip = true
 ```
 
 Transforms to line protocol:
+
 ```
 temperature,host=sensor-01,location=warehouse-A value=23.5,humidity=67.2 1630525358000
 ```
@@ -788,6 +821,7 @@ watermark_persist_interval_ms = 10000
 **Recommendation: Use `reqwest` directly for the HTTP API.**
 
 Rationale:
+
 1. **No mature, official Rust client library exists.** The community crates are alpha-quality or target outdated versions.
 2. **The InfluxDB HTTP API is simple.** Writing is a POST with line protocol in the body. Querying is a POST with a query string. This does not justify a heavy dependency.
 3. **Full control over connection pooling, retries, and error handling.** A connector needs precise control over these concerns.
@@ -891,6 +925,7 @@ impl InfluxDbClient {
 ### 6.4 Connection Management
 
 **reqwest provides built-in connection pooling via hyper.** Default configuration is reasonable:
+
 - Idle connections are pooled per host.
 - Default pool idle timeout: 90 seconds.
 - TLS connections are reused.
@@ -994,6 +1029,7 @@ pub async fn write_with_retry(
 **Recommended: Target the `/api/v2/write` endpoint as the primary write path.**
 
 Rationale:
+
 1. **Maximum compatibility.** The `/api/v2/write` endpoint works across InfluxDB 2.x, 3.x Core, 3.x Enterprise, Cloud (TSM), Cloud Serverless, and Cloud Dedicated. It is the universal write interface.
 2. **The line protocol format is identical across all versions.** The data format does not change.
 3. **Query support should be version-aware:**

@@ -92,6 +92,7 @@ When documenting TDD state, provide:
 **Self-Verification:**
 
 Before finalizing any context summary, ask yourself:
+
 - Could another developer resume this work immediately from my documentation?
 - Have I captured the "why" behind decisions, not just the "what"?
 - Are all test statuses current and accurate?
@@ -101,6 +102,7 @@ Before finalizing any context summary, ask yourself:
 **Integration with Pensieve Project:**
 
 When working with this codebase:
+
 - Track changes across the 8-crate layered architecture (L1: core, L2: engine/models/metal, L3: CLI/API/models)
 - Note when work spans Rust and Python bridge components
 - Reference the dependency rules (L1 → L2 → L3, no circular dependencies)

@@ -127,6 +127,7 @@
 ## Contribution Priority (unassigned, newest first)
 
 ### Immediate (unassigned, recent, clear scope)
+
 1. **#2712** — Linux IoError bug (deployment blocker, Feb 10)
 2. **#2592** — ES sink e2e tests (good first issue, Jan 20)
 3. **#2593** — ES source e2e tests (good first issue, Jan 20)
@@ -134,22 +135,26 @@
 5. **#2598** — Pinot e2e tests (good first issue, Jan 21)
 
 ### Medium-term (unassigned, clear pattern to follow)
-6. **#2539** — ClickHouse Sink (HTTP pattern, like Quickwit)
-7. **#1846** — Avro payload (follow Protobuf/FlatBuffers pattern)
-8. **#1847** — BSON payload (follow same pattern)
-9. **#2417** — Hot config reload (runtime change)
-10. **#2484** — Flink HTTP→TCP (Java, enhancement)
+
+1. **#2539** — ClickHouse Sink (HTTP pattern, like Quickwit)
+2. **#1846** — Avro payload (follow Protobuf/FlatBuffers pattern)
+3. **#1847** — BSON payload (follow same pattern)
+4. **#2417** — Hot config reload (runtime change)
+5. **#2484** — Flink HTTP→TCP (Java, enhancement)
 
 ### Long-term (unassigned, high complexity)
-11. **#2540** — Redshift Sink (S3 staging, like Iceberg)
-12. **#2500** — JDBC Sink + Source (like Postgres but generic)
-13. **#1852** — Delta Lake (like Iceberg, data lake pattern)
-14. **#1851** — Elasticsearch full scope (extend existing)
+
+1. **#2540** — Redshift Sink (S3 staging, like Iceberg)
+2. **#2500** — JDBC Sink + Source (like Postgres but generic)
+3. **#1852** — Delta Lake (like Iceberg, data lake pattern)
+4. **#1851** — Elasticsearch full scope (extend existing)
 
 ### Already assigned
+
 - **#2700** — InfluxDB (assigned to @ryerraguntla)
 
 ### Unclear/Stale
+
 - **#1762** — Google A2A Protocol (May 2025, no activity, unclear connector relevance)
 
 ---

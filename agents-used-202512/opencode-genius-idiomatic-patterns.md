@@ -1,6 +1,6 @@
 # OpenCode: Genius-Level Idiomatic Code Patterns
 
-**Repository:** https://github.com/anomalyco/opencode
+**Repository:** <https://github.com/anomalyco/opencode>
 **Analysis Date:** 2026-01-30
 **Analysis Tool:** Parseltongue v1.4.0
 **Entities Analyzed:** 3,808 code entities
@@ -48,6 +48,7 @@ These patterns reveal the **meta-thinking** of the genius developers who built O
 #### Problem
 
 In a multi-project IDE, you need to:
+
 - Manage global state (providers, config) AND per-project state (sessions, files, VCS)
 - Lazy-load project state only when accessed
 - Keep all state in sync via WebSocket events
@@ -194,12 +195,14 @@ function createGlobalSync() {
 6. **Discriminated Union Event Handling**: TypeScript discriminated unions + exhaustive `switch` ensure type-safe event handling with compiler-enforced completeness.
 
 #### Where Used
+
 - `packages/app/src/context/global-sync.tsx:132` (main implementation)
 - Called by root `App` component to manage all workspace state
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Ownership is First-Class**: Most developers fight SolidJS ownership. These developers architect AROUND it by capturing owners and using `runWithOwner` as a primitive.
 - **Lazy Everything**: Don't create stores for 50 projects on mount. Create on-demand, but make it feel instant with caching layers.
 - **Binary Search as Default**: When maintaining sorted arrays, binary search isn't optional - it's table stakes for performance at scale.
@@ -218,11 +221,13 @@ This pattern shows **distributed systems thinking** applied to frontend state ma
 #### Problem
 
 SolidJS reactive contexts (`createEffect`, `createMemo`) must be created **inside** a component tree (under an "owner"). But you need to:
+
 - Create stores dynamically (lazy) when users open projects
 - Make those stores reactive (respond to signals)
 - Avoid memory leaks (cleanup when project closes)
 
 Standard approaches fail:
+
 - Creating stores in callbacks → no reactivity
 - Creating stores eagerly → wasted memory
 - Using refs → breaks reactivity
@@ -315,12 +320,14 @@ function createGlobalSync() {
 4. **Ready Accessor Pattern**: `vcs[3]()` is a reactive accessor that signals when persisted data has loaded. Effects wait on this before syncing, avoiding flash of empty state.
 
 #### Where Used
+
 - `packages/app/src/context/global-sync.tsx:400-500`
 - Called by UI components when user switches to a project
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Ownership is Lexical**: Most frameworks (React, Vue) have dynamic contexts. SolidJS has **lexical** contexts (ownership). These developers treat ownership like a closure variable.
 - **Lazy ≠ Non-Reactive**: Common myth: "lazy creation means no reactivity". This pattern proves you can have both with `runWithOwner`.
 - **Three-Level State**: Raw state (localStorage) → Cached state (persisted store) → Active state (child store). Each level has different lifecycle and access patterns.
@@ -338,6 +345,7 @@ This shows **compiler-level thinking** - understanding that reactive frameworks 
 #### Problem
 
 When syncing state via events:
+
 - Arrays are sorted by ID (sessions, projects, messages)
 - Events add/update/remove items
 - Need O(log n) lookups, not O(n) linear search
@@ -443,12 +451,14 @@ switch (event.type) {
 4. **Fallback for Missing**: If array doesn't exist yet, creates it with single item instead of searching.
 
 #### Where Used
+
 - `packages/app/src/context/global-sync.tsx` (20+ call sites)
 - Any code managing sorted arrays (sessions, messages, parts, permissions)
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Sorted = Binary Searchable**: Most developers keep unsorted arrays and use `.find()`. These developers recognize that sortedness enables O(log n) lookups.
 - **Insert Position is Free**: Binary search gives you the insertion point even when the item isn't found - no second search needed.
 - **Scale Matters**: With 10 sessions, linear search is fine. With 1000 sessions receiving 10 events/sec, binary search is mandatory.
@@ -466,6 +476,7 @@ This shows **algorithmic thinking** - recognizing when data structure choice (so
 #### Problem
 
 IDE with 10,000+ AI sessions across 50 projects:
+
 - Can't load all sessions into memory (GBs of data)
 - Need to show recent sessions (last 4 hours)
 - Need to show first N sessions (pagination)
@@ -473,6 +484,7 @@ IDE with 10,000+ AI sessions across 50 projects:
 - Some sessions have pending permissions (must keep)
 
 Requirements:
+
 - Load only sessions that matter
 - Keep session list stable (no flickering)
 - Allow "load more" pagination
@@ -566,12 +578,14 @@ function trimSessions(input: Session[], options: { limit: number; permission: Re
 5. **Deduplication via Set**: Prevents duplicate sessions if a session appears in both base and recent tiers.
 
 #### Where Used
+
 - `packages/app/src/context/global-sync.tsx:440` (`loadSessions`)
 - Applied whenever session list is updated via events
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **UI State ≠ DB State**: Database has 10k sessions. UI should show ~100. Don't load everything then filter - filter on load.
 - **Recency + Pagination**: Two access patterns (browsing old sessions vs finding recent work) need different strategies. Combine both.
 - **Dependent State Pinning**: Child sessions are "pinned" by parent visibility OR by having pending state. This prevents "lost permission dialogs" bug.
@@ -590,6 +604,7 @@ This shows **product thinking** - understanding user behavior (recency bias, pag
 #### Problem
 
 Need to persist React state to storage:
+
 - **Browser**: localStorage (sync API)
 - **Desktop**: IndexedDB via Electron (async API)
 - Both should use same interface
@@ -752,12 +767,14 @@ function persisted<T>(
 6. **Fix-Up on Read**: If stored data differs from migrated+merged data, writes it back. This fixes corruption/outdated data automatically.
 
 #### Where Used
+
 - `packages/app/src/utils/persist.ts:316`
 - Used by all persistent stores (global state, workspace state, session state)
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Async is Viral**: `async` functions infect the whole call stack. Solution: Create TWO adapters (sync and async) that share logic, then choose at runtime.
 - **Migrations are Lazy**: Don't migrate all data upfront - migrate on first read. Most data is never accessed.
 - **Partial Data is Valid**: Don't fail if stored data is missing fields - merge with defaults. This makes schema evolution non-breaking.
@@ -776,6 +793,7 @@ This shows **systems thinking** - recognizing that sync vs async is a deployment
 #### Problem
 
 localStorage has a quota (5-10MB depending on browser):
+
 - When quota is exceeded, writes throw `QuotaExceededError`
 - Need to handle quota errors gracefully
 - Should evict old data to make room for new data
@@ -921,12 +939,14 @@ function cachePrune() {
 5. **LRU Cache with Byte Tracking**: Tracks cache size in bytes (not entries). Prevents cache from consuming unbounded memory.
 
 #### Where Used
+
 - `packages/app/src/utils/persist.ts:125` (`write` function)
 - Called by all `setItem` operations in persistence layer
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Quota Errors are Normal**: Don't treat quota errors as exceptional - they're expected in long-running apps. Have a strategy.
 - **Eviction is Product Decision**: Evicting user data is serious. Evict largest first (free most space), evict LRU last (lose least recent data).
 - **Memory as Fallback**: If disk is full, fall back to RAM. Better to lose data on refresh than to break the app now.
@@ -945,6 +965,7 @@ This shows **reliability engineering** - planning for failure modes, having degr
 #### Problem
 
 When loading persisted state:
+
 - Stored data may be from old version (missing fields)
 - Stored data may have extra fields (deprecated)
 - Need to merge stored data with defaults
@@ -1011,12 +1032,14 @@ function merge(defaults: unknown, value: unknown): unknown {
 5. **Backwards Compatible**: Adds missing keys from `defaults`. If old version is missing fields, new version fills them in.
 
 #### Where Used
+
 - `packages/app/src/utils/persist.ts:353` (sync storage adapter)
 - `packages/app/src/utils/persist.ts:400` (async storage adapter)
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Types Matter**: You can't just `Object.assign`. Arrays and objects are different. Primitives and objects are different.
 - **Three-Valued Logic**: JavaScript has THREE absence values: `undefined` (missing), `null` (present but empty), `false` (boolean). Handle all three.
 - **Bidirectional Compatibility**: Old code reading new data (forward compat) AND new code reading old data (backward compat). Keep unknown keys!
@@ -1034,6 +1057,7 @@ This shows **type system thinking** - recognizing that JavaScript's loose typing
 #### Problem
 
 MCP (Model Context Protocol) servers use OAuth for authentication:
+
 - Servers can move URLs (staging → production)
 - OAuth tokens are URL-specific (can't use staging token on production)
 - Need to handle dynamic client registration
@@ -1159,12 +1183,14 @@ export class McpOAuthProvider implements OAuthClientProvider {
 5. **Separate PKCE State**: Stores `codeVerifier` and `oauthState` separately (not with tokens). These are ephemeral - only needed during auth flow.
 
 #### Where Used
+
 - `opencode/packages/opencode/src/mcp/oauth-provider.ts:26`
 - Used by MCP client when connecting to OAuth-enabled servers
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **URL is Part of Identity**: OAuth tokens are tied to URLs. If URL changes, tokens are invalid. Most devs store by name, not by name+URL.
 - **Expiration is Real**: Client secrets can expire. Access tokens expire. Handle expiration proactively, not reactively.
 - **Dynamic Registration is Standard**: OAuth 2.0 Dynamic Client Registration is a real spec (RFC 7591). Actually use it instead of requiring manual registration.
@@ -1183,6 +1209,7 @@ This shows **security engineering** - understanding OAuth specs deeply, handling
 #### Problem
 
 OpenAI's new "Responses API" returns streaming events:
+
 - Events arrive in random order (reasoning before text, tool calls interleaved)
 - Need to track ongoing tool calls across multiple events
 - GitHub Copilot rotates item IDs on every event (can't use item ID as stable key)
@@ -1352,12 +1379,14 @@ async doStream(options: Parameters<LanguageModelV2["doStream"]>[0]) {
 6. **Stateful Controller**: `TransformStream` controller is stateful - can emit multiple output events per input event.
 
 #### Where Used
+
 - `opencode/packages/opencode/src/provider/sdk/openai-compatible/src/responses/openai-responses-language-model.ts:845`
 - Used when calling OpenAI's Responses API with streaming
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Streaming ≠ Stateless**: Most stream transforms are stateless (map, filter). This one is DEEPLY stateful - tracks 5+ pieces of state.
 - **Item IDs Rotate**: GitHub Copilot's implementation rotates item IDs for security. Can't rely on them - use output_index.
 - **Multi-Event Sequences**: Single logical operation (tool call) spans multiple events (start, delta, delta, end). Must track state across events.
@@ -1376,11 +1405,13 @@ This shows **protocol engineering** - deeply understanding the streaming protoco
 #### Problem
 
 Streaming events have different shapes:
+
 - `{ type: "text", text: string }`
 - `{ type: "tool-call", call_id: string, name: string }`
 - `{ type: "reasoning", summary: Array<{ type: "summary_text", text: string }> }`
 
 Need to:
+
 - Parse events safely (reject invalid events)
 - Type-safe access to fields (TypeScript knows `text` exists when `type === "text"`)
 - Exhaustive handling (compiler error if missing a type)
@@ -1495,12 +1526,14 @@ transform(chunk, controller) {
 5. **Exhaustiveness Checking**: If you add a new event type to schema but forget to handle it, TypeScript compiler errors.
 
 #### Where Used
+
 - `opencode/packages/opencode/src/provider/sdk/openai-compatible/src/responses/openai-responses-language-model.ts:200`
 - Used for parsing all OpenAI Responses API events
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **Schemas are Types**: Don't write types AND schemas. Write schemas, infer types. Single source of truth.
 - **Discriminated Unions Scale**: With 20+ event types, discriminated unions are the ONLY way to maintain type safety.
 - **Parse at Boundary**: Parse incoming data once at system boundary. Rest of system works with typed data.
@@ -1519,6 +1552,7 @@ This shows **type-driven development** - using the type system as the primary to
 #### Problem
 
 Serialize terminal buffer (xterm.js) to string with ANSI escape codes:
+
 - Terminal has 1000s of cells with different colors/styles
 - Can't emit ANSI codes for every cell (massive output)
 - Need to track "current style" and only emit codes when style changes
@@ -1668,12 +1702,14 @@ class StringSerializeHandler extends BaseSerializeHandler {
 7. **Mode-Based Color Encoding**: Handles 3 color modes (RGB, palette, default) with different ANSI sequences.
 
 #### Where Used
+
 - `packages/app/src/addons/serialize.ts:206`
 - Used when copying terminal content to clipboard or saving to file
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **ANSI is Stateful**: ANSI terminal is a state machine. Current style persists until changed. Exploit this for compression.
 - **Diff Everything**: Computing diffs is cheaper than emitting redundant codes. Diff colors, flags, backgrounds independently.
 - **Wide Characters are Hard**: Unicode has characters that take 2 terminal cells. Must handle placeholder cells correctly.
@@ -1692,6 +1728,7 @@ This shows **low-level protocol engineering** - deeply understanding ANSI escape
 #### Problem
 
 Need to theme diff viewer for light/dark mode:
+
 - Different colors for light vs dark
 - Use color mixing to create intermediate shades
 - Support theme overrides (user customization)
@@ -1796,12 +1833,14 @@ Standard approach: Define separate colors for light and dark → duplication, ha
 7. **Alpha as Override**: Uses `rgb(... / alpha)` to adjust opacity without defining new colors.
 
 #### Where Used
+
 - `packages/ui/src/pierre/index.ts:15`
 - Applied to all diff viewers in the app
 
 #### Key Insights
 
 **Meta-Thinking Revealed:**
+
 - **CSS is Turing Complete**: Modern CSS has functions, variables, conditionals. Use them.
 - **Perceptual Color Spaces**: LAB space is perceptually uniform - 50% mix looks 50% different. RGB space is not.
 - **Override Pattern**: Every variable should have an override. Enables theming without forking.
@@ -1816,42 +1855,50 @@ This shows **design systems thinking** - building a theming system that's flexib
 Across all patterns, several meta-themes emerge:
 
 ### 1. **Ownership as First-Class Concept**
+
 - SolidJS ownership is treated like a closure variable (Pattern #1, #2)
 - Capture owners, pass them around, use `runWithOwner` as primitive
 - Most devs fight ownership; these devs architect around it
 
 ### 2. **Lazy Everything, but Make it Instant**
+
 - Lazy store creation (Pattern #1, #2)
 - Lazy migration (Pattern #5)
 - Lazy eviction (Pattern #6)
 - Multi-level caching makes laziness invisible (Pattern #1)
 
 ### 3. **Binary Search as Default**
+
 - Maintaining sorted arrays enables O(log n) lookups (Pattern #3)
 - Binary search returns insertion point even when not found
 - With 1000+ items, this is mandatory, not optional
 
 ### 4. **Types from Schemas, Not Vice Versa**
+
 - Zod schemas are source of truth (Pattern #10)
 - Types are inferred from schemas
 - Runtime validation = compile-time types
 
 ### 5. **Diff-Based Optimization**
+
 - Diff cell styles to minimize ANSI codes (Pattern #11)
 - Diff stored data to detect schema changes (Pattern #7)
 - Diff-first, not emit-first
 
 ### 6. **Failure is Expected**
+
 - Quota errors are normal (Pattern #6)
 - OAuth URLs change (Pattern #8)
 - Client secrets expire (Pattern #8)
 - Plan for failure, have degradation strategies
 
 ### 7. **Three-Valued Logic**
+
 - `undefined` (missing), `null` (present but empty), `false` (boolean)
 - Handle all three distinctly (Pattern #7)
 
 ### 8. **Stateful Streams are OK**
+
 - TransformStreams can be stateful (Pattern #9)
 - Track multiple pieces of state across events
 - Stateful != imperative

@@ -69,12 +69,14 @@ claude -p "Update the Python SDK documentation"
 ```
 
 **Key Claude Code features with worktrees:**
+
 - `--add-dir` flag: reference your `cross-repo-knowledge-base` from any worktree
 - `/resume` picker shows sessions from all worktrees of the same repo
 - Each worktree gets its own session, no interference
 - incident.io runs 4-5 parallel Claude agents this way routinely
 
 **The `--add-dir` combo:**
+
 ```bash
 cd ../iggy-connector
 claude --add-dir ~/cross-repo-knowledge-base/agent-room-of-requirements

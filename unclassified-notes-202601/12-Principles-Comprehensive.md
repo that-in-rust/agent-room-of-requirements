@@ -9,6 +9,7 @@
 **One-Liner:** LLMs retrieve and combine training patterns via semantic search, not through novel reasoning.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart LR
     subgraph MYTH["❌ The Myth"]
@@ -26,6 +27,7 @@ flowchart LR
 **ELI5:** LLMs are like librarians that find and paste together book pages matching your keywords, not scientists who think up new ideas. Better words = better results.
 
 **Mathematical Model:**
+
 ```
 P(output | input) ≈ Σ P(pattern_i) × similarity(input, pattern_i)
 ```
@@ -41,6 +43,7 @@ This shows output is a weighted sum of training patterns where weights are simil
 **One-Liner:** Quality emerges through iterative refinement—explore, constrain, refine, validate—never accept first outputs.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart TD
     subgraph QUALITY["Output Quality by Iteration"]
@@ -59,6 +62,7 @@ flowchart TD
 **ELI5:** Nobody draws a perfect picture in one try. First you sketch rough shapes, then add details, then fix mistakes, then finish. Same with LLM code.
 
 **Mathematical Model:**
+
 ```
 Quality(n) = Quality_max × (1 - e^(-λn))
 ```
@@ -74,6 +78,7 @@ Where `n` is iterations and `λ` is the learning rate per iteration. This conver
 **One-Liner:** Attention decays exponentially with distance—use summary documents to checkpoint critical information before the memory cliff.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart TD
     subgraph MEMORY["Context Retention Over Turns"]
@@ -92,6 +97,7 @@ flowchart TD
 **ELI5:** LLMs are like friends with small memory windows who forget old sentences. Write summary notes every few chapters to help them remember.
 
 **Mathematical Model:**
+
 ```
 Effective_Attention(token_i) ∝ 1 / (distance_from_current)^α
 Retention(turn_n) = e^(-n/τ)
@@ -108,6 +114,7 @@ Where α ≈ 1.5-2.0 and τ ≈ 15-20 turns. Tokens beyond ~8K positions receive
 **One-Liner:** Ask LLMs to critique their own outputs with targeted questions—overconfidence drops from 80% to 40% when wrong.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart TD
     subgraph HIDDEN["Without Self-Critique"]
@@ -127,6 +134,7 @@ flowchart TD
 **ELI5:** LLMs say "looks good!" without checking carefully. Ask them to critique themselves: "What could go wrong?" and suddenly they find their own mistakes.
 
 **Mathematical Model:**
+
 ```
 P(LLM says correct | actually correct) ≈ 0.95
 P(LLM says correct | actually wrong) ≈ 0.80  // Overconfidence!
@@ -144,6 +152,7 @@ Self-critique activates different attention patterns that surface inconsistencie
 **One-Liner:** Constraints eliminate solution space faster than examples—one negative pattern excludes 10^4 solutions, one positive example shows just one.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart LR
     subgraph POSITIVE["Positive Example"]
@@ -161,6 +170,7 @@ flowchart LR
 **ELI5:** In a maze, saying "don't go right, don't go straight, don't go left at turn 3" eliminates hundreds of paths. One "do this" shows only one path.
 
 **Mathematical Model:**
+
 ```
 Valid_Solutions = All_Possible - Invalid_Solutions
 
@@ -179,6 +189,7 @@ Given |All_Possible| ≈ 10^6 and |Valid_Solutions| ≈ 10^2, a negative pattern
 **One-Liner:** Tests define exact input-output mappings that eliminate ambiguity—correctness probability jumps from 60% to 95%.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart LR
     subgraph VAGUE["❌ Vague Spec"]
@@ -195,6 +206,7 @@ flowchart LR
 **ELI5:** Asking someone to "draw a cat" gives many results. Saying "cat with 4 legs, 2 ears, whiskers, fits in 10x10 box" gives exactly what you want. Tests are measurements, not descriptions.
 
 **Mathematical Model:**
+
 ```
 Oracle(input, output) → {correct, incorrect}
 
@@ -213,6 +225,7 @@ Tests ARE oracles converting ambiguous "meets requirements?" into precise "outpu
 **One-Liner:** Semantic specificity peaks at 4-word identifiers where attention-per-token and match-precision balance optimally.
 
 **Mermaid Diagram:**
+
 ```mermaid
 graph TD
     subgraph OPTIMIZATION["Token-Attention Tradeoff"]
@@ -230,6 +243,7 @@ graph TD
 **ELI5:** Guessing game—"animal" = thousands of options, "animal with four legs, orange, with stripes" = tiger immediately! But too many words and people stop listening. 4 words is the sweet spot.
 
 **Mathematical Model:**
+
 ```
 S(n) = log(|corpus| / |matches(n)|)  // Specificity increases with words
 A(n) = 1/n  // Attention per word decreases
@@ -248,6 +262,7 @@ This function peaks around n=4 for typical code vocabularies. Too few words = am
 **One-Liner:** Match process investment to error cost and uncertainty—bugs need minimal process, products need heavy research.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart TD
     subgraph MATCH["Match Process to Work"]
@@ -266,6 +281,7 @@ flowchart TD
 **ELI5:** Flat tire? Just fix it—don't redesign the bike. Building a flying bike? Need lots of research! Wrong amount of thinking = waste.
 
 **Mathematical Model:**
+
 ```
 Total_Cost = Process_Cost + Error_Cost × P(Error | Process)
 
@@ -288,6 +304,7 @@ Optimal_Process ∝ sqrt(Error_Cost × Uncertainty)
 **One-Liner:** Requirements and architecture mutually constrain—iterate between them to find simplest solution that delivers value.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart LR
     subgraph WRONG["❌ Linear (Wrong)"]
@@ -307,6 +324,7 @@ flowchart LR
 **ELI5:** Planning a treehouse—you list features, then realize "if I skip electricity, this becomes super easy!" So you simplify the list. Requirements and design should talk to each other.
 
 **Mathematical Model:**
+
 ```
 Level 1 (PRD): minimize |requirements| subject to user_value ≥ threshold
 Level 2 (ARCH): minimize complexity subject to requirements
@@ -328,6 +346,7 @@ Each architectural parameter creates PRD simplification opportunities. ARCH disc
 **One-Liner:** Checkpoint phase, tests, decisions, and progress to create Markov blankets enabling perfect session resumption.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart TD
     subgraph WITHOUT["❌ Without State Tracking"]
@@ -346,6 +365,7 @@ flowchart TD
 **ELI5:** Building LEGO castle—take pictures and notes before dinner. When you return, you know exactly where you stopped and what's next.
 
 **Mathematical Model:**
+
 ```
 Without serialization:
 Context(t+1) = degraded_context(t) + new_input
@@ -356,6 +376,7 @@ Context(t+1) = Checkpoint(t) + new_input
 ```
 
 The checkpoint acts as a Markov blanket—all information needed to continue is captured. A checkpoint is sufficient iff:
+
 ```
 P(correct_continuation | checkpoint) = P(correct_continuation | full_history)
 ```
@@ -369,6 +390,7 @@ P(correct_continuation | checkpoint) = P(correct_continuation | full_history)
 **One-Liner:** Use "can I write a failing test right now?" as decision boundary—prevents autonomous drift from intended direction.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart TD
     subgraph IMPLICIT["❌ Implicit (Drift Risk)"]
@@ -387,6 +409,7 @@ flowchart TD
 **ELI5:** Team project rule—if you know exactly what to do and can prove it works, do it. Need to learn first? Research. Nobody knows what's "right"? Ask.
 
 **Mathematical Model:**
+
 ```
 Drift = ||Actual_Direction - Intended_Direction||
 Total_Drift(n) = Σ Drift(decision_i)
@@ -411,6 +434,7 @@ def decide_action(task):
 **One-Liner:** Closed-loop systems converge via learning from production—capture failures as anti-patterns, successes as patterns.
 
 **Mermaid Diagram:**
+
 ```mermaid
 flowchart TD
     subgraph OPEN["❌ Open Loop (No Learning)"]
@@ -435,6 +459,7 @@ flowchart TD
 **ELI5:** Basketball practice—if you never look whether shots go in, you won't improve. Watch results, adjust next shot. Same with code: observe production, learn, write it down.
 
 **Mathematical Model:**
+
 ```
 Performance(t+1) = Performance(t) + Learning_Rate × Feedback(t)
 

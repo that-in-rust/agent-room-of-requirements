@@ -14,6 +14,7 @@ With TDD-first approach: **STUB → RED → GREEN → REFACTOR**
 ## CRITICAL: NAMING CONVENTIONS (LLM-Optimized)
 
 ### TypeScript/JavaScript
+
 | Context | Convention | Example |
 |---------|------------|---------|
 | Functions | camelCase, verb-first | `fetchUserById()` |
@@ -26,6 +27,7 @@ With TDD-first approach: **STUB → RED → GREEN → REFACTOR**
 | Test files | `*.test.ts` or `*.spec.ts` | `user.service.test.ts` |
 
 ### Java/Spring Boot
+
 | Context | Convention | Example |
 |---------|------------|---------|
 | Classes | PascalCase | `UserService` |
@@ -37,6 +39,7 @@ With TDD-first approach: **STUB → RED → GREEN → REFACTOR**
 | Spring beans | camelCase | `userService` |
 
 ### Golang
+
 | Context | Convention | Example |
 |---------|------------|---------|
 | Exported | PascalCase | `UserService` |
@@ -48,6 +51,7 @@ With TDD-first approach: **STUB → RED → GREEN → REFACTOR**
 | Acronyms | All caps | `HTTPClient`, `ID` |
 
 ### DevOps/Infrastructure
+
 | Context | Convention | Example |
 |---------|------------|---------|
 | Terraform resources | snake_case | `aws_instance.web_server` |
@@ -58,6 +62,7 @@ With TDD-first approach: **STUB → RED → GREEN → REFACTOR**
 | GitHub Actions | kebab-case | `build-and-deploy.yml` |
 
 ### Apache Kafka
+
 | Context | Convention | Example |
 |---------|------------|---------|
 | Topics | kebab-case with domain | `orders.created.v1` |
@@ -72,6 +77,7 @@ With TDD-first approach: **STUB → RED → GREEN → REFACTOR**
 ### Phase 1: STUB (Define the Contract)
 
 **TypeScript:**
+
 ```typescript
 // Define the interface FIRST
 interface UserService {
@@ -87,6 +93,7 @@ type UserError = 'EMAIL_EXISTS' | 'INVALID_DATA' | 'NOT_FOUND';
 ```
 
 **Java:**
+
 ```java
 // Define the interface FIRST
 public interface UserService {
@@ -105,6 +112,7 @@ public record UserId(String value) {
 ```
 
 **Go:**
+
 ```go
 // Define the interface FIRST
 type UserService interface {
@@ -125,6 +133,7 @@ type CreateUserDTO struct {
 ### Phase 2: RED (Write Failing Test)
 
 **TypeScript (Vitest):**
+
 ```typescript
 describe('UserService', () => {
   it('should create user with valid data', async () => {
@@ -141,6 +150,7 @@ describe('UserService', () => {
 ```
 
 **Java (JUnit 5):**
+
 ```java
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -164,6 +174,7 @@ class UserServiceTest {
 ```
 
 **Go:**
+
 ```go
 func TestUserService_CreateUser(t *testing.T) {
     ctrl := gomock.NewController(t)
@@ -188,6 +199,7 @@ func TestUserService_CreateUser(t *testing.T) {
 ### Phase 3: GREEN (Minimal Implementation)
 
 **TypeScript:**
+
 ```typescript
 class UserServiceImpl implements UserService {
   constructor(
@@ -211,6 +223,7 @@ class UserServiceImpl implements UserService {
 ```
 
 **Java:**
+
 ```java
 @Service
 @RequiredArgsConstructor
@@ -236,6 +249,7 @@ public class UserServiceImpl implements UserService {
 ```
 
 **Go:**
+
 ```go
 type userServiceImpl struct {
     repo   UserRepository
@@ -269,6 +283,7 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, dto CreateUserDTO) (*U
 ### Phase 4: REFACTOR (Production Quality)
 
 Add:
+
 - Input validation
 - Structured logging
 - Metrics
@@ -323,6 +338,7 @@ Add:
 ```
 
 ### Dependency Rule
+
 - Inner layers NEVER depend on outer layers
 - Dependencies point INWARD
 - Infrastructure implements Domain interfaces
@@ -355,6 +371,7 @@ Scenario: Registration fails with existing email
 ## QUALITY CHECKLISTS
 
 ### ✅ Code Quality (All Languages)
+
 - [ ] All public APIs have documentation
 - [ ] No magic numbers (use named constants)
 - [ ] Functions do ONE thing
@@ -363,6 +380,7 @@ Scenario: Registration fails with existing email
 - [ ] Consistent formatting (automated)
 
 ### ✅ Testing Quality
+
 - [ ] Tests follow AAA pattern (Arrange, Act, Assert)
 - [ ] Test names describe behavior, not implementation
 - [ ] No test interdependence
@@ -371,6 +389,7 @@ Scenario: Registration fails with existing email
 - [ ] No flaky tests in CI
 
 ### ✅ Security Checklist
+
 - [ ] Input validation at boundaries
 - [ ] No secrets in code
 - [ ] SQL/NoSQL injection prevention
@@ -380,6 +399,7 @@ Scenario: Registration fails with existing email
 - [ ] Dependencies scanned for vulnerabilities
 
 ### ✅ Observability Checklist
+
 - [ ] Structured logging (JSON)
 - [ ] Request tracing (correlation IDs)
 - [ ] Metrics for SLIs (latency, errors, throughput)
@@ -394,6 +414,7 @@ Scenario: Registration fails with existing email
 ### The Result/Either Pattern (Recommended)
 
 **TypeScript:**
+
 ```typescript
 type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 
@@ -405,6 +426,7 @@ function divide(a: number, b: number): Result<number, 'DIVISION_BY_ZERO'> {
 ```
 
 **Java:**
+
 ```java
 public sealed interface Result<T, E> {
     record Success<T, E>(T value) implements Result<T, E> {}
@@ -416,6 +438,7 @@ public sealed interface Result<T, E> {
 ```
 
 **Go:**
+
 ```go
 // Go uses multiple return values - this IS the Result pattern
 func divide(a, b float64) (float64, error) {
@@ -462,37 +485,42 @@ flowchart TD
 ## TECHNOLOGY-SPECIFIC PRINCIPLES
 
 ### TypeScript: Type Safety First
+
 - Enable `strict: true` always
 - Prefer `unknown` over `any`
 - Use branded types for domain IDs
 - Leverage discriminated unions for state machines
 
 ### Java: Immutability by Default
+
 - Use `record` for DTOs and value objects
 - Prefer `final` fields
 - Use `Optional` for nullable returns (never for parameters)
 - Leverage sealed classes for domain modeling
 
 ### Go: Simplicity and Explicitness
+
 - Accept interfaces, return structs
 - Handle errors immediately
 - Use `context.Context` for cancellation/timeouts
 - Prefer composition over inheritance
 
 ### DevOps: Cattle Not Pets
+
 - Infrastructure as Code (no manual changes)
 - Immutable deployments
 - Rollback capability always
 - Observe everything
 
 ### Kafka: Event-Driven Thinking
+
 - Events are facts (immutable)
 - Design for replay
 - Schema evolution from day 1
 - Idempotent consumers always
 
-
 # S06: TDD-First Architecture Principles
+
 ## Polyglot Edition: TypeScript • Java • Go • DevOps • Kafka
 
 ---
@@ -1211,6 +1239,7 @@ async createOrder(request: CreateOrderRequest): Promise<Result<Order, OrderError
 ### ❌ The Fatal 10 Anti-Patterns
 
 **1. God Object / God Service**
+
 ```typescript
 // ❌ Bad: Does everything
 class UserService {
@@ -1230,6 +1259,7 @@ class PaymentService { charge() {} refund() {} }
 ```
 
 **2. Anemic Domain Model**
+
 ```typescript
 // ❌ Bad: Data bag with no behavior
 class Order {
@@ -1274,6 +1304,7 @@ class Order {
 ```
 
 **3. Testing Implementation Details**
+
 ```typescript
 // ❌ Bad: Tests private method
 it('should call validateEmail internally', () => {
@@ -1291,6 +1322,7 @@ it('should reject invalid email format', async () => {
 ```
 
 **4. Missing Error Handling**
+
 ```go
 // ❌ Bad: Ignoring errors
 user, _ := repo.FindByID(ctx, id)
@@ -1304,6 +1336,7 @@ if err != nil {
 ```
 
 **5. Temporal Coupling**
+
 ```typescript
 // ❌ Bad: Must call methods in specific order
 const processor = new OrderProcessor();
@@ -1317,6 +1350,7 @@ const result = await orderService.process(orderId);
 ```
 
 **6. Leaky Abstractions**
+
 ```java
 // ❌ Bad: Repository exposes JPA details
 public interface UserRepository {
@@ -1331,6 +1365,7 @@ public interface UserRepository {
 ```
 
 **7. Primitive Obsession**
+
 ```typescript
 // ❌ Bad: Primitives everywhere
 function createUser(email: string, name: string, age: number): User
@@ -1346,6 +1381,7 @@ type Name = string & { readonly brand: unique symbol };
 ```
 
 **8. Service Locator / Hidden Dependencies**
+
 ```java
 // ❌ Bad: Hidden dependency
 public class UserService {
@@ -1368,6 +1404,7 @@ public class UserService {
 ```
 
 **9. Boolean Parameters**
+
 ```typescript
 // ❌ Bad: What does `true` mean?
 sendEmail(user, true, false, true);
@@ -1381,6 +1418,7 @@ sendEmail(user, {
 ```
 
 **10. Shotgun Surgery**
+
 ```
 // ❌ Bad: Adding a field requires changes in 10+ files
 User.java
@@ -1541,6 +1579,7 @@ sequenceDiagram
 This documentation provides the TDD-first architecture principles needed to build production-grade systems. Follow the STUB → RED → GREEN → REFACTOR cycle, use executable specifications, and leverage the quality checklists to ensure robust, maintainable code.
 
 # S77: Idiomatic Polyglot Patterns
+
 ## TypeScript/JavaScript • Java/Spring Boot • Golang • DevOps • Apache Kafka
 
 ========================================
@@ -1548,8 +1587,10 @@ SECTION 1: TYPESCRIPT/JAVASCRIPT PATTERNS
 ========================================
 
 ## TS.1 Branded Types for Domain IDs
+
 - **Use when**: You need type-safe IDs that prevent mixing different entity types
 - **Context**: Create nominal types using intersection with unique symbol
+
 ```typescript
 // Define branded types
 type UserId = string & { readonly __brand: unique symbol };
@@ -1569,7 +1610,9 @@ const orderId = OrderId('order-456');
 getUser(userId);  // ✅ OK
 getUser(orderId); // ❌ Compile error - OrderId not assignable to UserId
 ```
+
 - **Avoid/Anti-pattern**: Using plain `string` for all IDs
+
 ```typescript
 // ❌ Bad - no type safety
 function getUser(id: string): Promise<User> { }
@@ -1577,7 +1620,9 @@ function getOrder(id: string): Promise<Order> { }
 
 getUser(orderId); // No error, runtime bug waiting to happen
 ```
+
 - **Testing**:
+
 ```typescript
 it('should reject invalid ID type at compile time', () => {
   const userId = UserId('u-1');
@@ -1590,8 +1635,10 @@ it('should reject invalid ID type at compile time', () => {
 ---
 
 ## TS.2 Discriminated Unions for State Machines
+
 - **Use when**: Modeling states with different associated data (loading, success, error)
 - **Context**: Use literal type discriminant for exhaustive checking
+
 ```typescript
 type AsyncState<T, E = Error> =
   | { status: 'idle' }
@@ -1618,7 +1665,9 @@ if (state.status === 'success') {
   console.log(state.data.name); // TypeScript knows data exists
 }
 ```
+
 - **Avoid/Anti-pattern**: Separate boolean flags
+
 ```typescript
 // ❌ Bad - impossible states representable
 type BadState<T> = {
@@ -1633,8 +1682,10 @@ type BadState<T> = {
 ---
 
 ## TS.3 Const Assertions for Literal Types
+
 - **Use when**: You need exact literal types, not widened types
 - **Context**: Use `as const` for objects and arrays to preserve literal types
+
 ```typescript
 // Without const assertion
 const config = {
@@ -1657,7 +1708,9 @@ const ActionTypes = {
 type ActionType = typeof ActionTypes[keyof typeof ActionTypes];
 // type: 'ADD_USER' | 'REMOVE_USER'
 ```
+
 - **Avoid/Anti-pattern**: Manual readonly annotations everywhere
+
 ```typescript
 // ❌ Verbose and error-prone
 const config: { readonly endpoint: '/api/users'; readonly method: 'GET' } = {
@@ -1669,8 +1722,10 @@ const config: { readonly endpoint: '/api/users'; readonly method: 'GET' } = {
 ---
 
 ## TS.4 Type Predicates for Custom Type Guards
+
 - **Use when**: Filtering or checking types at runtime with type narrowing
 - **Context**: Return `value is Type` for TypeScript to narrow types
+
 ```typescript
 interface User {
   type: 'user';
@@ -1704,7 +1759,9 @@ function getPermissions(person: Person): string[] {
   return [];
 }
 ```
+
 - **Avoid/Anti-pattern**: Returning boolean without type predicate
+
 ```typescript
 // ❌ Bad - no type narrowing
 function isAdmin(person: Person): boolean {
@@ -1717,8 +1774,10 @@ const admins = people.filter(isAdmin); // Still typed as Person[], not Admin[]
 ---
 
 ## TS.5 Generics with Constraints
+
 - **Use when**: Writing reusable functions/classes that work with multiple types
 - **Context**: Use `extends` to constrain generic types
+
 ```typescript
 // Constrained generic
 function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
@@ -1748,7 +1807,9 @@ class Repository<T extends { id: string }> {
   }
 }
 ```
+
 - **Avoid/Anti-pattern**: Using `any` instead of generics
+
 ```typescript
 // ❌ Bad - loses type safety
 function getProperty(obj: any, key: string): any {
@@ -1759,8 +1820,10 @@ function getProperty(obj: any, key: string): any {
 ---
 
 ## TS.6 Template Literal Types
+
 - **Use when**: Creating string types from combinations of other types
 - **Context**: Use template literals for type-safe string patterns
+
 ```typescript
 type HTTPMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 type APIVersion = 'v1' | 'v2';
@@ -1794,8 +1857,10 @@ const handlers: EventHandler<'click' | 'hover'> = {
 ---
 
 ## TS.7 Zod Runtime Validation with Type Inference
+
 - **Use when**: Validating external data (API responses, form inputs) with type safety
 - **Context**: Define schema once, get runtime validation AND TypeScript types
+
 ```typescript
 import { z } from 'zod';
 
@@ -1838,7 +1903,9 @@ async function fetchUser(id: string): Promise<User> {
   return UserSchema.parse(data); // Validated and typed
 }
 ```
+
 - **Avoid/Anti-pattern**: Type assertions without validation
+
 ```typescript
 // ❌ Bad - trusting external data
 async function fetchUser(id: string): Promise<User> {
@@ -1850,8 +1917,10 @@ async function fetchUser(id: string): Promise<User> {
 ---
 
 ## TS.8 Async/Await Error Handling Patterns
+
 - **Use when**: Handling async operations with proper error management
 - **Context**: Wrap in try/catch or use Result pattern
+
 ```typescript
 // Pattern 1: Try-catch wrapper
 async function tryCatch<T>(
@@ -1907,7 +1976,9 @@ async function fetchAllUsers(ids: string[]): Promise<Map<string, User>> {
   return users;
 }
 ```
+
 - **Avoid/Anti-pattern**: Unhandled promise rejections
+
 ```typescript
 // ❌ Bad - unhandled rejection
 async function handleClick() {
@@ -1919,8 +1990,10 @@ async function handleClick() {
 ---
 
 ## TS.9 Custom Hooks with Proper TypeScript
+
 - **Use when**: Extracting reusable stateful logic in React
 - **Context**: Define return type explicitly for complex hooks
+
 ```typescript
 // Hook with proper types
 interface UseAsyncOptions<T> {
@@ -1994,8 +2067,10 @@ function UserProfile({ userId }: { userId: string }) {
 ---
 
 ## TS.10 Module Augmentation for Third-Party Types
+
 - **Use when**: Extending types from libraries without modifying source
 - **Context**: Use declaration merging to add properties
+
 ```typescript
 // Extend Express Request type
 declare global {
@@ -2043,8 +2118,10 @@ declare module 'axios' {
 ---
 
 ## TS.11 Mapped Types for Transformations
+
 - **Use when**: Creating new types by transforming existing ones
 - **Context**: Use mapped types with modifiers
+
 ```typescript
 // Make all properties optional
 type Partial<T> = { [K in keyof T]?: T[K] };
@@ -2089,8 +2166,10 @@ type FormState<T> = {
 ---
 
 ## TS.12 Infer Keyword in Conditional Types
+
 - **Use when**: Extracting types from generic types
 - **Context**: Use `infer` to capture type variables
+
 ```typescript
 // Extract return type of function
 type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
@@ -2132,8 +2211,10 @@ type EventHandler<K extends keyof EventMap> = (event: EventMap[K]) => void;
 ---
 
 ## TS.13 Function Overloads for API Design
+
 - **Use when**: Function has different return types based on input
 - **Context**: Define overload signatures before implementation
+
 ```typescript
 // Overloaded function
 function createElement(tag: 'input'): HTMLInputElement;
@@ -2181,8 +2262,10 @@ emitter.on('orderPlaced', (orderId, total) => { /* correctly typed */ });
 ---
 
 ## TS.14 Satisfies Operator for Type Checking
+
 - **Use when**: Validate type compatibility while preserving literal types
 - **Context**: Use `satisfies` instead of type annotation when you need both
+
 ```typescript
 // Without satisfies - loses literal types
 const routes: Record<string, string> = {
@@ -2239,8 +2322,10 @@ const theme = {
 ---
 
 ## TS.15 Testing Patterns with Vitest/Jest
+
 - **Use when**: Writing type-safe tests with modern tooling
 - **Context**: Use proper typing for mocks and assertions
+
 ```typescript
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 
@@ -2312,8 +2397,10 @@ SECTION 2: JAVA/SPRING BOOT PATTERNS
 ========================================
 
 ## J.1 Records for Immutable Data
+
 - **Use when**: Creating DTOs, value objects, or immutable data carriers
 - **Context**: Use records instead of classes with getters/setters
+
 ```java
 // ✅ Good: Record for DTO
 public record CreateUserRequest(
@@ -2349,7 +2436,9 @@ public record Money(BigDecimal amount, Currency currency) {
 // ✅ Good: Record for query results
 public record UserSummary(String id, String name, long orderCount) {}
 ```
+
 - **Avoid/Anti-pattern**: Mutable POJOs with setters
+
 ```java
 // ❌ Bad: Mutable, verbose
 public class CreateUserRequest {
@@ -2362,8 +2451,10 @@ public class CreateUserRequest {
 ---
 
 ## J.2 Sealed Classes for Domain Modeling
+
 - **Use when**: Modeling closed hierarchies with exhaustive pattern matching
 - **Context**: Use sealed classes with permits clause
+
 ```java
 // Domain events as sealed hierarchy
 public sealed interface OrderEvent permits 
@@ -2414,8 +2505,10 @@ public sealed interface Result<T> permits Result.Success, Result.Failure {
 ---
 
 ## J.3 Optional for Nullable Returns
+
 - **Use when**: Method might not return a value
 - **Context**: Use Optional for return types, NEVER for parameters or fields
+
 ```java
 public interface UserRepository {
     // ✅ Good: Optional for nullable return
@@ -2463,7 +2556,9 @@ public class UserService {
     }
 }
 ```
+
 - **Avoid/Anti-pattern**: Optional.get() without checking
+
 ```java
 // ❌ Bad - defeats the purpose
 Optional<User> userOpt = repository.findById(id);
@@ -2481,8 +2576,10 @@ User user = userOpt.orElseThrow(() -> new UserNotFoundException(id));
 ---
 
 ## J.4 Spring Dependency Injection Best Practices
+
 - **Use when**: Wiring Spring beans together
 - **Context**: Use constructor injection exclusively
+
 ```java
 // ✅ Good: Constructor injection (preferred)
 @Service
@@ -2533,7 +2630,9 @@ public class UserCommandService {
     private final UserWriter writer; // Only write operations
 }
 ```
+
 - **Avoid/Anti-pattern**: Field injection
+
 ```java
 // ❌ Bad: Field injection - hidden dependencies, untestable
 @Service
@@ -2552,8 +2651,10 @@ public class UserService {
 ---
 
 ## J.5 Spring Profiles and Configuration
+
 - **Use when**: Managing environment-specific configuration
 - **Context**: Use profiles for environment separation, @ConfigurationProperties for type safety
+
 ```java
 // Type-safe configuration
 @ConfigurationProperties(prefix = "app.database")
@@ -2622,8 +2723,10 @@ public PricingService defaultPricingService() {
 ---
 
 ## J.6 JPA Entity Best Practices
+
 - **Use when**: Mapping domain objects to database
 - **Context**: Proper equals/hashCode, lazy loading, bidirectional relationships
+
 ```java
 @Entity
 @Table(name = "users")
@@ -2691,7 +2794,9 @@ public class User {
     }
 }
 ```
+
 - **Avoid/Anti-pattern**: N+1 queries
+
 ```java
 // ❌ Bad: N+1 problem
 List<User> users = userRepository.findAll(); // 1 query
@@ -2711,8 +2816,10 @@ List<User> findByStatus(UserStatus status);
 ---
 
 ## J.7 Spring WebFlux Reactive Patterns
+
 - **Use when**: Building non-blocking, reactive web applications
 - **Context**: Use Mono for 0-1 results, Flux for 0-N results
+
 ```java
 @RestController
 @RequestMapping("/api/users")
@@ -2797,8 +2904,10 @@ public class UserService {
 ---
 
 ## J.8 Testing with JUnit 5 and Spring Boot Test
+
 - **Use when**: Testing Spring applications at various levels
 - **Context**: Use appropriate test slices for focused testing
+
 ```java
 // Unit test - no Spring context
 class UserServiceTest {
@@ -2914,8 +3023,10 @@ class UserControllerTest {
 ---
 
 ## J.9 Virtual Threads (Java 21+)
+
 - **Use when**: High-throughput I/O-bound applications
 - **Context**: Use virtual threads for blocking operations without platform thread exhaustion
+
 ```java
 // Enable virtual threads in Spring Boot 3.2+
 # application.yml
@@ -2992,8 +3103,10 @@ public class UserService {
 ---
 
 ## J.10 Streams API Best Practices
+
 - **Use when**: Processing collections declaratively
 - **Context**: Use streams for transformation, filtering, aggregation
+
 ```java
 public class StreamPatterns {
     
@@ -3066,7 +3179,9 @@ public class StreamPatterns {
     }
 }
 ```
+
 - **Avoid/Anti-pattern**: Side effects in streams
+
 ```java
 // ❌ Bad: Side effects
 List<User> activeUsers = new ArrayList<>();
@@ -3087,8 +3202,10 @@ SECTION 3: GOLANG PATTERNS
 ========================================
 
 ## G.1 Error Handling with Wrapping
+
 - **Use when**: Propagating errors with context
 - **Context**: Use fmt.Errorf with %w verb for error wrapping
+
 ```go
 import (
     "errors"
@@ -3145,7 +3262,9 @@ if errors.As(err, &validationErr) {
     return respondWithBadRequest(validationErr.Field, validationErr.Message)
 }
 ```
+
 - **Avoid/Anti-pattern**: Ignoring errors or using panic
+
 ```go
 // ❌ Bad: Ignoring error
 user, _ := userService.GetUser(ctx, id)
@@ -3163,8 +3282,10 @@ func GetUser(id string) *User {
 ---
 
 ## G.2 Context for Cancellation and Timeouts
+
 - **Use when**: Managing request lifecycle, cancellation, timeouts
 - **Context**: Pass context as first parameter, use WithTimeout/WithCancel
+
 ```go
 import (
     "context"
@@ -3237,7 +3358,9 @@ func RequestIDMiddleware(next http.Handler) http.Handler {
     })
 }
 ```
+
 - **Avoid/Anti-pattern**: Using context.Background() everywhere
+
 ```go
 // ❌ Bad: Ignoring passed context
 func (s *Service) DoWork(ctx context.Context) error {
@@ -3254,8 +3377,10 @@ func (s *Service) DoWork(ctx context.Context) error {
 ---
 
 ## G.3 Goroutines and Channels
+
 - **Use when**: Concurrent operations, fan-out/fan-in patterns
 - **Context**: Use channels for communication, sync primitives for shared state
+
 ```go
 // Worker pool pattern
 func ProcessItems(ctx context.Context, items []Item, workers int) ([]Result, error) {
@@ -3401,7 +3526,9 @@ func FetchAllData(ctx context.Context, userID string) (*UserData, error) {
     return &UserData{User: user, Orders: orders, Reviews: reviews}, nil
 }
 ```
+
 - **Avoid/Anti-pattern**: Goroutine leaks
+
 ```go
 // ❌ Bad: Goroutine leak - channel never read
 func bad() {
@@ -3424,8 +3551,10 @@ func good() {
 ---
 
 ## G.4 Interface Design
+
 - **Use when**: Defining contracts between components
 - **Context**: Accept interfaces, return concrete types; small interfaces
+
 ```go
 // Small, focused interfaces
 type Reader interface {
@@ -3507,7 +3636,9 @@ func NewClient(opts ...Option) *Client {
     return &Client{config: cfg}
 }
 ```
+
 - **Avoid/Anti-pattern**: Large interfaces, exporting interfaces unnecessarily
+
 ```go
 // ❌ Bad: Too large, hard to implement/mock
 type UserManager interface {
@@ -3526,8 +3657,10 @@ type UserManager interface {
 ---
 
 ## G.5 Table-Driven Tests
+
 - **Use when**: Testing functions with multiple input/output scenarios
 - **Context**: Use test tables with descriptive names
+
 ```go
 func TestCalculateDiscount(t *testing.T) {
     tests := []struct {
@@ -3645,8 +3778,10 @@ func TestUserService_CreateUser(t *testing.T) {
 ---
 
 ## G.6 HTTP Handler Patterns
+
 - **Use when**: Building HTTP APIs
 - **Context**: Use http.HandlerFunc, middleware chains, structured responses
+
 ```go
 // Handler with proper error handling
 type Handler struct {
@@ -3777,8 +3912,10 @@ SECTION 4: DEVOPS PATTERNS
 ========================================
 
 ## D.1 Terraform Module Design
+
 - **Use when**: Creating reusable infrastructure components
 - **Context**: Use modules with clear inputs/outputs, version constraints
+
 ```hcl
 # modules/aws-vpc/main.tf
 terraform {
@@ -3895,7 +4032,9 @@ module "vpc" {
   }
 }
 ```
+
 - **Avoid/Anti-pattern**: Hardcoded values, no validation
+
 ```hcl
 # ❌ Bad: Hardcoded values, no modularity
 resource "aws_vpc" "main" {
@@ -3909,8 +4048,10 @@ resource "aws_vpc" "main" {
 ---
 
 ## D.2 Docker Multi-Stage Builds
+
 - **Use when**: Building production container images
 - **Context**: Separate build and runtime stages, minimize image size
+
 ```dockerfile
 # syntax=docker/dockerfile:1.4
 
@@ -3984,7 +4125,9 @@ EXPOSE 3000
 
 CMD ["node", "server.js"]
 ```
+
 - **Avoid/Anti-pattern**: Single stage with dev dependencies
+
 ```dockerfile
 # ❌ Bad: Includes dev dependencies, large image
 FROM node:20
@@ -3997,8 +4140,10 @@ CMD ["npm", "start"]
 ---
 
 ## D.3 Kubernetes Deployment Best Practices
+
 - **Use when**: Deploying applications to Kubernetes
 - **Context**: Use resource limits, health checks, pod disruption budgets
+
 ```yaml
 # deployment.yaml
 apiVersion: apps/v1
@@ -4142,8 +4287,10 @@ spec:
 ---
 
 ## D.4 GitHub Actions CI/CD
+
 - **Use when**: Automating build, test, and deployment pipelines
 - **Context**: Use reusable workflows, matrix builds, caching
+
 ```yaml
 # .github/workflows/ci.yml
 name: CI
@@ -4287,8 +4434,10 @@ SECTION 5: APACHE KAFKA PATTERNS
 ========================================
 
 ## K.1 Idempotent Producer
+
 - **Use when**: Ensuring exactly-once delivery semantics
 - **Context**: Enable idempotence, configure retries and acks
+
 ```java
 // Idempotent producer configuration
 public class KafkaProducerConfig {
@@ -4350,8 +4499,10 @@ public class OrderEventProducer {
 ---
 
 ## K.2 Consumer Group with Manual Commit
+
 - **Use when**: Controlling offset commits for at-least-once processing
 - **Context**: Disable auto-commit, commit after processing
+
 ```java
 @Configuration
 public class KafkaConsumerConfig {
@@ -4459,8 +4610,10 @@ public class OrderEventConsumer {
 ---
 
 ## K.3 Kafka Streams with Windowing
+
 - **Use when**: Processing streaming data with time-based aggregations
 - **Context**: Use KStream/KTable, configure windowing
+
 ```java
 @Configuration
 @EnableKafkaStreams
@@ -4533,8 +4686,10 @@ public class KafkaStreamsConfig {
 ---
 
 ## K.4 Schema Registry with Avro
+
 - **Use when**: Schema evolution, type-safe serialization
 - **Context**: Use Avro schemas with Confluent Schema Registry
+
 ```avro
 // order_created.avsc
 {
@@ -4607,8 +4762,10 @@ public class AvroKafkaConfig {
 ---
 
 ## K.5 Testing Kafka with EmbeddedKafka
+
 - **Use when**: Integration testing Kafka producers/consumers
 - **Context**: Use EmbeddedKafka or Testcontainers
+
 ```java
 @SpringBootTest
 @EmbeddedKafka(
@@ -4713,6 +4870,7 @@ class OrderEventTestcontainersIT {
 ## QUALITY CHECKLISTS
 
 ### ✅ TypeScript Code Quality
+
 - [ ] strict mode enabled in tsconfig
 - [ ] No `any` types (use `unknown` for uncertain types)
 - [ ] Branded types for domain IDs
@@ -4721,6 +4879,7 @@ class OrderEventTestcontainersIT {
 - [ ] Proper error handling (no unhandled rejections)
 
 ### ✅ Java/Spring Boot Quality
+
 - [ ] Records for DTOs and value objects
 - [ ] Optional for nullable returns only
 - [ ] Constructor injection (no field injection)
@@ -4729,6 +4888,7 @@ class OrderEventTestcontainersIT {
 - [ ] Virtual threads for I/O-bound operations (Java 21+)
 
 ### ✅ Go Code Quality
+
 - [ ] Errors wrapped with context
 - [ ] Context propagated through call chain
 - [ ] Interfaces accepted, structs returned
@@ -4737,6 +4897,7 @@ class OrderEventTestcontainersIT {
 - [ ] golangci-lint clean
 
 ### ✅ Kafka Quality
+
 - [ ] Idempotent producers enabled
 - [ ] Manual offset commit after processing
 - [ ] Dead letter topics configured
@@ -4745,6 +4906,7 @@ class OrderEventTestcontainersIT {
 - [ ] Monitoring (consumer lag, partition distribution)
 
 ### ✅ DevOps Quality
+
 - [ ] Infrastructure as Code (Terraform/Pulumi)
 - [ ] Multi-stage Docker builds
 - [ ] Kubernetes resource limits and health checks
@@ -4771,8 +4933,8 @@ class OrderEventTestcontainersIT {
 | **Kafka Testing** | Testcontainers | EmbeddedKafka |
 | **Schema** | Avro + Schema Registry | Protobuf |
 
-
 # S77-EXTENDED: Comprehensive Idiomatic Patterns
+
 ## TypeScript • JavaScript • Java • Spring Boot • Golang • DevOps • Apache Kafka
 
 **Total Patterns: 600+**
@@ -4786,8 +4948,10 @@ SECTION TS: TYPESCRIPT PATTERNS (150+)
 ## TS.0 WORKSPACE AND PROJECT SETUP
 
 TS.0.1 Strict TypeScript Configuration
+
 - Use when: Starting any new TypeScript project
 - Context: Enable all strict checks for maximum type safety
+
 ```json
 // tsconfig.json
 {
@@ -4811,7 +4975,9 @@ TS.0.1 Strict TypeScript Configuration
   }
 }
 ```
+
 - Avoid/Anti-pattern: `"strict": false` or disabling checks piecemeal
+
 ```json
 // ❌ Bad: Loose configuration
 {
@@ -4823,8 +4989,10 @@ TS.0.1 Strict TypeScript Configuration
 ```
 
 TS.0.2 Path Aliases for Clean Imports
+
 - Use when: Project has deep nested directories
 - Context: Configure path aliases to avoid `../../../` imports
+
 ```json
 // tsconfig.json
 {
@@ -4839,13 +5007,16 @@ TS.0.2 Path Aliases for Clean Imports
   }
 }
 ```
+
 ```typescript
 // Usage
 import { UserService } from '@/services/user.service';
 import { Button } from '@components/ui/Button';
 import { formatDate } from '@utils/date';
 ```
+
 - Avoid/Anti-pattern: Relative path hell
+
 ```typescript
 // ❌ Bad: Unmaintainable imports
 import { UserService } from '../../../services/user.service';
@@ -4853,8 +5024,10 @@ import { Button } from '../../../../components/ui/Button';
 ```
 
 TS.0.3 ESLint + Prettier Integration
+
 - Use when: Enforcing code quality and consistency
 - Context: Configure ESLint for logic, Prettier for formatting
+
 ```javascript
 // eslint.config.js (flat config)
 import eslint from '@eslint/js';
@@ -4885,8 +5058,10 @@ export default tseslint.config(
 ```
 
 TS.0.4 Monorepo with Turborepo/Nx
+
 - Use when: Multiple related packages in one repository
 - Context: Configure workspace for shared dependencies and build caching
+
 ```json
 // turbo.json
 {
@@ -4911,8 +5086,10 @@ TS.0.4 Monorepo with Turborepo/Nx
 ```
 
 TS.0.5 Vitest Configuration
+
 - Use when: Setting up testing for TypeScript projects
 - Context: Configure Vitest with TypeScript support
+
 ```typescript
 // vitest.config.ts
 import { defineConfig } from 'vitest/config';
@@ -4949,8 +5126,10 @@ export default defineConfig({
 ## TS.1 CORE LANGUAGE IDIOMS
 
 TS.1.1 Branded Types for Type-Safe Identifiers
+
 - Use when: Preventing mixing of semantically different string/number IDs
 - Context: Use intersection with unique symbol for nominal typing
+
 ```typescript
 // Define branded types
 declare const __brand: unique symbol;
@@ -4985,7 +5164,9 @@ const orderId = OrderId('ord_456');
 getUser(userId);   // ✅ OK
 getUser(orderId);  // ❌ Compile error: OrderId not assignable to UserId
 ```
+
 - Avoid/Anti-pattern: Plain strings for all IDs
+
 ```typescript
 // ❌ Bad: No type safety
 function getUser(id: string): Promise<User> { }
@@ -4993,7 +5174,9 @@ function getOrder(id: string): Promise<Order> { }
 
 getUser(orderId); // No error, runtime bug
 ```
+
 - Testing:
+
 ```typescript
 describe('Branded Types', () => {
   it('should create valid UserId', () => {
@@ -5008,8 +5191,10 @@ describe('Branded Types', () => {
 ```
 
 TS.1.2 Discriminated Unions for State Machines
+
 - Use when: Modeling mutually exclusive states with different data
 - Context: Use literal type discriminant for exhaustive checking
+
 ```typescript
 // Define state machine with discriminated union
 type RequestState<T, E = Error> =
@@ -5051,7 +5236,9 @@ function succeed<T>(state: RequestState<T>, data: T): RequestState<T> {
   return { status: 'success', data, completedAt: new Date() };
 }
 ```
+
 - Avoid/Anti-pattern: Separate boolean flags
+
 ```typescript
 // ❌ Bad: Impossible states representable
 type BadState<T> = {
@@ -5066,8 +5253,10 @@ type BadState<T> = {
 ```
 
 TS.1.3 Const Assertions for Literal Types
+
 - Use when: Preserving literal types instead of widened types
 - Context: Use `as const` for readonly literals
+
 ```typescript
 // Without const assertion
 const httpMethods = ['GET', 'POST', 'PUT', 'DELETE'];
@@ -5106,8 +5295,10 @@ type Action =
 ```
 
 TS.1.4 Type Predicates for Custom Type Guards
+
 - Use when: Runtime type checking with TypeScript type narrowing
 - Context: Return `value is Type` for compiler to narrow types
+
 ```typescript
 interface User {
   type: 'user';
@@ -5160,7 +5351,9 @@ function getPermissions(person: Person): string[] {
   return []; // TypeScript knows this is User
 }
 ```
+
 - Avoid/Anti-pattern: Boolean return without type predicate
+
 ```typescript
 // ❌ Bad: No type narrowing
 function isAdmin(person: Person): boolean {
@@ -5171,8 +5364,10 @@ const admins = people.filter(isAdmin); // Still typed as Person[], not Admin[]
 ```
 
 TS.1.5 Generics with Constraints
+
 - Use when: Writing reusable code that works with multiple types
 - Context: Use `extends` to constrain type parameters
+
 ```typescript
 // Basic constraint
 function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
@@ -5238,8 +5433,10 @@ function createState<T = string>(initial: T): { value: T; set: (v: T) => void } 
 ```
 
 TS.1.6 Template Literal Types
+
 - Use when: Creating string types from combinations
 - Context: Use template literals for type-safe string patterns
+
 ```typescript
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 type ApiVersion = 'v1' | 'v2' | 'v3';
@@ -5298,8 +5495,10 @@ const url = buildUrl('/users/:userId/orders/:orderId', {
 ```
 
 TS.1.7 Mapped Types for Transformations
+
 - Use when: Creating new types by transforming existing ones
 - Context: Use mapped types with modifiers
+
 ```typescript
 // Built-in utility types (for reference)
 type Partial<T> = { [K in keyof T]?: T[K] };
@@ -5358,8 +5557,10 @@ type StringKeys = KeysOfType<User, string | undefined>;
 ```
 
 TS.1.8 Conditional Types with Infer
+
 - Use when: Extracting types from generic types
 - Context: Use `infer` to capture type variables in conditional types
+
 ```typescript
 // Extract return type
 type ReturnType<T> = T extends (...args: any[]) => infer R ? R : never;
@@ -5410,8 +5611,10 @@ type Unpacked = UnpackPromise<Nested>; // string[]
 ```
 
 TS.1.9 Function Overloads
+
 - Use when: Function has different return types based on input
 - Context: Define overload signatures before implementation
+
 ```typescript
 // Overloaded function
 function createElement(tag: 'input'): HTMLInputElement;
@@ -5479,8 +5682,10 @@ emitter.on('orderPlaced', (orderId, total) => {
 ```
 
 TS.1.10 Satisfies Operator
+
 - Use when: Validating type compatibility while preserving literal types
 - Context: Use `satisfies` when you need both validation AND inference
+
 ```typescript
 // Problem: Type annotation loses literal types
 const routes1: Record<string, string> = {
@@ -5561,8 +5766,10 @@ const apiRoutes = {
 ## TS.2 ERROR HANDLING PATTERNS
 
 TS.2.1 Result Type Pattern
+
 - Use when: Representing operations that can fail without exceptions
 - Context: Create a discriminated union for success/failure
+
 ```typescript
 // Result type definition
 type Result<T, E = Error> =
@@ -5659,7 +5866,9 @@ if (result.ok) {
   }
 }
 ```
+
 - Avoid/Anti-pattern: Throwing exceptions for expected failures
+
 ```typescript
 // ❌ Bad: Using exceptions for control flow
 async function createUser(data: CreateUserDTO): Promise<User> {
@@ -5671,8 +5880,10 @@ async function createUser(data: CreateUserDTO): Promise<User> {
 ```
 
 TS.2.2 Zod Schema Validation
+
 - Use when: Validating external data at runtime with type inference
 - Context: Define schema once, get validation AND TypeScript types
+
 ```typescript
 import { z } from 'zod';
 
@@ -5747,8 +5958,10 @@ const UserResponseSchema = CreateUserSchema.omit({ password: true }).extend({
 ```
 
 TS.2.3 Try-Catch Wrapper for Async
+
 - Use when: Converting try/catch to tuple result pattern
 - Context: Create utility for consistent async error handling
+
 ```typescript
 // Tuple-based error handling
 type AsyncResult<T> = Promise<[T, null] | [null, Error]>;
@@ -5813,8 +6026,10 @@ async function tryCatchTyped<T, E>(
 ```
 
 TS.2.4 Custom Error Classes
+
 - Use when: Creating domain-specific errors with structured data
 - Context: Extend Error class with additional properties
+
 ```typescript
 // Base application error
 abstract class AppError extends Error {
@@ -5931,8 +6146,10 @@ async function getUser(id: string): Promise<User> {
 ```
 
 TS.2.5 neverthrow Library Pattern
+
 - Use when: Want a full-featured Result type with railway-oriented programming
 - Context: Use neverthrow for composable error handling
+
 ```typescript
 import { Result, ok, err, ResultAsync } from 'neverthrow';
 
@@ -6018,8 +6235,10 @@ result.match(
 ## TS.3 ASYNC PATTERNS
 
 TS.3.1 Promise.allSettled for Partial Failures
+
 - Use when: Running multiple operations where some can fail independently
 - Context: Use allSettled to get results of all promises regardless of failures
+
 ```typescript
 interface User {
   id: string;
@@ -6094,8 +6313,10 @@ function partitionSettled<T>(
 ```
 
 TS.3.2 Retry with Exponential Backoff
+
 - Use when: Handling transient failures in network requests
 - Context: Implement retry logic with configurable backoff
+
 ```typescript
 interface RetryOptions {
   maxAttempts: number;
@@ -6197,8 +6418,10 @@ class UserService {
 ```
 
 TS.3.3 Debounce and Throttle
+
 - Use when: Limiting rate of function execution
 - Context: Create type-safe debounce/throttle utilities
+
 ```typescript
 type AnyFunction = (...args: any[]) => any;
 
@@ -6310,8 +6533,10 @@ function SearchInput() {
 ```
 
 TS.3.4 Async Queue with Concurrency Control
+
 - Use when: Processing many async tasks with limited parallelism
 - Context: Implement a queue that limits concurrent operations
+
 ```typescript
 interface QueueOptions {
   concurrency: number;
@@ -6410,8 +6635,10 @@ const users = await Promise.all(
 ```
 
 TS.3.5 Cancellable Promises with AbortController
+
 - Use when: Need to cancel in-flight async operations
 - Context: Use AbortController for cancellation
+
 ```typescript
 function makeCancellable<T>(
   promise: Promise<T>,
@@ -6529,8 +6756,10 @@ function UserProfile({ userId }: { userId: string }) {
 ## TS.4 REACT PATTERNS
 
 TS.4.1 Compound Components with Context
+
 - Use when: Building components that work together as a cohesive unit
 - Context: Use Context to share state between related components
+
 ```typescript
 import { createContext, useContext, useState, ReactNode } from 'react';
 
@@ -6669,8 +6898,10 @@ function FAQ() {
 ```
 
 TS.4.2 Custom Hooks with Proper TypeScript
+
 - Use when: Extracting reusable stateful logic
 - Context: Define explicit return types and proper generics
+
 ```typescript
 import { useState, useEffect, useCallback, useRef } from 'react';
 
@@ -6857,8 +7088,10 @@ function UserSearch() {
 ```
 
 TS.4.3 TanStack Query (React Query) Patterns
+
 - Use when: Managing server state in React applications
 - Context: Use useQuery/useMutation with proper typing
+
 ```typescript
 import {
   useQuery,
@@ -7037,8 +7270,10 @@ SECTION J: JAVA/SPRING BOOT PATTERNS (150+)
 ## J.1 CORE JAVA IDIOMS
 
 J.1.1 Records for Immutable Data Transfer
+
 - Use when: Creating DTOs, value objects, or any immutable data carrier
 - Context: Use records instead of classes with manual getters/equals/hashCode
+
 ```java
 // ✅ Good: Record for DTO
 public record CreateUserRequest(
@@ -7114,7 +7349,9 @@ public record UserSummary(
     LocalDateTime lastOrderDate
 ) {}
 ```
+
 - Avoid/Anti-pattern: Mutable POJOs with setters
+
 ```java
 // ❌ Bad: Mutable, verbose, error-prone
 public class CreateUserRequest {
@@ -7129,8 +7366,10 @@ public class CreateUserRequest {
 ```
 
 J.1.2 Sealed Classes for Domain Modeling
+
 - Use when: Modeling closed hierarchies with exhaustive pattern matching
 - Context: Use sealed classes with permits clause for controlled inheritance
+
 ```java
 // Domain events as sealed hierarchy
 public sealed interface OrderEvent permits 
@@ -7229,8 +7468,10 @@ public sealed interface Result<T> permits Result.Success, Result.Failure {
 ```
 
 J.1.3 Optional for Nullable Returns
+
 - Use when: Method might not return a value
 - Context: Use Optional for return types, NEVER for parameters or fields
+
 ```java
 public interface UserRepository extends JpaRepository<User, String> {
     
@@ -7299,7 +7540,9 @@ public class UserService {
     }
 }
 ```
+
 - Avoid/Anti-pattern: Optional.get() without checking
+
 ```java
 // ❌ Bad - defeats the purpose
 Optional<User> userOpt = repository.findById(id);
@@ -7315,8 +7558,10 @@ User user = userOpt.orElseThrow(() -> new UserNotFoundException(id));
 ```
 
 J.1.4 Streams API Best Practices
+
 - Use when: Processing collections declaratively
 - Context: Use streams for transformation, filtering, aggregation
+
 ```java
 public class StreamPatterns {
     
@@ -7405,7 +7650,9 @@ public class StreamPatterns {
     }
 }
 ```
+
 - Avoid/Anti-pattern: Side effects in streams
+
 ```java
 // ❌ Bad: Side effects
 List<User> activeUsers = new ArrayList<>();
@@ -7420,8 +7667,10 @@ List<User> activeUsers = users.stream()
 ```
 
 J.1.5 Virtual Threads (Java 21+)
+
 - Use when: High-throughput I/O-bound applications
 - Context: Use virtual threads for blocking operations
+
 ```java
 // Enable virtual threads in Spring Boot 3.2+
 // application.yml:
@@ -7518,8 +7767,10 @@ SECTION G: GOLANG PATTERNS (150+)
 ## G.1 ERROR HANDLING
 
 G.1.1 Error Wrapping with Context
+
 - Use when: Propagating errors with additional context
 - Context: Use fmt.Errorf with %w verb or errors.Join
+
 ```go
 import (
     "errors"
@@ -7615,7 +7866,9 @@ func validateUser(u *User) error {
     return nil
 }
 ```
+
 - Avoid/Anti-pattern: Ignoring errors or using panic
+
 ```go
 // ❌ Bad: Ignoring error
 user, _ := userService.GetUser(ctx, id)
@@ -7636,8 +7889,10 @@ if err != nil {
 ```
 
 G.1.2 Table-Driven Tests
+
 - Use when: Testing functions with multiple input/output scenarios
 - Context: Use test tables with descriptive names and subtests
+
 ```go
 func TestCalculateDiscount(t *testing.T) {
     tests := []struct {
@@ -7769,8 +8024,10 @@ func TestUserService_CreateUser(t *testing.T) {
 ```
 
 G.1.3 Interface Design - Accept Interfaces, Return Structs
+
 - Use when: Defining contracts between components
 - Context: Keep interfaces small and focused
+
 ```go
 // Small, focused interfaces
 type Reader interface {
@@ -7890,8 +8147,10 @@ SECTION K: APACHE KAFKA PATTERNS (100+)
 ## K.1 PRODUCER PATTERNS
 
 K.1.1 Idempotent Producer Configuration
+
 - Use when: Ensuring exactly-once delivery semantics
 - Context: Enable idempotence with proper retries and acks
+
 ```java
 @Configuration
 public class KafkaProducerConfig {
@@ -7999,7 +8258,9 @@ public class OrderEventProducer {
     }
 }
 ```
+
 - Avoid/Anti-pattern: Fire and forget without error handling
+
 ```java
 // ❌ Bad: No error handling, no confirmation
 kafkaTemplate.send("orders.created.v1", event.orderId(), event);
@@ -8007,8 +8268,10 @@ kafkaTemplate.send("orders.created.v1", event.orderId(), event);
 ```
 
 K.1.2 Consumer with Manual Offset Commit
+
 - Use when: Controlling offset commits for at-least-once processing
 - Context: Disable auto-commit, commit after successful processing
+
 ```java
 @Configuration
 public class KafkaConsumerConfig {
@@ -8159,8 +8422,10 @@ SECTION D: DEVOPS PATTERNS (100+)
 ## D.1 TERRAFORM PATTERNS
 
 D.1.1 Module Design with Inputs/Outputs
+
 - Use when: Creating reusable infrastructure components
 - Context: Define modules with clear interfaces and documentation
+
 ```hcl
 # modules/aws-eks-cluster/variables.tf
 variable "cluster_name" {
@@ -8346,6 +8611,7 @@ output "oidc_provider_arn" {
 ## QUALITY CHECKLISTS
 
 ### ✅ TypeScript Code Quality
+
 - [ ] `strict: true` enabled in tsconfig
 - [ ] No `any` types (use `unknown` for uncertain types)
 - [ ] Branded types for domain IDs
@@ -8355,6 +8621,7 @@ output "oidc_provider_arn" {
 - [ ] ESLint + Prettier configured and passing
 
 ### ✅ Java/Spring Boot Quality
+
 - [ ] Records for DTOs and value objects
 - [ ] Optional for nullable returns only (never params/fields)
 - [ ] Constructor injection (no field injection)
@@ -8364,6 +8631,7 @@ output "oidc_provider_arn" {
 - [ ] TestContainers for integration tests
 
 ### ✅ Go Code Quality
+
 - [ ] Errors wrapped with context (`fmt.Errorf %w`)
 - [ ] Context propagated through call chain
 - [ ] Interfaces accepted, structs returned
@@ -8373,6 +8641,7 @@ output "oidc_provider_arn" {
 - [ ] `go vet` passing
 
 ### ✅ Kafka Quality
+
 - [ ] Idempotent producers enabled
 - [ ] Manual offset commit after processing
 - [ ] Dead letter topics configured
@@ -8382,6 +8651,7 @@ output "oidc_provider_arn" {
 - [ ] Idempotent consumers (deduplication)
 
 ### ✅ DevOps Quality
+
 - [ ] Infrastructure as Code (Terraform/Pulumi)
 - [ ] Multi-stage Docker builds
 - [ ] Kubernetes resource limits and health checks
@@ -8409,5 +8679,3 @@ output "oidc_provider_arn" {
 | **Kafka Testing** | Testcontainers | EmbeddedKafka |
 | **Kafka Schema** | Avro + Schema Registry | Protobuf |
 | **Observability** | OpenTelemetry + Grafana | Datadog |
-
-

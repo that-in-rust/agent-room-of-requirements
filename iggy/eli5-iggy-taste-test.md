@@ -104,6 +104,7 @@ What happens:
 ```
 
 Output:
+
 ```
 INFO | Creating stream with name sample-stream...
 INFO | Creating topic sample-topic in stream sample-stream
@@ -135,6 +136,7 @@ What happens:
 ```
 
 Output:
+
 ```
 INFO | Handling message at offset: 0 with payload: message-1...
 INFO | Handling message at offset: 1 with payload: message-2...
@@ -178,6 +180,7 @@ With MongoDB Connector (what we're building):
 ```
 
 Just a TOML config file. No glue code. The connector runtime handles:
+
 - Batching
 - Retries
 - Offset tracking

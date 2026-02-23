@@ -210,6 +210,7 @@ static async Task<IResult> DeleteUserByIdAsync(
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN GET /api/users/{id} called with valid ID
 THEN 200 OK SHALL be returned
@@ -411,6 +412,7 @@ public static class SpecificationEvaluator<T> where T : class
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN GetByIdAsync called with valid ID
 THEN entity SHALL be retrieved from database
@@ -594,6 +596,7 @@ public class UserServiceCached : IUserServiceCached
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN GetUserByIdAsync called first time
 THEN user SHALL be fetched from database
@@ -773,6 +776,7 @@ public record UserDto(
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN CreateUserDto instantiated without Email
 THEN compiler error SHALL occur
@@ -893,6 +897,7 @@ export class UserProfileModule {}
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN UserProfileCardComponent initialized
 THEN loadUserProfileData SHALL be called
@@ -1041,6 +1046,7 @@ export class ShoppingCartSummaryComponent {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN addItemToCartUpdate called with new item
 THEN cartItems signal SHALL contain item
@@ -1174,6 +1180,7 @@ export class UserAuthenticationServiceHttp {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN getUserListCachedObservable called twice
 THEN HTTP request SHALL only occur once
@@ -1280,6 +1287,7 @@ export class ProductDetailViewComponent {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN productState is 'loading'
 THEN loading template SHALL be displayed
@@ -1404,6 +1412,7 @@ orderService.createOrderWithValidation(userId, productId); // ✅ Correct
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN createUserIdValidated called with negative number
 THEN error SHALL be thrown
@@ -1539,6 +1548,7 @@ export class NotificationWebSocketService {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN SignalR hub sends notification
 THEN Angular service SHALL receive message
@@ -1852,6 +1862,7 @@ test.describe('User Management Flow', () => {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN user creates new user via UI
 THEN POST /api/users SHALL be called
@@ -2018,6 +2029,7 @@ this.http.get('/api/users')
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN component destroyed with active subscription
 THEN subscription SHALL be unsubscribed
@@ -2143,12 +2155,14 @@ export class UserListComponent {
 ```
 
 **Performance Benchmark**:
+
 - Without virtual scroll: 10,000 DOM nodes, ~3s render
 - With virtual scroll: ~20 DOM nodes, ~50ms render
 - Without trackBy: All items re-rendered on any change
 - With trackBy: Only changed items re-rendered
 
 **TDD Specification**:
+
 ```markdown
 WHEN 10,000 users displayed with virtual scrolling
 THEN only visible items SHALL be rendered in DOM
@@ -2192,28 +2206,33 @@ graph TD
 ```
 
 ## Allowed Patterns (Backend)
+
 - Controllers → Services: ✅
 - Services → Repositories: ✅
 - Repositories → EF Core: ✅
 - Services → Services: ✅ (with interface)
 
 ## Forbidden Patterns (Backend)
+
 - Controllers → Repositories (skip layer)
 - Controllers → EF Core directly
 - Circular: ServiceA → ServiceB → ServiceA
 
 ## Allowed Patterns (Frontend)
+
 - Pages → Features: ✅
 - Features → UI Components: ✅
 - Features → Services: ✅
 - Services → HttpClient: ✅
 
 ## Forbidden Patterns (Frontend)
+
 - Pages → Primitives (skip layers)
 - UI Components → Services (wrong layer)
 - Circular: ComponentA → ComponentB → ComponentA
 
 ## TDD Specification
+
 ```markdown
 WHEN controller imports EF Core directly
 THEN build SHALL fail
@@ -2223,6 +2242,7 @@ WHEN analyzing codebase with Parseltongue
 THEN forbidden dependencies SHALL be detected
 AND report SHALL list violations with suggested fixes
 ```
+
 ```
 
 ---

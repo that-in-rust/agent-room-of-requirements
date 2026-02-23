@@ -71,6 +71,7 @@ Each connector is compiled as a separate shared library (`cdylib`) and loaded at
 The Sink trait defines the contract for consuming messages from Iggy and writing to external systems:
 
 **Required Methods** (derived from all 5 implementations):
+
 | Method | Purpose | Called By |
 |--------|---------|-----------|
 | `new(config)` | Construct from TOML config | Runtime plugin loader |
@@ -79,6 +80,7 @@ The Sink trait defines the contract for consuming messages from Iggy and writing
 | `close()` | Cleanup connections/resources | Runtime shutdown |
 
 **Implementations** (from Parseltongue blast radius analysis):
+
 1. `StdoutSink` - 4 methods (minimum viable)
 2. `QuickwitSink` - 7 methods (+ `create_index`, `has_index`, `ingest`)
 3. `ElasticsearchSink` - 7 methods (+ `create_client`, `ensure_index_exists`, `bulk_index_documents`)
@@ -91,6 +93,7 @@ The Sink trait defines the contract for consuming messages from Iggy and writing
 **Blast Radius**: 5 entities at 2 hops (smaller footprint than Sink)
 
 **Required Methods**:
+
 | Method | Purpose | Called By |
 |--------|---------|-----------|
 | `new(config)` | Construct from TOML config | Runtime plugin loader |
@@ -99,6 +102,7 @@ The Sink trait defines the contract for consuming messages from Iggy and writing
 | `close()` | Cleanup connections/resources | Runtime shutdown |
 
 **Implementations**:
+
 1. `RandomSource` - 6 methods (minimum + `generate_messages`, `generate_random_text`)
 2. `ElasticsearchSource` - 24 methods (+ state management, auto-save, search)
 3. `PostgresSource` - 25 methods (+ CDC, polling, replication parsing)
@@ -124,6 +128,7 @@ The Sink trait defines the contract for consuming messages from Iggy and writing
 The simplest possible sink. Use as your starting template:
 
 **Entity Structure**:
+
 ```
 Structs:
   StdoutSink         - Main connector struct
@@ -142,6 +147,7 @@ Methods:
 ### 3.2 Pattern: Minimal Source (RandomSource - 11 entities)
 
 **Entity Structure**:
+
 ```
 Structs:
   RandomSource       - Main connector struct
@@ -170,12 +176,14 @@ QuickwitSink methods:      new, open, consume, close, (implicit client), create_
 ```
 
 **Shared Pattern**:
+
 1. `new()` - Parse config
 2. `open()` - Create HTTP client, ensure index/collection exists
 3. `consume()` - Bulk-index documents via HTTP API
 4. `close()` - Flush and disconnect
 
 **Best Practice**: When writing a search engine sink:
+
 - Create client connection in `open()`, not `new()`
 - Use bulk/batch APIs for ingestion (not per-document)
 - Handle index creation idempotently (check if exists first)
@@ -186,6 +194,7 @@ QuickwitSink methods:      new, open, consume, close, (implicit client), create_
 The most feature-rich pattern. Key additions over minimal:
 
 **Sink extras** (18 methods):
+
 - `connect()`, `get_pool()` - Connection pooling
 - `build_batch_insert_query()`, `bind_and_execute_batch()` - SQL batching
 - `execute_batch_insert_with_retry()`, `get_max_retries()`, `get_retry_delay()` - Retry logic
@@ -196,6 +205,7 @@ The most feature-rich pattern. Key additions over minimal:
 - 29 test functions - Comprehensive unit tests
 
 **Source extras** (25 methods):
+
 - `poll_tables()`, `poll_cdc()`, `poll_cdc_builtin()` - Multiple polling strategies
 - `setup_cdc()` - CDC initialization
 - `parse_insert_message()`, `parse_update_message()`, `parse_delete_message()` - Replication parsing
@@ -206,6 +216,7 @@ The most feature-rich pattern. Key additions over minimal:
 - 23 test functions
 
 **Best Practice**: When writing a database connector:
+
 - Always implement connection pooling
 - Support multiple payload formats via `PayloadFormat` enum
 - Implement retry with configurable max_retries and retry_delay
@@ -218,6 +229,7 @@ The most feature-rich pattern. Key additions over minimal:
 The most architecturally complex pattern, introducing the `Router` trait:
 
 **Unique Architecture**:
+
 ```
 Router trait (in iceberg_sink/src/router/mod.rs)
   StaticRouter  - Fixed table mapping from config
@@ -228,6 +240,7 @@ JsonArrowReader - Convert JSON to Arrow format (fill_buf, read, load_next)
 ```
 
 **Catalog & Storage Functions** (10 standalone functions):
+
 - `init_catalog()`, `get_rest_catalog()` - Catalog initialization
 - `init_props()`, `get_props_s3()` - Storage configuration
 - `write_data()` - Core write operation
@@ -235,6 +248,7 @@ JsonArrowReader - Convert JSON to Arrow format (fill_buf, read, load_next)
 - `get_partition_type_value()`, `primitive_type_to_literal()` - Type conversion
 
 **Best Practice**: When writing a data lake connector:
+
 - Consider implementing the `Router` trait for multi-table fan-out
 - Separate catalog/storage initialization from connector lifecycle
 - Use standalone functions for complex initialization logic
@@ -260,6 +274,7 @@ configs/
 ```
 
 **Best Practice**:
+
 - Config struct must be `Deserialize`-able from TOML
 - Name config files with `.toml` extension only (Issue #2507)
 - Support environment variable overrides for array and string fields (PR #2579)
@@ -267,6 +282,7 @@ configs/
 ### 4.2 Config Providers (136 entities in runtime/configs)
 
 Two provider implementations:
+
 1. **Local Provider** (`local_provider.rs`, 105 coupling) - Reads TOML files from directories
 2. **HTTP Provider** - Fetches from remote APIs (Issue #2388), with retry mechanism (Issue #2416)
 
@@ -321,6 +337,7 @@ Supporting Types:
 Each encoder/decoder follows the same pattern: struct definition + 2 methods (`new`, `encode`/`decode`).
 
 **Best Practice**: When adding a new codec (e.g., Avro, BSON):
+
 1. Create `sdk/src/encoders/{format}.rs` and `sdk/src/decoders/{format}.rs`
 2. Implement `StreamEncoder` / `StreamDecoder` traits
 3. Add variant to `Payload` enum in `sdk/src/lib.rs`
@@ -339,6 +356,7 @@ Transforms modify messages between decoding and consumption. Available transform
 | `FlatbufferConvert` | `flatbuffer_convert.rs` | `new`, `transform`, `fmt` + 3 impl blocks |
 
 **Best Practice**: When adding a new transform:
+
 1. Create `sdk/src/transforms/{name}.rs`
 2. Implement `Transform` trait
 3. Add config struct for TOML deserialization
@@ -351,12 +369,14 @@ Transforms modify messages between decoding and consumption. Available transform
 ### 6.1 Unit Tests Within Connector
 
 From Parseltongue analysis, the database connectors embed unit tests directly:
+
 - `postgres_sink`: 29 test functions (prefix: `given_*_should_*`)
 - `postgres_source`: 23 test functions (same naming pattern)
 
 **Naming Convention**: `given_{precondition}_should_{expected_behavior}`
 
 Examples:
+
 ```
 given_all_options_enabled_should_build_full_insert_query
 given_batch_of_3_rows_should_build_multi_row_insert_query
@@ -377,6 +397,7 @@ core/integration/
 ```
 
 **Best Practice** (from PR #2667):
+
 - Use `iggy_harness` proc macro for integration test setup
 - Follow the pattern established in PR #2579 (Postgres e2e tests)
 - Use Docker containers for external dependencies (Quickwit, Elasticsearch, PostgreSQL)
@@ -404,6 +425,7 @@ core/integration/
 ### 7.1 Metrics
 
 The runtime exposes Prometheus metrics at `/metrics`:
+
 - **Runtime Gauges**: sources/sinks total count, running count
 - **Per-Connector Counters**: messages produced/sent (source), consumed/processed (sink), errors
 - **System Metrics**: CPU/memory usage, uptime
@@ -411,6 +433,7 @@ The runtime exposes Prometheus metrics at `/metrics`:
 ### 7.2 Stats
 
 JSON stats endpoint at `/stats` includes:
+
 - Per-connector version info (from `version()` FFI export)
 - Connector status (from `ConnectorStatus` enum in manager)
 
@@ -499,16 +522,19 @@ From Parseltongue (64 entities in `runtime/api/`):
 From Parseltongue analysis, the Java Flink connector follows Flink's standard Source/Sink API:
 
 **Sink side**:
+
 - `IggySink` -> `IggySinkBuilder` -> `IggySinkWriter` -> `IggyCommittable`
 - Builder pattern for configuration
 - Two-phase commit via `IggyCommittable`
 
 **Source side**:
+
 - `IggySource` -> `IggySourceBuilder` -> `IggySourceReader`
 - Split-based: `IggySourceSplit` -> `IggySourceSplitEnumerator`
 - State serialization: `IggySourceEnumeratorState` + `IggySourceEnumeratorStateSerializer`
 
 **Serialization**:
+
 - `SerializationSchema` / `DeserializationSchema` (traits/interfaces)
 - `JsonSerializationSchema`, `JsonDeserializationSchema`, `StringDeserializationSchema`
 
@@ -695,6 +721,7 @@ pub enum PayloadFormat {
 ```
 
 Maps to SDK `Schema`:
+
 - `PayloadFormat::Json` → `Schema::Json`
 - `PayloadFormat::Bson` → `Schema::Raw`
 - `PayloadFormat::String` → `Schema::Text`

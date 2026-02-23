@@ -3,13 +3,14 @@
 **Document Version:** 1.0
 **Date:** February 2, 2026
 **Subject:** Comprehensive evaluation of database alternatives for Parseltongue v1.4.3
-**Repository:** https://github.com/that-in-rust/parseltongue-dependency-graph-generator
+**Repository:** <https://github.com/that-in-rust/parseltongue-dependency-graph-generator>
 
 ---
 
 ## Executive Summary
 
 ### TL;DR
+
 Parseltongue currently uses RocksDB + CozoDB for code indexing. This research evaluates 10+ graph database alternatives ranging from pure graph databases (IndraDB, Neo4j) to multi-model solutions (SurrealDB, CozoDB, Kuzu). **Top recommendation: Keep CozoDB** (already in use) with potential migration to **IndraDB** or **Kuzu** for pure graph workloads.
 
 ### Top 5 Recommendations
@@ -36,6 +37,7 @@ graph TD
 ```
 
 ### Key Findings
+
 - **Parseltongue already uses CozoDB** for semantic relationships (discovered via WebFetch)
 - RocksDB is appropriate for KV storage but suboptimal for graph traversals
 - Rust ecosystem has 5+ mature embedded graph databases
@@ -49,6 +51,7 @@ graph TD
 ### 1.1 Current State: Parseltongue Architecture
 
 **Discovered Architecture (v1.4.3):**
+
 ```
 ┌─────────────────────────────────────────┐
 │   Parseltongue: Parse → Store → Serve   │
@@ -60,18 +63,21 @@ graph TD
 ```
 
 **Data Model:**
+
 - Entity keys: `language:type:name:filepath:line_range`
 - Example: `rust:fn:authenticate:src/auth.rs:10-50`
 - Graph captures: function calls, dependencies, type relationships
 - File watcher: <100ms change detection
 
 **Current Database Usage:**
+
 - **RocksDB**: Embedded key-value store for entity storage
 - **CozoDB**: Graph database for semantic relationships (already integrated!)
 
 ### 1.2 RocksDB: What It Does Well
 
 **Strengths:**
+
 1. **Mature and battle-tested** - Used by Facebook, LinkedIn, Meta
 2. **Excellent write throughput** - Optimized for LSM-tree writes
 3. **Rich ecosystem** - Extensive tuning options, RocksJava, etc.
@@ -79,6 +85,7 @@ graph TD
 5. **C++ with Rust bindings** - Good FFI support
 
 **Use Cases Where RocksDB Excels:**
+
 - Key-value lookups by primary key
 - Sequential scans with prefix iteration
 - Time-series data with sorted keys
@@ -100,6 +107,7 @@ According to research from Feldera:
 **3. Graph-Specific Problems**
 
 From Hacker News discussions:
+
 - No native support for multi-hop traversals
 - Requires application-level graph logic
 - N+1 query problem for relationship traversals
@@ -123,6 +131,7 @@ A graph storage system using RocksDB Java reported:
 #### Better Queries
 
 **Current (RocksDB-based approach):**
+
 ```rust
 // Pseudo-code for finding transitive dependencies
 fn find_dependencies(entity: &str, db: &RocksDB) -> Vec<String> {
@@ -144,6 +153,7 @@ fn find_dependencies(entity: &str, db: &RocksDB) -> Vec<String> {
 ```
 
 **With Graph Database (Cypher example):**
+
 ```cypher
 // Single query for transitive dependencies
 MATCH (start:Function {name: $name})-[:CALLS*]->(dep:Function)
@@ -153,6 +163,7 @@ RETURN dep.name, dep.filepath
 ```
 
 **With Datalog (CozoDB - already available!):**
+
 ```datalog
 # Recursive transitive closure
 transitive_deps[dep] := direct_deps[start, dep], start = $entity
@@ -174,6 +185,7 @@ Based on research findings:
 | Blast radius | Recursive app logic | Single traversal query | 10-50x |
 
 **Real-world benchmarks:**
+
 - CozoDB: "Two-hop graph traversal completes in less than 1ms for a graph with 1.6M vertices and 31M edges"
 - GraphIn framework: "Up to 9.3 million updates/sec and 400x speedup over naive static graph recomputation"
 - TigerGraph: "2x to more than 8000x faster at graph traversal compared to Neo4j, Amazon Neptune, JanusGraph, ArangoDB"
@@ -181,12 +193,14 @@ Based on research findings:
 #### Easier Maintenance
 
 **Simplified Codebase:**
+
 - Declarative queries replace imperative graph traversal code
 - Less manual state management (visited sets, queues)
 - Built-in algorithms (PageRank, centrality, community detection)
 - Query optimization handled by database
 
 **Better Incrementality:**
+
 - Graph databases optimize incremental updates
 - Glean (code indexing): "2-3% overhead for incremental Python indexing"
 - GraphRAG: "Append command minimizes community recomputes"
@@ -200,18 +214,21 @@ Based on research findings:
 **Definition:** Databases designed from the ground up for graph workloads, using adjacency list storage or similar structures optimized for traversals.
 
 **Characteristics:**
+
 - Index-free adjacency (nodes directly link to neighbors)
 - Optimized for traversal operations
 - Query languages: Cypher, Gremlin, GraphQL, Datalog
 - Trade-off: May sacrifice KV performance for graph performance
 
 **Pros for Parseltongue:**
+
 - Maximum traversal performance
 - Expressive query languages
 - Built-in graph algorithms
 - Natural data model fit
 
 **Cons for Parseltongue:**
+
 - Migration effort from RocksDB
 - Learning curve for query languages
 - Potential storage overhead vs. packed KV format
@@ -223,18 +240,21 @@ Based on research findings:
 **Definition:** KV stores with graph capabilities layered on top, or lightweight graph libraries using KV backends.
 
 **Characteristics:**
+
 - Familiar KV interface retained
 - Graph operations as secondary feature
 - Often use existing KV store (RocksDB, Sled, LMDB) as foundation
 - Performance: Good for KV, acceptable for graphs
 
 **When They Make Sense:**
+
 - Gradual migration from pure KV
 - Workloads with mixed KV + graph queries
 - Want to preserve existing KV data/code
 - Minimal binary size impact
 
 **Examples:**
+
 - Oxigraph (RDF + RocksDB)
 - GraphLite (Graph + Sled)
 - AtomSpace-RocksDB
@@ -244,18 +264,21 @@ Based on research findings:
 **Definition:** Databases supporting multiple data models (document, graph, KV, time-series) with unified query language.
 
 **Flexibility Benefits:**
+
 - Single database for all data types
 - Unified query language across models
 - Simplified architecture (fewer dependencies)
 - Cross-model queries (e.g., graph + full-text search)
 
 **Trade-offs:**
+
 - May not excel at any single model
 - More complex internals
 - Larger binary size
 - Query language learning curve
 
 **Examples:**
+
 - SurrealDB (Document + Graph + KV)
 - CozoDB (Relational + Graph + Vector)
 - ArangoDB (Document + Graph + Search)
@@ -269,9 +292,11 @@ Based on research findings:
 **Type:** Pure graph database (Rust-native)
 
 #### Overview
+
 IndraDB is a graph database written entirely in Rust, inspired by Facebook's TAO (The Associations and Objects) datastore. It emphasizes simplicity, embeddability, and pluggable storage backends.
 
 **Architecture:**
+
 ```mermaid
 graph TB
     A[IndraDB API] --> B[Graph Model Layer]
@@ -283,6 +308,7 @@ graph TB
 ```
 
 **Key Features:**
+
 - Directed, typed graphs
 - JSON-based properties on vertices and edges
 - Multi-hop queries with indexed properties
@@ -296,6 +322,7 @@ graph TB
 **Pure Rust:** Yes (100%)
 
 **Code Example:**
+
 ```rust
 use indradb::{MemoryDatastore, Datastore, Vertex, Edge, Type};
 
@@ -325,18 +352,21 @@ let edges = datastore.get_edges(q)?;
 #### Graph Capabilities
 
 **Query Model:** Programmatic API (no query language), supports:
+
 - N-hop traversals: `VertexQuery::single(id).outbound(hops)`
 - Property filtering: `query.where(filter)`
 - Indexed property lookups
 - Bulk operations
 
 **Supported Operations:**
+
 - Vertex/edge CRUD
 - Multi-hop traversals (depth-limited)
 - Property-based filtering
 - Bulk import/export
 
 **Example: Code Analysis Query**
+
 ```rust
 // Find all functions called transitively by "authenticate"
 let start_vertex = // ... lookup vertex by name
@@ -350,6 +380,7 @@ let callees = datastore.get_vertices(query)?;
 ```
 
 **Limitations:**
+
 - No declarative query language (Cypher, GraphQL)
 - Application must write traversal logic
 - No built-in graph algorithms (PageRank, centrality)
@@ -357,17 +388,20 @@ let callees = datastore.get_vertices(query)?;
 #### Performance Profile
 
 **Strengths:**
+
 - In-memory backend: Fastest option for datasets that fit in RAM
 - Zero-copy deserialization for queries
 - Rust performance (no GC pauses)
 - Lock-free data structures where possible
 
 **Benchmarks:**
+
 - No public benchmarks available
 - Anecdotal: "High performance, no GC pauses" (from docs)
 - Expected: Comparable to in-memory petgraph for traversals
 
 **Memory/Disk Efficiency:**
+
 - In-memory: Minimal overhead (just graph structure + properties)
 - Sled backend: Efficient B-tree storage
 - JSON properties: Flexible but not space-optimized
@@ -379,6 +413,7 @@ let callees = datastore.get_vertices(query)?;
 **Platform Support:** Linux, macOS, Windows (anywhere Rust compiles)
 
 **Deployment Options:**
+
 1. **Embedded library** - Direct Rust API calls
 2. **Local gRPC server** - Cross-language access
 3. **Remote server** - Networked deployment
@@ -386,6 +421,7 @@ let callees = datastore.get_vertices(query)?;
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - 100% Rust = no FFI, excellent compile-time safety
 - Embeddable = maintains CLI tool simplicity
 - Pluggable storage = can keep RocksDB via custom backend
@@ -393,6 +429,7 @@ let callees = datastore.get_vertices(query)?;
 - Active development, responsive maintainers
 
 **Cons:**
+
 - No query language = more application code for complex queries
 - Smaller ecosystem than Neo4j/ArangoDB
 - Limited documentation and examples
@@ -400,6 +437,7 @@ let callees = datastore.get_vertices(query)?;
 - Immature compared to established databases
 
 **Unknowns (Need Testing):**
+
 - Performance on Parseltongue-scale graphs (1M+ entities)
 - Storage efficiency vs. current RocksDB setup
 - Incremental update performance with file watcher
@@ -410,6 +448,7 @@ let callees = datastore.get_vertices(query)?;
 **Complexity:** Medium
 
 **Steps:**
+
 1. Map entity keys to IndraDB vertices (straightforward)
 2. Convert dependency edges to IndraDB edges
 3. Implement query layer replacing CozoDB queries
@@ -417,6 +456,7 @@ let callees = datastore.get_vertices(query)?;
 5. Parallel storage period for validation
 
 **Data Format Compatibility:**
+
 - Current JSON entities → IndraDB JSON properties (direct mapping)
 - Edge types (calls, depends_on, inherits) → IndraDB edge types
 - Breaking changes: Query API complete rewrite
@@ -430,6 +470,7 @@ let callees = datastore.get_vertices(query)?;
 **Recommendation Confidence:** Medium - Good technical fit but limited query ergonomics
 
 **When to Choose IndraDB:**
+
 - Pure Rust requirement is critical
 - Embedding is essential
 - Team comfortable with programmatic APIs
@@ -442,9 +483,11 @@ let callees = datastore.get_vertices(query)?;
 **Type:** Multi-model (Document + Graph + KV + Time-series)
 
 #### Overview
+
 SurrealDB is a next-generation multi-model database built entirely in Rust. It unifies document, graph, time-series, relational, geospatial, and key-value data models with a single query language (SurrealQL).
 
 **Architecture:**
+
 ```mermaid
 graph TB
     A[SurrealQL] --> B[Query Engine]
@@ -466,6 +509,7 @@ graph TB
 **Pure Rust:** Yes (100%)
 
 **Code Example:**
+
 ```rust
 use surrealdb::engine::local::Mem;
 use surrealdb::Surreal;
@@ -506,12 +550,14 @@ let result = db.query("
 **Query Language:** SurrealQL (SQL-like with graph extensions)
 
 **Graph Features:**
+
 - Nodes: Records in tables
 - Edges: First-class `RELATE` statements with metadata
 - Traversal: Arrow syntax `->wrote->comment<-wrote<-person`
 - Recursive queries: CTEs and graph patterns
 
 **Example: Code Analysis**
+
 ```sql
 -- Find all transitive dependencies
 SELECT ->depends_on->*.name as dependencies
@@ -527,6 +573,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 ```
 
 **Built-in Graph Features:**
+
 - Record links (typed relationships)
 - Inter-document joins without N+1 problem
 - Graph traversal in any direction
@@ -535,17 +582,20 @@ SELECT <-calls<-function.* FROM function:authenticate;
 #### Performance Profile
 
 **Strengths:**
+
 - Fast embedded mode (in-memory or file-based)
 - Optimized for mixed workloads (not just graph)
 - Efficient record links (no JOINs needed)
 - ACID transactions
 
 **Benchmarks:**
+
 - No public graph-specific benchmarks available
 - Claims: "Highly performant related queries without JOINs"
 - Multi-model trade-off: May not match pure graph DB speed
 
 **Memory/Disk Efficiency:**
+
 - Flexible storage backends (RocksDB, TiKV, In-memory)
 - Document-oriented = more storage than pure graph
 - Compression available
@@ -557,6 +607,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 **Platform Support:** Linux, macOS, Windows, WebAssembly
 
 **Modes:**
+
 1. In-memory (fastest, ephemeral)
 2. File-based (persistent, single-node)
 3. Distributed (TiKV backend, cluster mode)
@@ -564,6 +615,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Consolidates RocksDB + CozoDB into single database
 - SurrealQL is intuitive (SQL-like)
 - Excellent documentation and active community
@@ -572,6 +624,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 - WebAssembly support (could enable browser-based queries)
 
 **Cons:**
+
 - Larger binary size (not ideal for minimal CLI tools)
 - Multi-model overhead when only graph is needed
 - SurrealQL learning curve (new query language)
@@ -579,6 +632,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 - May be overkill for Parseltongue's focused use case
 
 **Unknowns:**
+
 - Graph traversal performance vs. CozoDB Datalog
 - Storage overhead vs. current setup
 - Query optimization for code analysis patterns
@@ -589,6 +643,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 **Complexity:** Medium-High
 
 **Steps:**
+
 1. Design SurrealDB schema (tables for functions, classes, etc.)
 2. Migrate entity data to SurrealDB records
 3. Convert dependency edges to `RELATE` statements
@@ -597,6 +652,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 6. Benchmark and optimize
 
 **Breaking Changes:**
+
 - Complete query language change (Datalog → SurrealQL)
 - Data model shift (entity keys → record IDs)
 - API changes for LLM agents (if query format exposed)
@@ -610,6 +666,7 @@ SELECT <-calls<-function.* FROM function:authenticate;
 **Recommendation Confidence:** Medium-High - Excellent features but may be overengineered for Parseltongue
 
 **When to Choose SurrealDB:**
+
 - Need more than just graph (document, time-series, search)
 - Want to eliminate multiple databases
 - SQL familiarity on team
@@ -622,11 +679,13 @@ SELECT <-calls<-function.* FROM function:authenticate;
 **Type:** Multi-model (Relational + Graph + Vector)
 
 #### Overview
+
 CozoDB is Parseltongue's **current graph database** (discovered via research). It's a transactional, relational-graph-vector database using Datalog for queries, embedded like SQLite but written in Rust.
 
 **Current Status:** Already integrated into Parseltongue v1.4.3 for semantic relationships!
 
 **Architecture:**
+
 ```mermaid
 graph TB
     A[CozoScript/Datalog] --> B[Query Engine]
@@ -648,6 +707,7 @@ graph TB
 **Pure Rust:** Yes (100%)
 
 **Code Example (Already in Parseltongue!):**
+
 ```rust
 use cozo::*;
 
@@ -680,6 +740,7 @@ let result = db.run_script(r#"
 **Query Language:** CozoScript (Datalog dialect with recursion + aggregations)
 
 **Key Features:**
+
 - Datalog = natural fit for recursive graph queries
 - Named relations (like SQL tables)
 - Recursive rules with safe aggregations
@@ -687,6 +748,7 @@ let result = db.run_script(r#"
 - ACID transactions
 
 **Example: Code Analysis Queries**
+
 ```datalog
 # Find circular dependencies
 circular_deps[fn] := depends_on[fn, dep], depends_on[dep, fn]
@@ -705,6 +767,7 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 ```
 
 **Canned Algorithms:**
+
 - PageRank
 - Shortest path
 - Community detection
@@ -714,16 +777,19 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 #### Performance Profile
 
 **Strengths:**
+
 - Extremely fast graph traversals
 - Efficient Datalog engine with semi-naive evaluation
 - Memory-mapped storage options
 - Optimized for analytical queries
 
 **Benchmarks (From CozoDB docs):**
+
 - "Two-hop graph traversal in <1ms for 1.6M vertices, 31M edges"
 - "PageRank in ~50ms for 10K vertices, 120K edges"
 
 **Memory/Disk Efficiency:**
+
 - Compact relational storage
 - Efficient B-tree indexing (via backends)
 - Vector embeddings supported (useful for semantic code search)
@@ -735,6 +801,7 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 **Platform Support:** Linux, macOS, Windows, WebAssembly
 
 **Embedding Options:**
+
 - Pure Rust API
 - Python, NodeJS, Java, C bindings
 - WebAssembly for browser usage
@@ -742,6 +809,7 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 #### For Parseltongue Specifically
 
 **Pros (Why It's Already Being Used):**
+
 - Datalog = perfect for recursive dependency queries
 - Embedded = no server overhead
 - Fast graph traversals (proven benchmarks)
@@ -751,12 +819,14 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 - Good documentation
 
 **Cons:**
+
 - Datalog learning curve (less familiar than SQL/Cypher)
 - Multi-model = some overhead vs. pure graph
 - Smaller community than Neo4j
 - Fewer third-party tools/integrations
 
 **Current Integration:**
+
 - Used alongside RocksDB (hybrid approach)
 - Likely handles semantic queries while RocksDB stores raw entities
 - Optimal division of labor
@@ -766,6 +836,7 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 **Complexity:** Low (already using!)
 
 **Potential Optimizations:**
+
 1. **Expand CozoDB usage** - Move more graph queries from application code to Datalog
 2. **Consolidate storage** - Consider CozoDB's RocksDB backend to unify databases
 3. **Leverage canned algorithms** - Use PageRank for function importance, shortest path for impact analysis
@@ -782,6 +853,7 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 **Key Insight:** Research reveals Parseltongue has already adopted an excellent graph database. The question isn't "should we migrate?" but "should we expand CozoDB usage or consider alternatives?"
 
 **Recommendation:** **Keep CozoDB** as primary graph engine. Consider:
+
 - Consolidating RocksDB into CozoDB's storage backend
 - Migrating more application-level graph logic to Datalog queries
 - Leveraging built-in algorithms (PageRank, community detection)
@@ -793,9 +865,11 @@ blast_radius_all[affected] := blast_radius_1[affected] or blast_radius_2[affecte
 **Type:** Embedded graph database (analytics-focused)
 
 #### Overview
+
 Kuzu is an embedded graph database built for query speed and scalability, optimized for complex analytical workloads on very large graphs. Written in C++ with Rust bindings, it implements the Cypher query language.
 
 **Architecture:**
+
 ```mermaid
 graph TB
     A[Cypher Query] --> B[Query Optimizer]
@@ -816,6 +890,7 @@ graph TB
 **Pure Rust:** No (C++ core with Rust bindings via FFI)
 
 **Code Example:**
+
 ```rust
 use kuzu::{Database, Connection};
 
@@ -862,6 +937,7 @@ let result = conn.query("
 **Query Language:** Cypher (same as Neo4j)
 
 **Key Features:**
+
 - Full Cypher support (OpenCypher standard)
 - Variable-length path queries: `-[:Calls*1..10]->`
 - Graph pattern matching
@@ -870,6 +946,7 @@ let result = conn.query("
 - Vector similarity search (embeddings)
 
 **Example: Code Analysis**
+
 ```cypher
 // Transitive dependencies with depth limit
 MATCH (f:Function {name: 'authenticate'})-[:DependsOn*1..10]->(dep)
@@ -894,6 +971,7 @@ LIMIT 10;
 #### Performance Profile
 
 **Strengths:**
+
 - **Blazing fast analytics** - Columnar storage optimized for OLAP
 - Advanced join algorithms
 - Multi-core parallelism (scales with CPU cores)
@@ -901,11 +979,13 @@ LIMIT 10;
 - Zero serialization overhead (embedded)
 
 **Benchmarks:**
+
 - Optimized for handling complex join-heavy analytical workloads
 - Benchmark studies compare favorably to Neo4j Community Edition
 - Columnar storage = excellent cache locality
 
 **Memory/Disk Efficiency:**
+
 - Columnar format compresses well
 - Efficient for large graphs (designed for scale)
 - Full-text and vector indexes add overhead
@@ -921,6 +1001,7 @@ LIMIT 10;
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Cypher = industry standard, well-documented
 - Best-in-class analytical query performance
 - Full-text search (useful for code search by content)
@@ -929,6 +1010,7 @@ LIMIT 10;
 - Active development and responsive community
 
 **Cons:**
+
 - C++ core = potential FFI issues, less Rust-native feel
 - Larger binary size (not ideal for minimal CLI tools)
 - Columnar storage may be overkill for Parseltongue's workload
@@ -936,6 +1018,7 @@ LIMIT 10;
 - Learning Cypher (though well-documented)
 
 **Unknowns:**
+
 - Rust FFI stability and performance overhead
 - Storage size vs. current RocksDB + CozoDB
 - Incremental update performance for file watcher
@@ -946,6 +1029,7 @@ LIMIT 10;
 **Complexity:** Medium-High
 
 **Steps:**
+
 1. Design Kuzu schema (node/relationship tables)
 2. Write data migration scripts (RocksDB/CozoDB → Kuzu)
 3. Rewrite all queries in Cypher (from Datalog)
@@ -954,6 +1038,7 @@ LIMIT 10;
 6. Handle FFI edge cases and error handling
 
 **Breaking Changes:**
+
 - Complete query language change (Datalog → Cypher)
 - Storage format change (requires full reindex)
 - Potential FFI panics to handle
@@ -967,6 +1052,7 @@ LIMIT 10;
 **Recommendation Confidence:** Medium - Excellent technology but potentially over-engineered for Parseltongue's current needs
 
 **When to Choose Kuzu:**
+
 - Codebase will scale to millions of entities
 - Need best-in-class analytical query performance
 - Team prefers Cypher over Datalog
@@ -974,6 +1060,7 @@ LIMIT 10;
 - Comfortable with C++ FFI dependencies
 
 **Recommendation for Parseltongue:** Consider Kuzu if:
+
 - Current performance is insufficient at scale
 - Users request Cypher support (more familiar than Datalog)
 - Plan to add semantic search features (vectors)
@@ -985,12 +1072,14 @@ LIMIT 10;
 **Type:** Embedded graph database (ISO GQL standard)
 
 #### Overview
+
 GraphLite is an embedded graph database with ISO GQL (Graph Query Language) standard support, using Sled as its storage backend. It aims to be "as simple as SQLite" for embedded graph workloads.
 
 **Motivation (from HN discussion):**
 > "Graphs are quickly becoming foundational in AI workflows—GraphRAG, hybrid RAG, knowledge graphs, data lineage, agent memory, etc. Graph query languages have been fragmented for years (Cypher, SPARQL, Gremlin), which hurts portability and locks users in."
 
 **Architecture:**
+
 ```mermaid
 graph TB
     A[ISO GQL Queries] --> B[Query Parser]
@@ -1007,6 +1096,7 @@ graph TB
 **Pure Rust:** Yes (100%)
 
 **Code Example:**
+
 ```rust
 use graphlite::{Database, Result};
 
@@ -1053,6 +1143,7 @@ let result = db.query("
 **Query Language:** ISO GQL (International Standard Graph Query Language)
 
 **Key Features:**
+
 - ISO GQL standard compliance (future-proof)
 - Pattern matching with MATCH clauses
 - ACID transactions with isolation levels
@@ -1060,6 +1151,7 @@ let result = db.query("
 - Cost-based query optimization
 
 **Example: Code Analysis**
+
 ```gql
 // Transitive dependencies
 MATCH (f:Function {name: 'authenticate'})-[:DependsOn*]->(dep:Function)
@@ -1075,6 +1167,7 @@ RETURN DISTINCT caller.name, caller.filepath;
 ```
 
 **Limitations:**
+
 - New project = fewer features than mature alternatives
 - ISO GQL standard still evolving
 - Limited built-in graph algorithms (vs. CozoDB, Neo4j)
@@ -1082,16 +1175,19 @@ RETURN DISTINCT caller.name, caller.filepath;
 #### Performance Profile
 
 **Strengths:**
+
 - Sled backend = fast B-tree operations
 - Pure Rust = no FFI overhead
 - Memory-safe implementation
 - Optimized for embedded use cases
 
 **Benchmarks:**
+
 - No public benchmarks available (too new)
 - Expected: Similar to other Sled-backed databases
 
 **Memory/Disk Efficiency:**
+
 - Sled storage = efficient B-tree format
 - Single directory with multiple files (like SQLite)
 
@@ -1104,6 +1200,7 @@ RETURN DISTINCT caller.name, caller.filepath;
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - ISO GQL = future-proof, standards-based
 - 100% Rust = excellent safety and performance
 - Sled backend = mature, well-tested storage
@@ -1112,6 +1209,7 @@ RETURN DISTINCT caller.name, caller.filepath;
 - Strong typing = catches errors early
 
 **Cons:**
+
 - Very new project (risk of immaturity)
 - ISO GQL less familiar than Cypher or SQL
 - Smaller ecosystem and community
@@ -1120,6 +1218,7 @@ RETURN DISTINCT caller.name, caller.filepath;
 - Unknown production readiness
 
 **Unknowns (Critical for Evaluation):**
+
 - Performance on Parseltongue-scale workloads
 - ISO GQL learning curve vs. Datalog/Cypher
 - Incremental update efficiency
@@ -1131,6 +1230,7 @@ RETURN DISTINCT caller.name, caller.filepath;
 **Complexity:** Medium
 
 **Steps:**
+
 1. Design GraphLite schema (node/edge types)
 2. Migrate data from RocksDB/CozoDB
 3. Rewrite queries in ISO GQL (from Datalog)
@@ -1148,6 +1248,7 @@ RETURN DISTINCT caller.name, caller.filepath;
 **Recommendation Confidence:** Low - Too new to recommend for production
 
 **When to Choose GraphLite:**
+
 - ISO GQL standard compliance is critical
 - Want to avoid vendor lock-in (Cypher = Neo4j, Datalog = CozoDB)
 - Comfortable being an early adopter
@@ -1155,6 +1256,7 @@ RETURN DISTINCT caller.name, caller.filepath;
 - Long-term vision (2-3 years) acceptable
 
 **Recommendation for Parseltongue:** **Wait and monitor**. GraphLite shows promise but needs more maturity. Revisit in 6-12 months once:
+
 - Production users emerge
 - Performance benchmarks published
 - ISO GQL standard stabilizes
@@ -1167,9 +1269,11 @@ RETURN DISTINCT caller.name, caller.filepath;
 **Type:** Pure graph database (industry leader)
 
 #### Overview
+
 Neo4j is the world's leading graph database with 15+ years of development, extensive enterprise features, and the largest graph database community. It's written in Java but offers excellent cross-language support.
 
 **Architecture:**
+
 ```mermaid
 graph TB
     A[Cypher Queries] --> B[Query Planner]
@@ -1189,6 +1293,7 @@ graph TB
 **Pure Rust:** Driver is pure Rust; database is Java (JVM required)
 
 **Code Example:**
+
 ```rust
 use neo4rs::*;
 
@@ -1231,6 +1336,7 @@ while let Some(row) = result.next().await? {
 **Query Language:** Cypher (most mature graph query language)
 
 **Key Features:**
+
 - Industry-standard Cypher
 - Extensive graph algorithms library (PageRank, community detection, pathfinding)
 - Full-text search
@@ -1239,6 +1345,7 @@ while let Some(row) = result.next().await? {
 - Graph data science platform
 
 **Example: Code Analysis**
+
 ```cypher
 // Transitive dependencies with shortest path
 MATCH path = shortestPath(
@@ -1260,6 +1367,7 @@ RETURN communityId, COLLECT(gds.util.asNode(nodeId).name) as functions;
 ```
 
 **Built-in Algorithms:**
+
 - 70+ graph algorithms (via Graph Data Science library)
 - Pathfinding (shortest path, A*, Dijkstra)
 - Centrality (PageRank, betweenness, closeness)
@@ -1269,17 +1377,20 @@ RETURN communityId, COLLECT(gds.util.asNode(nodeId).name) as functions;
 #### Performance Profile
 
 **Strengths:**
+
 - Native graph storage (index-free adjacency)
 - Mature query optimizer (15+ years of refinement)
 - Optimized for traversals (O(1) neighbor access)
 - Enterprise performance tuning
 
 **Benchmarks:**
+
 - Industry-leading for graph traversals
 - "Run rich graph queries in milliseconds that would take relational database models minutes or hours"
 - TigerGraph claims 2-8000x faster, but Neo4j is baseline for comparisons
 
 **Memory/Disk Efficiency:**
+
 - Native graph storage = efficient for traversals
 - Property storage = flexible but space overhead
 - Requires significant RAM for large graphs (recommend 16GB+ for production)
@@ -1291,6 +1402,7 @@ RETURN communityId, COLLECT(gds.util.asNode(nodeId).name) as functions;
 **Platform Support:** Linux, macOS, Windows (JVM required)
 
 **Deployment Options:**
+
 1. **Neo4j Desktop** - Local development server
 2. **Neo4j Community** - Free self-hosted server
 3. **Neo4j AuraDB** - Managed cloud service
@@ -1301,6 +1413,7 @@ RETURN communityId, COLLECT(gds.util.asNode(nodeId).name) as functions;
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Most mature graph database (15+ years)
 - Cypher = widely known, excellent documentation
 - 70+ graph algorithms out of the box
@@ -1310,6 +1423,7 @@ RETURN communityId, COLLECT(gds.util.asNode(nodeId).name) as functions;
 - Production-proven at scale (LinkedIn, eBay, NASA)
 
 **Cons:**
+
 - **Not embeddable** - Requires separate Neo4j server (dealbreaker for CLI tool!)
 - JVM dependency (memory overhead, deployment complexity)
 - Network latency (Bolt protocol overhead)
@@ -1319,6 +1433,7 @@ RETURN communityId, COLLECT(gds.util.asNode(nodeId).name) as functions;
 
 **Architectural Mismatch:**
 Parseltongue is a CLI tool with embedded databases (RocksDB, CozoDB). Neo4j's client-server architecture fundamentally conflicts with this design:
+
 - Users would need to install/run Neo4j server separately
 - Adds deployment complexity (JVM, ports, configuration)
 - File watcher would need to communicate over network
@@ -1329,6 +1444,7 @@ Parseltongue is a CLI tool with embedded databases (RocksDB, CozoDB). Neo4j's cl
 **Complexity:** High
 
 **Steps:**
+
 1. Set up Neo4j server (local or cloud)
 2. Design Neo4j schema (labels, relationships, constraints)
 3. Write data migration scripts (export from RocksDB/CozoDB, import to Neo4j)
@@ -1338,6 +1454,7 @@ Parseltongue is a CLI tool with embedded databases (RocksDB, CozoDB). Neo4j's cl
 7. Deploy Neo4j server alongside Parseltongue (or cloud)
 
 **Breaking Changes:**
+
 - Architecture shift from embedded to client-server
 - All queries rewritten (Datalog → Cypher)
 - Deployment complexity increases dramatically
@@ -1351,6 +1468,7 @@ Parseltongue is a CLI tool with embedded databases (RocksDB, CozoDB). Neo4j's cl
 **Recommendation Confidence:** Very Low for Parseltongue - architectural mismatch
 
 **When to Choose Neo4j:**
+
 - Enterprise environment with infrastructure team
 - Need advanced graph algorithms (GDS library)
 - Multi-user, networked access required
@@ -1360,6 +1478,7 @@ Parseltongue is a CLI tool with embedded databases (RocksDB, CozoDB). Neo4j's cl
 **Recommendation for Parseltongue:** **Not Recommended**
 
 **Why:** Neo4j's client-server architecture conflicts with Parseltongue's design goals:
+
 - CLI tools should be self-contained
 - Embedded databases eliminate deployment complexity
 - Network latency hurts query performance
@@ -1374,6 +1493,7 @@ Parseltongue is a CLI tool with embedded databases (RocksDB, CozoDB). Neo4j's cl
 **Type:** Multi-model (Document + Graph + Search)
 
 #### Overview
+
 ArangoDB is a mature multi-model database supporting documents, graphs, and full-text search with a unified query language (AQL). It's written in C++ and offers Rust client libraries.
 
 #### Rust Integration
@@ -1383,6 +1503,7 @@ ArangoDB is a mature multi-model database supporting documents, graphs, and full
 **Pure Rust:** No (C++ server with Rust client)
 
 **Code Example:**
+
 ```rust
 use arangors::{Connection, Database};
 
@@ -1421,6 +1542,7 @@ let result = db.aql_str::<Value>("
 **Query Language:** AQL (ArangoDB Query Language - SQL-like)
 
 **Key Features:**
+
 - Named graphs with edge collections
 - K-shortest paths algorithm
 - Graph traversal in AQL: `FOR v IN 1..10 OUTBOUND start GRAPH 'calls'`
@@ -1428,6 +1550,7 @@ let result = db.aql_str::<Value>("
 - Geospatial queries
 
 **Example: Code Analysis**
+
 ```aql
 // Transitive dependencies
 FOR v, e, p IN 1..10 OUTBOUND 'functions/authenticate' GRAPH 'dependency-graph'
@@ -1453,11 +1576,13 @@ FOR f IN functions
 #### Performance Profile
 
 **Strengths:**
+
 - Multi-model optimizations
 - Distributed clustering (horizontal scaling)
 - SmartGraphs for sharded graphs
 
 **Benchmarks:**
+
 - TigerGraph benchmark: ArangoDB slower than Neo4j for pure graph workloads
 - Excels at mixed document + graph queries
 
@@ -1471,12 +1596,14 @@ FOR f IN functions
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Multi-model = could replace RocksDB + CozoDB
 - AQL is SQL-like (familiar syntax)
 - Full-text search built-in
 - Good documentation
 
 **Cons:**
+
 - **Not embeddable** (dealbreaker for CLI tool)
 - Client-server architecture adds complexity
 - C++ server (not Rust-native)
@@ -1498,16 +1625,19 @@ FOR f IN functions
 **Type:** Relational database + graph extensions
 
 #### Overview
+
 SQLite with graph extensions leverages recursive CTEs (Common Table Expressions) and custom virtual tables for graph queries.
 
 #### Graph Capabilities
 
 **Extensions:**
+
 1. **sqlite-graph** (alpha) - Cypher queries in SQLite
 2. **sqlite3-bfsvtab-ext** - Breadth-first search virtual table
 3. **simple-graph** - Pure SQL graph implementation
 
 **Example: Recursive CTEs**
+
 ```sql
 -- Transitive dependencies with SQLite recursive CTE
 WITH RECURSIVE transitive(dep) AS (
@@ -1521,11 +1651,13 @@ SELECT DISTINCT dep FROM transitive;
 #### Performance Profile
 
 **Strengths:**
+
 - Familiar SQL syntax
 - Mature, stable SQLite foundation
 - Zero setup (embedded)
 
 **Weaknesses:**
+
 - Slow for deep traversals (recursive CTEs not optimized for graphs)
 - No index-free adjacency (requires joins)
 - Limited graph algorithms
@@ -1533,11 +1665,13 @@ SELECT DISTINCT dep FROM transitive;
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Already familiar to most developers
 - Stable, battle-tested
 - Embeddable
 
 **Cons:**
+
 - Poor graph performance vs. native graph databases
 - Limited query expressiveness
 - sqlite-graph is alpha (not production-ready)
@@ -1558,6 +1692,7 @@ SELECT DISTINCT dep FROM transitive;
 **Type:** RDF graph database (SPARQL)
 
 #### Overview
+
 Oxigraph is a SPARQL graph database built on RocksDB, written in Rust. It's designed for RDF (Resource Description Framework) data.
 
 #### Rust Integration
@@ -1567,6 +1702,7 @@ Oxigraph is a SPARQL graph database built on RocksDB, written in Rust. It's desi
 **Pure Rust:** Yes (100%)
 
 **Code Example:**
+
 ```rust
 use oxigraph::store::Store;
 use oxigraph::model::*;
@@ -1594,6 +1730,7 @@ let results = store.query("
 **Query Language:** SPARQL 1.1 (W3C standard)
 
 **Key Features:**
+
 - RDF triples (subject-predicate-object)
 - SPARQL queries with recursion (`+` for transitive closure)
 - RocksDB backend (familiar storage layer)
@@ -1602,12 +1739,14 @@ let results = store.query("
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Rust-native
 - Embeddable
 - Standards-based (SPARQL, RDF)
 - RocksDB backend (could reuse existing storage)
 
 **Cons:**
+
 - RDF model = semantic web focus (overkill for code analysis)
 - SPARQL learning curve
 - Verbose triple representation
@@ -1628,6 +1767,7 @@ let results = store.query("
 **Type:** Embedded key-value store (Rust-native)
 
 #### Overview
+
 Sled is a pure Rust embedded key-value store with modern features (ACID, range queries). It's used as a storage backend by other databases (IndraDB, GraphLite).
 
 #### Rust Integration
@@ -1637,6 +1777,7 @@ Sled is a pure Rust embedded key-value store with modern features (ACID, range q
 **Pure Rust:** Yes (100%)
 
 **Code Example:**
+
 ```rust
 use sled::Db;
 
@@ -1656,6 +1797,7 @@ for result in db.range(b"function:"..) {
 #### Graph Capabilities
 
 **None built-in.** Sled is a KV store, not a graph database. You'd need to:
+
 1. Encode graph structure in keys (like RocksDB)
 2. Implement traversal logic in application code
 3. Handle indexes manually
@@ -1663,12 +1805,14 @@ for result in db.range(b"function:"..) {
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Pure Rust (excellent safety)
 - Modern API (better than RocksDB)
 - ACID transactions
 - Lightweight
 
 **Cons:**
+
 - No graph features (same problem as RocksDB)
 - Would require building graph layer on top
 - No advantage over current RocksDB + CozoDB setup
@@ -1688,6 +1832,7 @@ for result in db.range(b"function:"..) {
 **Type:** Embedded key-value store (memory-mapped)
 
 #### Overview
+
 LMDB is a high-performance embedded transactional database using memory-mapped files. Written in C with Rust bindings.
 
 #### Rust Integration
@@ -1702,11 +1847,13 @@ LMDB is a high-performance embedded transactional database using memory-mapped f
 #### For Parseltongue Specifically
 
 **Pros:**
+
 - Very fast reads (memory-mapped)
 - ACID transactions
 - Multiple database support
 
 **Cons:**
+
 - No graph features
 - Single writer limitation (bottleneck for concurrent updates)
 - C FFI dependency
@@ -1736,6 +1883,7 @@ LMDB is a high-performance embedded transactional database using memory-mapped f
 | **Sled** | KV | ✅ | ✅ | None | ⭐ | ⭐ | ⭐⭐⭐ | ~500KB | ⭐⭐ |
 
 **Legend:**
+
 - ⭐⭐⭐⭐⭐ = Excellent | ⭐⭐⭐⭐ = Very Good | ⭐⭐⭐ = Good | ⭐⭐ = Fair | ⭐ = Poor
 - **Rec. for PT** = Recommendation confidence for Parseltongue specifically
 
@@ -1748,6 +1896,7 @@ LMDB is a high-performance embedded transactional database using memory-mapped f
 **Database Choice:** Salsa (in-memory query system) + VFS (Virtual File System)
 
 **Architecture:**
+
 ```
 ┌───────────────────────────────────┐
 │      rust-analyzer                │
@@ -1778,12 +1927,14 @@ LMDB is a high-performance embedded transactional database using memory-mapped f
    - Salsa handles memoization and invalidation
 
 **Rationale:**
+
 - Language servers restart frequently (editor closures)
 - Persistent storage adds complexity without much benefit
 - In-memory + incremental is fast enough
 - Salsa's automatic invalidation simplifies incrementality
 
 **Lessons for Parseltongue:**
+
 - Persistent storage *is* valuable for Parseltongue (LLM agents query historical data)
 - Incremental updates critical for file watcher performance
 - Opaque entity IDs (not string keys) might improve performance
@@ -1795,6 +1946,7 @@ LMDB is a high-performance embedded transactional database using memory-mapped f
 **Database Choice:** Abstract storage format (entries) + pluggable backends
 
 **Storage Model:**
+
 ```
 ┌─────────────────────────────────────┐
 │  Kythe Entry (protobuf)             │
@@ -1834,6 +1986,7 @@ LMDB is a high-performance embedded transactional database using memory-mapped f
    - Cloud Datastore for scale
 
 **Example Entry:**
+
 ```protobuf
 Entry {
   source: VName {
@@ -1850,11 +2003,13 @@ Entry {
 > "Simple and flat, allowing Kythe artifacts to be handled by a variety of concrete representations to meet different demands of scale and performance."
 
 **Query Approach:**
+
 - Kythe itself doesn't provide query language
 - Entries exported to graph databases (Neo4j, etc.) for querying
 - Separation: indexing (Kythe) vs. querying (external tools)
 
 **Lessons for Parseltongue:**
+
 - Storage abstraction enables flexibility
 - Flat entries simplify generation and serialization
 - Consider separating "storage format" from "query interface"
@@ -1866,11 +2021,13 @@ Entry {
 **Database Choice:** SQLite
 
 **Storage:**
+
 ```
 File: project_name.srctrldb (SQLite database)
 ```
 
 **Architecture:**
+
 - All indexed code data stored in `.srctrldb` file
 - SQLite provides:
   - ACID transactions
@@ -1879,16 +2036,19 @@ File: project_name.srctrldb (SQLite database)
   - Wide tooling support
 
 **Incrementality:**
+
 - File watcher detects changes
 - Incremental indexing policy
 - Only re-indexes affected files
 
 **Rationale:**
+
 - SQLite is simple, portable, and widely understood
 - Single-file database = easy project management
 - Relational model adequate for code analysis (though not optimal for graphs)
 
 **Lessons for Parseltongue:**
+
 - SQLite works but not ideal for graph-heavy queries
 - Single-file database is user-friendly
 - Incremental re-indexing is table stakes
@@ -1900,6 +2060,7 @@ File: project_name.srctrldb (SQLite database)
 **Database Choice:** Custom indexing framework with stubs
 
 **Architecture:**
+
 ```
 ┌─────────────────────────────────────┐
 │  PSI (Program Structure Interface)  │
@@ -1942,11 +2103,13 @@ File: project_name.srctrldb (SQLite database)
    - Values associated with each file
 
 **Rationale:**
+
 - Full AST parsing is slow; stub trees are fast
 - Most IDE operations only need public API (stubs suffice)
 - Custom indexing framework optimized for IDE patterns
 
 **Lessons for Parseltongue:**
+
 - Partial indexing (stubs) vs. full indexing trade-off
 - Consider indexing only "exported" entities (public functions, types)
 - Binary serialization faster than JSON
@@ -1958,22 +2121,26 @@ File: project_name.srctrldb (SQLite database)
 **Database Choice:** Varies by language server (often none)
 
 **Common Approach:**
+
 - Many language servers use **no persistent database**
 - In-memory indexes rebuilt on startup
 - Incremental updates during editing session
 - LSP document synchronization keeps state fresh
 
 **Examples:**
+
 - **TypeScript (tsserver):** In-memory AST + type checking
 - **Pylance:** In-memory with partial disk cache
 - **rust-analyzer:** Salsa (in-memory, as covered above)
 
 **Rationale:**
+
 - Editors restart frequently (no need for long-term persistence)
 - Startup time critical (full reindex on launch acceptable)
 - LSP protocol provides document sync (no need for file watching)
 
 **Lessons for Parseltongue:**
+
 - Language servers optimize for different constraints
 - Parseltongue's LLM agent use case *does* benefit from persistence
 - File watching is critical (Parseltongue ≠ language server)
@@ -1987,6 +2154,7 @@ File: project_name.srctrldb (SQLite database)
 ### 6.1 From RocksDB + CozoDB
 
 **Current State:**
+
 - **RocksDB:** Entity storage (KV pairs)
 - **CozoDB:** Semantic relationships (graph queries)
 - **Hybrid approach:** Best of both worlds?
@@ -1994,9 +2162,11 @@ File: project_name.srctrldb (SQLite database)
 **Migration Scenarios:**
 
 #### Option A: Keep Current Architecture (Recommended)
+
 **No migration needed.** Research reveals Parseltongue already uses CozoDB for graph queries.
 
 **Optimization Opportunities:**
+
 1. **Consolidate into CozoDB:**
    - CozoDB supports RocksDB backend: `DbInstance::new("rocksdb", path, options)?`
    - Migrate RocksDB data into CozoDB relations
@@ -2014,10 +2184,13 @@ File: project_name.srctrldb (SQLite database)
 **Effort:** Low (optimizations, not migration)
 
 #### Option B: Migrate to Pure Graph DB (IndraDB)
+
 **Rationale:** 100% Rust, simpler single-database architecture
 
 **Steps:**
+
 1. **Schema Design:**
+
    ```rust
    // Entity types
    let function_type = Type::new("function")?;
@@ -2037,6 +2210,7 @@ File: project_name.srctrldb (SQLite database)
 3. **Query Rewrite:**
    - Replace Datalog queries with IndraDB API calls
    - Example:
+
      ```rust
      // Before (CozoDB Datalog)
      db.run_script(r#"
@@ -2058,15 +2232,19 @@ File: project_name.srctrldb (SQLite database)
 **Effort:** Medium (2-3 weeks)
 
 **Risks:**
+
 - Performance regression (need benchmarking)
 - Loss of Datalog expressiveness
 - IndraDB less mature than CozoDB
 
 #### Option C: Migrate to Kuzu (Cypher)
+
 **Rationale:** Best-in-class analytics, Cypher familiarity, scalability
 
 **Steps:**
+
 1. **Schema Design:**
+
    ```cypher
    CREATE NODE TABLE Function(
        name STRING,
@@ -2086,6 +2264,7 @@ File: project_name.srctrldb (SQLite database)
    - Create indexes on frequently queried properties
 
 3. **Query Rewrite:**
+
    ```cypher
    // Transitive dependencies
    MATCH (f:Function {name: 'authenticate'})-[:DependsOn*1..10]->(dep)
@@ -2103,16 +2282,19 @@ File: project_name.srctrldb (SQLite database)
 **Effort:** Medium-High (3-4 weeks)
 
 **Benefits:**
+
 - Cypher more familiar than Datalog
 - Excellent performance at scale
 - Full-text and vector search built-in
 
 **Risks:**
+
 - C++ FFI dependency
 - Larger binary size
 - Learning curve for team
 
 #### Option D: Migrate to SurrealDB (Consolidation)
+
 **Rationale:** Single database for all data models, modern SQL-like query language
 
 **Effort:** Medium-High (similar to Kuzu)
@@ -2122,12 +2304,14 @@ File: project_name.srctrldb (SQLite database)
 ### 6.2 Data Schema Mapping
 
 **Current Entity Key Format:**
+
 ```
 language:type:name:filepath:line_range
 Example: rust:fn:authenticate:src/auth.rs:10-50
 ```
 
 **Target Schema (IndraDB Example):**
+
 ```rust
 // Vertex
 Vertex {
@@ -2153,6 +2337,7 @@ Edge {
 ```
 
 **Mapping Strategy:**
+
 1. Parse entity keys into components
 2. Create vertices with appropriate types
 3. Store properties as JSON
@@ -2162,6 +2347,7 @@ Edge {
 ### 6.3 API Compatibility
 
 **Current HTTP API (Hypothetical):**
+
 ```http
 POST /query
 Content-Type: application/json
@@ -2215,6 +2401,7 @@ Content-Type: application/json
    - [ ] 1000+ file changes/minute
 
 **Parallel Storage Period:**
+
 - Run old (RocksDB+CozoDB) and new (target DB) in parallel
 - Compare query results for N weeks
 - Monitor performance differences
@@ -2229,6 +2416,7 @@ Content-Type: application/json
 **Summary:** Parseltongue already uses CozoDB for graph queries (discovered via research). CozoDB is an excellent choice and should be retained.
 
 **Rationale:**
+
 1. **Already Integrated:** No migration needed
 2. **Technical Excellence:** Datalog perfect for recursive code analysis
 3. **Performance:** Proven fast (< 1ms two-hop traversal on 1.6M nodes)
@@ -2238,6 +2426,7 @@ Content-Type: application/json
 **Action Items:**
 
 #### 1. Consolidate Storage (Low Effort, High Impact)
+
 ```rust
 // Replace RocksDB + CozoDB with CozoDB alone
 let db = DbInstance::new("rocksdb", "parseltongue.db", Default::default())?;
@@ -2250,11 +2439,13 @@ db.run_script(r#"
 ```
 
 **Benefits:**
+
 - Single database (simpler architecture)
 - Fewer dependencies
 - Unified query interface
 
 #### 2. Expand Datalog Usage (Medium Effort, High Impact)
+
 Move application-level graph logic into Datalog:
 
 ```datalog
@@ -2270,11 +2461,13 @@ Move application-level graph logic into Datalog:
 ```
 
 **Benefits:**
+
 - Less Rust code (declarative queries)
 - Better performance (optimized Datalog engine)
 - More maintainable
 
 #### 3. Add Vector Embeddings (High Effort, High Value)
+
 Enable semantic code search:
 
 ```datalog
@@ -2292,11 +2485,13 @@ Enable semantic code search:
 ```
 
 **Benefits:**
+
 - Semantic code search ("find functions that do authentication")
 - Duplicate code detection
 - Enhanced LLM context
 
 #### 4. Monitor Performance (Ongoing)
+
 - Benchmark query latency
 - Track file watcher update time
 - Measure storage growth
@@ -2311,6 +2506,7 @@ Enable semantic code search:
 ### 7.2 Alternative Option 1: Migrate to IndraDB
 
 **When to Consider:**
+
 - Need 100% Rust solution (no external DB)
 - Want simpler API (no query language)
 - CozoDB performance insufficient (unlikely)
@@ -2318,11 +2514,13 @@ Enable semantic code search:
 **Migration Effort:** Medium (2-3 weeks)
 
 **Benefits:**
+
 - Pure Rust (excellent safety)
 - Simpler API (programmatic vs. Datalog)
 - Pluggable storage (can use RocksDB backend)
 
 **Drawbacks:**
+
 - Lose Datalog expressiveness
 - More application code for graph algorithms
 - Less mature than CozoDB
@@ -2334,6 +2532,7 @@ Enable semantic code search:
 ### 7.3 Alternative Option 2: Migrate to Kuzu
 
 **When to Consider:**
+
 - Scale to millions of entities (10x current size)
 - Users request Cypher support
 - Need best-in-class analytics
@@ -2341,12 +2540,14 @@ Enable semantic code search:
 **Migration Effort:** Medium-High (3-4 weeks)
 
 **Benefits:**
+
 - Cypher (widely known)
 - Excellent performance at scale
 - Full-text + vector search
 - Mature query optimizer
 
 **Drawbacks:**
+
 - C++ FFI dependency
 - Larger binary size (~25MB)
 - Cypher learning curve
@@ -2358,6 +2559,7 @@ Enable semantic code search:
 ### 7.4 Alternative Option 3: Consolidate into SurrealDB
 
 **When to Consider:**
+
 - Need document storage (beyond graph)
 - Want to eliminate multiple databases
 - Prefer SQL-like syntax
@@ -2365,11 +2567,13 @@ Enable semantic code search:
 **Migration Effort:** Medium-High (3-4 weeks)
 
 **Benefits:**
+
 - Single database for all models
 - SurrealQL intuitive
 - Modern, active project
 
 **Drawbacks:**
+
 - Multi-model overhead
 - Larger binary (~15MB)
 - SurrealQL learning curve
@@ -2412,16 +2616,19 @@ graph TD
 ### 7.6 Prioritization
 
 #### Immediate (Next Sprint)
+
 1. **Document current CozoDB usage** - Catalog existing queries, understand integration
 2. **Benchmark baseline** - Measure current query latency, storage size, file watcher performance
 3. **Prototype consolidation** - Test CozoDB with RocksDB backend replacing separate RocksDB
 
 #### Short-term (1-2 Months)
+
 1. **Implement consolidation** - Migrate RocksDB data into CozoDB if prototype successful
 2. **Expand Datalog queries** - Move application graph logic into Datalog
 3. **Add built-in algorithms** - Use PageRank, community detection for insights
 
 #### Long-term (6+ Months)
+
 1. **Vector embeddings** - Add semantic search capabilities
 2. **Evaluate alternatives** - Revisit Kuzu, IndraDB if scale or requirements change
 3. **Monitor GraphLite** - Reassess when project matures
@@ -2745,53 +2952,60 @@ Based on published benchmarks and research:
 #### C.1 Official Documentation
 
 **CozoDB:**
-- Website: https://www.cozodb.org/
-- GitHub: https://github.com/cozodb/cozo
-- Docs: https://docs.cozodb.org/
-- Crate: https://crates.io/crates/cozo
+
+- Website: <https://www.cozodb.org/>
+- GitHub: <https://github.com/cozodb/cozo>
+- Docs: <https://docs.cozodb.org/>
+- Crate: <https://crates.io/crates/cozo>
 
 **IndraDB:**
-- Website: https://indradb.github.io/
-- GitHub: https://github.com/indradb/indradb
-- Crate: https://crates.io/crates/indradb
+
+- Website: <https://indradb.github.io/>
+- GitHub: <https://github.com/indradb/indradb>
+- Crate: <https://crates.io/crates/indradb>
 
 **Kuzu:**
-- Website: https://kuzudb.com/
-- GitHub: https://github.com/kuzudb/kuzu
-- Rust Docs: https://docs.kuzudb.com/client-apis/rust/
-- Crate: https://crates.io/crates/kuzu
+
+- Website: <https://kuzudb.com/>
+- GitHub: <https://github.com/kuzudb/kuzu>
+- Rust Docs: <https://docs.kuzudb.com/client-apis/rust/>
+- Crate: <https://crates.io/crates/kuzu>
 
 **SurrealDB:**
-- Website: https://surrealdb.com/
-- GitHub: https://github.com/surrealdb/surrealdb
-- Docs: https://surrealdb.com/docs
-- Crate: https://crates.io/crates/surrealdb
+
+- Website: <https://surrealdb.com/>
+- GitHub: <https://github.com/surrealdb/surrealdb>
+- Docs: <https://surrealdb.com/docs>
+- Crate: <https://crates.io/crates/surrealdb>
 
 **GraphLite:**
-- GitHub: https://github.com/GraphLite-AI/GraphLite
-- Crate: https://crates.io/crates/graphlite
+
+- GitHub: <https://github.com/GraphLite-AI/GraphLite>
+- Crate: <https://crates.io/crates/graphlite>
 
 **Neo4j:**
-- Website: https://neo4j.com/
-- Rust Driver: https://github.com/neo4j-labs/neo4rs
-- Cypher Docs: https://neo4j.com/docs/cypher-manual/
+
+- Website: <https://neo4j.com/>
+- Rust Driver: <https://github.com/neo4j-labs/neo4rs>
+- Cypher Docs: <https://neo4j.com/docs/cypher-manual/>
 
 **Oxigraph:**
-- GitHub: https://github.com/oxigraph/oxigraph
-- Crate: https://crates.io/crates/oxigraph
+
+- GitHub: <https://github.com/oxigraph/oxigraph>
+- Crate: <https://crates.io/crates/oxigraph>
 
 #### C.2 Academic Papers
 
 1. **TAO: Facebook's Distributed Data Store for the Social Graph** (2013)
-   - URL: https://www.usenix.org/system/files/conference/atc13/atc13-bronson.pdf
+   - URL: <https://www.usenix.org/system/files/conference/atc13/atc13-bronson.pdf>
    - Relevance: IndraDB inspired by TAO
 
 2. **Characterizing, Modeling, and Benchmarking RocksDB** (USENIX FAST '20)
-   - URL: https://www.usenix.org/system/files/fast20-cao_zhichao.pdf
+   - URL: <https://www.usenix.org/system/files/fast20-cao_zhichao.pdf>
    - Relevance: RocksDB performance characteristics
 
 3. **Kythe: A Pluggable, (Mostly) Language-Agnostic Ecosystem for Building Tools that Work with Code**
-   - Storage Model: https://kythe.io/docs/kythe-storage.html
+   - Storage Model: <https://kythe.io/docs/kythe-storage.html>
    - Relevance: Abstract storage format for code analysis
 
 4. **Source-code queries with graph databases** (SCP 2014)
@@ -2801,7 +3015,7 @@ Based on published benchmarks and research:
 #### C.3 Benchmark Studies
 
 1. **TigerGraph Benchmark Report** (2019)
-   - URL: https://info.tigergraph.com/benchmark
+   - URL: <https://info.tigergraph.com/benchmark>
    - Databases: TigerGraph, Neo4j, Amazon Neptune, JanusGraph, ArangoDB
 
 2. **Performance Comparison: ArangoDB, MySQL, and Neo4j** (2023)
@@ -2809,38 +3023,41 @@ Based on published benchmarks and research:
    - Relevance: Multi-model vs. pure graph comparison
 
 3. **LDBC Social Network Benchmark**
-   - URL: https://ldbcouncil.org/benchmarks/snb/
+   - URL: <https://ldbcouncil.org/benchmarks/snb/>
    - Relevance: Standard for graph database evaluation
 
 #### C.4 Community Resources
 
 **Hacker News Discussions:**
-- CozoDB Launch: https://news.ycombinator.com/item?id=33518320
-- GraphLite Launch: https://news.ycombinator.com/item?id=46121076
-- Simple-graph: https://news.ycombinator.com/item?id=25544397
+
+- CozoDB Launch: <https://news.ycombinator.com/item?id=33518320>
+- GraphLite Launch: <https://news.ycombinator.com/item?id=46121076>
+- Simple-graph: <https://news.ycombinator.com/item?id=25544397>
 
 **Reddit:**
+
 - r/rust - Search for "graph database"
 - r/databases - Graph database discussions
 
 **Discord/Slack:**
+
 - Rust Community Discord - #databases channel
 - Graph Database Community - Various vendors
 
 #### C.5 Related Projects
 
 1. **petgraph** - Rust graph data structures
-   - GitHub: https://github.com/petgraph/petgraph
-   - Crate: https://crates.io/crates/petgraph
+   - GitHub: <https://github.com/petgraph/petgraph>
+   - Crate: <https://crates.io/crates/petgraph>
    - Use: In-memory graph algorithms (no persistence)
 
 2. **rust-analyzer** - Rust language server
-   - GitHub: https://github.com/rust-lang/rust-analyzer
-   - Architecture: https://rust-analyzer.github.io/book/contributing/architecture.html
+   - GitHub: <https://github.com/rust-lang/rust-analyzer>
+   - Architecture: <https://rust-analyzer.github.io/book/contributing/architecture.html>
    - Relevance: Salsa incremental computation framework
 
 3. **Sourcetrail** - Code explorer
-   - GitHub: https://github.com/CoatiSoftware/Sourcetrail
+   - GitHub: <https://github.com/CoatiSoftware/Sourcetrail>
    - Relevance: SQLite for code indexing
 
 ### Appendix D: Glossary

@@ -22,6 +22,7 @@ Apache Iggy's connector ecosystem is growing. This issue tracks the full landsca
 | [Apache Pinot](https://pinot.apache.org/) | Sink | -- | Java connector via Kafka compatibility layer |
 
 **Connector runtime infrastructure** (shipped):
+
 - HTTP-based configuration provider (#2388)
 - Separated connector/runtime config (#2318)
 - E2E tests: Iceberg sink (#2595), Elasticsearch sink (#2592), Quickwit sink (#2594)
@@ -50,6 +51,7 @@ Apache Iggy's connector ecosystem is growing. This issue tracks the full landsca
 ## Status: Proposed -- Comprehensive Connector Target List
 
 Organized by category. For each target:
+
 - **Priority**: P0 (critical) / P1 (high) / P2 (medium) / P3 (low) / P4 (niche)
 - **Comp**: How many of {Kafka, Pulsar, Redpanda, NATS} have this connector
 - **Rust Crate**: The crate a contributor would use to build this connector

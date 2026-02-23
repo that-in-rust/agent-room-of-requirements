@@ -80,6 +80,7 @@ THEMATIC FOCUS:
 ## 4. Master Connector Target List
 
 Legend:
+
 - **KP** = Explicitly mentioned by KP in Discord
 - **Comp** = How many of {Kafka, Pulsar, Redpanda, NATS} have this connector (0-4)
 - **Iggy** = Current Iggy status: HAVE / PLANNED / MISSING
@@ -419,15 +420,18 @@ Iggy's strongest strategic positioning vs Kafka/Pulsar/Redpanda:
 KP mentioned Apache Camel specifically. Rather than building individual connectors for every possible target, an Apache Camel integration strategy could provide access to 193+ systems through a single bridge:
 
 **Option A**: Build an Iggy component for Apache Camel (Java)
+
 - Iggy becomes a Camel endpoint: `from("iggy:stream/topic").to("slack:channel")`
 - Immediately inherits 193+ Camel connectors
 - Requires JVM (conflicts with Iggy's "no JVM" positioning)
 
 **Option B**: Build a Camel-Kafka-Connector compatibility layer
+
 - Iggy already has Kafka wire protocol compatibility (for Pinot)
 - If expanded, any Camel Kafka Connector works with Iggy out of the box
 
 **Option C**: Selective native connectors + HTTP/gRPC for the rest
+
 - Build native Rust connectors for top 20-30 targets
 - HTTP/Webhook + gRPC connectors serve as universal fallback
 - No JVM dependency, maintains Iggy's lightweight positioning
@@ -466,12 +470,12 @@ KP-mentioned targets: 12 (of which 2 are HAVE, 1 is PLANNED, 9 are MISSING)
 
 ## 10. Sources
 
-- Confluent Kafka Connectors: https://docs.confluent.io/platform/current/connect/kafka_connectors.html
-- Confluent Hub: https://www.confluent.io/hub/
-- Apache Pulsar IO: https://pulsar.apache.org/docs/next/io-connectors/
-- StreamNative Hub: https://docs.streamnative.io/hub
-- Redpanda Connect: https://docs.redpanda.com/redpanda-connect/components/about/
-- Synadia NATS Connectors: https://www.synadia.com/platform
-- Apache Camel Kafka Connector: https://camel.apache.org/camel-kafka-connector/4.10.x/reference/index.html
-- Awesome Kafka Connect: https://github.com/conduktor/awesome-kafka-connect
-- Apache Iggy Connectors: https://github.com/apache/iggy/tree/master/core/connectors
+- Confluent Kafka Connectors: <https://docs.confluent.io/platform/current/connect/kafka_connectors.html>
+- Confluent Hub: <https://www.confluent.io/hub/>
+- Apache Pulsar IO: <https://pulsar.apache.org/docs/next/io-connectors/>
+- StreamNative Hub: <https://docs.streamnative.io/hub>
+- Redpanda Connect: <https://docs.redpanda.com/redpanda-connect/components/about/>
+- Synadia NATS Connectors: <https://www.synadia.com/platform>
+- Apache Camel Kafka Connector: <https://camel.apache.org/camel-kafka-connector/4.10.x/reference/index.html>
+- Awesome Kafka Connect: <https://github.com/conduktor/awesome-kafka-connect>
+- Apache Iggy Connectors: <https://github.com/apache/iggy/tree/master/core/connectors>

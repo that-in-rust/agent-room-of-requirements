@@ -55,13 +55,14 @@ no config. We do.
 Three sections: Quick Start, Configuration, Testing.
 
 **What changed:**
+
 - Config table preserved (it's the documentation)
 - Testing section lists E2E test names (reviewer sees coverage at a glance)
 - No "Features" section (the config table IS the feature list)
 - No "Verify It Works" section (the E2E tests ARE the verification)
 
 **External validation:** Kafka MongoDB Connector's README is 84 lines with
-zero config docs. But they have https://docs.confluent.io with 50+ pages
+zero config docs. But they have <https://docs.confluent.io> with 50+ pages
 of documentation. We don't. The README must be self-sufficient.
 
 ---
@@ -77,6 +78,7 @@ this week." The interactive test lets a reviewer see the data flow in 60
 seconds without reading the implementation.
 
 **Design of the Try It section:**
+
 - Self-contained: creates its own config via heredocs (no editing tracked files)
 - Shows expected output: reviewer knows what success looks like before running
 - Includes cleanup command: no leftover Docker containers or temp files

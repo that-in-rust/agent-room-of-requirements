@@ -18,11 +18,13 @@ been executed against a real MongoDB instance. Docker is not installed on this m
 testcontainers requires a live Docker daemon to spin up containers.
 
 To advance to TRUE GREEN, install Docker and run:
+
 ```
 cargo test --test mod -- mongodb
 ```
 
 **Honest status summary**:
+
 - 58 unit tests: PASSING (25 sink + 33 source) (verified with `cargo test -p`)
 - 8 E2E tests: COMPILE-VERIFIED ONLY (never executed against real MongoDB)
 
@@ -41,6 +43,7 @@ All 15 tracked work items follow. Each item has an ID, a status, the exact file 
 **File**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/fixtures/mongodb/container.rs`
 
 **What must be in this file:**
+
 - `GenericImage::new("mongo", "7")` with `WaitFor::message_on_stdout("Waiting for connections")`
 - Random port mapping via `.with_mapped_port(0, MONGODB_PORT.tcp())`
 - `MongoDbContainer` struct with private `container: ContainerAsync<GenericImage>` and public `connection_uri: String`
@@ -61,6 +64,7 @@ All 15 tracked work items follow. Each item has an ID, a status, the exact file 
 - Apache 2.0 license header
 
 **Critical env var correctness (sink uses TOPICS plural, source uses TOPIC singular):**
+
 ```
 ENV_SINK_STREAMS_0_TOPICS  = "IGGY_CONNECTORS_SINK_MONGODB_STREAMS_0_TOPICS"
 ENV_SOURCE_STREAMS_0_TOPIC = "IGGY_CONNECTORS_SOURCE_MONGODB_STREAMS_0_TOPIC"
@@ -148,6 +152,7 @@ Three fixture structs, each implementing `TestFixture`:
 **File**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/fixtures/mongodb/mod.rs`
 
 **Exact content required:**
+
 ```rust
 mod container;
 mod sink;
@@ -169,6 +174,7 @@ Apache license header must be present.
 **File**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/fixtures/mod.rs`
 
 **Current content** (lines 20-34 relevant section):
+
 ```rust
 mod elasticsearch;
 mod iceberg;
@@ -184,6 +190,7 @@ pub use wiremock::{...};
 ```
 
 **What to add** (insert after existing mod declarations, before existing pub use lines or alongside them):
+
 ```rust
 mod mongodb;
 
@@ -204,6 +211,7 @@ pub use mongodb::{
 **File**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/mongodb/mod.rs`
 
 **Exact content required:**
+
 ```rust
 mod mongodb_sink;
 mod mongodb_source;
@@ -226,6 +234,7 @@ These constants match the postgres and elasticsearch patterns exactly (`TEST_MES
 **4 tests required:**
 
 **Test 1: `json_messages_sink_to_mongodb`**
+
 - Fixture: `MongoDbSinkJsonFixture`
 - Harness: `&TestHarness` (immutable)
 - Config path: `"tests/connectors/mongodb/sink.toml"`
@@ -236,6 +245,7 @@ These constants match the postgres and elasticsearch patterns exactly (`TEST_MES
   - `docs[0].get("payload")` is `Bson::Document(_)` (not Binary — json format stores as BSON Document)
 
 **Test 2: `binary_messages_sink_as_bson_binary`**
+
 - Fixture: `MongoDbSinkFixture` (base — binary format)
 - Harness: `&TestHarness` (immutable)
 - Config path: `"tests/connectors/mongodb/sink.toml"`
@@ -245,6 +255,7 @@ These constants match the postgres and elasticsearch patterns exactly (`TEST_MES
   - `bin.bytes == raw_payloads[i]` (byte-for-byte match)
 
 **Test 3: `large_batch_processed_correctly`**
+
 - Fixture: `MongoDbSinkFixture` (base) OR a new `MongoDbSinkBatchFixture` that adds `ENV_SINK_BATCH_SIZE = "10"`
 - Harness: `&TestHarness` (immutable)
 - Config path: `"tests/connectors/mongodb/sink.toml"`
@@ -255,6 +266,7 @@ These constants match the postgres and elasticsearch patterns exactly (`TEST_MES
 - **Implementation decision needed**: The spec mentions either creating a `MongoDbSinkBatchFixture` or overriding via harness env injection. The simpler approach per the spec is a dedicated fixture variant that sets `ENV_SINK_BATCH_SIZE = "10"`. The rust-coder-01 agent must choose and document which approach was used.
 
 **Test 4: `auto_create_collection_on_open`**
+
 - Fixture: `MongoDbSinkAutoCreateFixture`
 - Harness: `&TestHarness` (immutable, add `let _ = harness;` to suppress unused warning)
 - Config path: `"tests/connectors/mongodb/sink.toml"`
@@ -264,6 +276,7 @@ These constants match the postgres and elasticsearch patterns exactly (`TEST_MES
   - `count_documents_in_collection()` returns 0 (empty collection)
 
 **Imports for all sink tests:**
+
 ```rust
 use super::{POLL_ATTEMPTS, POLL_INTERVAL_MS, TEST_MESSAGE_COUNT};
 use crate::connectors::fixtures::{MongoDbSinkAutoCreateFixture, MongoDbSinkFixture, MongoDbSinkJsonFixture};
@@ -289,6 +302,7 @@ use tokio::time::sleep;
 **4 tests required:**
 
 **Test 1: `source_polls_documents_to_iggy`**
+
 - Fixture: `MongoDbSourceFixture`
 - Harness: `&TestHarness` (immutable)
 - Config path: `"tests/connectors/mongodb/source.toml"`
@@ -301,6 +315,7 @@ use tokio::time::sleep;
   - Documents arrive in seq order: `received[i]["seq"].as_i64() == (i+1) as i64`
 
 **Test 2: `delete_after_read_removes_documents`**
+
 - Fixture: `MongoDbSourceDeleteFixture`
 - Harness: `&TestHarness` (immutable)
 - Actions:
@@ -313,6 +328,7 @@ use tokio::time::sleep;
   - MongoDB document count after poll: `final_count == 0`
 
 **Test 3: `mark_processed_sets_field`**
+
 - Fixture: `MongoDbSourceMarkFixture`
 - Harness: `&TestHarness` (immutable)
 - Actions:
@@ -324,6 +340,7 @@ use tokio::time::sleep;
   - `total == TEST_MESSAGE_COUNT as u64` (no docs deleted)
 
 **Test 4: `state_persists_across_connector_restart`**
+
 - Fixture: `MongoDbSourceFixture`
 - Harness: **`&mut TestHarness` (MUTABLE)** — this is a critical difference from the other 7 tests
 - Actions:
@@ -340,6 +357,7 @@ use tokio::time::sleep;
   - No duplicates: all messages in `received_after` have `seq > TEST_MESSAGE_COUNT as i64`
 
 **Imports for all source tests:**
+
 ```rust
 use super::{POLL_ATTEMPTS, POLL_INTERVAL_MS, TEST_MESSAGE_COUNT};
 use crate::connectors::fixtures::{MongoDbSourceDeleteFixture, MongoDbSourceFixture, MongoDbSourceMarkFixture};
@@ -361,6 +379,7 @@ use tokio::time::sleep;
 **File**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/mongodb/sink.toml`
 
 **Exact content:**
+
 ```toml
 # Apache License 2.0 header (same as postgres/sink.toml)
 
@@ -380,6 +399,7 @@ config_dir = "../connectors/sinks/mongodb_sink"
 **File**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/mongodb/source.toml`
 
 **Exact content:**
+
 ```toml
 # Apache License 2.0 header
 
@@ -399,6 +419,7 @@ config_dir = "../connectors/sources/mongodb_source"
 **File**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/mod.rs`
 
 **Current mod declarations (lines 20-28):**
+
 ```rust
 mod api;
 mod elasticsearch;
@@ -412,6 +433,7 @@ mod stdout;
 ```
 
 **What to add**: Insert `mod mongodb;` into the sorted list (alphabetically between `mod iceberg;` and `mod postgres;`):
+
 ```rust
 mod mongodb;
 ```
@@ -429,6 +451,7 @@ mod mongodb;
 **Current state**: `mongodb` is NOT present in this file (confirmed by grep returning "NOT FOUND").
 
 **Action required**: Add to the `[dependencies]` section (the file has no `[dev-dependencies]` section, only `[dependencies]`):
+
 ```toml
 mongodb = { version = "3.0", features = ["rustls-tls"] }
 ```
@@ -454,6 +477,7 @@ mongodb = { version = "3.0", features = ["rustls-tls"] }
 **Status**: NOT STARTED (blocker for all tests)
 
 **Command:**
+
 ```bash
 cargo build -p iggy_connector_mongodb_sink -p iggy_connector_mongodb_source
 ```
@@ -461,6 +485,7 @@ cargo build -p iggy_connector_mongodb_sink -p iggy_connector_mongodb_source
 **Run from**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02`
 
 **Success criterion**: Exit code 0, artifacts exist at:
+
 - `target/debug/libiggy_connector_mongodb_sink.so` (Linux) or `.dylib` (macOS)
 - `target/debug/libiggy_connector_mongodb_source.so` (Linux) or `.dylib` (macOS)
 
@@ -473,6 +498,7 @@ cargo build -p iggy_connector_mongodb_sink -p iggy_connector_mongodb_source
 **Status**: NOT STARTED (blocker for test execution)
 
 **Command:**
+
 ```bash
 cargo test --test connectors --no-run
 ```
@@ -480,6 +506,7 @@ cargo test --test connectors --no-run
 **Run from**: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02`
 
 **Success criterion**: Exit code 0. The `--no-run` flag compiles without executing, which will catch:
+
 - Missing imports
 - Type mismatches in fixture implementations
 - Missing `mod mongodb;` declarations
@@ -546,7 +573,7 @@ Implementation order is no longer relevant. Focus is now on E2E execution unbloc
 
 **Updated 2026-02-22**: Implementation complete. Steps to advance to TRUE GREEN:
 
-1. Install Docker Desktop for macOS (https://www.docker.com/products/docker-desktop/)
+1. Install Docker Desktop for macOS (<https://www.docker.com/products/docker-desktop/>)
 2. Build connector artifacts: `cargo build -p iggy_connector_mongodb_sink -p iggy_connector_mongodb_source`
 3. Execute E2E tests: `cargo test --test mod -- mongodb --nocapture`
 4. Fix any failures and re-run
@@ -559,26 +586,32 @@ Implementation order is no longer relevant. Focus is now on E2E execution unbloc
 ### Key Decisions (from spec post-rubberduck review)
 
 **Decision 1: GenericImage over testcontainers-modules mongo feature**
+
 - Rationale: MongoDB source uses `find()` polling, not Change Streams. Standalone mode is correct. Replica set is only required for Change Streams / CDC which is out of scope for v1.
 - Impact: No `"mongo"` feature needed in `testcontainers-modules`. No workspace Cargo.toml change needed.
 
 **Decision 2: `seq` integer field as tracking field**
+
 - Rationale: Avoids ObjectId string comparison complexity in `$gt` queries. Mirrors how postgres source tests use integer `id` as tracking column.
 - Impact: All seeded documents MUST have `seq: 1, 2, 3, ...` in order. Fixture sets `ENV_SOURCE_TRACKING_FIELD = "seq"`.
 
 **Decision 3: 4 sink tests, 4 source tests (not 5+6)**
+
 - Tests dropped: `offset_tracking_across_polls`, `payload_format_json_emits_schema_json`, `metadata_fields_included` (merged into json test), `source_handles_empty_collection`, `round_trip_source_to_sink`
 - Rationale documented in spec Gap 6 section.
 
 **Decision 4: poll_interval = "10ms" in source fixtures**
+
 - Rationale: Source connector sleeps BEFORE its first poll. Using 10ms keeps test duration acceptable.
 - The 5-second total polling window (100 attempts x 50ms) gives 500x margin over the 10ms poll interval.
 
 **Decision 5: `state_persists_across_connector_restart` uses `&mut TestHarness`**
+
 - This is the ONLY test among all 8 that uses a mutable harness reference.
 - Required because `harness.server_mut().stop_dependents()` and `start_dependents()` need mutability.
 
 **Decision 6: MongoDB metadata fields differ between sink and source**
+
 - Sink metadata (in MongoDB document): `_id`, `iggy_offset`, `iggy_timestamp`, `iggy_stream`, `iggy_topic`, `iggy_partition_id`
 - Source metadata (in iggy message payload): `_iggy_source_collection`, `_iggy_poll_timestamp`
 - The json_messages_sink_to_mongodb test checks sink metadata fields. Source tests do not check source metadata fields (they check the `seq` field to verify ordering).
@@ -586,17 +619,21 @@ Implementation order is no longer relevant. Focus is now on E2E execution unbloc
 ### Critical Correctness Traps
 
 **Trap 1: TOPICS vs TOPIC (plural vs singular)**
+
 ```
 Sink:   ENV_SINK_STREAMS_0_TOPICS   = "IGGY_CONNECTORS_SINK_MONGODB_STREAMS_0_TOPICS"    (array)
 Source: ENV_SOURCE_STREAMS_0_TOPIC  = "IGGY_CONNECTORS_SOURCE_MONGODB_STREAMS_0_TOPIC"   (singular)
 ```
+
 Getting this wrong causes messages to not route. The sink topics value format is `"[test_topic]"` (bracket syntax for array).
 
 **Trap 2: Connector binary path has no file extension**
+
 ```
 Sink:   "../../target/debug/libiggy_connector_mongodb_sink"
 Source: "../../target/debug/libiggy_connector_mongodb_source"
 ```
+
 The runtime appends `.so` or `.dylib` based on platform. Do not hardcode the extension.
 
 **Trap 3: `wait_for_documents` sorts by `iggy_offset` ascending**
@@ -607,6 +644,7 @@ Second batch seeded at `seq = TEST_MESSAGE_COUNT + 1` to `TEST_MESSAGE_COUNT * 2
 
 **Trap 5: The `large_batch_processed_correctly` test needs `batch_size=10` configured**
 The base `MongoDbSinkFixture` does not set `ENV_SINK_BATCH_SIZE`. For this test to exercise multi-batch behavior, the batch_size must be set to a value smaller than the message count (10 < 50). Either:
+
 - (Option A) Create a `MongoDbSinkBatchFixture` that wraps base and adds `ENV_SINK_BATCH_SIZE = "10"` — cleaner, follows existing pattern
 - (Option B) Set `batch_size=10` in the base fixture's `connectors_runtime_envs()` — simpler but affects all tests using base
 - The rust-coder agent must pick one and record which was chosen here when updating this document.
@@ -623,6 +661,7 @@ The base `MongoDbSinkFixture` does not set `ENV_SINK_BATCH_SIZE`. For this test 
 ### Existing File Locations (for reference during implementation)
 
 Pattern files to study:
+
 - Elasticsearch container (GenericImage pattern): `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/fixtures/elasticsearch/container.rs`
 - Postgres sink fixture (TestFixture trait pattern): `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/fixtures/postgres/sink.rs`
 - Postgres source fixture: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/fixtures/postgres/source.rs`
@@ -630,10 +669,12 @@ Pattern files to study:
 - Postgres source tests (restart test pattern): `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/integration/tests/connectors/postgres/postgres_source.rs`
 
 MongoDB connector implementations:
+
 - Sink: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/connectors/sinks/mongodb_sink/src/lib.rs`
 - Source: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/connectors/sources/mongodb_source/src/lib.rs`
 
 Connector config files (referenced by sink.toml/source.toml):
+
 - Sink config: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/connectors/sinks/mongodb_sink/config.toml`
 - Source config: `/Users/amuldotexe/Desktop/A01_20260131/iggy-issue02/core/connectors/sources/mongodb_source/config.toml`
 
@@ -662,6 +703,7 @@ Connector config files (referenced by sink.toml/source.toml):
 ## Performance / Metrics
 
 No performance benchmarks apply to these E2E integration tests. The tests are correctness-only. The overall test budget is approximately:
+
 - Container startup: ~5 seconds per test (MongoDB 7 image starts fast)
 - Test execution (message flow): ~5 seconds per test (100 attempts x 50ms)
 - Restart test: +2 seconds for the post-restart sleep
@@ -703,11 +745,13 @@ was confused with actual test execution. Docker is not installed; no test has be
 against a live MongoDB instance.
 
 **Files corrected**:
+
 - This TDD state file: phase updated, WI statuses updated, tests table updated
 - `issue-2739-pr-preparation.md`: all 7 false claims about E2E execution corrected,
   Phase 5 journal entry added documenting the gap
 
 **Verified facts as of 2026-02-22**:
+
 - `which docker` returns nothing (Docker not installed)
 - `cargo test --test mod --no-run` exits 0 (compilation verified)
 - `cargo test -p iggy_connector_mongodb_sink -p iggy_connector_mongodb_source` exits 0 (52 tests pass)

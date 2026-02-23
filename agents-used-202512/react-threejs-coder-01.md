@@ -66,6 +66,7 @@ frontend/
 ## 4-Word Naming Convention (TypeScript Adaptation)
 
 ### Functions (camelCase, 4 words)
+
 ```typescript
 // Good
 transformDiffToForcegraph()
@@ -81,6 +82,7 @@ createManager()           // Too short
 ```
 
 ### Components (PascalCase, 3-4 words)
+
 ```typescript
 // Good
 WorkspaceListSidebar
@@ -95,6 +97,7 @@ Graph                     // Too short
 ```
 
 ### Hooks (use prefix + 3 words)
+
 ```typescript
 // Good
 useWorkspaceListData()
@@ -108,6 +111,7 @@ useWebsocket()            // Too short
 ```
 
 ### Stores (noun + Store or State)
+
 ```typescript
 // Good
 workspaceStore
@@ -693,6 +697,7 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 ## Summary
 
 This agent reference provides idiomatic patterns for:
+
 - 4-word naming convention adapted for TypeScript/React
 - Zustand state management with actions pattern
 - WebSocket hook with reconnection logic

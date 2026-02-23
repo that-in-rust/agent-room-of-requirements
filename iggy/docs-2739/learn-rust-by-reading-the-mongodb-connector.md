@@ -535,7 +535,7 @@ if let Ok(n) = offset.parse::<i64>() {
 
 ## Part 6: E2E Tests — The Trust Signal (Cursory)
 
-### How the test harness works:
+### How the test harness works
 
 ```
   #[iggy_harness(
@@ -559,7 +559,7 @@ if let Ok(n) = offset.parse::<i64>() {
   └──────────────────────────────────────────────────────┘
 ```
 
-### The fixture pattern:
+### The fixture pattern
 
 ```rust
 pub struct MongoDbSinkJsonFixture {
@@ -580,7 +580,7 @@ impl std::ops::Deref for MongoDbSinkJsonFixture {
    delegate to my inner field."
 ```
 
-### The 8 tests in ASCII:
+### The 8 tests in ASCII
 
 ```
   SINK (4 tests)
@@ -642,7 +642,7 @@ impl std::ops::Deref for MongoDbSinkJsonFixture {
   └─────────┘
 ```
 
-### The polling pattern (used in every test):
+### The polling pattern (used in every test)
 
 ```rust
 for _ in 0..POLL_ATTEMPTS {           // 100 attempts

@@ -18,6 +18,7 @@ Before writing a single line, we studied every prior connector PR:
 | Postgres extend #2579 | +3,726 | spetz (maintainer) | Merged, extended connector |
 
 **What this revealed:**
+
 - Sink + source always ship together (Postgres, Elasticsearch both did this)
 - E2E tests were always added LATER by the maintainer — no external contributor shipped them
 - The Elasticsearch PR is the cautionary tale: AI-generated code, didn't use SDK traits, 3 months of "I'll fix it this week", maintainer had to rewrite. This is what tightened CONTRIBUTING.md
@@ -34,6 +35,7 @@ We found a real bug by comparing our implementation against the existing codebas
 **The pattern:** Read the Postgres sink's `is_transient_error` function (typed `sqlx::Error` matching with specific Postgres error codes like "40001", "40P01"). Then looked at our MongoDB sink — our `insert_batch_with_retry` was retrying ALL errors, including auth failures, duplicate keys, and schema validation errors. The log said "Transient database error" without checking.
 
 **Industry validation:** Researched how Kafka MongoDB Connector and Debezium handle this:
+
 - Debezium has the SAME bug (worse — infinite retries on non-transient errors)
 - MongoDB Kafka Connector solved it by removing app-level retries entirely in v1.7, relying on driver retries
 - Our fix: typed `ErrorKind` matching with MongoDB-specific codes (11000=duplicate key, 13=unauthorized, 121=schema validation)
@@ -57,12 +59,14 @@ The README went through 4+ iterations. Each time we asked: "what would the best 
 | v5 (current) | 131+137 | Added "Try It" interactive test section |
 
 **Key tensions:**
+
 - Other connector READMEs range from 13 lines (stdout_sink) to 375 lines (postgres_source)
 - Kafka MongoDB Connector's README is 84 lines: one-liner, docs link, build command, maintainers. Zero features, zero config docs, zero examples
 - But Kafka has an external docs site. We don't. The README IS the documentation
 - "Can we have quick start and test and not have more features etc. shit?" — the user's exact words
 
 **What we landed on:**
+
 - Config table stays (no external docs site to link to)
 - Testing section lists test names (reviewer can see what's covered at a glance)
 - "Try It" section is the lead — copy-paste commands that prove the connector works
@@ -93,6 +97,7 @@ Our approach: E2E tests are the PR's centerpiece.
 The E2E tests prove correctness (automated, repeatable). The interactive test proves usefulness (human, tangible).
 
 **What the "Try It" section does:**
+
 1. Start MongoDB with `docker run` (one line)
 2. Start iggy-server (one line)
 3. Create stream + topic (two lines)
@@ -112,6 +117,7 @@ The E2E tests prove correctness (automated, repeatable). The interactive test pr
 Despite 3,600+ lines exceeding the 500-line guideline for new contributors:
 
 **Why one PR:**
+
 - Precedent: every connector PR shipped sink+source together
 - E2E tests can't be separated — they're the proof the implementation works
 - Splitting creates review overhead (reviewer has to context-switch between PRs)

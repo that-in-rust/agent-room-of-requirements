@@ -3,6 +3,7 @@
 ## What the Industry Does
 
 ### MongoDB Kafka Connector (MongoDB Inc)
+
 - Embedded Kafka cluster (in-process) + external MongoDB replica set
 - **Round-trip testing is the gold standard**: Source DB → Kafka → Sink DB → compare databases field-by-field
 - `ChangeStreamRoundTripTest`: full CRUD (insert/update/replace/delete) replicated and verified
@@ -12,6 +13,7 @@
 - Verifies JMX metrics: `records-successful`, `records-failed`, `batch-writes-successful`
 
 ### Debezium MongoDB Connector
+
 - Docker container with `mongo` image, **replica set mandatory** (change streams need oplog)
 - 39+ test classes covering CDC, snapshots, field filtering, schema, sharded clusters
 - `@SkipWhenDatabaseVersion` annotation for version-gated tests
@@ -20,6 +22,7 @@
 - Tests: invalid SSL, config validation, server selection timeout, incremental snapshots with 1000 docs
 
 ### Apache Flink MongoDB Connector
+
 - Testcontainers with `MongoDBContainer` + Flink's `FlinkContainers`
 - Multi-version testing via system property (`-Dmongodb.version=4/5/6/7`)
 - Deadline-based polling: `Deadline.fromNow(Duration.ofSeconds(20))` with 1s sleep
@@ -27,6 +30,7 @@
 - Tests: upsert sink, append-only sink, network aliases for container-to-container comms
 
 ### Rust testcontainers-modules (crate)
+
 - Feature flag: `mongo` — default image `mongo:5.0.6`
 - Supports standalone AND **replica set** mode via `Mongo::repl_set()`
 - Replica set: runs `rs.initiate()` via mongosh, waits for stepUp log message
@@ -48,6 +52,7 @@
 ## What E2E Tests We Should Build for Iggy
 
 ### Infrastructure
+
 - `testcontainers-modules` with `Mongo::repl_set()` (not GenericImage)
 - Add `"mongo"` feature to testcontainers-modules in root Cargo.toml
 - Follow Elasticsearch `GenericImage` fixture pattern from existing iggy tests
@@ -129,6 +134,7 @@ core/integration/tests/connectors/
 ---
 
 ## Sources
+
 - [mongodb/mongo-kafka](https://github.com/mongodb/mongo-kafka) — MongoDB Inc's official Kafka connector
 - [debezium/debezium](https://github.com/debezium/debezium) — Debezium CDC platform
 - [apache/flink-connector-mongodb](https://github.com/apache/flink-connector-mongodb) — Flink MongoDB connector

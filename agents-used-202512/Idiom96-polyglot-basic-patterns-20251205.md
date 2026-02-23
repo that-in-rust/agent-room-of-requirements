@@ -9,6 +9,7 @@ This document provides 400+ patterns for each of 8 technology stacks, modeled af
 ## 1.1 Meta-Principles
 
 ### Naming Conventions for LLM Tokenization
+
 - **Types/Interfaces**: PascalCase with descriptive 4-word patterns (`UserAuthenticationState`, `ApiResponseHandler`)
 - **Functions/Variables**: camelCase (`fetchUserProfile`, `isValidEmail`)
 - **Constants**: SCREAMING_SNAKE_CASE (`MAX_RETRY_COUNT`, `API_BASE_URL`)
@@ -113,6 +114,7 @@ class ValidationError extends AppError {
 ### A. Type System Patterns (50+ patterns)
 
 **A.1 Branded Types Pattern**
+
 - **Use when**: Preventing primitive obsession, ensuring type-safe IDs
 - **Avoid when**: Simple prototypes, internal-only code
 
@@ -138,6 +140,7 @@ test('branded type prevents invalid IDs', () =&gt; {
 ```
 
 **A.2 Discriminated Union Pattern**
+
 - **Use when**: Representing states, exhaustive type checking
 - **Avoid when**: Simple boolean flags suffice
 
@@ -332,12 +335,14 @@ async function withRetry&lt;T&gt;(
 ## 2.1 Meta-Principles
 
 ### Naming Conventions
+
 - **Variables/Functions**: camelCase (`getUserProfile`, `isValidEmail`)
 - **Classes/Constructors**: PascalCase (`UserService`, `EventEmitter`)
 - **Constants**: SCREAMING_SNAKE_CASE (`MAX_CONNECTIONS`, `API_TIMEOUT`)
 - **Private fields**: `#` prefix (`#privateField`)
 
 ### 8 Non-Negotiable Principles
+
 1. **Prefer const, avoid var** - Immutability by default
 2. **Use strict mode always** - `'use strict';` at file start
 3. **Explicit error handling** - try/catch/finally patterns
@@ -529,12 +534,14 @@ class User {
 ## 3.1 Meta-Principles
 
 ### Naming Conventions
+
 - **Classes**: PascalCase with suffixes (`UserService`, `OrderRepository`, `SecurityConfig`)
 - **Beans**: camelCase matching class (`userService`, `orderRepository`)
 - **Properties**: `lowercase.with.dots` (`spring.datasource.url`)
 - **Packages**: `com.company.module.layer`
 
 ### 8 Non-Negotiable Principles
+
 1. **Constructor Injection** over Field Injection
 2. **Interface-First Design** - Define contracts via interfaces
 3. **Configuration over Hardcoding** - Use `@ConfigurationProperties`
@@ -792,6 +799,7 @@ public class PaymentGatewayService {
 ## 4.1 Meta-Principles
 
 ### 8 Non-Negotiable Principles
+
 1. **Immutability by Default** - Records, final fields
 2. **Null Safety** - Optional, @Nullable annotations
 3. **Resource Management** - try-with-resources
@@ -921,6 +929,7 @@ Map&lt;Department, Map&lt;Level, List&lt;Employee&gt;&gt;&gt; nested = employees
 8. **Accept interfaces, return structs**
 
 ### Naming Conventions
+
 - **MixedCaps/mixedCaps** - Never underscores
 - **Exported**: PascalCase
 - **Unexported**: camelCase
@@ -1136,12 +1145,14 @@ srv := NewServer(":8080", WithTimeout(5*time.Second))
 ## 6.1 Meta-Principles
 
 ### Naming Conventions
+
 - **Kubernetes**: lowercase, hyphenated (`my-service-deployment`)
 - **Terraform**: snake_case (`aws_instance.web_server`)
 - **Helm**: chart names lowercase, hyphenated
 - **CI/CD**: descriptive job/step names
 
 ### 8 Non-Negotiable Principles
+
 1. **Infrastructure as Code** - Everything versioned
 2. **GitOps** - Git as single source of truth
 3. **Immutable Infrastructure** - Replace, don't modify
@@ -1348,11 +1359,13 @@ jobs:
 ## 7.1 Meta-Principles
 
 ### Naming Conventions
+
 - **Topics**: `com.company.domain.event` (dot-separated)
 - **Consumer Groups**: `order-processor-group` (hyphenated)
 - **Connectors**: `jdbc-source-customers`
 
 ### 8 Non-Negotiable Principles
+
 1. **Idempotent Producers by Default** - `enable.idempotence=true`
 2. **At-Least-Once with Idempotent Consumers**
 3. **Schema Evolution** - Avro/Protobuf with Schema Registry
@@ -1497,12 +1510,14 @@ CREATE TABLE outbox (
 ## 8.1 Meta-Principles
 
 ### Naming Conventions
+
 - **React Components**: PascalCase (`UserProfile.tsx`)
 - **Custom Hooks**: camelCase with 'use' prefix (`useAuth`)
 - **MongoDB Collections**: lowercase plural (`users`, `orders`)
 - **Express Routes**: lowercase, hyphenated (`/api/user-profiles`)
 
 ### 8 Non-Negotiable Principles
+
 1. **Component Composition over Inheritance**
 2. **Unidirectional Data Flow**
 3. **Separation of Concerns** - hooks, services, components
@@ -1706,21 +1721,25 @@ describe('GET /api/users', () =&gt; {
 ## Pre-Commit Verification Checklist (All Stacks)
 
 ### ✅ Type Safety / Compile-Time Checks
+
 - [ ] All types are explicit (no implicit `any` in TS, proper generics in Java/Go)
 - [ ] Null safety validated (Optional, nullable annotations)
 - [ ] Exhaustive pattern matching (sealed classes, discriminated unions)
 
 ### ✅ Error Handling
+
 - [ ] No silent failures (all errors logged or propagated)
 - [ ] Custom error types for domain errors
 - [ ] Error boundaries / global handlers in place
 
 ### ✅ Testing
+
 - [ ] Unit tests for business logic (80%+ coverage)
 - [ ] Integration tests for APIs
 - [ ] Performance tests for critical paths
 
 ### ✅ Security
+
 - [ ] Input validation at all boundaries
 - [ ] Authentication/authorization middleware
 - [ ] Secrets not hardcoded (env vars, secrets managers)
@@ -1728,18 +1747,21 @@ describe('GET /api/users', () =&gt; {
 - [ ] XSS prevention (output encoding)
 
 ### ✅ Performance
+
 - [ ] Database indexes for common queries
 - [ ] Connection pooling configured
 - [ ] Caching strategy for read-heavy data
 - [ ] Async patterns for I/O operations
 
 ### ✅ Observability
+
 - [ ] Structured logging
 - [ ] Metrics exposed (Prometheus format)
 - [ ] Health checks implemented
 - [ ] Distributed tracing (where applicable)
 
 ### ✅ Infrastructure
+
 - [ ] Resource limits defined (K8s)
 - [ ] Liveness/readiness probes configured
 - [ ] Graceful shutdown implemented

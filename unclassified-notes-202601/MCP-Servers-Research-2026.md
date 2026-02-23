@@ -101,6 +101,7 @@ The **Model Context Protocol (MCP)** is an open standard introduced by Anthropic
 ```
 
 Docker alternative:
+
 ```bash
 docker run -d -p 3000:3000 --name mcp-excalidraw-canvas ghcr.io/yctimlin/mcp_excalidraw-canvas:latest
 ```
@@ -162,6 +163,7 @@ docker run -d -p 3000:3000 --name mcp-excalidraw-canvas ghcr.io/yctimlin/mcp_exc
   }
 }
 ```
+
 Requires browser binaries: `npx playwright install`
 
 ### Installation Example: Brave Search MCP
@@ -376,6 +378,7 @@ npx anydb-mcp sqlite:///path/to/db.sqlite
 ```
 
 Docker (with read-only mount):
+
 ```bash
 docker run -v /path/to/dir:/projects/dir:ro \
   mcp/filesystem --allow-dir /projects
@@ -688,6 +691,7 @@ pip install mcp-atlassian
 ```
 
 Stripe MCP (Local):
+
 ```bash
 npx -y @stripe/mcp --api-key=sk_test_YOUR_KEY --tools=all
 ```

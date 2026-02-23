@@ -4,7 +4,7 @@
 
 ---
 
-## Different workflows 
+## Different workflows
 
 | Work Type | PRD Needed? | Architecture Iteration? | TDD Depth? | Time |
 |-----------|-------------|------------------------|------------|------|
@@ -59,12 +59,14 @@ flowchart TD
 ```
 
 **Reference files needed**:
+
 - `S07-anti-patterns-registry.md` — Update after fix
 - `C03-test-inventory.md` — Where to add regression test
 
 **NOT needed**: PRD, Architecture iteration, Spike
 
 **Key questions**:
+
 1. Can I reproduce it? (If no, get more info)
 2. What's the minimal test that captures this?
 3. What's the minimal fix?
@@ -95,6 +97,7 @@ flowchart TD
 ```
 
 **Reference files needed**:
+
 - `C01-dependency-graph.md` — Find similar patterns
 - `C02-existing-interfaces.md` — What to extend
 - `S08-idiomatic-patterns.md` — Match existing style
@@ -102,6 +105,7 @@ flowchart TD
 **NOT needed**: Deep PRD iteration, Architecture exploration, Spikes
 
 **Key questions**:
+
 1. Does similar code already exist? (Copy the pattern)
 2. What interface am I extending? (Not creating)
 3. What existing test can I mirror?
@@ -140,11 +144,13 @@ flowchart TD
 ```
 
 **Reference files needed**:
+
 - All Tier 1 files (S06, S07, S08)
 - `C01-dependency-graph.md`
 - Domain-specific files if relevant (D01-D04)
 
 **Key questions**:
+
 1. What user journey does this enable?
 2. What's the minimal version that delivers value?
 3. Can architecture be simpler → PRD simpler?
@@ -190,12 +196,14 @@ flowchart TD
 ```
 
 **Reference files needed**:
+
 - `S01-problem-discovery-patterns.md` — Critical
 - `S02-technical-spike-patterns.md` — Critical
 - All Tier 1 files for Build phase
 - Possibly new domain files to create
 
 **Key questions**:
+
 1. What job is the user trying to do? (Not what feature they want)
 2. What must be true for this to succeed? (Hypotheses)
 3. What's the fastest way to test each hypothesis? (Spikes)
@@ -328,6 +336,7 @@ Before starting any work, ask:
 4. **"What files do I need?"** — Load only what's needed for this type
 
 **The waste equation**:
+
 - Over-process = time wasted on unnecessary steps
 - Under-process = time wasted fixing mistakes later
 

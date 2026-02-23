@@ -149,6 +149,7 @@ class BadSceneManager {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN entity added to SceneManagerOrganized
 THEN entity SHALL be child of appropriate root group
@@ -282,10 +283,12 @@ function fireBulletProjectile(origin: THREE.Vector3, direction: THREE.Vector3): 
 ```
 
 **Performance Comparison**:
+
 - Without pooling: 60 bullets/sec = 60 allocations/sec → GC pauses
 - With pooling: 60 bullets/sec = 0 allocations/sec after warmup → smooth 60fps
 
 **TDD Specification**:
+
 ```markdown
 WHEN acquireInstanceFromPool called
 THEN instance SHALL be removed from pool
@@ -454,6 +457,7 @@ function updateGameLoop(deltaTime: number, entities: EntityWithComponents[]): vo
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN component added to entity
 THEN component SHALL be retrievable by name
@@ -598,11 +602,13 @@ function badDispose(mesh: THREE.Mesh): void {
 ```
 
 **Memory Leak Symptoms**:
+
 - GPU memory usage increases over time
 - Frame rate degrades after multiple scene loads
 - Browser tab crashes after extended use
 
 **TDD Specification**:
+
 ```markdown
 WHEN disposeObject3DRecursive called on mesh
 THEN geometry SHALL be disposed
@@ -716,6 +722,7 @@ async function createTexturedMesh(): Promise<THREE.Mesh> {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN same texture URL loaded twice
 THEN only one network request SHALL occur
@@ -831,6 +838,7 @@ async function loadCharacterModel(): Promise<THREE.Group> {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN GLTF model loaded
 THEN all meshes SHALL have shadows enabled (if option true)
@@ -962,6 +970,7 @@ class RenderLoopManager {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN render loop started
 THEN animate function SHALL be called every frame
@@ -1081,6 +1090,7 @@ function ThreeJSCanvas() {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN container resized
 THEN renderer SHALL update to new dimensions
@@ -1264,10 +1274,12 @@ for (let x = 0; x < 100; x++) {
 ```
 
 **Performance Comparison**:
+
 - 10,000 individual meshes: ~10 FPS, 10,000 draw calls
 - 10,000 instanced meshes: ~60 FPS, 1 draw call
 
 **TDD Specification**:
+
 ```markdown
 WHEN 10,000 instances added to InstancedMeshManager
 THEN only one draw call SHALL occur
@@ -1339,6 +1351,7 @@ function configureRendererQualitySettings(
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN PerspectiveCamera created for container
 THEN aspect ratio SHALL match container dimensions
@@ -1426,6 +1439,7 @@ function updateGameLoop(deltaTime: number): void {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN camera follows moving target
 THEN camera position SHALL lag behind target
@@ -1550,6 +1564,7 @@ function handleCharacterMovement(controller: AnimationControllerMixer, isWalking
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN playAnimationByName called with 'Walk'
 THEN Walk animation SHALL start playing
@@ -1681,6 +1696,7 @@ function updateLoop(deltaTime: number): void {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN tween started from 0 to 100 over 1 second
 THEN value SHALL interpolate from 0 to 100
@@ -1840,6 +1856,7 @@ function updateShaderUniforms(material: THREE.ShaderMaterial, elapsed: number): 
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN gradient shader material created
 THEN uniforms SHALL contain uColorTop and uColorBottom
@@ -1965,6 +1982,7 @@ function goodCreateForest(): void {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN mesh removed from scene
 THEN geometry SHALL be disposed
@@ -2022,18 +2040,21 @@ graph TD
 ```
 
 ## Allowed Import Patterns
+
 - Application → Managers: ✅
 - Managers → Components: ✅
 - Components → Utils: ✅
 - Utils → THREE.*: ✅ (wrapped)
 
 ## Forbidden Import Patterns
+
 - Application → Utils (skip layers)
 - Application → THREE.* directly (use managers)
 - Circular: ManagerA → ManagerB → ManagerA
 - Utils depending on Components (reverse hierarchy)
 
 ## TDD Specification
+
 ```markdown
 WHEN Application imports THREE.Vector3 directly
 THEN build SHALL fail
@@ -2043,6 +2064,7 @@ WHEN analyzing codebase with Parseltongue
 THEN forbidden THREE.* imports in App layer SHALL be detected
 AND report SHALL list violations with suggested fixes
 ```
+
 ```
 
 ---
@@ -2141,6 +2163,7 @@ function SceneWithModel() {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN ModelComponentFromGLTF suspends during load
 THEN LoadingPlaceholderMesh SHALL be displayed

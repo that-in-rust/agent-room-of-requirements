@@ -40,6 +40,7 @@ Looking at the actual code:
 - Elasticsearch uses `GenericImage`: `GenericImage::new("elasticsearch", "9.3.0")` -- no testcontainers-modules module exists for it.
 
 The current workspace `Cargo.toml` has:
+
 ```toml
 testcontainers-modules = { version = "0.14.0", features = ["postgres"] }
 ```
@@ -59,6 +60,7 @@ The `Cargo.toml` does NOT need a `"mongodb"` feature added to `testcontainers-mo
 The original document listed env var names like `IGGY_CONNECTORS_SINK_MONGODB_PLUGIN_CONFIG_CONNECTION_URI` but these were derived by analogy, not confirmed from code.
 
 Confirmed pattern from `fixtures/postgres/container.rs`:
+
 ```rust
 // Sink env var structure:
 "IGGY_CONNECTORS_SINK_{CONNECTOR_NAME}_PLUGIN_CONFIG_{FIELD_NAME}"
@@ -114,6 +116,7 @@ For MongoDB the connector name in env vars is `MONGODB` (all caps, matching `POS
 ### Gap 4: The connector binary path pattern was missing
 
 Every fixture sets a `PATH` env var pointing to the compiled `.so`/`.dylib`. From postgres:
+
 ```rust
 envs.insert(
     ENV_SINK_PATH.to_string(),
@@ -122,6 +125,7 @@ envs.insert(
 ```
 
 For MongoDB:
+
 - Sink PATH: `"../../target/debug/libiggy_connector_mongodb_sink"`
 - Source PATH: `"../../target/debug/libiggy_connector_mongodb_source"`
 
@@ -132,6 +136,7 @@ The crate names from `Cargo.toml` are `iggy_connector_mongodb_sink` and `iggy_co
 The original document's `wait_for_documents` function described polling MongoDB for documents (sink test), but the source test pattern is different: poll iggy messages using `client.poll_messages()`. Both patterns exist and they are used in different test types. The original conflated them.
 
 From actual postgres source tests, the correct iggy message polling loop is:
+
 ```rust
 for _ in 0..POLL_ATTEMPTS {
     if let Ok(polled) = client
@@ -172,6 +177,7 @@ After pruning: **4 sink tests**, **4 source tests**.
 ### Gap 7: The document says TestFixture trait with methods "setup()" -- let's confirm the trait signature
 
 From `fixtures/postgres/sink.rs`:
+
 ```rust
 #[async_trait]
 impl TestFixture for PostgresSinkFixture {
@@ -185,6 +191,7 @@ Two required methods: `setup()` and `connectors_runtime_envs()`. No teardown met
 ### Gap 8: The "state_persists_across_restart" test uses `harness: &mut TestHarness`
 
 In `postgres_source.rs`, the restart test signature is:
+
 ```rust
 async fn state_persists_across_connector_restart(
     harness: &mut TestHarness,   // mutable reference, not shared reference
@@ -193,6 +200,7 @@ async fn state_persists_across_connector_restart(
 ```
 
 And it calls:
+
 ```rust
 harness.server_mut().stop_dependents().expect("Failed to stop connectors");
 harness.server_mut().start_dependents().await.expect("Failed to restart connectors");
@@ -204,6 +212,7 @@ The MongoDB restart test must use `&mut TestHarness` and the same `stop_dependen
 ### Gap 9: The sink.toml and source.toml content was never specified
 
 Postgres has:
+
 ```toml
 [connectors]
 config_type = "local"
@@ -211,6 +220,7 @@ config_dir = "../connectors/sinks/postgres_sink"
 ```
 
 MongoDB sink.toml and source.toml must follow the same pattern, pointing to the connector's own config directory which contains `config.toml`:
+
 ```toml
 # sink.toml
 [connectors]
@@ -236,6 +246,7 @@ The original doc said: "Collection exists before any messages sent when config e
 ### Gap 12: Document metadata fields -- sink vs source
 
 The sink's metadata fields (from `insert_batch` in `lib.rs`) are:
+
 - `_id` (message ID as string)
 - `iggy_offset` (i64)
 - `iggy_timestamp` (BSON DateTime)
@@ -247,6 +258,7 @@ The sink's metadata fields (from `insert_batch` in `lib.rs`) are:
 - `payload` (Binary | Document | String depending on `payload_format`)
 
 The source's metadata fields (from `document_to_message` when `include_metadata=true`):
+
 - `_iggy_source_collection` (string)
 - `_iggy_poll_timestamp` (string, RFC3339)
 
@@ -261,12 +273,14 @@ We need **8 E2E tests** across 2 tiers to validate the MongoDB connectors.
 **Infrastructure**: 9 new files + 2 existing file modifications. GenericImage approach (no testcontainers-modules mongo feature needed). No Cargo.toml change required.
 
 **Sink tests (4)**:
+
 - JSON payload stored as BSON Document with metadata fields verified
 - Binary payload stored as BSON Binary subtype Generic
 - Large batch (50 messages) split across multiple inserts, all arrive
 - Collection auto-created by `open()` before any messages sent
 
 **Source tests (4)**:
+
 - Seeded documents polled into iggy stream in correct order
 - Delete-after-read removes documents from MongoDB post-poll
 - Mark-processed sets field to true without deleting documents
@@ -321,6 +335,7 @@ core/integration/tests/connectors/
 None required. `GenericImage` comes from `testcontainers-modules::testcontainers` which is already a transitive dependency. The `mongodb` driver is already a dependency of the connector crates.
 
 However, the integration test crate needs `mongodb` as a **direct** dev-dependency to query MongoDB for verification in tests. Check whether it is already in `core/integration/Cargo.toml`. If not, add:
+
 ```toml
 mongodb = { version = "3.0", features = ["rustls-tls"] }
 ```
@@ -1551,11 +1566,13 @@ mod mongodb;
 ## Integration Test Dependencies
 
 The integration test crate (`core/integration/Cargo.toml`) needs `mongodb` as a dev-dependency if not already present, because the fixture queries MongoDB directly. Check with:
+
 ```bash
 grep -n "mongodb" core/integration/Cargo.toml
 ```
 
 If missing, add:
+
 ```toml
 [dev-dependencies]
 mongodb = { version = "3.0", features = ["rustls-tls"] }

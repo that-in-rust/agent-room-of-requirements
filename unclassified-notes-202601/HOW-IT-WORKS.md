@@ -3,6 +3,7 @@
 ## The Problem
 
 You contribute to multiple OSS repos (iggy, arrow, datafusion, etc.). You generate research, analysis, and notes for each. But:
+
 - Committing research into the fork pollutes PRs to upstream
 - Keeping research in a separate repo means it's disconnected from the project
 - Copying between repos means multiple stale copies
@@ -95,6 +96,7 @@ This is the only real copy. Every project just has a symlink pointing here. Edit
 ## Quick Start
 
 ### First time (once ever)
+
 ```bash
 # Clone to central location
 mkdir -p ~/cross-repo-knowledge-base
@@ -103,17 +105,20 @@ git clone https://github.com/that-in-rust/agent-room-of-requirements.git \
 ```
 
 ### Link into any project (once per project)
+
 ```bash
 cd ~/Desktop/your-project
 ~/cross-repo-knowledge-base/agent-room-of-requirements/cross-repo-link.sh
 ```
 
 That's it. The script:
+
 1. Creates the symlink
 2. Adds it to `.git/info/exclude`
 3. Creates a project subfolder if needed
 
 ### Daily use
+
 ```bash
 # Check status
 cross-repo-link.sh status

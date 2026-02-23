@@ -8,6 +8,7 @@
 ## 1. Comparison Matrix
 
 Legend:
+
 - `[x]` = Connector exists (official or verified partner)
 - `[~]` = Partial support (e.g., via generic JDBC, community/unmaintained, or third-party bridge)
 - `[ ]` = No connector available
@@ -171,51 +172,61 @@ Legend:
 ## 3. Top 10 Recommended Connectors for Iggy (Beyond Already Planned)
 
 ### Rank 1: MQTT Source + Sink
+
 - **Why**: THE IoT protocol. Iggy targets IoT. 3/4 competitors have it. Single highest-impact connector for Iggy's positioning.
 - **Complexity**: Medium. Rust crates: `rumqttc`, `paho-mqtt`. Handle QoS, wildcards, sessions.
 - **Similar to**: Elasticsearch Source (subscription) + Stdout Sink (simple write)
 
 ### Rank 2: MongoDB Source + Sink
+
 - **Why**: Most popular NoSQL. ALL 4 competitors have it. IoT metadata, analytics.
 - **Complexity**: Medium-High. `mongodb` Rust driver. CDC via change streams.
 - **Similar to**: PostgreSQL Source + Sink (connection pool, batch, CDC)
 
 ### Rank 3: Amazon S3 Sink (+ Source)
+
 - **Why**: Universal data lake landing zone. 3/4 have it. Enables Snowflake/Redshift staging.
 - **Complexity**: Medium. `aws-sdk-s3` crate. Partitioning, format (JSON/Parquet), batching.
 - **Similar to**: Iceberg Sink (already uses S3 under the hood)
 
 ### Rank 4: Redis Sink (+ Source)
+
 - **Why**: Most popular cache. Cache warming, real-time state, leaderboards. 3/4 have it.
 - **Complexity**: Low-Medium. `redis` Rust crate. Write to streams/hashes/lists.
 - **Similar to**: Elasticsearch Sink (~11 entities, schema-less)
 
 ### Rank 5: HTTP / Webhook Source + Sink
+
 - **Why**: Universal integration. ALL 4 competitors have it. "Connect Iggy to anything."
 - **Complexity**: Low-Medium. `reqwest` (sink) + `axum` (source) already in codebase.
 - **Similar to**: Quickwit Sink (HTTP POST pattern, generalized)
 
 ### Rank 6: Snowflake Sink
+
 - **Why**: Leading cloud data warehouse. 3/4 have it. Enterprise pipeline destination.
 - **Complexity**: High. Snowpipe Streaming or S3 staging. Complex auth.
 - **Similar to**: Redshift Sink (#2540, same S3 staging pattern)
 
 ### Rank 7: Google BigQuery Sink
+
 - **Why**: #2 cloud DW. 3/4 have it. Completes multi-cloud warehouse story.
 - **Complexity**: High. Storage Write API (gRPC), schema management.
 - **Similar to**: Iceberg Sink (schema mgmt, batch writes)
 
 ### Rank 8: RabbitMQ / AMQP Source + Sink
+
 - **Why**: Most deployed traditional broker. Migration path. 3/4 have it.
 - **Complexity**: Medium. `lapin` Rust crate. Consumer acks, prefetch.
 - **Similar to**: ES Source + Quickwit Sink (subscribe/push pattern)
 
 ### Rank 9: OpenTelemetry Sink (+ Source)
+
 - **Why**: Emerging observability standard. Iggy as telemetry pipeline backbone.
 - **Complexity**: Medium-High. OTLP via gRPC (`tonic`) or HTTP/protobuf.
 - **Similar to**: Protobuf codec + HTTP sink pattern
 
 ### Rank 10: Google Cloud Storage Sink
+
 - **Why**: GCP object storage. 3/4 have it. Thin adapter over S3 sink architecture.
 - **Complexity**: Low-Medium. Same as S3 with different storage backend.
 - **Similar to**: S3 Sink (once built)
@@ -246,6 +257,7 @@ Legend:
 ## 5. Recommended Build Order (all connectors)
 
 **Phase 1 -- IoT + Universal Integration:**
+
 1. MQTT Source + Sink (NEW)
 2. HTTP / Webhook Source + Sink (NEW)
 3. InfluxDB Sink + Source (PLANNED #2700)

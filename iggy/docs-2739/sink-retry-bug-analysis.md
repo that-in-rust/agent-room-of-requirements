@@ -90,6 +90,7 @@ Errors that are permanent and will NEVER succeed on retry:
 ### The Deceptive Warn Message
 
 Line 366-367:
+
 ```rust
 warn!(
     "Transient database error (attempt {attempts}/{max_retries}): {e}. Retrying..."
@@ -338,6 +339,7 @@ This is a specific failure of the principle: "make reasoning explicit." The auth
 ### Why Did Tests Not Catch It
 
 The tests that exist for the sink (`mongodb_sink/src/lib.rs`, lines 400-577) test:
+
 - Config parsing
 - PayloadFormat parsing
 - Retry count and delay config
@@ -356,13 +358,14 @@ The developer who built the sink used the structural shape of the source's retry
 
 ### 4.1 The Official MongoDB Kafka Connector (mongo-kafka)
 
-Repository: https://github.com/mongodb/mongo-kafka
+Repository: <https://github.com/mongodb/mongo-kafka>
 
 The official MongoDB Kafka sink connector (Java) does not implement its own transient/non-transient classification in application code. Instead, it delegates to two mechanisms:
 
 **Mechanism A: The Kafka Connect framework's error tolerance.**
 
 The connector exposes three error tolerance modes via `errors.tolerance`:
+
 - `NONE` — any error immediately fails the connector task
 - `DATA` — tolerates "network/server unreachable errors" (network failures only)
 - `ALL` — skips over all problematic records
@@ -385,17 +388,17 @@ This is the opposite choice from what we made. We added application-level retrie
 
 ### 4.2 The Community MongoDB Kafka Connector (hpgrahsl/kafka-connect-mongodb)
 
-Repository: https://github.com/hpgrahsl/kafka-connect-mongodb (archived; integrated into the official connector in 2019)
+Repository: <https://github.com/hpgrahsl/kafka-connect-mongodb> (archived; integrated into the official connector in 2019)
 
 This connector had the same structure: it surfaced write failures to the Kafka Connect framework rather than implementing its own retry classification. Duplicate key errors were a known issue (see GitHub issue #82 and #106) — but the solution was configuration of write strategies (upsert vs insert) and Kafka Connect's error tolerance settings, not application-level transient checks.
 
 ### 4.3 Debezium MongoDB Sink Connector
 
-Reference: https://debezium.io/documentation/reference/stable/connectors/mongodb-sink.html
+Reference: <https://debezium.io/documentation/reference/stable/connectors/mongodb-sink.html>
 
 Debezium's MongoDB sink connector uses the Debezium engine (not the Kafka Connect framework directly in some deployments). It has a known bug: retriable errors including wrong passwords and insufficient privileges are retried indefinitely without honoring the `connect-max-attempts` setting.
 
-Source: https://access.redhat.com/solutions/7026095
+Source: <https://access.redhat.com/solutions/7026095>
 
 This is the SAME bug we have, but worse: Debezium retries indefinitely rather than up to `max_retries`. The Debezium bug demonstrates that this class of mistake is not unique to us — it is a recurring failure mode when engineers build retry loops for database connectors.
 
@@ -448,6 +451,7 @@ The key lesson from the MongoDB Kafka connector's 1.7 decision (remove applicati
 The MongoDB Rust driver (`mongodb` crate) also supports `retryWrites`. If we connect with `retryWrites=true`, the driver retries network-level failures automatically. Our application-level retry on top of that is useful ONLY for errors the driver does not retry (which are, by definition, the permanent ones). So our current code retries things the driver already retried, AND retries things that should never be retried.
 
 The correct architecture is:
+
 1. Let the driver handle its own retryable-writes for transient network errors.
 2. At the application layer, add retries ONLY for things the driver does not cover (server selection errors with a secondary, connection pool exhaustion that the driver does not self-heal).
 3. Never retry errors the driver passes up to you as permanent.
@@ -499,12 +503,12 @@ When building any connector with a retry loop:
 
 ## References
 
-- MongoDB Kafka Connector official docs (error handling): https://www.mongodb.com/docs/kafka-connector/current/sink-connector/fundamentals/error-handling-strategies/
-- MongoDB Kafka Connector error handling properties: https://www.mongodb.com/docs/kafka-connector/current/sink-connector/configuration-properties/error-handling/
-- MongoDB Kafka Connector GitHub: https://github.com/mongodb/mongo-kafka
-- Community MongoDB Kafka Connector (archived): https://github.com/hpgrahsl/kafka-connect-mongodb
-- Debezium MongoDB sink connector docs: https://debezium.io/documentation/reference/stable/connectors/mongodb-sink.html
-- Debezium retriable errors bug (Red Hat KB): https://access.redhat.com/solutions/7026095
-- Confluent Elasticsearch RetryUtil (all-errors approach): https://github.com/confluentinc/kafka-connect-elasticsearch/blob/master/src/main/java/io/confluent/connect/elasticsearch/RetryUtil.java
-- Kafka Connect error retry configuration: https://atchison.dev/error-retry-configuration-in-kafka-connect/
-- MongoDB duplicate key in Kafka connector (KAFKA-305 Jira): https://jira.mongodb.org/browse/KAFKA-305
+- MongoDB Kafka Connector official docs (error handling): <https://www.mongodb.com/docs/kafka-connector/current/sink-connector/fundamentals/error-handling-strategies/>
+- MongoDB Kafka Connector error handling properties: <https://www.mongodb.com/docs/kafka-connector/current/sink-connector/configuration-properties/error-handling/>
+- MongoDB Kafka Connector GitHub: <https://github.com/mongodb/mongo-kafka>
+- Community MongoDB Kafka Connector (archived): <https://github.com/hpgrahsl/kafka-connect-mongodb>
+- Debezium MongoDB sink connector docs: <https://debezium.io/documentation/reference/stable/connectors/mongodb-sink.html>
+- Debezium retriable errors bug (Red Hat KB): <https://access.redhat.com/solutions/7026095>
+- Confluent Elasticsearch RetryUtil (all-errors approach): <https://github.com/confluentinc/kafka-connect-elasticsearch/blob/master/src/main/java/io/confluent/connect/elasticsearch/RetryUtil.java>
+- Kafka Connect error retry configuration: <https://atchison.dev/error-retry-configuration-in-kafka-connect/>
+- MongoDB duplicate key in Kafka connector (KAFKA-305 Jira): <https://jira.mongodb.org/browse/KAFKA-305>

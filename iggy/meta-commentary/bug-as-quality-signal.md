@@ -65,6 +65,7 @@ fn is_transient_error(e: &mongodb::error::Error) -> bool {
 ```
 
 Updated retry guard:
+
 ```rust
 // After fix:
 if !is_transient_error(&e) || attempts >= max_retries {
@@ -119,8 +120,10 @@ they don't, validate against industry implementations before assuming it's
 an improvement.
 
 **The search pattern:**
+
 ```
 grep -r "is_transient\|retry\|transient" core/connectors/
 ```
+
 Find every retry-related function. Read each one. Compare error handling
 strategies. The bugs live in the gaps between implementations.

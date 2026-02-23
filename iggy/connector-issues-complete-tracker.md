@@ -106,6 +106,7 @@
 ## Contribution Opportunity Analysis
 
 ### Good First Issues (labeled)
+
 - **#2592** — E2E tests for ES sink
 - **#2593** — E2E tests for ES source
 - **#2595** — E2E tests for Iceberg sink
@@ -113,6 +114,7 @@
 - **#2417** — Restart connector without restarting runtime
 
 ### Medium Complexity
+
 - **#2683** — Fix simd_json serialization bug (clear bug report with line numbers)
 - **#2712** — Fix Linux metadata IoError (deployment blocker)
 - **#1846** — Avro payload support (follow Protobuf/FlatBuffers pattern)
@@ -120,6 +122,7 @@
 - **#2484** — Flink HTTP to TCP transport
 
 ### High Complexity (new connectors)
+
 - **#2700** — InfluxDB Sink + Source
 - **#2539** — ClickHouse Sink
 - **#2540** — Redshift Sink with S3 staging

@@ -4,64 +4,64 @@ Of course! Here are the URLs for the GitHub repositories mentioned in the text.
 
 GitHub Repository URLs
 
-anyhow: https://github.com/dtolnay/anyhow
+anyhow: <https://github.com/dtolnay/anyhow>
 
-Axum: https://github.com/tokio-rs/axum
+Axum: <https://github.com/tokio-rs/axum>
 
-Bevy: https://github.com/bevyengine/bevy
+Bevy: <https://github.com/bevyengine/bevy>
 
-Clippy: https://github.com/rust-lang/rust-clippy
+Clippy: <https://github.com/rust-lang/rust-clippy>
 
-Embassy: https://github.com/embassy-rs/embassy
+Embassy: <https://github.com/embassy-rs/embassy>
 
-embedded-hal: https://github.com/rust-embedded/embedded-hal
+embedded-hal: <https://github.com/rust-embedded/embedded-hal>
 
-heapless: https://github.com/knurling-rs/heapless
+heapless: <https://github.com/knurling-rs/heapless>
 
-hyper: https://github.com/hyperium/hyper
+hyper: <https://github.com/hyperium/hyper>
 
-quote: https://github.com/dtolnay/quote
+quote: <https://github.com/dtolnay/quote>
 
-Rayon: https://github.com/rayon-rs/rayon
+Rayon: <https://github.com/rayon-rs/rayon>
 
-RTIC: https://github.com/rtic-rs/rtic
+RTIC: <https://github.com/rtic-rs/rtic>
 
-Serde: https://github.com/serde-rs/serde
+Serde: <https://github.com/serde-rs/serde>
 
-syn: https://github.com/dtolnay/syn
+syn: <https://github.com/dtolnay/syn>
 
-thiserror: https://github.com/dtolnay/thiserror
+thiserror: <https://github.com/dtolnay/thiserror>
 
-Tokio: https://github.com/tokio-rs/tokio
+Tokio: <https://github.com/tokio-rs/tokio>
 
-tonic: https://github.com/hyperium/tonic
+tonic: <https://github.com/hyperium/tonic>
 
-Tower: https://github.com/tower-rs/tower
+Tower: <https://github.com/tower-rs/tower>
 
-
-
--- 
+--
 
 You told me it will be good to build the idiomatic Rust code LLM reference file if studied these text data bases and found out some good idiomatic patters
 
-
-
 -- Tell me what prompt I give to an LLM to extract some high quality insights idiomatic patterns - so that we do context level evaluation - and so on
 
-
-## 
+##
 
 # CONTEXT
+
 You are a Senior Rust Language Analyst specializing in identifying idiomatic patterns and anti-patterns. I have downloaded these high-quality Rust repositories:
+
 - anyhow, axum, bevy, clippy, embassy, embedded-hal, heapless, hyper, quote, rayon, RTIC, serde, syn, thiserror, tokio, tonic, tower
 
 # MISSION
+
 Analyze these codebases to extract comprehensive idiomatic patterns organized by Rust's architectural layers (L1-core, L2-std, L3-ecosystem).
 
 # ANALYSIS FRAMEWORK
+
 Use this layered classification system:
 
 **L1 (Core/no_std):** Language features independent of OS
+
 - Ownership/borrowing patterns
 - Lifetime management
 - Trait system usage
@@ -69,6 +69,7 @@ Use this layered classification system:
 - Error handling (Result/Option)
 
 **L2 (Standard Library):** Patterns using std crate
+
 - Collections usage
 - Iterator patterns
 - Concurrency primitives
@@ -76,6 +77,7 @@ Use this layered classification system:
 - Module organization
 
 **L3 (Ecosystem):** Framework/library-specific patterns
+
 - Async/await patterns
 - Web framework idioms
 - Embedded patterns
@@ -87,6 +89,7 @@ Use this layered classification system:
 For each repository, identify:
 
 ## 1. IDIOMATIC PATTERNS
+
 - **Pattern Name:** Descriptive title
 - **Layer:** L1/L2/L3
 - **Code Example:** 3-5 line snippet showing the pattern
@@ -95,18 +98,21 @@ For each repository, identify:
 - **Source File:** Where this pattern appears
 
 ## 2. ANTI-PATTERNS
+
 - **Problem:** What to avoid
 - **Common Mistake:** Typical incorrect usage
 - **Idiomatic Alternative:** Better approach
 - **Rationale:** Why the alternative is superior
 
 ## 3. ARCHITECTURAL PATTERNS
+
 - **Project Structure:** Module organization
 - **Error Handling Strategy:** Library vs application approaches
 - **Testing Approach:** Unit vs integration patterns
 - **Dependency Management:** Crate usage patterns
 
 # OUTPUT FORMAT
+
 Use this structured format for each finding:
 
 ```markdown
@@ -193,16 +199,21 @@ Use this structured format for each finding:
 ```rust
 // Code snippet showing the pattern
 ```
+
 **Benefits:** [Compile-time safety, performance, etc.]
 **Source:** [File path or module]
 
 ### Anti-Pattern: [Name]
+
 **Problem:** [What to avoid]
 **Better Approach:**
+
 ```rust
 // Improved idiomatic code
 ```
+
 **Rationale:** [Why this is better]
+
 ```
 
 # SPECIFIC ANALYSIS FOCUS AREAS
@@ -227,6 +238,7 @@ Provide at least 3-5 high-quality patterns per repository, prioritizing those th
 ## Follow-up Prompts for Deeper Analysis
 
 ### Prompt for Cross-Repository Pattern Correlation
+
 ```text
 Now analyze the patterns you extracted and identify:
 1. **Universal Patterns:** Idioms that appear in 3+ repositories
@@ -238,6 +250,7 @@ Create a matrix showing pattern prevalence across repositories.
 ```
 
 ### Prompt for Compile-Time Safety Analysis
+
 ```text
 Focus specifically on patterns that enable compile-time bug prevention:
 1. **Type System Patterns:** Newtype, phantom types, zero-sized types
@@ -249,6 +262,7 @@ For each, explain how it catches errors during compilation rather than runtime.
 ```
 
 ### Prompt for Anti-Pattern Identification
+
 ```text
 Analyze common mistakes and their idiomatic corrections:
 1. **Fighting the Borrow Checker:** Cloning vs borrowing solutions
@@ -488,6 +502,3 @@ Analyze an implementation attempt from our own work, identify issues, and extrac
 2. Refactored Solution (Code).
 3. New Idiom Discovery (JSON object in SIS format, if any).
 ```
-
-
-

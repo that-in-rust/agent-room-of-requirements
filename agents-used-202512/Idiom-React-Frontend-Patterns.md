@@ -155,6 +155,7 @@ type BadFetchState<T> = {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN state transitions from idle to loading
 THEN status SHALL equal 'loading'
@@ -226,6 +227,7 @@ function GoodControlledInput({ value, onChange }: Props) {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN parent component shares state between children
 THEN state SHALL be lifted to parent component
@@ -341,6 +343,7 @@ function UpdateUserButton() {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN component uses context outside provider
 THEN error SHALL be thrown
@@ -424,6 +427,7 @@ function BadCardComponent(props: BadCardProps) {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN CardContainerComponent.Header is used
 THEN element SHALL render with header semantic tag
@@ -523,6 +527,7 @@ function ListVirtualizerComponent<T>({
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN DataFetcherComponent receives success data
 THEN renderSuccessState SHALL be called with data
@@ -623,6 +628,7 @@ function UserProfilePresenterPure({
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN UserProfilePresenterPure receives user data
 THEN form fields SHALL be initialized with user values
@@ -752,6 +758,7 @@ function GoodMemoizationExample({ count }: { count: number }) {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN expensive computation memoized with useMemo
 THEN computation SHALL only run when dependencies change
@@ -846,10 +853,12 @@ function ProductListPage() {
 ```
 
 **Performance Benchmark**:
+
 - Non-virtualized: 10,000 DOM nodes, ~8s initial render, janky scrolling
 - Virtualized: ~15 DOM nodes, ~50ms initial render, 60fps scrolling
 
 **TDD Specification**:
+
 ```markdown
 WHEN VirtualizedListComponent renders 10,000 items
 THEN only visible items SHALL be in DOM
@@ -902,6 +911,7 @@ useLayoutEffect(() => {
 ```
 
 **Decision Tree**:
+
 ```
 Does this need to sync with external system? → useEffect
 Does this read layout from DOM? → useLayoutEffect
@@ -911,6 +921,7 @@ Does this need to run on mount only? → useEffect with []
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN useEffect subscribes to external API
 THEN cleanup function SHALL unsubscribe
@@ -982,6 +993,7 @@ function useFetchWithAbortCleanup<T>(url: string) {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN component unmounts during active fetch
 THEN fetch SHALL be aborted via AbortController
@@ -1089,6 +1101,7 @@ function ParentWithRefAccess() {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN AutofocusInputComponent mounts
 THEN input element SHALL receive focus
@@ -1176,6 +1189,7 @@ describe('LoginFormComponent', () => {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN invalid email entered in LoginFormComponent
 THEN error message SHALL be displayed
@@ -1308,6 +1322,7 @@ test.describe('Login Flow', () => {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN LoginPageObject navigates to login route
 THEN page URL SHALL match /login
@@ -1381,6 +1396,7 @@ function GoodDerivedStateComponent({ items, filter }: Props) {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN useState initializer is function
 THEN function SHALL be called once on mount
@@ -1488,6 +1504,7 @@ function GoodFetchComponent({ userId }: Props) {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN component unmounts with active timer
 THEN timer SHALL be cleared in cleanup
@@ -1567,6 +1584,7 @@ function GoodNestedComponent() {
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN list items reordered
 THEN item state SHALL persist correctly
@@ -1599,20 +1617,23 @@ graph TD
 ```
 
 ## Allowed Import Patterns
-- pages/* → features/*: ✅
-- features/* → ui/*: ✅
-- ui/* → primitives/*: ✅
-- hooks/* → utils/*: ✅
-- components/* → hooks/*: ✅
-- components/* → types/*: ✅
+
+- pages/*→ features/*: ✅
+- features/*→ ui/*: ✅
+- ui/*→ primitives/*: ✅
+- hooks/*→ utils/*: ✅
+- components/*→ hooks/*: ✅
+- components/*→ types/*: ✅
 
 ## Forbidden Import Patterns
-- pages/* → primitives/* (skip layers)
-- ui/* → features/* (reverse dependency)
+
+- pages/*→ primitives/* (skip layers)
+- ui/*→ features/* (reverse dependency)
 - primitives/* → anything (leaf nodes)
 - Circular: ComponentA → ComponentB → ComponentA
 
 ## TDD Specification
+
 ```markdown
 WHEN page component imports from primitives
 THEN import SHALL fail at build time
@@ -1622,6 +1643,7 @@ WHEN analyzing codebase with Parseltongue
 THEN forbidden imports SHALL be detected
 AND report SHALL list violations
 ```
+
 ```
 
 ---
@@ -1667,6 +1689,7 @@ parseltongue diff --base rocksdb:react-base.db --live rocksdb:react-live.db
 ```
 
 **Example Output**:
+
 ```
 Entity Changes:
 - ADDED: tsx:fn:useAuthContextValue:__path:src/contexts/AuthContext.tsx
@@ -1697,6 +1720,7 @@ const forbiddenImports = `
 ```
 
 **TDD Specification**:
+
 ```markdown
 WHEN analyzing React codebase with Parseltongue
 THEN component hierarchy violations SHALL be detected

@@ -1,6 +1,7 @@
 # The 12 Principles of LLM-Native Development
 
 > **Two ways to read this document:**
+>
 > - 🟢 **ELI10**: Simple explanation a 10-year-old could understand
 > - 🔵 **Expert**: Mathematical and systems thinking depth
 
@@ -221,6 +222,7 @@ Where τ ≈ 15-20 turns for conversational context.
 **The checkpoint strategy:**
 
 At turn T where Retention(T) < threshold:
+
 1. Generate summary S of turns 1 to T
 2. Inject S as context for turn T+1
 3. Effective_Context(T+1) = S + turns(T-k, T)
@@ -366,6 +368,7 @@ Valid_Solutions = All_Possible - Invalid_Solutions
 ```
 
 Given:
+
 - |All_Possible| ≈ 10^6 (huge)
 - |Valid_Solutions| ≈ 10^2 (small)
 
@@ -442,6 +445,7 @@ The extensional definition is unambiguous — it specifies the exact input-outpu
 **The Oracle Problem:**
 
 In software verification, an oracle is a function that determines correctness:
+
 ```
 Oracle(input, output) → {correct, incorrect}
 ```
@@ -531,6 +535,7 @@ A(n) = 1/n  // Attention is distributed across tokens
 ```
 
 Effective signal:
+
 ```
 E(n) = S(n) × A(n)
 E(n) = log(|corpus| / |matches(n)|) / n
@@ -614,6 +619,7 @@ Total_Cost = Process_Cost + Error_Cost × P(Error | Process)
 ```
 
 For each work type:
+
 - Bug: Error_Cost is low (localized), so minimize Process_Cost
 - Product: Error_Cost is high (whole system wrong), so minimize P(Error)
 
@@ -723,6 +729,7 @@ Level 2 (ARCH): minimize complexity subject to requirements
 ```
 
 The levels interact:
+
 - If ARCH finds simpler solution, PRD can relax
 - If PRD removes requirement, ARCH simplifies further
 
@@ -813,16 +820,19 @@ This is checkpointing for non-deterministic computation.
 **The Resumption Problem:**
 
 LLM sessions are stateless. Each turn is computed from:
+
 ```
 Output(t) = LLM(Context(t), Input(t))
 ```
 
 Without state serialization:
+
 ```
 Context(t+1) = degraded_context(t) + new_input
 ```
 
 With state serialization:
+
 ```
 Checkpoint(t) = {phase, tests, decisions, progress}
 Context(t+1) = Checkpoint(t) + new_input
@@ -846,6 +856,7 @@ struct TDDCheckpoint {
 **Information sufficiency test:**
 
 A checkpoint is sufficient iff:
+
 ```
 P(correct_continuation | checkpoint) = P(correct_continuation | full_history)
 ```
@@ -911,6 +922,7 @@ Imagine you're on a team project. When something is unclear, some people just gu
 **The rule**: If you know exactly what to do and can prove it works, do it yourself. If you need to learn something first, go research. If nobody knows what "right" means, ask someone who can decide.
 
 It's not about feelings — it's about: **"Can I write a test for this right now?"**
+
 - Yes → Do it
 - No because I need to learn → Research
 - No because requirements are unclear → Ask
@@ -922,12 +934,14 @@ This is a decision boundary formalization to prevent autonomous drift.
 **The Drift Problem:**
 
 Autonomous agents (LLM or human) exhibit drift when:
+
 ```
 Actual_Direction ≠ Intended_Direction
 Drift = ||Actual - Intended||
 ```
 
 Drift accumulates with decisions:
+
 ```
 Total_Drift(n) = Σ Drift(decision_i)
 ```
@@ -935,12 +949,14 @@ Total_Drift(n) = Σ Drift(decision_i)
 **The Test Heuristic:**
 
 "Can I write a failing test right now?" is a proxy for:
+
 ```
 Confidence(correct_path) > threshold
 ```
 
 If you can write a test, you have a precise definition of "correct" — low drift risk.
 If you can't, either:
+
 - You lack knowledge (research)
 - The definition of "correct" is ambiguous (escalate)
 
@@ -1094,8 +1110,8 @@ Without feedback loop:
 | 5 | **Negative > Positive** (Constraints eliminate faster than examples show) | In a maze, hearing "go left at turn 1" shows one path. But hearing "don't go right at turn 1, don't go straight at turn 2, don't go left at turn 3" eliminates hundreds of wrong paths at once! Each "don't do this" rule prevents more mistakes than "do this" examples can show. | **Constraint satisfaction information theory:** One positive example covers ~1 solution while one negative pattern excludes ~10^4 solutions. Information content: `Info(positive) ≈ 0 bits` vs `Info(negative) = log(|All| / |All - excluded|) ≈ 13 bits`. Negative patterns define the solution space boundary more efficiently than examples define the interior. |
 | 6 | **Tests = Specifications** (Executable requirements beat descriptions) | If you ask someone to draw a cat, you'll get wildly different results—cartoon cat, realistic cat, fat cat, thin cat. But if you say "when I measure it, the cat must have exactly 4 legs, 2 ears, whiskers, and fit in a 10×10 box," now they know exactly what you want. Tests are measurements that define "correct" with zero ambiguity. | **Extensional vs intensional definitions:** Tests provide an oracle function `Oracle(input, output) → {correct, incorrect}` that transforms ambiguous generation tasks into constrained completion tasks. Success probability jumps from `P(correct | vague_spec) ≈ 0.6` to `P(correct | test_spec) ≈ 0.95` by defining the exact input-output mapping. |
 | 7 | **4 Words Optimal** (Sweet spot for specificity) | Playing a guessing game: "animal" = thousands of guesses. "Animal with four legs" = hundreds. "Animal with four legs, orange, with stripes" = you instantly guess "tiger"! But if I add 10 more descriptors, you stop paying attention halfway through. Four words hits the sweet spot: specific enough to narrow down, short enough to stay focused. | **Token-attention tradeoff optimization:** Effective signal `E(n) = S(n) × A(n) = log(|corpus| / |matches(n)|) / n` where S(n) is semantic specificity and A(n) = 1/n is attention per token. This function empirically peaks at n ≈ 4 words for code vocabularies, balancing precision (fewer matches) against attention dilution. |
-| 8 | **Match Process to Work** (Different problems need different thinking) | If your bike has a flat tire, you don't redesign the whole bike—you just patch the tire in 20 minutes. But if you're building a flying bike, you can't just start welding—you need months of research and testing. Using heavy process for simple fixes wastes time; using light process for complex problems builds the wrong thing. | **Cost-of-error optimization:** Total cost = `Process_Cost + Error_Cost × P(Error | Process)`. Optimal process weight is `Optimal_Process ∝ sqrt(Error_Cost × Uncertainty)`. Bugs have low error cost (localized impact) so minimize process; products have high error cost (system-wide failure) so invest heavily in process to minimize P(Error). |
-| 9 | **PRD-ARCH Co-Evolve** (Requirements and design inform each other) | You plan a treehouse with a huge list: roof, windows, ladder, slide, electricity, water. Then you start designing how to build it and realize "if I skip electricity, this becomes super easy!" So you update your requirements. The design shows you what's hard, which helps you simplify what you're asking for. Both evolve together. | **Bi-level optimization with constraint propagation:** PRD (Level 1) minimizes `|requirements|` subject to `user_value ≥ threshold`. ARCH (Level 2) minimizes `complexity` subject to `requirements`. They interact: when ARCH discovers simpler solutions, PRD constraints relax, triggering another ARCH optimization cycle until convergence—each architectural parameter reveals PRD simplification opportunities. |
+| 8 | **Match Process to Work** (Different problems need different thinking) | If your bike has a flat tire, you don't redesign the whole bike—you just patch the tire in 20 minutes. But if you're building a flying bike, you can't just start welding—you need months of research and testing. Using heavy process for simple fixes wastes time; using light process for complex problems builds the wrong thing. | **Cost-of-error optimization:** Total cost = `Process_Cost + Error_Cost × P(Error | Process)`. Optimal process weight is`Optimal_Process ∝ sqrt(Error_Cost × Uncertainty)`. Bugs have low error cost (localized impact) so minimize process; products have high error cost (system-wide failure) so invest heavily in process to minimize P(Error). |
+| 9 | **PRD-ARCH Co-Evolve** (Requirements and design inform each other) | You plan a treehouse with a huge list: roof, windows, ladder, slide, electricity, water. Then you start designing how to build it and realize "if I skip electricity, this becomes super easy!" So you update your requirements. The design shows you what's hard, which helps you simplify what you're asking for. Both evolve together. | **Bi-level optimization with constraint propagation:** PRD (Level 1) minimizes `|requirements|` subject to `user_value ≥ threshold`. ARCH (Level 2) minimizes`complexity` subject to `requirements`. They interact: when ARCH discovers simpler solutions, PRD constraints relax, triggering another ARCH optimization cycle until convergence—each architectural parameter reveals PRD simplification opportunities. |
 | 10 | **State Serialization** (Checkpoint your progress) | Building a LEGO castle, you finish half and go to dinner. When you return, someone cleaned your room! If you didn't take pictures and write notes ("finished left tower, next is drawbridge"), you have to remember everything. But with pictures and notes, you pick up exactly where you stopped. Same for code progress across LLM sessions. | **Markov property checkpointing:** LLM sessions are stateless: `Output(t) = LLM(Context(t), Input(t))`. Without checkpoints, `Context(t+1) = degraded_context(t)`. With checkpoints, `Context(t+1) = Checkpoint(t) + new_input` where checkpoint acts as a sufficient statistic satisfying `P(correct_continuation | checkpoint) = P(correct_continuation | full_history)`. |
 | 11 | **Explicit Delegation** (Rules prevent drift) | When something is unclear, some people just guess (drift risk), others ask about every tiny detail (waste). Better rule: "Can I write a test for this right now?" If yes → do it. If no because you need to learn → research it. If no because "correct" is unclear → ask someone who decides. Rules, not vibes. | **Decision boundary formalization:** Autonomous drift accumulates as `Total_Drift(n) = Σ Drift(decision_i)`. The test heuristic "can I write a failing test now?" proxies for `Confidence(correct_path) > threshold`. If true, proceed (low drift). If false due to missing knowledge, delegate to research. If false due to ambiguous requirements, escalate to human—minimizing expected cost at each decision point. |
 | 12 | **Feedback Closes Loop** (Learn from results) | Shooting basketball free throws: if you never look whether shots go in, you'll never improve. But if you watch each shot—too short? too far left?—and adjust, you get better fast. Same with code: after shipping, watch what happens in production. If it breaks, learn why and document it so you don't repeat the mistake. | **Control theory convergence:** Open-loop systems drift: `Performance(t+1) = Performance(t)` (no learning). Closed-loop systems converge: `Performance(t+1) = Performance(t) + Learning_Rate × Feedback(t)`. Feedback is the gradient signal. Organizational knowledge accumulates as `Knowledge(t) = Knowledge(0) + Σ (anti_patterns + patterns)` where production observations drive continuous improvement. |

@@ -16,6 +16,7 @@ Apache Iggy's connector ecosystem currently supports PostgreSQL, Elasticsearch, 
 - **Source**: Poll MongoDB collections into iggy streams for event-driven pipelines
 
 This spec defines the design, drawing from:
+
 - Existing iggy connector patterns (PostgreSQL as primary reference)
 - Industry research across Kafka Connect, Debezium, Flink, and Airbyte MongoDB connectors
 - Gap analysis of a prototype implementation against the original spec
@@ -49,6 +50,7 @@ Each decision below was evaluated against industry practice and existing iggy pa
 **Decision**: Use `collection.insert_many()` for batch inserts.
 
 **Why**:
+
 - The MongoDB Rust driver's `bulk_write()` requires **MongoDB Server 8.0+**. Requiring the latest server version would limit adoption.
 - MongoDB's own documentation states: *"Internally, `insertMany` uses `bulkWrite`, so there's no difference — it's just for convenience."*
 - For append-only workloads (which is what a sink connector does — no updates or deletes), `insert_many()` is the idiomatic choice.
@@ -78,6 +80,7 @@ Each decision below was evaluated against industry practice and existing iggy pa
 **Decision**: Use `tracking_offsets: HashMap<String, String>` in the source State struct.
 
 **Why**:
+
 - iggy's PostgreSQL source already uses `tracking_offsets: HashMap<String, String>` — this is the established pattern for polling-based source connectors that may track multiple entities.
 - Polling with `find()` requires per-collection cursors. A single `Option<String>` would only work if multi-collection support is never added.
 - `HashMap` provides forward compatibility — adding multi-collection support later requires no state migration.
@@ -213,6 +216,7 @@ fn is_transient_error(error: &mongodb::error::Error) -> bool {
 ```
 
 Only retry on transient errors. Do not retry on:
+
 - Authentication failures
 - Duplicate key errors
 - Invalid BSON errors
@@ -298,6 +302,7 @@ pub enum PayloadFormat {
 **Default is Json** for sources because downstream consumers most commonly expect JSON. This matches PostgreSQL source's default of `Json`.
 
 Maps to SDK Schema:
+
 - `Json` -> `Schema::Json`
 - `Bson` -> `Schema::Raw`
 - `String` -> `Schema::Text`
@@ -406,6 +411,7 @@ These 4 fields existed in the prototype source config but were never wired. Each
 
 **Purpose**: When true, add iggy-related metadata fields to the produced payload (source collection name, poll timestamp, document offset).
 **Wiring**: In `document_to_message()`, when enabled, inject metadata fields into the document before serialization:
+
 ```rust
 if self.config.include_metadata.unwrap_or(false) {
     doc.insert("_iggy_source_collection", &self.config.collection);
@@ -422,6 +428,7 @@ if self.config.include_metadata.unwrap_or(false) {
 Uses existing iggy testcontainers + `#[iggy_harness]` infrastructure. No external scripts (Go/Python) needed.
 
 **Root Cargo.toml change**:
+
 ```toml
 testcontainers-modules = { version = "0.14.0", features = ["postgres", "mongodb"] }
 ```
@@ -491,6 +498,7 @@ impl MongoDbContainer {
 Fixtures inject config via environment variables (established iggy pattern):
 
 **Sink**:
+
 ```
 IGGY_CONNECTORS_SINK_MONGODB_PLUGIN_CONFIG_CONNECTION_URI
 IGGY_CONNECTORS_SINK_MONGODB_PLUGIN_CONFIG_DATABASE
@@ -502,6 +510,7 @@ IGGY_CONNECTORS_SINK_MONGODB_PATH
 ```
 
 **Source**:
+
 ```
 IGGY_CONNECTORS_SOURCE_MONGODB_PLUGIN_CONFIG_CONNECTION_URI
 IGGY_CONNECTORS_SOURCE_MONGODB_PLUGIN_CONFIG_DATABASE
@@ -557,6 +566,7 @@ ignored = ["dashmap", "once_cell", "futures", "simd-json"]  # Required by SDK ma
 ### Source Cargo.toml
 
 Same as sink, plus:
+
 ```toml
 uuid = { workspace = true }        # For message ID generation
 chrono = { workspace = true }       # If needed for timestamp handling
