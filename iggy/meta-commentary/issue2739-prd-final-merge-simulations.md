@@ -72,10 +72,22 @@ CONTRIBUTING.md explicitly requires this:
 
 ```bash
 cargo install prek
+cargo install cargo-license  # required by prek's licenses-list hook
 prek install
 ```
 
 This installs git hooks that run automatically on `git commit`. The hooks will validate formatting, clippy, etc. If we already pass Step 2, hooks should pass too — but they must be installed.
+
+**What prek hooks check:**
+- markdownlint (needs `npm install -g markdownlint-cli`)
+- license headers
+- licenses-list (needs `cargo install cargo-license`) — auto-generates DEPENDENCIES.md
+- trailing whitespace/newlines
+- taplo (TOML format)
+- cargo fmt
+- cargo sort
+
+**Gotcha:** prek runs on ALL files in the repo, not just staged files. If there's a broken file elsewhere (like a symlink to another repo with markdown issues), prek will fail. Remove symlinks before committing.
 
 ---
 
@@ -161,6 +173,7 @@ using testcontainers + iggy_harness. All passing locally.
 ## Local execution
 
 ```
+
 cargo fmt --all --check          # clean
 cargo clippy -- -D warnings      # clean
 cargo test -p iggy_connector_mongodb_sink   # 25/25
@@ -168,6 +181,7 @@ cargo test -p iggy_connector_mongodb_source # 33/33
 cargo test --test mod --no-run   # E2E compiles clean
 cargo machete                    # clean
 cargo sort --workspace           # clean
+
 ```
 
 Pre-commit hooks (prek) installed and passing.
@@ -202,26 +216,32 @@ After PR is created:
 ## Potential Pitfalls (Mentor Notes)
 
 ### 1. prek hooks reject the commit
+
 **Why**: Hooks run the full CI suite. If anything we missed fails, commit is rejected.
 **Fix**: The commit didn't happen, so no damage. Fix the issue, re-stage, commit again (NEW commit, never amend).
 
 ### 2. CI fails on upstream code changes
+
 **Why**: Someone merged to master between our `git fetch` and PR creation, introducing a conflict or new check.
 **Fix**: Rebase onto latest master: `git fetch upstream && git rebase upstream/master`. Push force to branch (safe since it's our PR branch): `git push origin ab_202602_issue02 --force-with-lease`.
 
 ### 3. Maintainer asks to split the PR
+
 **Why**: 3,765 lines from a first-time contributor. Despite precedent (Postgres +1,882, Pinot +2,312), some maintainers prefer smaller PRs.
 **Fix**: Offer to split into PR1 (sink + source, ~2,100 lines) and PR2 (E2E tests, ~1,500 lines). But argue that E2E tests are the proof — the code review is harder without them.
 
 ### 4. Maintainer asks about the "docs/" folder
+
 **Why**: No other connector has a docs folder.
 **Actually**: The docs/ folder is NOT in this PR. It was moved to agent-room. No issue here.
 
 ### 5. `addlicense` check fails on READMEs
+
 **Why**: Our README.md files don't have Apache license headers.
 **Actually**: No other connector README has them either (stdout_sink, random_source, elasticsearch_sink all start with `# Title`). If CI flags this, it's a pre-existing issue across all connectors, not our problem.
 
 ### 6. Maintainer flags AI-generated code
+
 **Why**: CONTRIBUTING.md warns about "proxy between maintainer and LLM" PRs.
 **Counter**: We disclosed AI usage. We have 58 unit tests + 8 E2E tests. We found and fixed a real bug (sink retry logic) that the Postgres sink handles but we initially missed. The interactive "Try It" section lets them verify in 60 seconds. This is the opposite of a drive-by AI dump.
 
@@ -246,13 +266,16 @@ After PR is created:
 ## Maintainer Review: What to Expect
 
 ### Most Likely Outcome: Clean Merge (1-3 days)
+
 Based on prior connector PRs:
+
 - Postgres #1959: merged with minimal comments
 - Elasticsearch #1872: disaster due to contributor inexperience (we're the opposite)
 - Iceberg #2191: merged quickly
 - Pinot #2499: merged despite empty PR body
 
 Our PR has:
+
 - Test coverage that exceeds all prior connector PRs
 - Interactive "Try It" section for quick verification
 - Design decisions documented
@@ -260,13 +283,16 @@ Our PR has:
 - Following every CONTRIBUTING.md rule
 
 ### Possible Feedback Areas
+
 1. **"Can you add X config option?"** — Easy, we can extend
 2. **"Use bulk_write instead of insert_many"** — We have the rationale ready (Server 8.0 requirement)
 3. **"Split the PR"** — We argue E2E tests are the proof
 4. **"Change error handling"** — We already match postgres_sink pattern
 
 ### Worst Case: Long Review Cycle
+
 If maintainer is busy or wants changes:
+
 - Respond within 24 hours
 - Make requested changes promptly
 - Keep PR updated with master (rebase weekly if needed)
