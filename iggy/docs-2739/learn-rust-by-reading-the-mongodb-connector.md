@@ -37,7 +37,7 @@ Everything below teaches the Rust you need to read and modify this code.
   ├── mongodb_sink/Cargo.toml  ─── dependency list
   ├── mongodb_sink/config.toml ─── default user config
   ├── mongodb_sink/README.md   ─── usage docs
-  └── mongodb_sink/src/lib.rs  ─── ★ ALL sink code + 19 unit tests
+  └── mongodb_sink/src/lib.rs  ─── ★ ALL sink code + 25 unit tests
 
   SOURCE CONNECTOR (4 files, ~1,245 lines)
   ├── mongodb_source/Cargo.toml

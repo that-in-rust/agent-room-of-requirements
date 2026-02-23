@@ -23,7 +23,7 @@ cargo test --test mod -- mongodb
 ```
 
 **Honest status summary**:
-- 52 unit tests: PASSING (verified with `cargo test -p`)
+- 58 unit tests: PASSING (25 sink + 33 source) (verified with `cargo test -p`)
 - 8 E2E tests: COMPILE-VERIFIED ONLY (never executed against real MongoDB)
 
 ---

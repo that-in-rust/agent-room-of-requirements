@@ -16,7 +16,7 @@ MongoDB sink and source connectors for iggy, built as standalone cdylib plugins 
 **What changed from the prototype:**
 - Source: added retry logic to `poll_collection()`, wired 4 dead config fields (`initial_offset`, `snake_case_fields`, `payload_format`, `include_metadata`), fixed error types, extracted timestamps from ObjectId
 - Sink: rewrote `connect()` to support `max_pool_size`, added `auto_create_collection`
-- Both: 52 unit tests passing (33 source + 19 sink), all following `given_*_should_*` convention
+- Both: 58 unit tests passing (33 source + 25 sink), all following `given_*_should_*` convention
 
 **What's NOT in v1:** Change Streams (CDC), aggregation pipelines, multi-collection source
 
