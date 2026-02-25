@@ -581,6 +581,26 @@ Implementation order is no longer relevant. Focus is now on E2E execution unbloc
 
 ---
 
+## Follow-Up Hardening Still Left
+
+Multi-node replica-set failover and network-chaos matrix (Toxiproxy/stepdown) are still follow-up hardening work.
+
+In Apache Iggy connector context, this means:
+
+1. **Replica-set failover tests (multi-node)**
+   - Move beyond standalone MongoDB and run source/sink against a real replica set topology.
+   - Trigger primary election (`rs.stepDown()` or primary stop) during active source polling and sink writes.
+   - Verify connector runtime stability, automatic recovery, and state continuity (`tracking_offsets` remains monotonic).
+
+2. **Network-chaos matrix tests (Toxiproxy)**
+   - Route MongoDB traffic through Toxiproxy and inject latency, packet loss, throttling, and disconnects.
+   - Combine network faults with primary stepdown to validate compound failure handling.
+   - Verify connectors recover without manual restarts and metrics show expected transient error spikes followed by recovery.
+
+These items are post-v1 hardening, not blockers for the current functional baseline.
+
+---
+
 ## Context Notes
 
 ### Key Decisions (from spec post-rubberduck review)
@@ -589,6 +609,7 @@ Implementation order is no longer relevant. Focus is now on E2E execution unbloc
 
 - Rationale: MongoDB source uses `find()` polling, not Change Streams. Standalone mode is correct. Replica set is only required for Change Streams / CDC which is out of scope for v1.
 - Impact: No `"mongo"` feature needed in `testcontainers-modules`. No workspace Cargo.toml change needed.
+- Follow-up: dedicated multi-node replica-set failover + Toxiproxy chaos coverage remains a hardening item.
 
 **Decision 2: `seq` integer field as tracking field**
 

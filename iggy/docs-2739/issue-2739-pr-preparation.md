@@ -60,7 +60,33 @@ Single PR, Simulation D: ship it with tests. 58 unit tests (33 source + 25 sink)
    - No prior connector PR shipped with this level of E2E coverage on day one
    - Pinot PR (#2499, +2,312 lines) had an EMPTY body and got merged
    - CONTRIBUTING.md says "Code not ran and tested locally" = closure. All 66 tests locally verified.
-6. **Con**: None remaining. All concerns resolved.
+6. **Con (non-blocking)**: Multi-node replica-set failover and network-chaos matrix (Toxiproxy/stepdown) are still follow-up hardening work.
+
+---
+
+## Remaining Follow-Up Hardening (Post-Merge)
+
+These are not release blockers for MongoDB connector v1, but they are still left for production hardening:
+
+1. **Multi-node replica-set failover validation**
+   - Run connectors against a 3-node MongoDB replica set (primary + secondaries), not only standalone MongoDB.
+   - Force primary elections (`rs.stepDown()` / node stop) while source `poll()` and sink `consume()` are active.
+   - Verify Apache Iggy connector runtime behavior:
+     - connector process stays alive (no panic, no permanent stop),
+     - transient write/read errors are retried and recover automatically,
+     - source state (`tracking_offsets`) remains monotonic across failover and restart,
+     - sink resumes ingest after election and does not regress stream offset handling.
+
+2. **Network-chaos matrix with Toxiproxy + stepdown**
+   - Put Toxiproxy between connector runtime and MongoDB to inject controlled faults.
+   - Execute a matrix of conditions: added latency, jitter, packet loss, bandwidth throttling, and full disconnect.
+   - Run each network condition with and without replica-set primary stepdown to test compound failures.
+   - Verify Apache Iggy invariants:
+     - runtime metrics show temporary error spikes then recovery,
+     - connectors resume without manual intervention,
+     - no silent data loss beyond expected at-least-once retry semantics.
+
+This is the remaining hardening surface after the current 66-test functional + E2E baseline.
 
 ---
 
