@@ -1,0 +1,4 @@
+interface:
+  display_name: "TDD Context Retainer 01"
+  short_description: "Orchestrate long TDD work with progress journals"
+  default_prompt: "Use $tdd-context-retainer-orchestrator-01 to capture current RED/GREEN/REFACTOR state and update a resumable progress journal for this task."

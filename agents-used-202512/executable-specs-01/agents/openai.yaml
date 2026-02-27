@@ -1,0 +1,4 @@
+interface:
+  display_name: "Executable Specs 01"
+  short_description: "Generate executable specs and TDD contracts"
+  default_prompt: "Use $executable-specs-01 to convert this request into WHEN-THEN-SHALL requirements and a STUB->RED->GREEN->REFACTOR test plan."
