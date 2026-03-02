@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dependency Map CLI Tools 01"
+  short_description: "Map code dependencies with CLI-first pointers"
+  default_prompt: "Use $dependency-map-cli-tools-01 to map this repo and return file:start:end candidate spans with rough dependency edges."
