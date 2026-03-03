@@ -4,7 +4,7 @@ Agenda for Workflows gmeet
 
 
 1. Debate board of Claude x Codex
-2. 4 Personalities for review
+2. 4 orothogonal Personalities for review
 3. Persona of a creative person
 4. Collect all ideas of a person and make it into a SKILL
 
