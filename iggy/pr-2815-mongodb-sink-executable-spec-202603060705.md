@@ -65,7 +65,7 @@ Supersedes: `/Users/amuldotexe/Desktop/agent-room-of-requirements/iggy/pr-2815-m
 | --- | --- | --- | --- | --- |
 | REQ-MDB-001.1 | T-DUP-OK-1 | integration | Pre-seeded duplicate in batch is treated idempotently; no extra doc for same `_id`; sink remains non-error | `core/integration/tests/connectors/mongodb/mongodb_sink.rs` |
 | REQ-MDB-002.1 | T-UNORD-1 | integration | With duplicate in middle, suffix valid message still persists (`ordered(false)` behavior) | `core/integration/tests/connectors/mongodb/mongodb_sink.rs` |
-| REQ-MDB-003.1 | T-ID-CROSS-1 | integration (new) | Same `message_id` sent to two topics yields two different composite `_id` values and two docs | `core/integration/tests/connectors/mongodb/mongodb_sink.rs` |
+| REQ-MDB-003.1 | T-ID-CROSS-1 | unit (new) | Same `message_id` + partition with different topic names yields different composite `_id` strings | `core/connectors/sinks/mongodb_sink/src/lib.rs` tests |
 | REQ-MDB-004.1 | T-PROGRESS-1 | integration | Duplicate-only batch does not force sink status error; runtime file remains unchanged in diff | `core/integration/tests/connectors/mongodb/mongodb_sink.rs` + git diff gate |
 | REQ-MDB-005.1 | T-OFFSET-RANGE-1 | unit (new) | `offset > i64::MAX` stored as `iggy_offset_str`; smaller offset stored as `iggy_offset` i64 | `core/connectors/sinks/mongodb_sink/src/lib.rs` tests |
 | REQ-MDB-005.1 | T-PARTITION-RANGE-1 | unit (new) | Partition id converts to `Bson::Int32` in range and `Bson::Int64` otherwise | `core/connectors/sinks/mongodb_sink/src/lib.rs` tests |
