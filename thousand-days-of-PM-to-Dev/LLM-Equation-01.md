@@ -1,1 +1,18 @@
+# LLM equation 01
 
+
+``` text
+
+Y = LLMs doing what we precisely want them to do
+
+Extra context on Y:
+- Do we even know what exactly we want?
+  - We broadly know what we want
+  - But we do not know if it is possible
+  - Sometimes what we want is emergent in nature
+
+Alternate context on Y:
+- 
+
+
+```
