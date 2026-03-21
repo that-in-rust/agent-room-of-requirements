@@ -13,9 +13,12 @@ Extra context on Y:
   - Is this the right thing to want
     - Is it more than what I need
     - Is it less than what I can get
+  - Do not aim too low, ask the LLM itself what is worth asking for in a particular direction
 
 Alternate context on Y:
-- 
+- How to be specific
+  - E.g. API behavior documented as test input and output
+  - 
 
 
 ```
