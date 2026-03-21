@@ -5,7 +5,7 @@
 
 Y = LLMs doing what we precisely want them to do
 
-Extra context on Y:
+Extra context on Y - ASK MORE:
 - Do we even know what exactly we want?
   - We broadly know what we want
   - But we do not know if it is possible
@@ -15,13 +15,20 @@ Extra context on Y:
     - Is it less than what I can get
   - Do not aim too low, ask the LLM itself what is worth asking for in a particular direction
 
-Alternate context on Y:
+Alternate context on Y --- BE MORE SPECIFIC AND EXACT :
 - How to be specific
   - E.g. API behavior documented as test input and output
   - E.g. Risk assessment - credit worthiness - clear measurable metrics accepted in industry terms (things around it)
 - Help the LLM converge by having a clear measurable end to end test
   - if that does not exist - FIRST create a test
-- 
+
+
+Inputs:
+
+- X1
+  - 
+- X2
+
 
 
 ```
