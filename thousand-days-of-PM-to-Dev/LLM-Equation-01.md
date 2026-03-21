@@ -10,6 +10,9 @@ Extra context on Y:
   - We broadly know what we want
   - But we do not know if it is possible
   - Sometimes what we want is emergent in nature
+  - Is this the right thing to want
+    - Is it more than what I need
+    - Is it less than what I can get
 
 Alternate context on Y:
 - 
