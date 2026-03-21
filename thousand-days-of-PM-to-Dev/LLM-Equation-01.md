@@ -18,7 +18,10 @@ Extra context on Y:
 Alternate context on Y:
 - How to be specific
   - E.g. API behavior documented as test input and output
-  - 
+  - E.g. Risk assessment - credit worthiness - clear measurable metrics accepted in industry terms (things around it)
+- Help the LLM converge by having a clear measurable end to end test
+  - if that does not exist - FIRST create a test
+- 
 
 
 ```
