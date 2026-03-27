@@ -1,0 +1,4 @@
+interface:
+  display_name: "MERN Reliability"
+  short_description: "Reliability-first MERN coding guide"
+  default_prompt: "Use $mern-coder-01 to implement or refactor reliable MERN code with validated boundaries, safe Mongoose patterns, and production-ready API defaults."

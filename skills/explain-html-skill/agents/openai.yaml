@@ -1,0 +1,4 @@
+interface:
+  display_name: "Elegant HTML Explainer"
+  short_description: "Turn code and docs into elegant explainer pages"
+  default_prompt: "Use $explain-html-skill to turn these source files and notes into a polished standalone explainer HTML page."

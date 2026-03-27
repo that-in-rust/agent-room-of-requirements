@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript Reliability"
+  short_description: "Reliability-first TypeScript guide"
+  default_prompt: "Use $typescript-coder-01 to implement or refactor reliable TypeScript with schema-first boundaries, explicit module hygiene, and behavior-first tests."

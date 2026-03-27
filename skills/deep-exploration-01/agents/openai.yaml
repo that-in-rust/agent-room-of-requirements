@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deep Exploration 01"
+  short_description: "Research complex questions with multi-angle analysis"
+  default_prompt: "Use $deep-exploration-01 to investigate this topic deeply, test the premise, compare approaches, and produce a source-grounded synthesis."

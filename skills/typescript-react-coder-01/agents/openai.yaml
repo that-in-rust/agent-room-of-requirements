@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript React"
+  short_description: "React/frontend TypeScript reliability"
+  default_prompt: "Use $typescript-react-coder-01 to implement reliable React TypeScript with query layers, schema-driven forms, exhaustive UI states, and behavior-first tests."

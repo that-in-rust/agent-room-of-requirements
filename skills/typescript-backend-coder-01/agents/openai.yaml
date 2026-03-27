@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript Backend"
+  short_description: "Backend/server TypeScript reliability"
+  default_prompt: "Use $typescript-backend-coder-01 to implement reliable TypeScript backend flows with schema-validated inputs, explicit errors, cancellation, and ports/adapters."

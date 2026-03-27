@@ -1,0 +1,4 @@
+interface:
+  display_name: "Minto Pyramid"
+  short_description: "Structure writing with Minto"
+  default_prompt: "Use $minto-pyramid-01 to turn this draft into a top-down document with a clear SCQA introduction and Key Line."

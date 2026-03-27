@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Debate 01"
+  short_description: "Run evidence-based multi-agent technical debates"
+  default_prompt: "Use $agent-debate-01 to set up a structured technical debate, initialize the shared markdown file, and apply evidence-based debate rules."
