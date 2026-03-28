@@ -141,6 +141,29 @@ wait_for_server() {
   return 1
 }
 
+resolve_server_url_from_log() {
+  local server_log="$1"
+  local retries=30
+  local sleep_s=1
+  local i
+
+  for ((i = 1; i <= retries; i++)); do
+    if [[ -f "${server_log}" ]]; then
+      local server_url
+      server_url="$(
+        grep -Eo 'http://localhost:[0-9]+' "${server_log}" | tail -n 1 || true
+      )"
+      if [[ -n "${server_url}" ]]; then
+        printf '%s\n' "${server_url}"
+        return 0
+      fi
+    fi
+    sleep "${sleep_s}"
+  done
+
+  return 1
+}
+
 resolve_db_uri_from_index_log() {
   local run_dir="$1"
   local index_log="$2"
@@ -385,28 +408,37 @@ main() {
   local workspace_path
   workspace_path="$(resolve_workspace_path_from_db_uri "${db_uri}")"
 
-  {
-    printf 'PARSELTONGUE_VERSION=%q\n' "${PARSELTONGUE_VERSION}"
-    printf 'CODEBASE_PATH=%q\n' "${codebase_path}"
-    printf 'PORT=%q\n' "${port}"
-    printf 'DB_URI=%q\n' "${db_uri}"
-    printf 'WORKSPACE_PATH=%q\n' "${workspace_path}"
-    printf 'INDEX_LOG=%q\n' "${index_log}"
-  } > "${run_dir}/run.config"
-
   local server_log="${run_dir}/logs/server.log"
-  echo "Starting query server on port ${port}"
+  : > "${server_log}"
+  echo "Starting query server on requested port ${port}"
   start_detached_server "${binary_path}" "${db_uri}" "${port}" "${server_log}" "${run_dir}/server.pid" "${codebase_path}"
   local server_pid
   server_pid="$(cat "${run_dir}/server.pid")"
 
-  local server_url="http://localhost:${port}"
+  local server_url
+  server_url="$(resolve_server_url_from_log "${server_log}")" || {
+    echo "Could not determine actual server URL from ${server_log}" >&2
+    return 1
+  }
+  local actual_port="${server_url##*:}"
+
   if ! wait_for_server "${server_url}"; then
     echo "Server failed health check. Check logs at ${server_log}" >&2
     central_log "SERVER_HEALTH_FAIL server='${server_url}' run_dir='${run_dir}'"
     return 1
   fi
   central_log "SERVER_HEALTH_OK server='${server_url}' run_dir='${run_dir}' pid=${server_pid}"
+
+  {
+    printf 'PARSELTONGUE_VERSION=%q\n' "${PARSELTONGUE_VERSION}"
+    printf 'CODEBASE_PATH=%q\n' "${codebase_path}"
+    printf 'REQUESTED_PORT=%q\n' "${port}"
+    printf 'PORT=%q\n' "${actual_port}"
+    printf 'SERVER_URL=%q\n' "${server_url}"
+    printf 'DB_URI=%q\n' "${db_uri}"
+    printf 'WORKSPACE_PATH=%q\n' "${workspace_path}"
+    printf 'INDEX_LOG=%q\n' "${index_log}"
+  } > "${run_dir}/run.config"
 
   capture_query_output "${server_url}" "server-health-check-status" "${run_dir}/queries/server-health-check-status.json" "true"
   capture_query_output "${server_url}" "codebase-statistics-overview-summary" "${run_dir}/queries/codebase-statistics-overview-summary.json" "true"

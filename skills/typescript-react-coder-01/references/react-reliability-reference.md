@@ -41,7 +41,7 @@ This file assumes the shared TypeScript rules from the main reference:
 
 Primary companion:
 
-- [typescript-reliability-reference.md](../../typescript-coder-01/references/typescript-reliability-reference.md)
+- [typescript-coder-01.md](/Users/amuldotexe/Desktop/agent-room-of-requirements/agents-202602/typescript-coder-01.md)
 
 ---
 

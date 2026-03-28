@@ -81,6 +81,27 @@ wait_for_server() {
   return 1
 }
 
+resolve_server_url_from_log() {
+  local server_log="$1"
+  local retries=30
+  local i
+
+  for ((i = 1; i <= retries; i++)); do
+    if [[ -f "${server_log}" ]]; then
+      local server_url
+      server_url="$(
+        grep -Eo 'http://localhost:[0-9]+' "${server_log}" | tail -n 1 || true
+      )"
+      if [[ -n "${server_url}" ]]; then
+        printf '%s\n' "${server_url}"
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 resolve_db_uri_from_index_log() {
   local run_folder="$1"
   local index_log="$2"
@@ -289,11 +310,18 @@ main() {
   workspace_path="$(resolve_workspace_path_from_db_uri "${db_uri}")"
 
   local server_log="${run_folder}/logs/server.log"
+  : > "${server_log}"
   start_detached_server "${binary_path}" "${db_uri}" "${port}" "${server_log}" "${run_folder}/server.pid" "${codebase_path}"
   local server_pid
   server_pid="$(cat "${run_folder}/server.pid")"
 
-  local server_url="http://localhost:${port}"
+  local server_url
+  server_url="$(resolve_server_url_from_log "${server_log}")" || {
+    echo "Could not determine actual server URL from ${server_log}" >&2
+    return 1
+  }
+  local actual_port="${server_url##*:}"
+
   if ! wait_for_server "${server_url}"; then
     echo "Server failed health check after reindex. Check logs at ${server_log}" >&2
     central_log "SERVER_HEALTH_FAIL server='${server_url}' run_dir='${run_folder}'"
@@ -311,7 +339,9 @@ main() {
   {
     printf 'PARSELTONGUE_VERSION=%q\n' "${PARSELTONGUE_VERSION}"
     printf 'CODEBASE_PATH=%q\n' "${codebase_path}"
-    printf 'PORT=%q\n' "${port}"
+    printf 'REQUESTED_PORT=%q\n' "${port}"
+    printf 'PORT=%q\n' "${actual_port}"
+    printf 'SERVER_URL=%q\n' "${server_url}"
     printf 'DB_URI=%q\n' "${db_uri}"
     printf 'WORKSPACE_PATH=%q\n' "${workspace_path}"
     printf 'INDEX_LOG=%q\n' "${index_log}"

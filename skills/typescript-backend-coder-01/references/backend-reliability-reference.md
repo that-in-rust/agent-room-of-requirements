@@ -42,7 +42,7 @@ Use these from the general TypeScript reference without re-debating them:
 
 Primary companion:
 
-- [typescript-reliability-reference.md](../../typescript-coder-01/references/typescript-reliability-reference.md)
+- [typescript-coder-01.md](/Users/amuldotexe/Desktop/agent-room-of-requirements/agents-202602/typescript-coder-01.md)
 
 ---
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "Parseltongue 1.7.2 Runner"
-  short_description: "Install in user-space, verify watcher health, and query Parseltongue v1.7.2"
-  default_prompt: "Use $run-parseltongue-1-7-2 to install parseltongue 1.7.2 in a user-space run folder away from the current workspace, keep the workspace inside that run folder, verify watcher health, and refresh (reindex) or query a codebase."
+  short_description: "Run Parseltongue for graph workflows"
+  default_prompt: "Use $run-parseltongue-1-7-2 to install Parseltongue 1.7.2, resolve the live server URL, and run forward, backward, meet-in-the-middle, or derived flow-pattern workflows on a codebase."
