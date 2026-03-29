@@ -1,5 +1,7 @@
 # 28 Mar 2026 Saturday
 
+## Joy session
+
 ``` text
 
 - do not interrupt the LLM on what it is good at, they are testing the baseline and trying to improve it
@@ -12,6 +14,31 @@ He asked us to delete code for several reasons:
 - Prefer process over outcomes
 - Detach developers' identity from code
 - Force you to rethink different approaches to the same problem statement
+
+
+
+```
+
+
+# Apache Iggy exploration
+
+``` text
+
+- Consumption patterns should be random and interspersed and natural rather than being very, very forced
+- Learn QUIC protocol only in adjacency of Apache Iggy this way you will cover more ground around Apache Iggy
+- 
+
+```
+
+## Questions to explore from apache iggy
+
+
+``` text
+
+- Iggy supports QUIC what does it mean?
+- What is the difference between different protocols supported by Iggy like QUIC TCP WebSocket HTTP?
+
+
 
 
 ```
