@@ -2314,3 +2314,229 @@ no context-window dump can replicate.
   and a companion is ready to explain exactly what you need when you need it.
 
 ```
+
+## Parseltongue Ideation 03
+
+``` text
+  The Short Answer
+
+  Rust's compiler gives you exact, compiler-verified control flow via MIR. Not approximate. Not heuristic. Exact. This is fundamentally different from tree-sitter.
+
+  What You Already Decided (and it was right)
+
+  Your archived docs show converged decisions on this:
+
+  ┌───────────┬─────────────────────┬─────────────────────────────────────────────────────────────────────┐
+  │   Layer   │        Tool         │                          What It Gives You                          │
+  ├───────────┼─────────────────────┼─────────────────────────────────────────────────────────────────────┤
+  │ Syntax    │ tree-sitter         │ Declarations, line ranges, basic patterns (all languages)           │
+  ├───────────┼─────────────────────┼─────────────────────────────────────────────────────────────────────┤
+  │ Semantics │ rustc_private + MIR │ Exact call graphs, CFG, type resolution, trait dispatch (Rust only) │
+  ├───────────┼─────────────────────┼─────────────────────────────────────────────────────────────────────┤
+  │ Ownership │ Polonius facts      │ Move semantics, borrow lifecycle, liveness at every CFG point       │
+  └───────────┴─────────────────────┴─────────────────────────────────────────────────────────────────────┘
+
+  Why MIR Solves Your Control Flow Problem
+
+  MIR (Mid-level IR) gives you the literal control flow graph the compiler uses:
+
+  ┌──────────────────────────────────────────────────────────┐
+  │  MIR Body                                                │
+  │                                                          │
+  │  bb0: ──→ bb1 (if condition)                             │
+  │       ──→ bb3 (else)                                     │
+  │                                                          │
+  │  bb1: ──→ bb2 (call foo())                               │
+  │                                                          │
+  │  bb2: ──→ bb4 (return)                                   │
+  │                                                          │
+  │  bb3: ──→ bb4 (call bar())                               │
+  │                                                          │
+  │  bb4: ──→ return                                         │
+  │                                                          │
+  │  APIs:                                                   │
+  │    body.basic_blocks          → all blocks                │
+  │    block.successors()         → forward edges             │
+  │    basic_blocks.predecessors()→ backward edges            │
+  │    basic_blocks.dominators()  → dominator tree            │
+  │    TerminatorKind::Call       → exact call targets        │
+  │    Instance::try_resolve()    → resolves trait → concrete │
+  └──────────────────────────────────────────────────────────┘
+
+  The killer feature: Instance::try_resolve() solves the exact problem your thesis identified as the biggest constraint — "tree-sitter knows foo() calls bar() but not which bar()." MIR resolves trait dispatch
+  to the concrete implementation. No ambiguity. No "3 possible targets." The compiler knows.
+
+  What This Means for Your Control Flow Diagrams
+
+  You can produce fully deterministic, predictable control flow diagrams because:
+
+  1. CFG is a DAG of BasicBlocks — each block has typed successors (branch, call, drop, return, panic)
+  2. Call graph is fully resolved — direct calls, trait dispatch, generic monomorphization, closures
+  3. Dominator tree is built-in — BasicBlocks::dominators() gives you loop detection, unreachable code
+  4. Data flow is available — MaybeInitializedPlaces, MaybeLiveLocals, variable def/use chains
+
+  So the flow from codebase → diagram looks like:
+
+  Rust source
+      │
+      ▼ (rustc_private, pinned nightly)
+  MIR basic blocks + terminators
+      │
+      ▼ (extract TerminatorKind::Call, Branch, Drop)
+  Control Flow Graph (exact, typed edges)
+      │
+      ▼ (Instance::try_resolve for trait dispatch)
+  Resolved Call Graph (no ambiguity)
+      │
+      ▼ (Leiden clustering on the call graph)
+  Community-grouped control flow diagram
+
+  The Clustering Question
+
+  Your research on Leiden is spot-on. Once you have the exact call graph from MIR (not tree-sitter's approximate one), Leiden clustering becomes dramatically more meaningful — because the edges are real. Your
+  modularity > 0.3 gate works because the graph isn't polluted with false edges.
+
+  What's Different from Tree-Sitter
+
+  ┌────────────────────────────────┬───────────────────────────┬─────────────────────────────────┐
+  │           Capability           │        tree-sitter        │            rustc MIR            │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ "foo calls bar"                │ Yes (syntax match)        │ Yes (compiler-verified)         │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ "which bar" (trait dispatch)   │ No (shows all candidates) │ Yes (resolves to concrete impl) │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ Control flow within a function │ No                        │ Yes (BasicBlock CFG)            │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ Loop detection                 │ No                        │ Yes (dominator tree back-edges) │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ Dead code paths                │ No                        │ Yes (unreachable blocks)        │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ Generic instantiation          │ No                        │ Yes (monomorphized)             │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ Closure capture                │ No                        │ Yes (capture analysis)          │
+  ├────────────────────────────────┼───────────────────────────┼─────────────────────────────────┤
+  │ Move vs borrow                 │ No                        │ Yes (Polonius facts)            │
+  └────────────────────────────────┴───────────────────────────┴─────────────────────────────────┘
+
+  Bottom Line
+
+  For Rust code specifically, you can produce 100% predictable control flow diagrams — not because you're guessing from syntax, but because you're reading the same CFG the compiler builds. The MIR is
+  deterministic. The call resolution is deterministic. The dominator tree is deterministic.
+
+  The only question isn't "can it be done" — your research already proved that with 8 production tools (Miri, Flowistry, Aquascope, etc.). The question is when you build pt09 (currently deferred to v3.0
+  Iteration B).
+
+  Want me to build an interactive explainer for this too, or dive into what a pt09 implementation would actually look like?
+
+```
+
+## Parseltongue Ideation 04
+
+``` text
+I think both ideas are very strong.
+
+The first one is probably the core UX problem. The second one is probably the moat.
+
+For the first idea, the key insight is: you should not zoom the raw graph, you should zoom the representation.
+
+A useful code graph should behave like a `focus lens`:
+- the selected thing is fully saturated
+- its 1-hop neighborhood is visible and ranked
+- its 2-hop neighborhood is faint
+- unrelated areas are ghosted or hidden
+- boundary nodes are shown as exits, not full clutter
+
+So “zooming” is really changing levels of abstraction:
+1. `Workspace level`: subsystems and communities
+2. `Subsystem level`: modules, public APIs, representative files
+3. `Entity level`: one function/type/trait and its ego network
+4. `Flow level`: CFG, DDG, type-flow slices inside one chosen unit
+
+The other important piece is that “importance” is always relative to a focus. Global importance alone is not enough. I would rank what to show using something like:
+- local relevance first: `Personalized PageRank` from the selected node
+- then structural proximity: `BFS` distance
+- then global importance: `PageRank`
+- then edge semantics: calls, impls, type refs, public boundary edges
+
+That gives you the exact behavior you described:
+- everything else grays out
+- the local area becomes legible
+- the “most important connected things” rise naturally
+
+So yes, that idea is not just good, it is foundational.
+
+For the second idea, yes, absolutely, but I would not model it as “future edges in the main table.” I would model it as `graph variants` or `overlay deltas`.
+
+The reason is simple: an architecture option is not just “add edge.”
+It is often:
+- add edge
+- remove edge
+- reroute dependency
+- replace direct dependency with interface dependency
+- collapse or split a node conceptually
+
+So I would represent it like this:
+
+- `base snapshot`: current graph
+- `variant A`: overlay delta
+- `variant B`: overlay delta
+- `variant C`: overlay delta
+
+And each delta can contain:
+- `add_edge`
+- `remove_edge`
+- `change_edge_kind`
+- later maybe `collapse_nodes` / `split_node`
+
+Then every API can be queried as:
+- `variant=current`
+- `variant=option-1`
+- `variant=option-2`
+- `variant=option-3`
+
+That is much cleaner than exporting three giant JSON graphs and hoping the LLM reasons over all of them raw.
+
+What the LLM should get is not just the edge JSON, but the `difference packet`:
+- edges added
+- edges removed
+- new reachability
+- SCC changes
+- PageRank delta
+- k-core delta
+- Leiden/community boundary changes
+- hotspots moved
+- public boundary crossings changed
+
+That turns it from “graph dump comparison” into “architectural consequence engine.”
+
+So my verdict is:
+
+- `Idea 1: Focus lens / semantic zoom`
+This should be a first-class product direction right away.
+
+- `Idea 2: Variant overlays / architecture options`
+This is extremely strong, but it should sit on top of a trustworthy base graph and a good local-focus UI.
+
+The one caution on the second idea is trust:
+if the LLM can insert arbitrary edges with no structure, the system becomes fiction fast.
+
+So I would require proposed edges to be:
+- typed
+- variant-scoped
+- justified with rationale
+- clearly marked as `proposed`, not `truth`
+
+If I had to name them, I’d call them:
+- `Semantic Focus Lens`
+- `Variant Graph Overlays`
+
+And if I had to prioritize:
+1. Build the focus/zoom model first
+2. Build overlays second
+3. Then build “compare architecture options” views on top
+
+I really like this direction. This is the kind of thinking that can make Parseltongue feel genuinely different, not just “search plus graph.” If you want, I can turn these two ideas into:
+- a concrete Tauri UI concept
+- a DB schema
+- and the exact HTTP APIs for `focus lens` and `variant overlays`.
+```
