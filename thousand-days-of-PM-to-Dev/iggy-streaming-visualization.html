@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Apache Iggy Streams Messages</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0e1a;
+    color: #c8cdd8;
+    font-family: 'Poppins', sans-serif;
+    overflow-x: hidden;
+  }
+
+  #app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Header */
+  #header {
+    background: linear-gradient(135deg, #0d1117 0%, #161b28 100%);
+    border-bottom: 1px solid rgba(88, 166, 255, 0.15);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  #header .title-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e2e8f0;
+    letter-spacing: 0.5px;
+  }
+
+  #header h1 span.iggy-highlight {
+    background: linear-gradient(90deg, #f97316, #fb923c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+  }
+
+  #header .subtitle {
+    font-size: 12px;
+    color: #7c8594;
+    font-weight: 300;
+    margin-top: 2px;
+  }
+
+  #header .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .header-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #a0aab8;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .header-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #e2e8f0;
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  .header-btn.active {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.4);
+    color: #fb923c;
+  }
+
+  /* Main layout */
+  #main-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    width: 300px;
+    background: linear-gradient(180deg, #0d1117 0%, #111827 100%);
+    border-right: 1px solid rgba(88, 166, 255, 0.1);
+    padding: 16px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  #sidebar::-webkit-scrollbar { width: 4px; }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+  #sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  .sidebar-section {
+    margin-bottom: 20px;
+  }
+
+  .sidebar-section h3 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #6b7280;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Polling strategy buttons */
+  .strategy-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .strategy-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #9ca3af;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .strategy-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+    color: #d1d5db;
+  }
+
+  .strategy-btn.active {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: rgba(249, 115, 22, 0.5);
+    color: #fb923c;
+    box-shadow: 0 0 12px rgba(249, 115, 22, 0.1);
+  }
+
+  .strategy-btn .label {
+    font-weight: 600;
+  }
+
+  .strategy-btn .desc {
+    font-size: 10px;
+    opacity: 0.6;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* Consumer selector */
+  .consumer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .consumer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+
+  .consumer-item:hover {
+    background: rgba(255,255,255,0.04);
+  }
+
+  .consumer-item.selected {
+    background: rgba(88, 166, 255, 0.08);
+    border-color: rgba(88, 166, 255, 0.25);
+  }
+
+  .consumer-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .consumer-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: #d1d5db;
+  }
+
+  .consumer-offset {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #6b7280;
+    margin-left: auto;
+  }
+
+  /* Slider controls */
+  .param-control {
+    margin-bottom: 14px;
+  }
+
+  .param-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .param-label span:first-child {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  .param-label span:last-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #f97316;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #f97316;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+  }
+
+  /* Number input for offset */
+  .offset-input-group {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .offset-input-group input[type="number"] {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #e2e8f0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 100%;
+    outline: none;
+  }
+
+  .offset-input-group input:focus {
+    border-color: rgba(249, 115, 22, 0.5);
+  }
+
+  .offset-input-group button {
+    background: rgba(249, 115, 22, 0.15);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    color: #fb923c;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .offset-input-group button:hover {
+    background: rgba(249, 115, 22, 0.25);
+  }
+
+  /* Canvas container */
+  #canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #canvas-container canvas {
+    display: block;
+  }
+
+  /* Legend overlay */
+  #legend {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(13, 17, 23, 0.92);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 14px 18px;
+    backdrop-filter: blur(12px);
+    z-index: 5;
+  }
+
+  #legend h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #6b7280;
+    margin-bottom: 10px;
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  .legend-swatch {
+    width: 24px;
+    height: 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Tooltip */
+  #tooltip {
+    position: absolute;
+    background: rgba(13, 17, 23, 0.95);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #fb923c;
+    pointer-events: none;
+    z-index: 20;
+    display: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  /* Info panel */
+  .info-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 8px;
+  }
+
+  .info-box p {
+    font-size: 11px;
+    color: #7c8594;
+    line-height: 1.5;
+  }
+
+  .info-box code {
+    font-family: 'JetBrains Mono', monospace;
+    color: #fb923c;
+    font-size: 11px;
+  }
+
+  /* Partition labels */
+  .partition-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #6b7280;
+  }
+</style>
+</head>
+<body>
+<div id="app-container">
+  <div id="header">
+    <div class="title-group">
+      <h1>How Apache <span class="iggy-highlight">Iggy</span> Streams Messages</h1>
+      <div class="subtitle">A persistent, pull-based message log -- consumers read at their own pace</div>
+    </div>
+    <div class="controls">
+      <button class="header-btn" onclick="togglePause()" id="pauseBtn">Pause</button>
+      <button class="header-btn" onclick="resetSimulation()">Reset</button>
+      <button class="header-btn" onclick="downloadFrame()">Save PNG</button>
+    </div>
+  </div>
+
+  <div id="main-layout">
+    <div id="sidebar">
+
+      <div class="sidebar-section">
+        <h3>Select Consumer</h3>
+        <div class="consumer-list" id="consumerList"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Polling Strategy</h3>
+        <div class="strategy-grid">
+          <button class="strategy-btn" onclick="setStrategy('FIRST')" id="strat-FIRST">
+            <div>
+              <div class="label">FIRST</div>
+              <div class="desc">Jump to offset 0</div>
+            </div>
+          </button>
+          <button class="strategy-btn" onclick="setStrategy('LAST')" id="strat-LAST">
+            <div>
+              <div class="label">LAST</div>
+              <div class="desc">Jump to latest message</div>
+            </div>
+          </button>
+          <button class="strategy-btn" onclick="setStrategy('NEXT')" id="strat-NEXT">
+            <div>
+              <div class="label">NEXT</div>
+              <div class="desc">Advance from stored offset</div>
+            </div>
+          </button>
+          <button class="strategy-btn" onclick="setStrategy('OFFSET')" id="strat-OFFSET">
+            <div>
+              <div class="label">OFFSET(N)</div>
+              <div class="desc">Jump to specific offset</div>
+            </div>
+          </button>
+          <button class="strategy-btn" onclick="setStrategy('TIMESTAMP')" id="strat-TIMESTAMP">
+            <div>
+              <div class="label">TIMESTAMP</div>
+              <div class="desc">Jump to time-based position</div>
+            </div>
+          </button>
+        </div>
+        <div class="offset-input-group" id="offsetInputGroup" style="display:none;">
+          <input type="number" id="offsetInput" placeholder="Offset..." min="0" value="0">
+          <button onclick="applyOffset()">Go</button>
+        </div>
+        <div class="info-box" id="strategyInfo">
+          <p>Select a consumer above, then choose a polling strategy to reposition its read pointer.</p>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <h3>Stream Parameters</h3>
+        <div class="param-control">
+          <div class="param-label"><span>Message Rate</span><span id="rateVal">3</span></div>
+          <input type="range" min="1" max="8" step="1" value="3" id="rateSlider" oninput="params.messageRate=+this.value; document.getElementById('rateVal').textContent=this.value">
+        </div>
+        <div class="param-control">
+          <div class="param-label"><span>Partitions</span><span id="partVal">3</span></div>
+          <input type="range" min="1" max="5" step="1" value="3" id="partSlider" oninput="changePartitions(+this.value); document.getElementById('partVal').textContent=this.value">
+        </div>
+        <div class="param-control">
+          <div class="param-label"><span>Segment Size</span><span id="segVal">12</span></div>
+          <input type="range" min="6" max="24" step="2" value="12" id="segSlider" oninput="params.segmentSize=+this.value; document.getElementById('segVal').textContent=this.value">
+        </div>
+        <div class="param-control">
+          <div class="param-label"><span>Consumer Speed</span><span id="speedVal">1.0</span></div>
+          <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" id="speedSlider" oninput="params.consumerSpeed=+this.value; document.getElementById('speedVal').textContent=(+this.value).toFixed(1)">
+        </div>
+        <div class="param-control">
+          <div class="param-label"><span>Trail Length</span><span id="trailVal">0.6</span></div>
+          <input type="range" min="0.1" max="1.0" step="0.05" value="0.6" id="trailSlider" oninput="params.trailAlpha=+this.value; document.getElementById('trailVal').textContent=(+this.value).toFixed(2)">
+        </div>
+      </div>
+
+    </div>
+
+    <div id="canvas-container">
+      <div id="tooltip"></div>
+      <div id="legend">
+        <h4>Three-Tier Read Path</h4>
+        <div class="legend-row">
+          <div class="legend-swatch" style="background: linear-gradient(90deg, #22d3ee, #67e8f9);"></div>
+          <span>Tier 3: Journal / RAM (hottest)</span>
+        </div>
+        <div class="legend-row">
+          <div class="legend-swatch" style="background: linear-gradient(90deg, #a78bfa, #c4b5fd);"></div>
+          <span>Tier 2: In-Flight (flushing)</span>
+        </div>
+        <div class="legend-row">
+          <div class="legend-swatch" style="background: linear-gradient(90deg, #f97316, #fb923c);"></div>
+          <span>Tier 1: Disk (permanent)</span>
+        </div>
+        <div class="legend-row" style="margin-top: 10px;">
+          <div class="legend-swatch" style="background: repeating-linear-gradient(90deg, #374151, #374151 4px, transparent 4px, transparent 8px);"></div>
+          <span>Segment boundary</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// PERSISTENT CURRENT -- Apache Iggy Message Streaming Visualization
+// An educational algorithmic art piece
+// ================================================================
+
+let params = {
+  messageRate: 3,
+  numPartitions: 3,
+  segmentSize: 12,
+  consumerSpeed: 1.0,
+  trailAlpha: 0.6
+};
+
+let paused = false;
+let partitions = [];
+let producers = [];
+let consumers = [];
+let selectedConsumer = 0;
+let currentStrategy = 'NEXT';
+let globalOffset = 0;
+let frameCounter = 0;
+let canvasW, canvasH;
+let tooltipEl, containerEl;
+
+// Colors
+const COL_BG = [10, 14, 26];
+const COL_TIER1 = [249, 115, 22];    // Disk - orange
+const COL_TIER2 = [167, 139, 250];   // In-flight - purple
+const COL_TIER3 = [34, 211, 238];    // Journal/RAM - cyan
+const COL_SEGMENT = [55, 65, 81];
+
+const CONSUMER_COLORS = [
+  [88, 166, 255],   // Blue
+  [52, 211, 153],   // Green
+  [251, 146, 60],   // Orange
+  [244, 114, 182],  // Pink
+  [163, 230, 53],   // Lime
+];
+
+const CONSUMER_NAMES = [
+  'Postgres Sink',
+  'Analytics',
+  'Monitoring',
+  'Archiver',
+  'Dashboard'
+];
+
+// ================================================================
+// DATA STRUCTURES
+// ================================================================
+
+const MAX_MESSAGES_PER_PARTITION = 300;
+
+class Message {
+  constructor(offset, partitionIdx, timestamp, indexInPartition) {
+    this.offset = offset;
+    this.partitionIdx = partitionIdx;
+    this.timestamp = timestamp;
+    this.idx = indexInPartition;  // stored index for O(1) lookup
+    this.age = 0;
+    this.x = 0;
+    this.y = 0;
+    this.born = frameCounter;
+    this.glowPhase = random(TWO_PI);
+    this.size = random(3.5, 5.5);
+  }
+
+  getTier(totalMsgs) {
+    let ratio = this.idx / max(totalMsgs - 1, 1);
+    if (ratio > 0.85) return 3;      // Journal/RAM
+    if (ratio > 0.65) return 2;      // In-flight
+    return 1;                          // Disk
+  }
+
+  getColor(totalMsgs) {
+    let tier = this.getTier(totalMsgs);
+    let t;
+    if (tier === 3) {
+      t = map(this.age, 0, 30, 1.0, 0.7);
+      return lerpColor(color(...COL_TIER3, 255), color(...COL_TIER2, 255), 1.0 - t);
+    } else if (tier === 2) {
+      return color(...COL_TIER2, 230);
+    } else {
+      return color(...COL_TIER1, 200);
+    }
+  }
+}
+
+class Partition {
+  constructor(index) {
+    this.index = index;
+    this.messages = [];
+    this.nextOffset = 0;
+    this.y = 0;
+    this.laneHeight = 0;
+  }
+
+  addMessage() {
+    let m = new Message(this.nextOffset, this.index, Date.now(), this.messages.length);
+    this.messages.push(m);
+    this.nextOffset++;
+    // Cap visible messages for performance, but persist offsets
+    if (this.messages.length > MAX_MESSAGES_PER_PARTITION) {
+      this.messages.shift();
+      // Re-index remaining messages
+      for (let i = 0; i < this.messages.length; i++) {
+        this.messages[i].idx = i;
+      }
+    }
+    return m;
+  }
+}
+
+class Producer {
+  constructor(index) {
+    this.index = index;
+    this.x = 0;
+    this.y = 0;
+    this.pulsePhase = random(TWO_PI);
+    this.emitTimer = 0;
+    this.particles = [];
+  }
+}
+
+class Consumer {
+  constructor(index) {
+    this.index = index;
+    this.name = CONSUMER_NAMES[index] || `Consumer ${index}`;
+    this.color = CONSUMER_COLORS[index % CONSUMER_COLORS.length];
+    this.offsets = {};  // per-partition offset
+    this.targetOffsets = {};
+    this.readSpeed = 0.3 + random(0.7);
+    this.strategy = 'NEXT';
+    this.x = 0;
+    this.y = 0;
+    this.isPostgres = index === 0;
+    this.lastReadFrame = 0;
+  }
+}
+
+class EmitParticle {
+  constructor(x, y, tx, ty, col) {
+    this.x = x; this.y = y;
+    this.tx = tx; this.ty = ty;
+    this.col = col;
+    this.progress = 0;
+    this.speed = random(0.03, 0.06);
+    this.trail = [];
+  }
+
+  update() {
+    this.progress += this.speed;
+    let t = easeOutCubic(min(this.progress, 1));
+    let px = lerp(this.x, this.tx, t);
+    let py = lerp(this.y, this.ty, t);
+    this.trail.push({x: px, y: py, alpha: 1.0});
+    if (this.trail.length > 12) this.trail.shift();
+    for (let tr of this.trail) tr.alpha *= 0.88;
+    return this.progress >= 1;
+  }
+
+  draw() {
+    let t = easeOutCubic(min(this.progress, 1));
+    let px = lerp(this.x, this.tx, t);
+    let py = lerp(this.y, this.ty, t);
+
+    // Trail
+    noFill();
+    for (let i = 1; i < this.trail.length; i++) {
+      let tr = this.trail[i];
+      stroke(this.col[0], this.col[1], this.col[2], tr.alpha * 120);
+      strokeWeight(2 * tr.alpha);
+      line(this.trail[i-1].x, this.trail[i-1].y, tr.x, tr.y);
+    }
+
+    // Head
+    noStroke();
+    fill(this.col[0], this.col[1], this.col[2], 200);
+    circle(px, py, 6);
+    fill(this.col[0], this.col[1], this.col[2], 60);
+    circle(px, py, 14);
+  }
+}
+
+let emitParticles = [];
+
+// ================================================================
+// P5.JS SETUP & DRAW
+// ================================================================
+
+function setup() {
+  containerEl = document.getElementById('canvas-container');
+  tooltipEl = document.getElementById('tooltip');
+  canvasW = containerEl.offsetWidth;
+  canvasH = containerEl.offsetHeight;
+  let cnv = createCanvas(canvasW, canvasH);
+  cnv.parent('canvas-container');
+  textFont('Poppins');
+
+  initSimulation();
+  buildConsumerUI();
+  setStrategy('NEXT');
+}
+
+function windowResized() {
+  canvasW = containerEl.offsetWidth;
+  canvasH = containerEl.offsetHeight;
+  resizeCanvas(canvasW, canvasH);
+  recalcLayout();
+}
+
+function initSimulation() {
+  partitions = [];
+  for (let i = 0; i < params.numPartitions; i++) {
+    partitions.push(new Partition(i));
+  }
+
+  producers = [];
+  for (let i = 0; i < 3; i++) {
+    producers.push(new Producer(i));
+  }
+
+  consumers = [];
+  for (let i = 0; i < 4; i++) {
+    let c = new Consumer(i);
+    for (let p = 0; p < params.numPartitions; p++) {
+      c.offsets[p] = 0;
+      c.targetOffsets[p] = 0;
+    }
+    // Stagger initial read speeds
+    c.readSpeed = [0.6, 1.0, 0.35, 0.8][i];
+    consumers.push(c);
+  }
+
+  selectedConsumer = 0;
+  globalOffset = 0;
+  frameCounter = 0;
+  emitParticles = [];
+  recalcLayout();
+  buildConsumerUI();
+}
+
+function recalcLayout() {
+  let streamLeft = 140;
+  let streamRight = canvasW - 160;
+  let streamTop = 60;
+  let streamBottom = canvasH - 40;
+  let streamHeight = streamBottom - streamTop;
+  let laneGap = 30;
+  let totalGaps = (partitions.length - 1) * laneGap;
+  let laneH = (streamHeight - totalGaps) / max(partitions.length, 1);
+
+  for (let i = 0; i < partitions.length; i++) {
+    partitions[i].y = streamTop + i * (laneH + laneGap) + laneH / 2;
+    partitions[i].laneHeight = laneH;
+  }
+
+  // Producers on left
+  let prodSpacing = streamHeight / (producers.length + 1);
+  for (let i = 0; i < producers.length; i++) {
+    producers[i].x = 55;
+    producers[i].y = streamTop + prodSpacing * (i + 1);
+  }
+
+  // Consumers on right
+  let consSpacing = streamHeight / (consumers.length + 1);
+  for (let i = 0; i < consumers.length; i++) {
+    consumers[i].x = canvasW - 65;
+    consumers[i].y = streamTop + consSpacing * (i + 1);
+  }
+}
+
+function draw() {
+  if (!paused) {
+    frameCounter++;
+    updateSimulation();
+  }
+
+  background(...COL_BG);
+  drawStreamLanes();
+  drawSegmentBoundaries();
+  drawMessages();
+  drawConsumerPointers();
+  drawProducers();
+  drawConsumers();
+  drawEmitParticles();
+  drawLabels();
+  handleTooltip();
+}
+
+// ================================================================
+// SIMULATION UPDATE
+// ================================================================
+
+function updateSimulation() {
+  // Produce messages at the configured rate
+  if (frameCounter % max(1, Math.round(20 / params.messageRate)) === 0) {
+    let prodIdx = Math.floor(random(producers.length));
+    let partIdx = Math.floor(random(partitions.length));
+    let msg = partitions[partIdx].addMessage();
+
+    // Create emit particle from producer to message landing
+    let prod = producers[prodIdx];
+    let msgX = getMsgX(msg, partitions[partIdx]);
+    let msgY = partitions[partIdx].y;
+    emitParticles.push(new EmitParticle(
+      prod.x, prod.y, msgX, msgY, COL_TIER3
+    ));
+    globalOffset++;
+  }
+
+  // Age messages
+  for (let p of partitions) {
+    for (let m of p.messages) {
+      m.age++;
+    }
+  }
+
+  // Consumer reading -- advance their offsets
+  for (let c of consumers) {
+    let speed = c.readSpeed * params.consumerSpeed;
+    if (frameCounter - c.lastReadFrame > max(5, Math.round(30 / speed))) {
+      for (let p of partitions) {
+        let pIdx = p.index;
+        if (c.offsets[pIdx] === undefined) c.offsets[pIdx] = 0;
+        if (c.targetOffsets[pIdx] === undefined) c.targetOffsets[pIdx] = 0;
+
+        if (c.strategy === 'NEXT' && c.targetOffsets[pIdx] < p.nextOffset) {
+          c.targetOffsets[pIdx]++;
+        }
+      }
+      c.lastReadFrame = frameCounter;
+    }
+
+    // Smooth offset interpolation
+    for (let pIdx in c.offsets) {
+      c.offsets[pIdx] += (c.targetOffsets[pIdx] - c.offsets[pIdx]) * 0.08;
+    }
+  }
+
+  // Update emit particles
+  emitParticles = emitParticles.filter(ep => !ep.update());
+}
+
+// ================================================================
+// DRAWING FUNCTIONS
+// ================================================================
+
+function drawStreamLanes() {
+  let streamLeft = 120;
+  let streamRight = canvasW - 130;
+
+  for (let p of partitions) {
+    let lh = p.laneHeight;
+
+    // Lane background with subtle gradient
+    let grad = drawingContext.createLinearGradient(streamLeft, p.y, streamRight, p.y);
+    grad.addColorStop(0, 'rgba(249, 115, 22, 0.03)');
+    grad.addColorStop(0.7, 'rgba(167, 139, 250, 0.04)');
+    grad.addColorStop(1, 'rgba(34, 211, 238, 0.06)');
+    drawingContext.fillStyle = grad;
+
+    drawingContext.beginPath();
+    let rx = streamLeft, ry = p.y - lh/2 + 2, rw = streamRight - streamLeft, rh2 = lh - 4, rr = 8;
+    if (drawingContext.roundRect) {
+      drawingContext.roundRect(rx, ry, rw, rh2, rr);
+    } else {
+      drawingContext.moveTo(rx + rr, ry);
+      drawingContext.arcTo(rx + rw, ry, rx + rw, ry + rh2, rr);
+      drawingContext.arcTo(rx + rw, ry + rh2, rx, ry + rh2, rr);
+      drawingContext.arcTo(rx, ry + rh2, rx, ry, rr);
+      drawingContext.arcTo(rx, ry, rx + rw, ry, rr);
+      drawingContext.closePath();
+    }
+    drawingContext.fill();
+
+    // Lane border
+    stroke(255, 255, 255, 15);
+    strokeWeight(1);
+    noFill();
+    rect(streamLeft, p.y - lh/2 + 2, streamRight - streamLeft, lh - 4, 8);
+
+    // Partition label
+    noStroke();
+    fill(107, 114, 128, 180);
+    textFont('JetBrains Mono');
+    textSize(10);
+    textAlign(RIGHT, CENTER);
+    text(`P${p.index}`, streamLeft - 8, p.y);
+
+    // Offset counter
+    fill(249, 115, 22, 120);
+    textSize(9);
+    text(`offset: ${p.nextOffset}`, streamLeft - 8, p.y + 14);
+  }
+}
+
+function drawSegmentBoundaries() {
+  let streamLeft = 120;
+  let streamRight = canvasW - 130;
+  let visibleWidth = streamRight - streamLeft;
+
+  for (let p of partitions) {
+    let lh = p.laneHeight;
+    let msgCount = p.messages.length;
+    if (msgCount < params.segmentSize) continue;
+
+    // Find segment boundaries among visible messages using their actual offsets
+    let firstVisibleOffset = p.messages.length > 0 ? p.messages[0].offset : 0;
+    let lastVisibleOffset = p.messages.length > 0 ? p.messages[p.messages.length - 1].offset : 0;
+    let firstSeg = Math.ceil((firstVisibleOffset + 1) / params.segmentSize);
+    let lastSeg = Math.floor(lastVisibleOffset / params.segmentSize);
+
+    for (let s = firstSeg; s <= lastSeg; s++) {
+      let boundaryOffset = s * params.segmentSize;
+      // Find position of this boundary among visible messages
+      let ratio = (boundaryOffset - firstVisibleOffset) / max(lastVisibleOffset - firstVisibleOffset, 1);
+      if (ratio < 0 || ratio > 1) continue;
+      let x = streamLeft + 20 + ratio * (visibleWidth - 40);
+
+      // Dashed vertical line
+      stroke(...COL_SEGMENT, 100);
+      strokeWeight(1);
+      drawingContext.setLineDash([4, 4]);
+      line(x, p.y - lh/2 + 8, x, p.y + lh/2 - 8);
+      drawingContext.setLineDash([]);
+
+      // Segment label
+      noStroke();
+      fill(...COL_SEGMENT, 160);
+      textFont('JetBrains Mono');
+      textSize(8);
+      textAlign(CENTER, BOTTOM);
+      text(`seg ${s}`, x, p.y - lh/2 + 6);
+    }
+  }
+}
+
+function getMsgX(msg, partition) {
+  let streamLeft = 120;
+  let streamRight = canvasW - 130;
+  let visibleWidth = streamRight - streamLeft;
+  let total = max(partition.messages.length, 1);
+  let ratio = msg.idx / max(total - 1, 1);
+  return streamLeft + 20 + ratio * (visibleWidth - 40);
+}
+
+function drawMessages() {
+  let streamLeft = 120;
+  let streamRight = canvasW - 130;
+  let visibleWidth = streamRight - streamLeft;
+
+  for (let p of partitions) {
+    let total = p.messages.length;
+    if (total === 0) continue;
+
+    for (let i = 0; i < total; i++) {
+      let msg = p.messages[i];
+      let ratio = i / max(total - 1, 1);
+      let x = streamLeft + 20 + ratio * (visibleWidth - 40);
+      msg.x = x;
+      msg.y = p.y;
+
+      let col = msg.getColor(total);
+      let tier = msg.getTier(total);
+
+      // Glow for hot messages
+      if (tier === 3) {
+        let pulse = sin(frameCounter * 0.06 + msg.glowPhase) * 0.3 + 0.7;
+        let glowSize = msg.size * 4 * pulse;
+        noStroke();
+        fill(red(col), green(col), blue(col), 30 * pulse);
+        circle(x, p.y, glowSize);
+        fill(red(col), green(col), blue(col), 15 * pulse);
+        circle(x, p.y, glowSize * 1.6);
+      }
+
+      // Message dot
+      noStroke();
+      fill(col);
+      circle(x, p.y, msg.size);
+
+      // Small offset number below for every Nth message
+      if (i % max(1, Math.floor(total / 20)) === 0 || total < 30) {
+        fill(red(col), green(col), blue(col), 100);
+        textFont('JetBrains Mono');
+        textSize(7);
+        textAlign(CENTER, TOP);
+        text(msg.offset, x, p.y + msg.size + 2);
+      }
+    }
+  }
+}
+
+function drawConsumerPointers() {
+  let streamLeft = 120;
+  let streamRight = canvasW - 130;
+  let visibleWidth = streamRight - streamLeft;
+
+  for (let c of consumers) {
+    for (let p of partitions) {
+      let pIdx = p.index;
+      let off = c.offsets[pIdx] || 0;
+      // Map consumer offset into visible message range
+      let firstVisible = p.messages.length > 0 ? p.messages[0].offset : 0;
+      let lastVisible = p.messages.length > 0 ? p.messages[p.messages.length - 1].offset : 0;
+      let range = max(lastVisible - firstVisible, 1);
+      let ratio = (off - firstVisible) / range;
+      ratio = constrain(ratio, 0, 1);
+      let x = streamLeft + 20 + ratio * (visibleWidth - 40);
+      let lh = p.laneHeight;
+
+      let isSelected = c.index === selectedConsumer;
+      let alpha = isSelected ? 255 : 80;
+      let weight = isSelected ? 2.5 : 1.2;
+
+      // Pointer line
+      stroke(c.color[0], c.color[1], c.color[2], alpha);
+      strokeWeight(weight);
+      let top = p.y - lh / 2 + 6;
+      let bot = p.y + lh / 2 - 6;
+      line(x, top, x, bot);
+
+      // Triangle pointer at top
+      noStroke();
+      fill(c.color[0], c.color[1], c.color[2], alpha);
+      triangle(x - 4, top, x + 4, top, x, top + 6);
+
+      // Glow for selected
+      if (isSelected) {
+        fill(c.color[0], c.color[1], c.color[2], 25);
+        rect(x - 2, top, 4, bot - top, 2);
+      }
+    }
+  }
+}
+
+function drawProducers() {
+  for (let prod of producers) {
+    let pulse = sin(frameCounter * 0.05 + prod.pulsePhase) * 0.2 + 0.8;
+
+    // Outer glow
+    noStroke();
+    fill(34, 211, 238, 15 * pulse);
+    circle(prod.x, prod.y, 50 * pulse);
+    fill(34, 211, 238, 25 * pulse);
+    circle(prod.x, prod.y, 34 * pulse);
+
+    // Node
+    fill(34, 211, 238, 200);
+    circle(prod.x, prod.y, 16);
+    fill(10, 14, 26);
+    circle(prod.x, prod.y, 8);
+    fill(34, 211, 238);
+    circle(prod.x, prod.y, 4);
+
+    // Label
+    fill(34, 211, 238, 180);
+    noStroke();
+    textFont('Poppins');
+    textSize(10);
+    textAlign(CENTER, TOP);
+    text(`Producer ${prod.index + 1}`, prod.x, prod.y + 18);
+
+    // Connection lines to partitions
+    for (let p of partitions) {
+      stroke(34, 211, 238, 20);
+      strokeWeight(1);
+      drawingContext.setLineDash([2, 6]);
+      line(prod.x + 16, prod.y, 120, p.y);
+      drawingContext.setLineDash([]);
+    }
+  }
+}
+
+function drawConsumers() {
+  for (let c of consumers) {
+    let isSelected = c.index === selectedConsumer;
+    let col = c.color;
+    let alpha = isSelected ? 220 : 140;
+
+    // Connection lines from partitions
+    for (let p of partitions) {
+      stroke(col[0], col[1], col[2], isSelected ? 30 : 10);
+      strokeWeight(1);
+      drawingContext.setLineDash([2, 6]);
+      line(canvasW - 130, p.y, c.x - 16, c.y);
+      drawingContext.setLineDash([]);
+    }
+
+    // Selection ring
+    if (isSelected) {
+      noFill();
+      stroke(col[0], col[1], col[2], 60);
+      strokeWeight(2);
+      circle(c.x, c.y, 44);
+
+      noStroke();
+      fill(col[0], col[1], col[2], 15);
+      circle(c.x, c.y, 50);
+    }
+
+    // Node
+    noStroke();
+    fill(col[0], col[1], col[2], 30);
+    circle(c.x, c.y, 36);
+    fill(col[0], col[1], col[2], alpha);
+    circle(c.x, c.y, 18);
+    fill(10, 14, 26);
+    circle(c.x, c.y, 10);
+
+    // Postgres icon for first consumer
+    if (c.isPostgres) {
+      fill(col[0], col[1], col[2]);
+      textSize(8);
+      textFont('JetBrains Mono');
+      textAlign(CENTER, CENTER);
+      text('PG', c.x, c.y);
+    } else {
+      fill(col[0], col[1], col[2]);
+      circle(c.x, c.y, 4);
+    }
+
+    // Label
+    fill(col[0], col[1], col[2], isSelected ? 220 : 140);
+    textFont('Poppins');
+    textSize(10);
+    textAlign(CENTER, TOP);
+    text(c.name, c.x, c.y + 22);
+
+    // Strategy label for selected
+    if (isSelected) {
+      fill(249, 115, 22, 180);
+      textFont('JetBrains Mono');
+      textSize(9);
+      text(c.strategy, c.x, c.y + 36);
+    }
+
+    // Offset badge
+    let avgOff = 0;
+    let count = 0;
+    for (let pIdx in c.offsets) {
+      avgOff += c.offsets[pIdx];
+      count++;
+    }
+    avgOff = Math.round(avgOff / max(count, 1));
+    fill(col[0], col[1], col[2], 100);
+    textFont('JetBrains Mono');
+    textSize(8);
+    text(`@${avgOff}`, c.x, c.y + (isSelected ? 48 : 36));
+  }
+}
+
+function drawEmitParticles() {
+  for (let ep of emitParticles) {
+    ep.draw();
+  }
+}
+
+function drawLabels() {
+  // "PRODUCERS" label
+  noStroke();
+  fill(255, 255, 255, 40);
+  textFont('Poppins');
+  textSize(10);
+  textAlign(CENTER, BOTTOM);
+
+  push();
+  translate(16, canvasH / 2);
+  rotate(-HALF_PI);
+  text('PRODUCERS', 0, 0);
+  pop();
+
+  // "CONSUMERS" label
+  push();
+  translate(canvasW - 12, canvasH / 2);
+  rotate(HALF_PI);
+  text('CONSUMERS', 0, 0);
+  pop();
+
+  // Stream direction arrow
+  let arrowY = 38;
+  let arrowLeft = 160;
+  let arrowRight = canvasW - 170;
+  stroke(255, 255, 255, 25);
+  strokeWeight(1);
+  line(arrowLeft, arrowY, arrowRight, arrowY);
+  // Arrowhead
+  line(arrowRight - 8, arrowY - 4, arrowRight, arrowY);
+  line(arrowRight - 8, arrowY + 4, arrowRight, arrowY);
+
+  noStroke();
+  fill(255, 255, 255, 50);
+  textFont('Poppins');
+  textSize(10);
+  textAlign(CENTER, BOTTOM);
+  text('message flow direction', (arrowLeft + arrowRight) / 2, arrowY - 4);
+
+  // Tier gradient labels along bottom
+  let gradY = canvasH - 16;
+  let streamLeft = 120;
+  let streamRight = canvasW - 130;
+
+  fill(249, 115, 22, 80);
+  textFont('JetBrains Mono');
+  textSize(9);
+  textAlign(LEFT, CENTER);
+  text('DISK (Tier 1)', streamLeft + 10, gradY);
+
+  fill(167, 139, 250, 80);
+  textAlign(CENTER, CENTER);
+  text('IN-FLIGHT (Tier 2)', (streamLeft + streamRight) * 0.7, gradY);
+
+  fill(34, 211, 238, 80);
+  textAlign(RIGHT, CENTER);
+  text('JOURNAL / RAM (Tier 3)', streamRight - 10, gradY);
+}
+
+function handleTooltip() {
+  let mx = mouseX;
+  let my = mouseY;
+  let found = false;
+
+  for (let p of partitions) {
+    for (let msg of p.messages) {
+      let d = dist(mx, my, msg.x, msg.y);
+      if (d < 10) {
+        let tier = msg.getTier(p.messages.length);
+        let tierName = tier === 3 ? 'Journal/RAM' : tier === 2 ? 'In-Flight' : 'Disk';
+        let segNum = Math.floor(msg.offset / params.segmentSize);
+
+        tooltipEl.style.display = 'block';
+        tooltipEl.style.left = (mx + 16) + 'px';
+        tooltipEl.style.top = (my - 30) + 'px';
+        tooltipEl.innerHTML = `
+          <div style="color:#e2e8f0;font-weight:600;">Partition ${p.index} / Offset ${msg.offset}</div>
+          <div style="color:#9ca3af;font-size:10px;margin-top:2px;">Segment ${segNum} | Tier: ${tierName}</div>
+        `;
+        found = true;
+        break;
+      }
+    }
+    if (found) break;
+  }
+
+  if (!found) {
+    tooltipEl.style.display = 'none';
+  }
+}
+
+// ================================================================
+// INTERACTION
+// ================================================================
+
+function setStrategy(strategy) {
+  currentStrategy = strategy;
+  let c = consumers[selectedConsumer];
+  c.strategy = strategy;
+
+  // Update button states
+  document.querySelectorAll('.strategy-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('strat-' + strategy).classList.add('active');
+
+  // Show/hide offset input
+  let offsetGroup = document.getElementById('offsetInputGroup');
+  offsetGroup.style.display = (strategy === 'OFFSET' || strategy === 'TIMESTAMP') ? 'flex' : 'none';
+
+  if (strategy === 'OFFSET') {
+    document.getElementById('offsetInput').placeholder = 'Offset number...';
+  } else if (strategy === 'TIMESTAMP') {
+    document.getElementById('offsetInput').placeholder = 'Position (0-100%)...';
+  }
+
+  // Apply strategy immediately
+  applyStrategy(c, strategy);
+
+  // Update info
+  updateStrategyInfo(strategy);
+  buildConsumerUI();
+}
+
+function applyStrategy(consumer, strategy) {
+  switch (strategy) {
+    case 'FIRST':
+      for (let p of partitions) {
+        consumer.targetOffsets[p.index] = 0;
+      }
+      break;
+    case 'LAST':
+      for (let p of partitions) {
+        consumer.targetOffsets[p.index] = max(0, p.nextOffset - 1);
+      }
+      break;
+    case 'NEXT':
+      // NEXT just continues from current -- no jump
+      break;
+    case 'OFFSET':
+      // Wait for user input
+      break;
+    case 'TIMESTAMP':
+      // Wait for user input
+      break;
+  }
+}
+
+function applyOffset() {
+  let val = parseInt(document.getElementById('offsetInput').value) || 0;
+  let c = consumers[selectedConsumer];
+
+  if (c.strategy === 'OFFSET') {
+    for (let p of partitions) {
+      c.targetOffsets[p.index] = constrain(val, 0, max(0, p.nextOffset - 1));
+    }
+  } else if (c.strategy === 'TIMESTAMP') {
+    // Treat as percentage of total messages
+    let pct = constrain(val, 0, 100) / 100;
+    for (let p of partitions) {
+      c.targetOffsets[p.index] = Math.floor(pct * max(0, p.nextOffset - 1));
+    }
+  }
+  buildConsumerUI();
+}
+
+function updateStrategyInfo(strategy) {
+  let infoBox = document.getElementById('strategyInfo');
+  const descriptions = {
+    'FIRST': '<p>Polls from <code>offset 0</code> -- the very beginning of the partition. Useful for replaying the entire history of a topic.</p>',
+    'LAST': '<p>Jumps to the <code>latest offset</code> -- the most recently appended message. Skips all history and starts reading from now.</p>',
+    'NEXT': '<p>Advances from the <code>stored consumer offset</code>. The server remembers where this consumer last read and picks up from there. Used with <code>auto_commit</code>.</p>',
+    'OFFSET': '<p>Jumps to a <code>specific offset number</code>. Enter the exact position in the log where you want this consumer to start reading.</p>',
+    'TIMESTAMP': '<p>Jumps to a <code>time-based position</code>. Messages are indexed by timestamp, allowing temporal queries across the log.</p>'
+  };
+  infoBox.innerHTML = descriptions[strategy] || '';
+}
+
+function selectConsumer(idx) {
+  selectedConsumer = idx;
+  let c = consumers[idx];
+  setStrategy(c.strategy);
+  buildConsumerUI();
+}
+
+function buildConsumerUI() {
+  let list = document.getElementById('consumerList');
+  list.innerHTML = '';
+  for (let c of consumers) {
+    let div = document.createElement('div');
+    div.className = 'consumer-item' + (c.index === selectedConsumer ? ' selected' : '');
+    div.onclick = () => selectConsumer(c.index);
+
+    let dot = document.createElement('div');
+    dot.className = 'consumer-dot';
+    dot.style.background = `rgb(${c.color[0]}, ${c.color[1]}, ${c.color[2]})`;
+
+    let name = document.createElement('span');
+    name.className = 'consumer-name';
+    name.textContent = (c.isPostgres ? '[PG] ' : '') + c.name;
+
+    let off = document.createElement('span');
+    off.className = 'consumer-offset';
+    let avgOff = 0;
+    let count = 0;
+    for (let pIdx in c.offsets) {
+      avgOff += c.offsets[pIdx];
+      count++;
+    }
+    off.textContent = '@' + Math.round(avgOff / max(count, 1));
+
+    div.appendChild(dot);
+    div.appendChild(name);
+    div.appendChild(off);
+    list.appendChild(div);
+  }
+}
+
+function changePartitions(n) {
+  let oldN = partitions.length;
+  params.numPartitions = n;
+
+  if (n > oldN) {
+    for (let i = oldN; i < n; i++) {
+      partitions.push(new Partition(i));
+    }
+  } else if (n < oldN) {
+    partitions = partitions.slice(0, n);
+  }
+
+  // Ensure consumers have offsets for all partitions
+  for (let c of consumers) {
+    for (let p of partitions) {
+      if (c.offsets[p.index] === undefined) c.offsets[p.index] = 0;
+      if (c.targetOffsets[p.index] === undefined) c.targetOffsets[p.index] = 0;
+    }
+  }
+
+  recalcLayout();
+}
+
+function togglePause() {
+  paused = !paused;
+  document.getElementById('pauseBtn').textContent = paused ? 'Play' : 'Pause';
+  document.getElementById('pauseBtn').classList.toggle('active', paused);
+}
+
+function resetSimulation() {
+  initSimulation();
+}
+
+function downloadFrame() {
+  saveCanvas('iggy-streaming-' + Date.now(), 'png');
+}
+
+// Easing
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+// Update consumer list periodically
+setInterval(() => {
+  if (!paused) buildConsumerUI();
+}, 500);
+</script>
+</body>
+</html>
