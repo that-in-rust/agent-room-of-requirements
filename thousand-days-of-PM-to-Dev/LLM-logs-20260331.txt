@@ -1050,3 +1050,2471 @@ created:
 
 ❯ /export                                                                       
   ⎿  Conversation copied to clipboard
+=====
+
+╭─── Claude Code v2.1.87 ──────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│             Welcome back that in rust!             │ started                 │
+│                                                    │ Run /init to create a … │
+│                      ▗ ▗   ▖ ▖                     │ ─────────────────────── │
+│                                                    │ Recent activity         │
+│                        ▘▘ ▝▝                       │ No recent activity      │
+│       Opus 4.6 (1M context) · Claude Max ·         │                         │
+│       thatinrust@gmail.com's Organization          │                         │
+│      ~/…/hogwarts202603/research20250315/iggy      │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+❯ /effort                                                                       
+  ⎿  Current effort level: high (Comprehensive implementation with extensive
+     testing and documentation)
+
+❯ /effort max                                                                   
+  ⎿  Set effort level to max (this session only): Maximum capability with
+     deepest reasoning (Opus 4.6 only)
+
+❯ @"eli5-ascii-explainer (agent)" Tell me what this repository is about.        
+
+⏺ eli5-ascii-explainer(ELI5 explain repository purpose)
+  ⎿  Done (18 tool uses · 33.7k tokens · 1m 36s)
+  (ctrl+o to expand)
+
+⏺ Apache Iggy -- Explained
+
+  Level 1: The Essence
+
+  Iggy is a super-fast message delivery system written in Rust. Think of it like
+   a post office that can deliver millions of letters per second, remembers
+  every letter forever (persistent), and lets anyone send/receive using
+  whichever door they prefer (TCP, HTTP, QUIC, WebSocket).
+
+    Producers                    Iggy Server                Consumers
+    (senders)                  (the post office)           (receivers)
+
+    App A ─────┐          ┌─────────────────┐          ┌───── App X
+               │          │                 │          │
+    App B ────────────────▶  Streams/Topics ├──────────────── App Y
+               │          │   (sorted mail  │          │
+    App C ─────┘          │    boxes)       │          └───── App Z
+                          └─────────────────┘
+                TCP / HTTP / QUIC / WebSocket
+
+  The key insight: unlike Kafka (which needs Java + ZooKeeper) or RabbitMQ
+  (which needs Erlang), Iggy is a single binary with zero external dependencies.
+   It is designed from scratch in Rust for raw speed using io_uring and a
+  thread-per-core architecture.
+
+  ---
+  Level 2: The Key Parts
+
+  Part A -- The Data Model (How mail is organized)
+
+    ┌─── Stream: "orders" ──────────────────────┐
+    │                                            │
+    │  ┌── Topic: "payments" ─────────────────┐  │
+    │  │                                      │  │
+    │  │  Partition 0: [msg1][msg2][msg3]-->   │  │
+    │  │  Partition 1: [msg4][msg5]-------->   │  │
+    │  │  Partition 2: [msg6]-------------->   │  │
+    │  │       ^                               │  │
+    │  │       └── append-only logs            │  │
+    │  └──────────────────────────────────────┘  │
+    │                                            │
+    │  ┌── Topic: "refunds" ──────────────────┐  │
+    │  │  Partition 0: [msg7][msg8]-------->   │  │
+    │  └──────────────────────────────────────┘  │
+    └────────────────────────────────────────────┘
+
+  - Stream = the whole cabinet (e.g., "orders")
+  - Topic = a drawer (e.g., "payments")
+  - Partition = a folder in that drawer (for parallel reads)
+  - Segment = a page in that folder (the actual bytes on disk)
+
+  Messages are append-only -- you only add to the end, never edit. This is what
+  makes it blazing fast.
+
+  Part B -- The Server Architecture (Thread-per-core sharding)
+
+  Each CPU core gets its own "shard" that owns its data independently, avoiding
+  locks:
+
+    ┌─────────────── Iggy Server ──────────────┐
+    │                                           │
+    │  CPU Core 0        CPU Core 1             │
+    │  ┌──────────┐     ┌──────────┐            │
+    │  │ Shard 0  │     │ Shard 1  │            │
+    │  │          │     │          │            │
+    │  │ Partitions     │ Partitions             │
+    │  │ 0, 2, 4  │     │ 1, 3, 5  │            │
+    │  │          │     │          │            │
+    │  │ io_uring │     │ io_uring │            │
+    │  │ (fast IO)│     │ (fast IO)│            │
+    │  └────┬─────┘     └────┬─────┘            │
+    │       │                │                  │
+    │       ▼                ▼                  │
+    │    [disk]           [disk]                │
+    └───────────────────────────────────────────┘
+
+    No locks between shards = no waiting!
+
+  Part C -- Transport Protocols (4 doors into the post office)
+
+      TCP                 HTTP              QUIC            WebSocket
+   ┌─────────┐       ┌─────────┐      ┌─────────┐      ┌─────────┐
+   │ Fastest │       │ Easiest │      │ Modern  │      │ Browser │
+   │ Custom  │       │ REST    │      │ UDP     │      │ Real-   │
+   │ binary  │       │ JSON    │      │ based   │      │ time    │
+   │ format  │       │ any     │      │ fast    │      │ web     │
+   │         │       │ language│      │ secure  │      │ apps    │
+   └────┬────┘       └────┬────┘      └────┬────┘      └────┬────┘
+        └─────────────────┴────────┬───────┴────────────────┘
+                                   │
+                            ┌──────▼──────┐
+                            │ Iggy Server │
+                            └─────────────┘
+
+  Part D -- The Ecosystem (Monorepo)
+
+    iggy/
+    ├── core/
+    │   ├── server        <-- THE server binary
+    │   ├── sdk           <-- Rust client SDK
+    │   ├── cli           <-- Command-line tool
+    │   ├── connectors/   <-- Plugin system (sinks + sources)
+    │   │   ├── postgres, elasticsearch, mongodb, quickwit
+    │   ├── bench         <-- Benchmarking suite
+    │   ├── consensus     <-- Future clustering (VSR)
+    │   └── metadata      <-- Persistent WAL journal
+    │
+    ├── foreign/          <-- Client SDKs
+    │   ├── csharp, go, java, node, python, cpp
+    │
+    ├── web/              <-- Web admin dashboard
+    └── examples/         <-- Sample apps per language
+
+  How it compares
+
+                  Iggy         Kafka          RabbitMQ
+               ──────────   ──────────     ──────────
+    Language   │  Rust  │   │  Java  │     │ Erlang │
+    Deps       │  None  │   │Zookeeper│    │  None  │
+    Model      │  Log   │   │  Log   │     │ Queue  │
+    Protocol   │ 4 ways │   │ Custom │     │ AMQP   │
+    Latency    │ sub-ms │   │  ~ms   │     │  ~ms   │
+    Deploy     │ 1 file │   │ cluster│     │ 1 file │
+               ──────────   ──────────     ──────────
+
+  ---
+  In one sentence: Apache Iggy is a single-binary, Rust-built message streaming 
+  server that uses thread-per-core sharding and io_uring to deliver millions of
+  messages/sec at sub-millisecond latency, with SDKs in 6 languages and a plugin
+   system for piping data to/from databases.
+
+  Want me to zoom into any specific part?
+
+✻ Cogitated for 2m 4s
+
+❯                                                                               
+                                                                                
+                                                                                
+    Producers                    Iggy Server                Consumers           
+                                                                                
+                                                                                
+    (senders)                  (the post office)           (receivers)          
+                                                                                
+                                                                                
+                                                                                
+    App A ─────┐          ┌─────────────────┐          ┌───── App X             
+                                                                                
+                                                                                
+               │          │                 │          │                        
+                                                                                
+                                                                                
+    App B ────────────────▶  Streams/Topics ├──────────────── App Y             
+                                                                                
+                                                                                
+               │          │   (sorted mail  │          │                        
+    App C ─────┘          │    boxes)       │          └───── App Z             
+                                                                                
+                                                                                
+                          └─────────────────┘                                   
+                                                                                
+                                                                                
+                TCP / HTTP / QUIC / WebSocket                                   
+                - @"eli5-ascii-explainer (agent)" Is iggy like a data base or   
+something? How is the data persisted? Is it some kind of a database? I don't    
+know: is it a JSON where the data is persisted? What file format is the data    
+persisting in, or is it in RAM? How does that work?                             
+
+⏺ eli5-ascii-explainer(ELI5 explain Iggy data persistence)
+  ⎿  Done (41 tool uses · 98.5k tokens · 3m 5s)
+  (ctrl+o to expand)
+
+⏺ How Iggy Persists Data -- NOT a Database, NOT JSON
+
+  The Short Answer
+
+  Iggy is NOT a database. It's a persistent append-only message log (like
+  Kafka). Data is stored as raw little-endian binary files on disk -- no JSON,
+  no SQL, no B-trees.
+
+    "Is it a database?"     NO -- it's a message log
+    "Is it JSON?"           NO -- raw binary (little-endian)
+    "Is it in RAM?"         BOTH -- fresh writes in RAM, then flushed to disk
+    "What file format?"     Custom binary: .log files + .index files
+
+  ---
+  The Filesystem Layout
+
+  Every message lives in a hierarchy mapped directly to directories:
+
+    local_data/streams/1/topics/1/partitions/1/
+    ├── 00000000000000000000.log       <-- messages (raw binary)
+    ├── 00000000000000000000.index     <-- lookup table (raw binary)
+    ├── 00000000000000001024.log       <-- next segment
+    ├── 00000000000000001024.index
+    └── offsets/consumers/42           <-- just 8 bytes: a u64
+
+  ---
+  The Binary Message Format (64-byte header, no JSON anywhere)
+
+    ONE MESSAGE ON DISK (.log file):
+    ┌────────────┬──────────┬─────────────────────┐
+    │ Byte Range │  Size    │  Field              │
+    ├────────────┼──────────┼─────────────────────┤
+    │  0 ..  8   │  8 bytes │  checksum    (u64)  │
+    │  8 .. 24   │ 16 bytes │  message_id  (u128) │
+    │ 24 .. 32   │  8 bytes │  offset      (u64)  │
+    │ 32 .. 40   │  8 bytes │  timestamp   (u64)  │
+    │ 40 .. 48   │  8 bytes │  origin_ts   (u64)  │
+    │ 48 .. 52   │  4 bytes │  headers_len (u32)  │
+    │ 52 .. 56   │  4 bytes │  payload_len (u32)  │
+    │ 56 .. 64   │  8 bytes │  reserved           │
+    ├────────────┴──────────┴─────────────────────┤
+    │         PAYLOAD (1 byte .. 64 MB)           │
+    └─────────────────────────────────────────────┘
+
+    Packed back-to-back: [HDR|payload][HDR|payload][HDR|payload]...
+
+  ---
+  The Three-Tier Read Path (RAM + Disk)
+
+    ┌─────────────────────────────────────────────┐
+    │ TIER 1: DISK (sealed segments)              │
+    │ offsets 0 .. 1023                           │
+    │ Fully persisted .log + .index files         │
+    │ "The bookshelf"                             │
+    ├─────────────────────────────────────────────┤
+    │ TIER 2: IN-FLIGHT BUFFER (RAM)              │
+    │ offsets 1024 .. 1399                        │
+    │ Committed from journal, being written now   │
+    │ "The outbox tray"                           │
+    ├─────────────────────────────────────────────┤
+    │ TIER 3: MEMORY JOURNAL (RAM)                │
+    │ offsets 1400 .. 1500                        │
+    │ Freshest data, not yet flushed              │
+    │ "Your notepad"                              │
+    └─────────────────────────────────────────────┘
+
+    Poll(offset=1500) --> found in journal (RAM) -- instant
+    Poll(offset=500)  --> found on disk -- two seeks
+
+  ---
+  The Write Path: Journal to Disk
+
+    Client sends message
+           │
+           v
+    ┌──────────────┐  "buffer it"
+    │ Memory       │  (instant, RAM only)
+    │ Journal      │
+    └──────┬───────┘
+           │  >= 1024 msgs OR >= 1 MiB?
+           v
+    ┌──────────────┐  "freeze & flush"
+    │ In-Flight    │
+    │ Buffer       │
+    └──────┬───────┘
+           │  vectored I/O (writev) via
+           │  compio → io_uring (Linux)
+           v
+    ┌──────────────┐  ┌──────────────┐
+    │  .log file   │  │ .index file  │
+    │  (append)    │  │ (append 16B) │
+    └──────────────┘  └──────────────┘
+
+  Important tradeoff: the in-memory journal is intentionally NOT crash-safe for
+  messages. If the server crashes, un-flushed messages are lost. This is by
+  design for speed -- just like Kafka's acks=1. The separate metadata WAL (for
+  stream/topic creation) IS crash-safe.
+
+  ---
+  How Lookups Work (O(1), not scanning)
+
+    "Give me message at offset 500"
+
+    1. Find segment: start_offset <= 500
+       --> 00000000000000000000.index
+
+    2. Seek to byte 500 × 16 = 8000 in .index
+       Read 16 bytes --> position = 387201
+
+    3. Seek to byte 387201 in .log
+       Read 64-byte header + payload
+
+    Two seeks. No scanning. Done.
+
+  Want me to dig deeper into any specific part -- the io_uring I/O engine, the
+  segment lifecycle, or the metadata WAL recovery?
+
+✻ Sautéed for 3m 41s
+
+❯ /export                                                                       
+  ⎿  Conversation exported to:
+     /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/research20250315/iggy/
+     2026-03-30-185055-local-command-caveatcaveat-the-messages-below-w.txt
+
+❯ @"eli5-ascii-explainer (agent)" : Data is stored as raw little-endian binary  
+files on disk                                                                   
+
+⏺ eli5-ascii-explainer(ELI5 explain little-endian binary)
+  ⎿  Done (0 tool uses · 20.5k tokens · 1m 37s)
+  (ctrl+o to expand)
+
+⏺ What "Raw Little-Endian Binary" Actually Means
+
+  Level 0: What Is a Byte?
+
+  A byte is 8 tiny on/off switches. We write bytes in hex (base 16) as
+  shorthand:
+
+    One Byte = 8 bits
+    ┌───┬───┬───┬───┬───┬───┬───┬───┐
+    │ 0 │ 1 │ 1 │ 0 │ 0 │ 0 │ 0 │ 1 │  = 97 in decimal
+    └───┴───┴───┴───┴───┴───┴───┴───┘       = 0x61 in hex
+                                             = the letter 'a'
+
+  ---
+  Level 1: Text File vs Binary File
+
+  A text file writes human-readable characters. A binary file writes raw numbers
+   directly.
+
+    THE NUMBER 500, STORED TWO WAYS
+
+    TEXT (JSON):     '5'    '0'    '0'       = 3 bytes
+                    ┌──────┬──────┬──────┐
+                    │ 0x35 │ 0x30 │ 0x30 │
+                    └──────┴──────┴──────┘
+
+    BINARY:          244     1               = 2 bytes
+                    ┌──────┬──────┐
+                    │ 0xF4 │ 0x01 │   (1×256 + 244 = 500)
+                    └──────┴──────┘
+
+  ---
+  Level 2: What Is Little-Endian?
+
+  When a number needs multiple bytes, endianness is the order you lay them down.
+
+    500 = 0x01F4    (0x01 = big part, 0xF4 = little part)
+
+    BIG-ENDIAN: "Big end first" (how humans write)
+    ┌──────┬──────┐
+    │ 0x01 │ 0xF4 │
+    └──────┴──────┘
+
+    LITTLE-ENDIAN: "Little end first" (how CPUs think)   <-- Iggy
+    ┌──────┬──────┐
+    │ 0xF4 │ 0x01 │
+    └──────┴──────┘
+
+  Why little-endian? Your CPU (x86, ARM) already thinks this way. If the file
+  matches the CPU, you can copy bytes from disk to memory with zero conversion
+  -- free speed.
+
+    LITTLE-ENDIAN FILE          CPU MEMORY (x86)
+    ┌──────┬──────┬──────┬──────┐  ┌──────┬──────┬──────┬──────┐
+    │ 0xF4 │ 0x01 │ 0x00 │ 0x00 │──│ 0xF4 │ 0x01 │ 0x00 │ 0x00 │
+    └──────┴──────┴──────┴──────┘  └──────┴──────┴──────┴──────┘
+         Identical! Just memcpy. No byte-swapping.
+
+  ---
+  Level 3: Concrete Example -- Every Byte on Disk
+
+  Our message: offset=500, timestamp=1711843200, payload="hello"
+
+  JSON version (49 bytes):
+
+    {"offset":500,"ts":1711843200,"payload":"hello"}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    Every character = 1 byte. Field names, quotes, colons all cost bytes.
+
+  Binary version (25 bytes):
+
+    Byte:  00 01 02 03 04 05 06 07
+    Hex:   F4 01 00 00 00 00 00 00     <-- offset = 500
+
+    Byte:  08 09 10 11 12 13 14 15
+    Hex:   80 B3 F4 65 00 00 00 00     <-- timestamp = 1711843200
+
+    Byte:  16 17 18 19
+    Hex:   05 00 00 00                  <-- payload_len = 5
+
+    Byte:  20 21 22 23 24
+    Hex:   68 65 6C 6C 6F              <-- "hello"
+
+  Side-by-Side:
+
+    JSON:   49 bytes   Human-readable
+    Binary: 25 bytes   Machine-readable, ~49% smaller
+
+  ---
+  Level 4: Why Binary Is Faster
+
+  1. O(1) Field Access -- No Scanning
+
+    READING TIMESTAMP FROM JSON:
+    {"offset":500,"ts":1711843200,"payload":"hello"}
+    Scan past '{', '"offset"', ':', '500', ','...
+    THEN find "ts"... ~20 operations
+
+    READING TIMESTAMP FROM BINARY:
+    F4 01 00 00 00 00 00 00 [80 B3 F4 65 00 00 00 00] ...
+                             ^
+    Jump to byte 8. Read 8 bytes. Done. 2 operations.
+
+  2. No String-to-Number Conversion
+
+    JSON "1711843200": ten ASCII chars → must compute
+      1×10^9 + 7×10^8 + 1×10^7 + ...  (multiply per digit!)
+
+    Binary: already the number. Zero conversion.
+
+  3. Smaller = Fewer Disk Reads
+
+    1 million messages:
+    JSON:   ~49 MB  [=========|=========|===]
+    Binary: ~25 MB  [=========|=====]
+              ~49% less data through the disk pipe
+
+  4. Zero Memory Allocation
+
+    JSON:   Read bytes → Build parse tree → Extract values  (allocates!)
+    Binary: Read bytes → Cast to struct → Done              (zero alloc!)
+
+  ---
+  The Full Picture
+
+    ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+    │  "raw"       │   │  "little-    │   │  "binary"    │
+    │  No protobuf │   │   endian"    │   │  Numbers as  │
+    │  No msgpack  │   │  Matches CPU │   │  numbers,    │
+    │  Just bytes  │   │  Zero swap   │   │  not text    │
+    │  in order    │   │  memcpy OK   │   │  O(1) access │
+    └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+           └──────────────────┼───────────────────┘
+                              v
+                    ┌───────────────────┐
+                    │  MAXIMUM SPEED    │
+                    │  for millions of  │
+                    │  msgs per second  │
+                    └───────────────────┘
+
+  The tradeoff? Open the file in a text editor and you see garbage. You need
+  Iggy's code (or a hex editor) to read it. But for a streaming server handling
+  millions of messages/sec, that's well worth it.
+
+✻ Crunched for 2m 20s
+
+❯ /export                                                                       
+  ⎿  Conversation exported to:
+     /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/research20250315/iggy/
+     2026-03-30-224716-local-command-caveatcaveat-the-messages-below-w.txt
+
+❯ /export                                                                       
+  ⎿  Conversation exported to:
+     /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/research20250315/iggy/
+     2026-03-30-224734-local-command-caveatcaveat-the-messages-below-w.txt
+
+❯ can you move these txt files to a folder which is not git ignored and then    
+commit and push it to origin under the hogwarts202603 github repo               
+
+⏺ Let me check the current state of things.
+
+  Read 2 files (ctrl+o to expand)
+
+⏺ Bash(git remote -v)
+  ⎿  origin     https://github.com/amuldotexe/iggy.git (fetch)
+     origin     https://github.com/amuldotexe/iggy.git (push)
+     upstream   https://github.com/apache/iggy.git (fetch)
+     upstream   https://github.com/apache/iggy.git (push)
+
+⏺ The txt files aren't git-ignored, but origin points to amuldotexe/iggy, not a
+  hogwarts202603 repo. Let me check if such a remote exists and verify the
+  files' git status.
+
+⏺ Bash(git status --short *.txt)
+  ⎿  ?? 2026-03-30-112510-local-command-caveatcaveat-the-messages-below-w.t
+     xt
+     ?? 2026-03-30-185055-local-command-caveatcaveat-the-messages-below-w.t
+     … +5 lines (ctrl+o to expand)
+
+⏺ Bash(gh repo list hogwarts202603 --limit 10 2>&1 || echo "No org/user found")  ⎿  the owner handle "hogwarts202603" was not recognized as either a GitHu
+     b user or an organization
+     No org/user found
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ just go to parent folder of iggy and parent of that and so on                 
+
+  Read 2 files (ctrl+o to expand)
+
+⏺ Bash(git -C /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603 remote -v
+      2>/dev/null)
+  ⎿  origin     https://github.com/amuldotexe/hogwarts202603.git (fetch)
+     origin     https://github.com/amuldotexe/hogwarts202603.git (push)
+
+⏺ Found it. hogwarts202603 is the git repo at
+  /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/ with origin
+  amuldotexe/hogwarts202603. The iggy directory is a nested git repo
+  (submodule/clone) inside it.
+
+  Let me check the gitignore and move the txt files to a proper location in the
+  hogwarts202603 repo.
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Bash(git -C /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603 status
+      --short)
+  ⎿   M .DS_Store
+
+⏺ The research20250315/ directory is git-ignored in hogwarts202603. I need to
+  move the txt files to a non-ignored location. Let me create a folder for them
+  and move them there.
+
+⏺ Bash(mkdir -p /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/research202
+      50315-iggy-notes && mv
+      /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/research202…)
+  ⎿  Done
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Bash(git -C /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603 status
+      --short)
+  ⎿   M .DS_Store
+     ?? research20250315-iggy-notes/
+
+⏺ Files are moved and visible to git. Now let me commit and push.
+
+⏺ Bash(git -C /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603 log --oneline
+       -5)
+  ⎿  1761d84 docs: add Composio competitive analysis dump (17 competitors,
+     4 categories)
+     a9d87a3 chore: save submission artifacts
+     … +3 lines (ctrl+o to expand)
+
+⏺ Bash(cd /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603 && git add
+      research20250315-iggy-notes/ && git commit -m "$(cat <<'EOF'
+      docs: add Apache Iggy research c…)
+  ⎿  [main a0a8fcc] docs: add Apache Iggy research conversation exports
+      4 files changed, 1305 insertions(+)
+      create mode 100644 research20250315-iggy-notes/2026-03-30-112510-loca
+     … +7 lines (ctrl+o to expand)
+  ⎿  Shell cwd was reset to 
+     /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/research20250315/iggy
+
+⏺ Bash(git -C /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603 push origin
+      main)
+  ⎿  To https://github.com/amuldotexe/hogwarts202603.git
+        1761d84..a0a8fcc  main -> main
+
+⏺ Done. Moved 4 txt files to research20250315-iggy-notes/ (since
+  research20250315/ was git-ignored) and pushed to amuldotexe/hogwarts202603 on
+  main.
+
+✻ Worked for 1m 4s
+
+❯ Thanks. Let's come back to Iggy.                                              
+
+⏺ Sure! We covered the high-level architecture, the data persistence model, and
+  how raw little-endian binary storage works. What would you like to explore
+  next?
+
+❯ @"eli5-ascii-explainer (agent)" :    "What file format?"     Custom binary:   
+.log files + .index files                                                       
+
+⏺ eli5-ascii-explainer(ELI5 explain .log and .index files)
+  ⎿  Done (40 tool uses · 91.0k tokens · 3m 29s)
+  (ctrl+o to expand)
+
+⏺ Iggy's .log and .index Files: The Complete Deep Dive
+
+  Level 1: The Essence
+
+  A .log file is a tape of messages packed back-to-back. A .index file is the 
+  table of contents that lets you jump to any message without reading the whole 
+  tape.
+
+    .index file                    .log file
+    (table of contents)            (the actual tape)
+   ┌────────────────┐          ┌──────────────────────┐
+   │ msg0: pos=0    │─────────▶│[HDR 64B][payload...] │
+   │ msg1: pos=120  │──────┐   │[HDR 64B][payload...] │
+   │ msg2: pos=250  │──┐   └──▶│[HDR 64B][payload...] │
+   │ ...            │  └──────▶│[HDR 64B][payload...] │
+   └────────────────┘          └──────────────────────┘
+     16 bytes each               variable-size messages
+
+  Like a book: .log = the pages with the story. .index = the page numbers in the
+   back saying "chapter 3 starts on page 42."
+
+  ---
+  Level 2: The .log File -- 64-Byte Header + Variable Body
+
+  Messages are packed contiguously -- zero gaps, zero padding between them:
+
+    Byte offset    Size     Field
+   ┌──────────────────────────────────────┐
+   │  0..8       8 bytes   checksum       │  u64 LE
+   │  8..24     16 bytes   id (UUID)      │ u128 LE
+   │ 24..32      8 bytes   offset         │  u64 LE
+   │ 32..40      8 bytes   timestamp      │  u64 LE (microseconds)
+   │ 40..48      8 bytes   origin_ts      │  u64 LE
+   │ 48..52      4 bytes   hdrs_length    │  u32 LE
+   │ 52..56      4 bytes   payload_length │  u32 LE
+   │ 56..64      8 bytes   reserved (=0)  │  u64 LE
+   ├──────────────────────────────────────┤
+   │ 64..64+H    H bytes   user_headers   │ optional
+   │ 64+H..end   P bytes   payload        │ your data
+   └──────────────────────────────────────┘
+        total message size = 64 + H + P
+
+  Concrete hex for a message with offset=42, payload="Hello":
+
+   Offset  Hex bytes (little-endian)       Field
+   0x00    AB CD EF 01 23 45 67 89         checksum
+   0x08    xx xx xx xx xx xx xx xx         id (bytes 0-7)
+   0x10    xx xx xx xx xx xx xx xx         id (bytes 8-15)
+   0x18    2A 00 00 00 00 00 00 00         offset = 42
+   0x20    (8 bytes)                       timestamp
+   0x28    (8 bytes)                       origin_timestamp
+   0x30    00 00 00 00                     hdrs_length = 0
+   0x34    05 00 00 00                     payload_length = 5
+   0x38    00 00 00 00 00 00 00 00         reserved = 0
+   0x40    48 65 6C 6C 6F                  "Hello"
+           ───────────────── total = 69 bytes (64 + 0 + 5)
+
+  ---
+  Level 3: The .index File -- Fixed 16-Byte Entries
+
+  One entry per message, perfectly aligned:
+
+    Byte offset    Size     Field
+   ┌──────────────────────────────────┐
+   │  0..4       4 bytes   offset     │  u32 LE  (relative to segment start)
+   │  4..8       4 bytes   position   │  u32 LE  (cumulative END byte in .log)
+   │  8..16      8 bytes   timestamp  │  u64 LE  (microseconds)
+   └──────────────────────────────────┘
+
+    The .index is a flat array:
+    [entry0][entry1][entry2]...
+     16 B    16 B    16 B
+
+  Important nuance: position points to the END of the message, not the start.
+  Boundaries are computed by subtraction:
+
+   Index entries:
+     [0] offset=0, position=69
+     [1] offset=1, position=133
+     [2] offset=2, position=208
+
+   .log file boundaries:
+     msg 0: bytes 0..69    (size=69)
+     msg 1: bytes 69..133  (size=64)
+     msg 2: bytes 133..208 (size=75)
+
+  ---
+  Level 4: How They Work TOGETHER -- "Find Message 42"
+
+   Partition has two segments:
+     Segment 0: offsets 0-99     (00000000000000000000.*)
+     Segment 1: offsets 100-...  (00000000000000000100.*)
+
+   Step 1: WHICH SEGMENT?
+     Binary search: 42 falls in segment 0 (start=0)
+
+   Step 2: RELATIVE OFFSET
+     42 - 0 = 42
+
+   Step 3: JUMP INTO .index
+     Entry 42 is at byte 42 × 16 = 672
+     ┌──────────────────────────┐
+     │ .index file              │
+     │ byte 656: [entry 41]    │ ◄── position=28671
+     │ byte 672: [entry 42]    │ ◄── position=28740
+     └──────────────────────────┘
+
+   Step 4: JUMP INTO .log
+     msg 42 starts at byte 28671, ends at 28740
+     ┌──────────────────────────────────┐
+     │ .log file                        │
+     │ byte 28671: [64B header][payload]│ ◄── READ THIS
+     │ byte 28740: (next message)       │
+     └──────────────────────────────────┘
+
+   TWO SEEKS. DONE.
+
+  ---
+  Level 5: Segment Rotation
+
+  When a .log file grows to ~1 GiB (soft limit), it seals and a new pair is
+  created:
+
+   BEFORE: Segment 0 is at ~1 GiB, end_offset=49999
+
+   NEW BATCH arrives...
+
+   AFTER:
+   ┌────────────────────────────────┐
+   │  Segment 0 (SEALED, read-only)│
+   │  00000000000000000000.log      │
+   │  00000000000000000000.index    │
+   ├────────────────────────────────┤
+   │  Segment 1 (ACTIVE, writable) │
+   │  00000000000000050000.log      │  ◄── new writes go here
+   │  00000000000000050000.index    │
+   └────────────────────────────────┘
+
+  The 20-digit zero-padded naming ensures alphabetical = chronological order.
+
+  ---
+  Iggy vs Other Formats
+
+   ┌──────────────┬──────────────────────────────────┐
+   │  CSV/JSONL   │  Text. No index. O(n) lookup.    │
+   │  SQLite      │  B-tree. Random updates. Slow    │
+   │              │  for append-only streaming.       │
+   │  Kafka logs  │  Very similar! But Kafka index    │
+   │              │  is SPARSE (every Nth msg).       │
+   │  IGGY        │  DENSE index (every msg).         │
+   │              │  O(1) by offset, O(log n) by      │
+   │              │  timestamp. One seek, not scan.   │
+   └──────────────┴──────────────────────────────────┘
+
+  The key difference vs Kafka: Iggy indexes every single message (entry N is at
+  byte N * 16), so any offset is one seek. Kafka's sparse index may need to scan
+   forward from the nearest indexed entry.
+
+  Want me to go deeper into the checksum algorithm, the write-ahead journal, or
+  how timestamp-based binary search works?
+
+✻ Sautéed for 4m 29s
+❯ @"eli5-ascii-explainer (agent)" : possible 1000IQ reasons in all the choices  
+here ⏺ Iggy's .log and .index Files: The Complete Deep Dive                     
+                                                                                
+                                                                                
+                                                                                
+  Level 1: The Essence                                                          
+                                                                                
+                                                                                
+                                                                                
+  A .log file is a tape of messages packed back-to-back. A .index file is the   
+table of contents that                                                          
+  lets you jump to any message without reading the whole tape.                  
+                                                                                
+                                                                                
+                                                                                
+    .index file                    .log file                                    
+                                                                                
+    (table of contents)            (the actual tape)                            
+                                                                                
+   ┌────────────────┐          ┌──────────────────────┐                         
+                                                                                
+   │ msg0: pos=0    │─────────▶│[HDR 64B][payload...] │                         
+                                                                                
+   │ msg1: pos=120  │──────┐   │[HDR 64B][payload...] │                         
+                                                                                
+   │ msg2: pos=250  │──┐   └──▶│[HDR 64B][payload...] │                         
+                                                                                
+   │ ...            │  └──────▶│[HDR 64B][payload...] │                         
+                                                                                
+   └────────────────┘          └──────────────────────┘                         
+                                                                                
+     16 bytes each               variable-size messages                         
+                                                                                
+                                                                                
+                                                                                
+  Like a book: .log = the pages with the story. .index = the page numbers in    
+the back saying "chapter 3                                                      
+   starts on page 42."                                                          
+                                                                                
+                                                                                
+                                                                                
+  ---                                                                           
+                                                                                
+  Level 2: The .log File -- 64-Byte Header + Variable Body                      
+                                                                                
+                                                                                
+  Messages are packed contiguously -- zero gaps, zero padding between th        
+… +89 lines …                                                                   
+                                                                                
+                                                                                
+                                                                                
+   TWO SEEKS. DONE.                                                             
+                                                                                
+                                                                                
+                                                                                
+  ---                                                                           
+                                                                                
+  Level 5: Segment Rotation                                                     
+                                                                                
+                                                                                
+                                                                                
+  When a .log file grows to ~1 GiB (soft limit), it seals and a new pair is     
+created:                                                                        
+                                                                                
+                                                                                
+   BEFORE: Segment 0 is at ~1 GiB, end_offset=49999                             
+                                                                                
+                                                                                
+                                                                                
+   NEW BATCH arrives...                                                         
+                                                                                
+                                                                                
+                                                                                
+   AFTER:                                                                       
+                                                                                
+   ┌────────────────────────────────┐                                           
+                                                                                
+   │  Segment 0 (SEALED, read-only)│                                            
+                                                                                
+   │  00000000000000000000.log      │                                           
+                                                                                
+   │  00000000000000000000.index    │                                           
+                                                                                
+   ├────────────────────────────────┤                                           
+                                                                                
+   │  Segment 1 (ACTIVE, writable) │                                            
+                                                                                
+   │  00000000000000050000.log      │  ◄── new writes go here                   
+                                                                                
+   │  00000000000000050000.index    │                                           
+                                                                                
+   └────────────────────────────────┘                                           
+                                                                                
+                                                                                
+                                                                                
+  The 20-digit zero-padded naming ensures alphabetical = chronological order.   
+                                                                                
+
+⏺ eli5-ascii-explainer(ELI5 explain design reasoning behind Iggy choices)
+  ⎿  Done (44 tool uses · 107.5k tokens · 6m 54s)
+  (ctrl+o to expand)
+
+⏺ The 1000 IQ Engineering Behind Every Design Choice
+
+  Every choice in Iggy's storage format serves one obsession: make the hot path 
+  do the absolute minimum work.
+
+  ---
+  1. Why Separate .index and .log Files?
+
+   BAD: Interleaved                    GOOD: Separate (Iggy)
+   ┌───────┬────────┬───────┐          .index:         .log:
+   │ idx_1 │ msg_1  │ idx_2 │          ┌──────────┐    ┌──────────┐
+   └───────┴────────┴───────┘          │ 16B │ 16B│    │ msg │ msg│
+   Must skip variable-size msgs        └──────────┘    └──────────┘
+   to search. Random I/O city.         FIXED entries    CONTIGUOUS
+                                       = array access   = sequential
+
+  - .index is tiny (1M msgs = 16 MB) -- fits in cache/memory
+  - Independent I/O scheduling -- OS prefetches each file optimally
+  - .index is derived from .log -- can be rebuilt if corrupted
+
+  ---
+  2. Why Exactly 64 Bytes for the Header?
+
+   CPU Cache Line (every modern x86/ARM):
+   ┌────────────────────────────────────┐
+   │       EXACTLY 64 BYTES            │
+   └────────────────────────────────────┘
+   ┌────────────────────────────────────┐
+   │  EXACTLY ONE IGGY MESSAGE HEADER  │
+   └────────────────────────────────────┘
+
+   ONE cache-line fetch = entire header.
+   No splits. No partial reads. No wasted padding.
+
+  Every field is naturally aligned (u64 at 0, u128 at 8, u32s at 48/52). Zero
+  padding needed.
+
+  ---
+  3. Why 16 Bytes Per Index Entry?
+
+  16 = 2^4. Finding entry N = seek(N << 4) -- a single bit shift, no multiply.
+
+   One cache line = 64 bytes = 4 index entries
+   Binary search of 1M messages ≈ 20 entries ≈ 5 cache fetches
+
+  Includes timestamp so you can binary-search by time without touching .log.
+
+  ---
+  4. Why Store Cumulative END Position, Not Start?
+
+   END positions (Iggy):             START positions (alternative):
+   entry_0: pos=150                  entry_0: start=0
+   entry_1: pos=380                  entry_1: start=150
+   entry_2: pos=420                  entry_2: start=380
+
+   Range read msgs 1..2:             Range read msgs 1..2:
+   start = entry_0.pos = 150         start = entry_1.start = 150
+   end   = entry_2.pos = 420         end   = ??? need entry_3
+   ONE subtraction. Done.             or file size. Extra syscall.
+
+  Batch size = last.position - first_prev.position. One subtraction, zero
+  iteration.
+
+  ---
+  5. Why u32 (Relative) in Index but u64 (Absolute) in Header?
+
+  - Index at u32 keeps entries at 16 bytes -- 4 per cache line
+  - u32 holds 4 billion relative offsets per segment -- more than enough at 1
+  GiB segments
+  - Header carries absolute u64 because consumers need global offsets --
+  shouldn't need to know which segment they're reading
+
+  ---
+  6. Why Checksum FIRST (Bytes 0-7)?
+
+   Read 8 bytes → checksum zero? → SKIP (corrupt/incomplete)
+                  checksum OK?   → read the rest, stream-validate
+
+  - Fail-fast corruption detection during recovery
+  - Crash detection: partially written message = zeroed checksum at byte 0
+  - Uses xxHash3 (64-bit) -- fastest non-cryptographic hash that fits in 8 bytes
+
+  ---
+  7. Why a Reserved Field at the End?
+
+  - Code rejects non-zero reserved: future versions can use it as a version flag
+  - Old readers fail loudly instead of silently misinterpreting data
+  - Keeps header at exactly 64 bytes (the cache line) without permanent waste
+
+  ---
+  8. Why 20-Digit Zero-Padded Filenames?
+
+   ls segments/ | sort
+   00000000000000000000.log     ← first
+   00000000000001000000.log     ← second
+
+   Alphabetical sort = Chronological sort = Correct order
+
+  - 20 digits holds u64::MAX (18.4 quintillion) -- never outgrown
+  - rm 00000000000000000000.* deletes oldest segment. No DB query.
+  - Backup tools, rsync, ls -la all Just Work
+
+  ---
+  9. Why Soft Size Limits?
+
+   SOFT: Entire batch goes into current segment, even if slightly over 1 GiB
+   HARD: Must SPLIT batch across segments → two writes, atomicity nightmare
+
+  A batch is the atomic unit. Single writev() per segment per batch. Simpler
+  crash recovery.
+
+  ---
+  10. Why Little-Endian?
+
+  x86, ARM, Apple Silicon, RISC-V, WASM -- all little-endian. from_le_bytes
+  compiles to a no-op. Big-endian servers are effectively extinct.
+
+  ---
+  11. Why Zero Padding Between Messages?
+
+  The INDEX provides byte positions -- no need for alignment in .log. Packing =
+  maximum disk throughput, better compression, simpler math.
+
+  ---
+  12. Why Dense Indexing (Every Message) Instead of Sparse?
+
+   DENSE (Iggy):    index[7] → done.           O(1)
+   SPARSE (Kafka):  index[4] → scan to 7.      O(n) scan
+
+  1M messages = 16 MB index. Fits in L3 cache. The "savings" from sparse
+  indexing aren't worth the linear scans.
+
+  ---
+  13. Why Microsecond Timestamps?
+
+  Milliseconds: 1000+ messages share same timestamp at high throughput.
+  Nanoseconds: overkill, clock sync can't deliver it. Microseconds in u64: lasts
+   584,000 years, unique per message at realistic throughput.
+
+  ---
+  14. Why In-Memory-Only Journal?
+
+  User chooses their durability-vs-throughput point via enforce_fsync +
+  message_saver.interval. Batched flushes (1024 msgs or 1 MiB) can be 10-100x
+  faster than individual fsynced writes.
+
+  ---
+  15. Why writev() (Vectored I/O)?
+
+   COPY-THEN-WRITE:  3 buffers → memcpy → 1 big buffer → write()
+   WRITEV (Iggy):    3 buffers ────────────────────────→ writev()
+                                                         0 memcpy
+
+  Zero-copy. Same Bytes objects serve consumer reads AND disk writes
+  simultaneously.
+
+  ---
+  The Cascading Masterpiece
+
+   64B header (1 cache line)
+         │
+         v
+   16B index (4/cache line) ──→ Dense O(1) lookup
+         │
+         v
+   Separate files ──→ Independent I/O ──→ writev() batch writes
+         │
+         v
+   Soft limits ──→ Never split a batch ──→ Atomic flush
+         │
+         v
+   Sorted filenames ──→ readdir = segment discovery
+         │
+         v
+   END positions ──→ Range reads = one subtraction
+         │
+         v
+   LE + packed ──→ on-disk = in-memory = in-cache
+
+   ONE PRINCIPLE: the on-disk format IS the in-memory format
+   IS the network format. No serialization. No parsing.
+   Just pointers into byte slices.
+
+  That's what makes all 18 choices genius together, not just individually.
+
+  Want me to dig into any specific one further -- crash recovery flow, the
+  writev syscall sequence, or timestamp binary search?
+
+✻ Crunched for 8m 24s
+
+❯ /export                                                                       
+  ⎿  Conversation copied to clipboard
+
+❯ /export                                                                       
+  ⎿  Conversation copied to clipboard
+
+❯ @"eli5-ascii-explainer (agent)" :  The Three-Tier Read Path (RAM + Disk)      
+                                                                                
+    ┌─────────────────────────────────────────────┐                             
+    │ TIER 1: DISK (sealed segments)              │                             
+    │ offsets 0 .. 1023                           │                             
+    │ Fully persisted .log + .index files         │                             
+    │ "The bookshelf"                             │                             
+    ├─────────────────────────────────────────────┤                             
+    │ TIER 2: IN-FLIGHT BUFFER (RAM)              │                             
+    │ offsets 1024 .. 1399                        │                             
+    │ Committed from journal, being written now   │                             
+    │ "The outbox tray"                           │                             
+    ├─────────────────────────────────────────────┤                             
+    │ TIER 3: MEMORY JOURNAL (RAM)                │                             
+    │ offsets 1400 .. 1500                        │                             
+    │ Freshest data, not yet flushed              │                             
+    │ "Your notepad"                              │                             
+    └─────────────────────────────────────────────┘                             
+                                                                                
+    Poll(offset=1500) --> found in journal (RAM) -- instant                     
+    Poll(offset=500)  --> found on disk -- two seeks                            
+
+⏺ eli5-ascii-explainer(ELI5 explain three-tier read path)
+  ⎿  Done (38 tool uses · 87.7k tokens · 5m 33s)
+  (ctrl+o to expand)
+
+⏺ Iggy's Three-Tier Read Path: Deep Dive
+
+  Level 1: The Essence
+
+  Every message lives in exactly one tier at any moment, flowing right-to-left
+  as it ages. Reads walk left-to-right, stitching results seamlessly.
+
+   Producer                                Consumer
+      |                                       ^
+      v                                       |
+   TIER 1 (oldest)     TIER 2 (middle)    TIER 3 (freshest)
+   ┌──────────────┐  ┌──────────────┐   ┌──────────────┐
+   │  DISK        │  │  In-Flight   │   │  Journal     │
+   │  .log+.index │  │  (frozen)    │   │  (mutable)   │
+   │  segments    │  │  Bytes/Arc   │   │  PooledBuffer│
+   └──────────────┘  └──────────────┘   └──────────────┘
+    offsets 0..999   offsets 1000..1023  offsets 1024..1030
+
+    read direction:  ======= left to right ============>
+    write direction: <============= right to left ======
+
+  ---
+  Level 2: The Write Path
+
+   Producer sends batch
+          |
+          v
+   Step 1: journal.append(batch)         ← instant, RAM only
+          |
+          v
+   Step 2: Threshold check
+          |
+     ┌────┴────┐
+     |NO       |YES (≥1024 msgs OR ≥1 MiB OR segment full)
+     v         v
+   [wait]    Step 3: COMMIT
+                  |
+                  v
+             journal.commit()
+             std::mem::take() ← O(1) pointer swap
+                  |
+                  v
+             batch.freeze()
+             PooledBuffer → Bytes (Arc, zero-copy)
+                  |
+                  v
+             set_in_flight(frozen.clone())
+             ← consumers can read from here NOW
+                  |
+                  v
+             Step 4: PERSIST
+                  |
+             ┌────┴────┐
+             v         v
+          .log       .index
+          writev()   write_all_at()
+             |
+             v
+             clear_in_flight()  ← data now on disk only
+
+  ---
+  Level 3: The Read Path (The Star of the Show)
+
+  Consumer asks: "50 messages starting at offset 990"
+
+   Partition state:
+     Disk:       offsets 0..999
+     In-flight:  offsets 1000..1023
+     Journal:    offsets 1024..1030
+
+   TIER 1: DISK  (990 < in_memory_floor=1000)
+   ┌──────────────────────────────────────────┐
+   │  disk_count = min(1000-990, 50) = 10     │
+   │  → .index seek → .log read               │
+   │  GOT: offsets 990..999 (10 msgs)         │
+   └──────────────────────────────────────────┘
+        remaining=40
+
+   TIER 2: IN-FLIGHT  (1000 in range [1000,1023])
+   ┌──────────────────────────────────────────┐
+   │  in_flight_count = min(24, 40) = 24      │
+   │  → binary search frozen batches          │
+   │  GOT: offsets 1000..1023 (24 msgs)       │
+   └──────────────────────────────────────────┘
+        remaining=16
+
+   TIER 3: JOURNAL  (1024 >= journal_first)
+   ┌──────────────────────────────────────────┐
+   │  → search mutable batches                │
+   │  GOT: offsets 1024..1030 (7 msgs)        │
+   │  (only 7 exist)                          │
+   └──────────────────────────────────────────┘
+
+   RESULT: [990..999] + [1000..1023] + [1024..1030]
+         = 41 messages stitched from ALL 3 tiers
+
+  ---
+  Level 4: Why the In-Flight Buffer Exists (The Key Insight)
+
+   WITHOUT in-flight:                 WITH in-flight:
+
+   journal.commit()                   journal.commit()
+   data leaves journal                data leaves journal
+   <-- disk write... -->              set_in_flight(frozen)
+                                      <-- disk write... -->
+   Consumer polls...                  Consumer polls...
+   NOT in journal (committed)         Found in in-flight!
+   NOT on disk (still writing)        Return it immediately.
+
+   DATA IS INVISIBLE!                 DATA IS ALWAYS VISIBLE!
+
+  The in-flight buffer is a visibility bridge -- it holds Arc-backed frozen
+  copies so consumers never see a gap during async disk writes.
+
+  ---
+  Level 5: Message Lifecycle Through All Three Tiers
+
+   T=0: JOURNAL (mutable PooledBuffer, RAM)
+   ┌─────────────────────────────────────────┐
+   │ journal: [batch with msg1024]           │ ← consumers read here
+   │ in-flight: [empty]                      │
+   │ disk: [...offsets 0..999]               │
+   └─────────────────────────────────────────┘
+
+   T=1: IN-FLIGHT (frozen Bytes/Arc, RAM)
+   ┌─────────────────────────────────────────┐
+   │ journal: [empty, reset to base=1025]    │
+   │ in-flight: [frozen batch with msg1024]  │ ← consumers read here
+   │ disk: [...offsets 0..999]               │   + disk writer active
+   └─────────────────────────────────────────┘
+
+   T=2: DISK (.log + .index files)
+   ┌─────────────────────────────────────────┐
+   │ journal: [new msgs if any]              │
+   │ in-flight: [cleared]                    │
+   │ disk: [...offsets 0..1024]              │ ← consumers read here
+   └─────────────────────────────────────────┘
+
+   At NO POINT is msg1024 invisible to consumers.
+
+  ---
+  Level 6: Crash Scenarios
+
+   message arrives
+        |
+        v
+   ┌──JOURNAL──┐  ┌──IN-FLIGHT──┐  ┌──DISK──┐  ┌──FSYNC──┐
+   │  volatile  │  │  volatile   │  │ OS buf │  │  SAFE   │
+   │  RAM only  │  │  RAM + I/O  │  │ cache  │  │  on     │
+   │            │  │  in progress│  │        │  │ platter │
+   └────────────┘  └─────────────┘  └────────┘  └─────────┘
+
+   <---- crash = data LOST ---->    <- maybe ->  <- SAFE ->
+
+  - Journal crash: all un-committed messages lost (by design, for speed)
+  - In-flight crash: partially written .log possible, truncated on recovery
+  - Disk + fsync: safe on platter, survives power failure
+
+  ---
+  Level 7: Configuration Knobs
+
+   MORE DURABLE ◄──────────────────────────► MORE PERFORMANT
+
+   messages_required = 1        messages_required = 10000
+   enforce_fsync = true         enforce_fsync = false
+   saver_interval = 1s          saver_interval = 60s
+
+   Every msg hits disk           Msgs batch in RAM,
+   with fsync. Slow.             flush periodically. Fast.
+
+  Three flush triggers:
+  1. Eager (inline): ≥1024 msgs OR ≥1 MiB OR segment full
+  2. Periodic (timer): every 30s, catches dribbles below thresholds
+  3. Shutdown (graceful): flush + fsync everything, lose nothing
+
+  ---
+  The entire design ensures one invariant: data is always readable from exactly 
+  one tier, and transitions between tiers never create visibility gaps.
+
+  Want me to dig into the writev() mechanics, the index lookup algorithm, or the
+   crash recovery flow?
+
+✻ Worked for 6m 39s
+
+❯ @"eli5-ascii-explainer (agent)" : take a few examples and explain this        
+concept - it is getting confusing -                                             
+local_data/streams/1/topics/1/partitions/1/                                     
+    ├── 00000000000000000000.log       <-- messages (raw binary)                
+    ├── 00000000000000000000.index     <-- lookup table (raw binary)            
+    ├── 00000000000000001024.log       <-- next segment                         
+    ├── 00000000000000001024.index                                              
+    └── offsets/consumers/42           <-- just 8 bytes: a u64 -- assuming I do 
+ not even understand basic things like offset partition etc. --                 
+  Level 1: The Essence                                                          
+                                                                                
+  Every message lives in exactly one tier at any moment, flowing right-to-left  
+as it ages.                                                                     
+  Reads walk left-to-right, stitching results seamlessly.                       
+                                                                                
+   Producer                                Consumer                             
+      |                                       ^                                 
+      v                                       |                                 
+   TIER 1 (oldest)     TIER 2 (middle)    TIER 3 (freshest)                     
+   ┌──────────────┐  ┌──────────────┐   ┌──────────────┐                        
+   │  DISK        │  │  In-Flight   │   │  Journal     │                        
+   │  .log+.index │  │  (frozen)    │   │  (mutable)   │                        
+   │  segments    │  │  Bytes/Arc   │   │  PooledBuffer│                        
+   └──────────────┘  └──────────────┘   └──────────────┘                        
+    offsets 0..999   offsets 1000..1023  offsets 1024..1030                     
+                                                                                
+    read direction:  ======= left to right ============>                        
+    write direction: <============= right to left ======                        
+                                                                                
+  ---                                                                           
+  Level 2: The Write Path                                                       
+                                                                                
+   Producer sends batch                                                         
+          |                                                                     
+          v                                                                     
+   Step 1: journal.append(batch)         ← instant, RAM only                    
+          |                                                                     
+          v                                                                     
+   Step 2: Threshold check                                                      
+          |                                                                     
+     ┌────┴────┐                                                                
+     |NO       |YES (≥1024 msgs OR ≥1 MiB OR segment full)                      
+     v         v                                                                
+   [wait]    Step 3: COMMIT                                                     
+                                                                                
+
+⏺ eli5-ascii-explainer(ELI5 explain offsets partitions segments basics)
+  ⎿  Done (29 tool uses · 48.4k tokens · 3m 5s)
+  (ctrl+o to expand)
+
+⏺ Iggy From Zero: The Post Office Analogy
+
+  Part 1: OFFSET -- Your Receipt Number
+
+  Like a bakery ticket machine. The number only goes up, never resets, never
+  skips.
+
+    Partition 1 (US region)
+    ~~~~~~~~~~~~~~~~~~~~~~~
+    offset 0:  "Order #7701: MacBook, $2499, user:alice"
+    offset 1:  "Order #7702: AirPods, $249, user:bob"
+    offset 2:  "Order #7703: iPad, $799, user:carol"
+    offset 3:  "Order #7704: iPhone, $999, user:alice"
+         ^
+         This is the offset. A sequential number.
+         Every reader uses it as a bookmark:
+         "I've read up to offset 2. Start me at 3 next time."
+
+  ---
+  Part 2: PARTITION -- Separate Lines at the Counter
+
+  One line with 10,000 people = disaster. Three lines = fast.
+
+    Topic: "orders"
+    Partition 1 (US)     Partition 2 (EU)     Partition 3 (Asia)
+    ~~~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~~~~~
+    off 0: MacBook       off 0: Baguette      off 0: Rice Cooker
+    off 1: AirPods       off 1: Wine          off 1: Matcha Set
+    off 2: iPad          off 2: Cheese        off 2: Keyboard
+
+    Each partition counts from 0 independently!
+    offset 2 in Partition 1 (iPad) ≠ offset 2 in Partition 3 (Keyboard)
+
+  ---
+  Part 3: SEGMENT -- Filing Cabinet Drawers
+
+  When a drawer gets full (~1 GiB), you seal it and start a new one. The label
+  on each drawer IS the first offset inside it:
+
+    Partition 1 (US) -- one filing cabinet
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Drawer 1 (SEALED)             Drawer 2 (ACTIVE)
+    offset 0: MacBook             offset 1024: Charger
+    offset 1: AirPods             offset 1025: Cable
+    ...                           ...
+    offset 1023: Dongle           (still has room)
+
+    On disk:
+    00000000000000000000.log      ← starts at offset 0
+    00000000000000000000.index
+    00000000000000001024.log      ← starts at offset 1024
+    00000000000000001024.index
+    ^^^^^^^^^^^^^^^^^^^^
+    20-digit zero-padded first offset = the filename
+
+  ---
+  Part 4: STREAM and TOPIC -- The Hierarchy
+
+    Stream = Department        "shop-events"
+      Topic = Category           "orders", "returns", "inventory"
+        Partition = Regional bin   US, EU, Asia
+          Segment = Drawer           offsets 0-1023, 1024-2047...
+            Message = One order        "MacBook, $2499, alice"
+
+  ---
+  Part 5: The Directory Tree -- Reading It Like a Sentence
+
+    local_data/streams/1/topics/1/partitions/1/00000000000000001024.log
+    ~~~~~~~~~~         ~         ~             ~ ^^^^^^^^^^^^^^^^^^^^
+    root dir     stream 1   topic 1    partition 1  segment starting
+                 "shop-     "orders"   "US region"  at offset 1024
+                  events"
+
+  Full tree for our e-commerce app:
+
+    local_data/streams/1/topics/1/
+    ├── partitions/
+    │   ├── 1/                              ← US
+    │   │   ├── 00000000000000000000.log    ← msgs offset 0..1023
+    │   │   ├── 00000000000000000000.index
+    │   │   ├── 00000000000000001024.log    ← msgs offset 1024..
+    │   │   ├── 00000000000000001024.index
+    │   │   └── offsets/consumers/
+    │   │       ├── 42                      ← 8 bytes: consumer 42's bookmark
+    │   │       └── 99                      ← 8 bytes: consumer 99's bookmark
+    │   ├── 2/                              ← EU
+    │   │   ├── 00000000000000000000.log
+    │   │   └── ...
+    │   └── 3/                              ← Asia
+    │       └── ...
+
+  ---
+  Part 6: Consumer Offsets -- The Bookmark File
+
+  The file offsets/consumers/42 contains ONE number: the last offset this
+  consumer read. 8 bytes total. That's the entire file.
+
+    File: offsets/consumers/42
+    Contents: [0x02][0x00][0x00][0x00][0x00][0x00][0x00][0x00]
+               ^^^^
+               = 2 in little-endian u64
+               Meaning: "Consumer 42 last read offset 2"
+
+  Two consumers at different speeds:
+
+    off 0: MacBook
+    off 1: AirPods
+    off 2: iPad         ← Consumer 42 is here (slow analytics)
+    off 3: iPhone
+    off 4: Watch
+    off 5: Charger
+    off 6: Cable
+    off 7: Case         ← Consumer 99 is here (fast notifications)
+
+    offsets/consumers/42  →  8 bytes = 2
+    offsets/consumers/99  →  8 bytes = 7
+
+    They don't interfere. Each has their own bookmark file.
+
+  ---
+  Part 7: Segment Rotation -- Watching It Happen
+
+    BEFORE: Segment has offsets 0..1023, full at ~1 GiB
+
+    New order arrives (offset 1024)...
+    Iggy: "Drawer full. Seal it. Open new drawer."
+
+    AFTER:
+    00000000000000000000.log     ← SEALED (read-only), offsets 0..1023
+    00000000000000001024.log     ← ACTIVE (new writes), offsets 1024..
+                      ^^^^
+                      filename = first offset in this segment
+
+  ---
+  The Cheat Sheet
+
+    CONCEPT      ANALOGY              ON DISK
+    ~~~~~~~      ~~~~~~               ~~~~~~~
+    Stream       Department           streams/{id}/
+    Topic        Mail category        topics/{id}/
+    Partition    Regional bin         partitions/{id}/
+    Segment      Filing drawer        {offset:020}.log + .index
+    Offset       Ticket number        number inside the segment
+    Consumer     Reader + bookmark    offsets/consumers/{id} (8 bytes)
+
+  Now you can read ANY Iggy data directory instantly. Want me to go deeper into
+  any part?
+
+✻ Churned for 3m 55s
+
+❯ @"eli5-ascii-explainer (agent)" : you are starting from bttom - start from    
+top and go towards bottom details - this is confusing                           
+
+⏺ eli5-ascii-explainer(ELI5 top-down Iggy hierarchy)
+  ⎿  Done (22 tool uses · 45.8k tokens · 2m 20s)
+  (ctrl+o to expand)
+
+⏺ Apache Iggy: Top-Down, One Layer at a Time
+
+  ---
+  ZOOM 1: The Server (The Warehouse)
+
+  One process. One data folder. Holds everything.
+
+   ┌──────────────────────────────────┐
+   │         IGGY SERVER              │
+   │       "The Mail Warehouse"       │
+   │                                  │
+   │    Everything lives in here.     │
+   └──────────────────────────────────┘
+
+   On disk:   /local_data/
+
+  ---
+  ZOOM 2: Streams (Departments)
+
+  The biggest grouping. Completely separate business domains.
+
+   IGGY SERVER
+   ┌───────────────────────────────────────┐
+   │                                       │
+   │  ┌────────────┐    ┌──────────────┐   │
+   │  │  Stream 1  │    │  Stream 2    │   │
+   │  │ "shop-     │    │ "user-       │   │
+   │  │  events"   │    │  analytics"  │   │
+   │  └────────────┘    └──────────────┘   │
+   │                                       │
+   └───────────────────────────────────────┘
+
+   On disk:   /local_data/streams/
+                  ├── 1/       ← "shop-events"
+                  └── 2/       ← "user-analytics"
+
+  ---
+  ZOOM 3: Topics (Types of Mail)
+
+  Categories within a department.
+
+   Stream 1: "shop-events"
+   ┌───────────────────────────────────────┐
+   │                                       │
+   │  ┌────────────┐    ┌──────────────┐   │
+   │  │  Topic 1   │    │  Topic 2     │   │
+   │  │  "orders"  │    │  "returns"   │   │
+   │  └────────────┘    └──────────────┘   │
+   │                                       │
+   └───────────────────────────────────────┘
+
+   On disk:   /local_data/streams/1/topics/
+                  ├── 1/       ← "orders"
+                  └── 2/       ← "returns"
+
+  ---
+  ZOOM 4: Partitions (Parallel Lanes)
+
+  Multiple lanes so several workers can process at the same time.
+
+   Topic 1: "orders"
+   ┌──────────────────────────────────────────────┐
+   │                                              │
+   │  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+   │  │Partition 1│  │Partition 2│  │Partition 3│  │
+   │  │  West     │  │  Central  │  │  East     │  │
+   │  └──────────┘  └──────────┘  └──────────┘   │
+   │                                              │
+   │  Worker A reads 1, Worker B reads 2, etc.    │
+   │  = 3x faster                                 │
+   └──────────────────────────────────────────────┘
+
+   On disk:   .../topics/1/partitions/
+                  ├── 1/
+                  ├── 2/
+                  └── 3/
+
+  ---
+  ZOOM 5: Segments (Drawers in a Filing Cabinet)
+
+  A partition can't be one giant file forever. So it's split into chunks called
+  segments. When one fills up (~1 GiB), it's sealed and a new one opens.
+
+   Partition 1
+   ┌─────────────────────────────────────────┐
+   │                                         │
+   │  ┌───────────────┐  ┌───────────────┐   │
+   │  │  Segment 0    │  │  Segment 1024 │   │
+   │  │  (SEALED)     │  │  (ACTIVE)     │   │
+   │  │  msgs 0-1023  │  │  msgs 1024+   │   │
+   │  │  "full drawer"│  │  "current     │   │
+   │  │               │  │   drawer"     │   │
+   │  └───────────────┘  └───────────────┘   │
+   │                                         │
+   └─────────────────────────────────────────┘
+
+   On disk:   .../partitions/1/
+                  ├── 00000000000000000000.log     ← messages 0-1023
+                  ├── 00000000000000000000.index   ← lookup table
+                  ├── 00000000000000001024.log     ← messages 1024+
+                  └── 00000000000000001024.index   ← lookup table
+                      ^^^^^^^^^^^^^^^^^^^^
+                      The filename IS the first message number
+
+  ---
+  ZOOM 6: Messages + Offsets (Individual Letters)
+
+  Each message in a partition gets a sequential number: the offset. It's just a
+  counter: 0, 1, 2, 3... never goes backward, never resets.
+
+   Partition 1:
+
+   Segment "000...000.log"         Segment "000...1024.log"
+   ┌──────────────────────┐       ┌──────────────────────┐
+   │ #0  Order: MacBook   │       │ #1024  Order: Cable  │
+   │ #1  Order: AirPods   │       │ #1025  Order: Stand  │
+   │ #2  Order: iPad      │       │ #1026  Order: Case   │
+   │ ...                  │       │ ...                  │
+   │ #1023 Order: Dongle  │       │                      │
+   └──────────────────────┘       └──────────────────────┘
+
+   The offset runs across ALL segments.
+   It belongs to the partition, not the segment.
+
+  ---
+  ZOOM 7: Consumer Offsets (Your Bookmark)
+
+  A reader saves one number per partition: "I last read message #N." Next time,
+  it picks up at #N+1.
+
+   Partition 1:
+   [msg0][msg1][msg2][msg3][msg4][msg5][msg6]
+                            ▲
+                            │
+                     Consumer 42 is here
+                     Bookmark saved: 3
+
+   On disk:   .../partitions/1/offsets/consumers/42
+              Contents: just the number 3 (8 bytes)
+
+   Next time Consumer 42 connects: "Give me from offset 4"
+
+  ---
+  THE COMPLETE NESTING
+
+   SERVER
+   └── STREAM "shop-events"
+       └── TOPIC "orders"
+           └── PARTITION 1
+               ├── SEGMENT 0..1023      (000...000.log + .index)
+               │   ├── message offset 0
+               │   ├── message offset 1
+               │   └── ... offset 1023
+               ├── SEGMENT 1024..        (000...1024.log + .index)
+               │   ├── message offset 1024
+               │   └── ...
+               └── BOOKMARKS
+                   └── consumer 42 → last read: offset 3
+
+  The full directory:
+
+   /local_data/
+   └── streams/1/                          ← STREAM
+       └── topics/1/                       ← TOPIC
+           └── partitions/1/               ← PARTITION
+               ├── 00000000000000000000.log    ← SEGMENT (msgs)
+               ├── 00000000000000000000.index  ← SEGMENT (lookup)
+               ├── 00000000000000001024.log    ← SEGMENT (msgs)
+               ├── 00000000000000001024.index  ← SEGMENT (lookup)
+               └── offsets/consumers/42        ← BOOKMARK
+
+  Quick Reference
+
+   LEVEL        ANALOGY            CONTAINS
+   ─────        ───────            ────────
+   Server       Warehouse          Streams
+   Stream       Department         Topics
+   Topic        Type of mail       Partitions
+   Partition    Parallel lane      Segments
+   Segment      Drawer (file)      Messages
+   Message      One letter         Your data
+   Offset       Letter number      (a counter: 0, 1, 2...)
+   Bookmark     Where you left off (one number per reader)
+
+  Each level is just a container for the level below it. That's all there is to
+  it.
+
+✻ Brewed for 3m 23s
+
+❯ why is consumer 42 at 3rd message                                             
+
+⏺ No special reason -- it's just an arbitrary example. Consumer 42 could be at
+  any offset. The point is:
+
+  - It read messages 0, 1, 2, 3 so far
+  - It saved "3" as its bookmark
+  - Next time it asks for messages, Iggy starts from offset 4
+
+  The numbers 42 (consumer ID) and 3 (bookmark position) were just picked to
+  show the concept. A faster consumer might be at offset 1025. A slower one
+  might still be at offset 0. Each consumer moves at its own pace.
+
+❯ ok the consumer id could be anything - but how does it map to offset - or is  
+it something the reader would store                                             
+
+⏺ The consumer ID is just an arbitrary label you pick (like a username). The
+  server stores the bookmark, not the client.
+
+  The flow:
+
+   1. Consumer connects:  "I'm consumer 42, reading partition 1"
+
+   2. Consumer polls:     "Give me next messages"
+      Iggy looks up:      offsets/consumers/42 → reads "3"
+      Iggy returns:       messages starting at offset 4
+
+   3. Consumer finishes processing, commits:
+      "I've read up to offset 7"
+      Iggy writes:        offsets/consumers/42 → saves "7"
+
+  So the mapping is:
+
+   consumer ID  →  just a name YOU choose (42, 99, "order-processor", etc.)
+   offset       →  Iggy saves it FOR you, in a file named after your ID
+
+  If you pick a new consumer ID that Iggy has never seen, it starts you at
+  offset 0. If you reconnect with the same ID, Iggy reads your saved bookmark
+  and resumes where you left off.
+
+  The client never needs to remember the offset itself -- that's the whole point
+   of server-side storage. Though clients can manage offsets themselves if they
+  prefer (some advanced use cases do).
+
+❯ @"eli5-ascii-explainer (agent)"    Am I correct in assuming that this is a    
+pub-sub system? How does somebody subscribing to it read? Tell me the process   
+of them reading. Assume that I am a Postgres database; then how do I actually   
+read this data in different scenarios                                           
+
+⏺ eli5-ascii-explainer(ELI5 explain pub-sub reading and Postgres integration)
+  ⎿  Done (17 tool uses · 85.7k tokens · 13m 32s)
+  (ctrl+o to expand)
+
+⏺ Iggy: More Than Pub-Sub -- And How Postgres Reads From It
+
+  The Key Distinction: Pub-Sub vs Message Streaming
+
+    TRADITIONAL PUB-SUB                MESSAGE STREAMING (IGGY)
+    (Redis Pub/Sub, NATS)
+
+    Live TV                            DVR Recording
+
+    ┌─────────┐  "order!"             ┌─────────┐  "order!"
+    │ Broker  │────▶ Listener A       │   Log   │────▶ stored on disk
+    │         │────▶ Listener B       │  (disk) │
+    │         │  X   Listener C       │         │  Later...
+    └─────────┘  (offline = MISSED)   └─────────┘  Listener C:
+                                                    "play from the
+    Messages: gone after delivery                    beginning"
+    Must be online: YES                              Log: "sure"
+    Rewind: impossible
+                                       Messages: kept until purged
+                                       Must be online: NO
+                                       Rewind: just change your offset
+
+  Iggy is pull-based. The server never pushes. Consumers poll when they're
+  ready.
+
+  ---
+  How a Consumer (Postgres) Reads: The Loop
+
+    ┌─────────┐                     ┌──────────┐
+    │Postgres │── "give me next" ──▶│  Iggy    │
+    │         │                     │          │ looks up bookmark:
+    │         │                     │          │ "consumer pg-sync
+    │         │                     │          │  last read: 85"
+    │         │◀── [86][87]..[120]──│          │
+    │         │                     │          │
+    │ INSERT  │                     │          │
+    │ rows    │                     │          │
+    │         │── "I read to 120" ─▶│          │ saves bookmark: 120
+    │         │                     │          │
+    │ (sleep) │                     │          │
+    │         │── "give me next" ──▶│          │ starts at 121
+    └─────────┘                     └──────────┘
+
+  ---
+  The 5 Ways Postgres Can Start Reading
+
+    Log:  [0] [1] [2] [3] [4] [5] [6] [7]
+
+    1. FIRST ──────▶ start at [0]
+       "Backfill: give me EVERYTHING"
+
+    2. OFFSET(3) ──▶ start at [3]
+       "Start from this exact position"
+
+    3. TIMESTAMP ──▶ start at [5]
+       "Everything since yesterday"
+
+    4. LAST ───────▶ start at [7]
+       "Skip history, only new stuff"
+
+    5. NEXT ───────▶ start at [4]
+       "Resume where I left off"
+       (server looks up saved bookmark = 3)
+
+  ---
+  Postgres Scenario 1: Sink Connector (Automatic)
+
+  Iggy has a built-in Postgres connector that auto-creates a table and INSERTs
+  messages:
+
+    Web App ──▶ Iggy ──▶ Postgres Sink Connector ──▶ Postgres
+
+    Auto-created table:
+    ┌──────────────────────────────────────────────┐
+    │  id                 DECIMAL PRIMARY KEY      │
+    │  iggy_offset        BIGINT                   │
+    │  iggy_timestamp     TIMESTAMP WITH TZ        │
+    │  iggy_stream        TEXT                     │
+    │  iggy_topic         TEXT                     │
+    │  iggy_partition_id  INTEGER                  │
+    │  payload            BYTEA | JSONB | TEXT     │
+    └──────────────────────────────────────────────┘
+
+  ---
+  Postgres Scenario 2: Source Connector (Postgres → Iggy)
+
+  Changes in your Postgres tables get published TO Iggy. Two modes:
+
+    POLLING MODE                      CDC MODE (WAL)
+    SELECT * FROM orders              Reads Postgres WAL
+    WHERE id > last_seen              (logical replication)
+
+    Simple, query-based               Real-time INSERT/UPDATE/DELETE
+    Runs on an interval               Stream of change events
+
+  ---
+  Postgres Scenario 3: Custom App (You Write the Code)
+
+  Backfill (read everything):
+    consumer.polling_strategy(First)     → start at offset 0
+    loop: poll → INSERT INTO pg → commit offset → repeat
+
+  Resume after crash:
+    consumer.polling_strategy(Next)      → server remembers offset
+    loop: poll → INSERT INTO pg → repeat
+
+  Replay yesterday:
+    consumer.polling_strategy(Timestamp("2026-03-30"))
+    loop: poll → UPSERT INTO pg → repeat
+
+  Tail (new messages only):
+    consumer.polling_strategy(Last)      → skip all history
+    loop: poll → INSERT INTO pg → repeat
+
+  Consumer group (3 Postgres instances sharing work):
+    ┌──────┐  ┌──────┐  ┌──────┐
+    │ PG 1 │  │ PG 2 │  │ PG 3 │
+    └──┬───┘  └──┬───┘  └──┬───┘
+       │         │         │
+       └── join group "pg-sync" ──┘
+                 │
+    ┌────────────▼────────────┐
+    │ Iggy auto-assigns:      │
+    │  Partition 1 → PG 1     │
+    │  Partition 2 → PG 2     │
+    │  Partition 3 → PG 3     │
+    │                         │
+    │  If PG 2 crashes:       │
+    │  Partition 2 → PG 1     │
+    │  (auto-rebalance)       │
+    └─────────────────────────┘
+
+  ---
+  Summary
+
+    Iggy is NOT fire-and-forget pub-sub.
+    It is a persistent, replayable, pull-based message log.
+
+    Postgres can be:
+    ├── A SINK     (Iggy → Postgres)  via built-in connector
+    ├── A SOURCE   (Postgres → Iggy)  via CDC or polling connector
+    └── A CUSTOM consumer             via SDK, any of 5 reading strategies
+
+    Nobody misses anything. Ever.
+    You choose where to start reading.
+    The server remembers where you stopped.
+
+  Want me to go deeper into consumer group rebalancing, the connector
+  configuration, or how timestamp-based polling actually finds the right offset?
+✻ Churned for 14m 48s
+
+❯ /agents                                                                       
+  ⎿  Agent changes:
+     Created agent: algorithmic-art
+
+❯ use @"algorithmic-art (agent)" to explain the above ELI5                      
+
+⏺ algorithmic-art(Algorithmic art explaining Iggy streaming)
+  ⎿  Done (29 tool uses · 53.1k tokens · 2h 24m 43s)
+  (ctrl+o to expand)
+
+⏺ The interactive visualization is ready. Two files were created:
+
+  Open in your browser:
+  iggy-streaming-visualization.html
+
+  Here's what you'll see:
+
+  ┌────────────────┬────────────────────────────────────────────────────────┐
+  │    Concept     │                         Visual                         │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ Message Log    │ Particles flowing left-to-right, each with offset      │
+  │                │ numbers -- they never disappear                        │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ Producers      │ 3 glowing cyan nodes on the left, emitting messages    │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ Consumers      │ 4 nodes on the right (first one is Postgres Sink),     │
+  │                │ each with a colored bookmark pointer                   │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ 5 Polling      │ Clickable buttons: FIRST, LAST, NEXT, OFFSET(N),       │
+  │ Strategies     │ TIMESTAMP -- repositions the selected consumer's       │
+  │                │ pointer                                                │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ 3 Partitions   │ Parallel lanes with independent offset counters        │
+  │                │ (adjustable 1-5)                                       │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ Segments       │ Dashed dividers within each lane (adjustable size)     │
+  ├────────────────┼────────────────────────────────────────────────────────┤
+  │ Three Tiers    │ Color-coded: bright cyan (Journal/RAM) → purple        │
+  │                │ (In-Flight) → solid orange (Disk)                      │
+  └────────────────┴────────────────────────────────────────────────────────┘
+
+  Interactive controls:
+  - Click a consumer, then a strategy button to move its pointer
+  - Hover messages to see offset, partition, segment, tier
+  - Sliders for production rate, partitions, segment size, read speed
+  - Pause/Play, Reset, Save PNG
+
+  Want me to open it for you, or shall we continue exploring Iggy's internals?
+
+✻ Sautéed for 7m 51s
+
+❯ @"eli5-ascii-explainer (agent)"    Am I correct in assuming that this is a    
+pub-sub system? How does somebody subscribing to it read? Tell me the process   
+of them reading. Assume that I am a postgres  database; then how do I actually  
+read this data in different scenarios -- can you also explain referencing parts 
+ of code -- do it for 3 cases - 1 postgres 2 mongodb 3 something of your choice 
+ -- try to also explain how which parts of iggy server actually interacts --    
+and what code control flow enables that - try to relate the connectors code     
+files and interfaces with what is happening at the data level -- how the code   
+was written the way it was because of the physics of how data is structured and 
+ systems in the periphery are behaviing -                                       
+
+⏺ eli5-ascii-explainer(ELI5 deep dive connectors code flow)
+  ⎿  Done (28 tool uses · 107.2k tokens · 4m 23s)
+  (ctrl+o to expand)
+
+⏺ How Postgres, MongoDB, and Elasticsearch Actually Read from Iggy
+
+  The Big Picture: Shared Loop, Different Physics
+
+   ┌─────────────────────────────────────────────┐
+   │          IGGY SERVER (Shard)                 │
+   │  Partition ── disk + journal + in-flight     │
+   └──────────────────┬──────────────────────────┘
+                      │  poll_messages (TCP)
+                      v
+   ┌──────────────────────────────────────────────┐
+   │       CONNECTOR RUNTIME                      │
+   │  IggyConsumer → decode → transform → FFI     │
+   └───┬──────────────┬──────────────┬────────────┘
+       │ (.dylib)     │ (.dylib)     │ (.dylib)
+       v              v              v
+   ┌────────┐   ┌──────────┐  ┌───────────────┐
+   │Postgres│   │ MongoDB  │  │Elasticsearch  │
+   │ INSERT │   │insert_many│  │  _bulk API    │
+   │ INTO   │   │  (BSON)  │  │  (NDJSON)     │
+   └────────┘   └──────────┘  └───────────────┘
+
+  The runtime owns the consumer loop. Plugins only own the write. Polling is
+  always the same (offset-based). Writing is radically different per target.
+
+  ---
+  The Shared Sink Trait (3 methods, that's all)
+
+  From core/connectors/sdk/src/lib.rs:
+
+   trait Sink: Send + Sync {
+       async fn open()    → connect to target, create table/collection/index
+       async fn consume() → write a batch of messages to target
+       async fn close()   → tear down
+   }
+
+  ---
+  The Code Flow: Poll to Write
+
+   runtime/src/sink.rs                    server/src/shard/system/messages.rs
+   consume_messages()                     IggyShard::poll_messages()
+     │                                       │
+     │ consumer.next().await                 │ resolve consumer + partition
+     │     │                                 │ dispatch to data plane
+     │     └──── TCP ────────────────────────┘
+     │                                       │
+     │ ◀── batch of ConsumedMessages ────────┘
+     │                                    partitions/ops.rs
+     │                                    get_messages_by_offset()
+     │                                      DISK → IN-FLIGHT → JOURNAL
+     │                                      (three-tier splice)
+     │
+     ├── decode payload (Json/Raw/Text)
+     ├── apply transform chain (filter, delete fields)
+     ├── serialize via postcard (for FFI boundary)
+     └── call plugin: sink.consume(topic_meta, msgs)
+           │
+      ┌────┴────┬────────────┐
+      v         v            v
+    PG sink   Mongo sink   ES sink
+
+  ---
+  Sink 1: PostgresSink
+
+  File: core/connectors/sinks/postgres_sink/src/lib.rs
+
+  Postgres physics: rows in tables, typed columns, transactions, parameterized
+  queries.
+
+   open():
+     PgPool::connect() → CREATE TABLE IF NOT EXISTS
+     ┌──────────────────────────────────────────────┐
+     │ id               DECIMAL(39,0) PRIMARY KEY   │ ← u128 as numeric!
+     │ iggy_offset      BIGINT                      │
+     │ iggy_timestamp   TIMESTAMPTZ                 │ ← microsecond precision
+     │ iggy_stream      TEXT                        │
+     │ iggy_topic       TEXT                        │
+     │ payload          BYTEA | JSONB | TEXT        │ ← config choice
+     └──────────────────────────────────────────────┘
+
+   consume():
+     INSERT INTO "orders" (id, iggy_offset, ..., payload)
+     VALUES ($1::numeric, $2, ..., $9),     ← multi-row INSERT
+            ($10::numeric, $11, ..., $18),   ← ALL rows in ONE statement
+            ...                              ← one round-trip, 100 rows
+
+     On failure: retry with exponential backoff
+       40001 serialization_failure → RETRY
+       40P01 deadlock_detected     → RETRY
+       08000 connection_exception  → RETRY
+       Protocol error              → FAIL (permanent)
+
+  Why it's shaped this way:
+  - DECIMAL(39,0) because Postgres has no u128 type
+  - Multi-row INSERT because one INSERT with 100 rows is 10-50x faster than 100
+  individual INSERTs (round-trip latency dominates)
+  - Explicit retry because Postgres can deadlock or lose connections transiently
+  - Payload in a separate column because Postgres is schema-on-write
+
+  ---
+  Sink 2: MongoDbSink
+
+  File: core/connectors/sinks/mongodb_sink/src/lib.rs
+
+  MongoDB physics: schemaless BSON documents, no u64 in BSON, bulk unordered
+  writes.
+
+   open():
+     Client::with_options() → create_collection() (NO schema!)
+
+   consume():
+     For each message, build BSON document:
+       _id: "stream:topic:partition:msg_id"   ← composite, for dedup!
+       iggy_offset: Int64 or String           ← OVERFLOW GUARD
+       iggy_timestamp: BsonDateTime           ← millisecond (not micro!)
+       payload: Binary | embedded JSON | String
+
+     collection.insert_many(docs).ordered(false)
+                                  ^^^^^^^^^^^^^^
+                                  THE KEY DECISION
+
+     On duplicate _id (code 11000): count and FORGIVE
+     On transient error: retry with backoff
+
+  Why it's shaped this way:
+  - Composite string _id gives natural deduplication -- same message twice =
+  rejected, not duplicated
+  - ordered(false) is critical: with ordered(true), if doc #3 fails, docs
+  #4-#100 are abandoned. With false, 99 succeed, 1 skipped
+  - BSON has Int32/Int64 but no unsigned types. If offset > i64::MAX, the sink
+  falls back to a string field. The physics of BSON's type system forces this
+  - Timestamp loses microsecond precision (BSON DateTime = milliseconds)
+  - Payload embedded inside the document (native JSON) -- not a separate column
+
+  ---
+  Sink 3: ElasticsearchSink
+
+  File: core/connectors/sinks/elasticsearch_sink/src/lib.rs
+
+  ES physics: inverted indexes for search, bulk NDJSON API, idempotent
+  overwrites.
+
+   open():
+     Transport::single_node() → indices.create() (optional mapping)
+
+   consume():
+     For each message:
+       Parse payload with simd_json (2-4x faster than serde!)
+       MERGE payload fields INTO top-level document:
+         { "temp": 72.5,                    ← payload fields
+           "_iggy_offset": 1000,            ← metadata prefixed
+           "_iggy_stream": "shop-events",
+           "_iggy_topic": "orders" }
+
+     Build NDJSON body:
+       {"index":{"_index":"orders"}}
+       {"temp":72.5,"_iggy_offset":1000,...}
+       {"index":{"_index":"orders"}}
+       {"temp":73.1,"_iggy_offset":1001,...}
+
+     client.bulk().body(ndjson).send()
+
+     Check EACH item in response (ES may accept 98 of 100)
+     NO retry loop -- bulk API is idempotent (overwrites on re-index)
+
+  Why it's shaped this way:
+  - Payload merged into top-level so fields are directly searchable
+  (q=temp:72.5) without nested queries
+  - _iggy_* prefix on metadata avoids field name collisions with user data
+  - simd_json because ES sinks handle massive volumes -- SIMD parsing saves real
+   time
+  - No retry loop because re-indexing the same document just overwrites it. The
+  next poll cycle handles failures
+  - Uses now() timestamp (indexing time) not message timestamp -- optimized for
+  "when did we learn about this?" which is ES's typical use case
+
+  ---
+  Same Message, Three Representations
+
+   Iggy message: offset=1000, payload={"temp": 72.5}
+
+   POSTGRES ROW              MONGODB DOCUMENT          ES DOCUMENT
+   ┌──────────────┐         ┌─────────────────┐       ┌─────────────────┐
+   │id: 42 (DEC)  │         │_id: "s:t:0:42"  │       │temp: 72.5       │
+   │iggy_offset:  │         │iggy_offset: 1000│       │_iggy_offset:1000│
+   │  1000        │         │iggy_timestamp:  │       │_iggy_stream:"s" │
+   │payload:      │         │  ISODate(...)   │       │_iggy_topic:"t"  │
+   │  JSONB column│         │payload:         │       │                 │
+   │              │         │  {temp: 72.5}   │       │(payload MERGED  │
+   │(separate col)│         │(embedded doc)   │       │ into top level) │
+   └──────────────┘         └─────────────────┘       └─────────────────┘
+
+  ---
+  The Comparison Table
+
+   Aspect          │ Postgres        │ MongoDB         │ Elasticsearch
+   ────────────────┼─────────────────┼─────────────────┼──────────────
+   Write op        │ Multi-row INSERT│ insert_many     │ _bulk NDJSON
+   Dup handling    │ PK fails batch  │ Counted+forgiven│ Overwrite
+   Retry           │ Exp. backoff    │ Exp. backoff    │ None (idempotent)
+   Payload storage │ Separate column │ Embedded in doc │ Merged top-level
+   ID strategy     │ DECIMAL(39,0)   │ String composite│ Auto-generated
+   Timestamp       │ microsecond     │ millisecond     │ millisecond (now)
+   JSON parser     │ serde_json      │ serde_json      │ simd_json (fast)
+   u128 handling   │ Cast to numeric │ Int64→String    │ N/A (JSON number)
+   ordered(false)? │ N/A (atomic)    │ YES (critical)  │ N/A (per-item)
+
+  The code is shaped by the physics of each target system. Postgres needs typed
+  columns and transactions. MongoDB needs BSON overflow guards and unordered
+  writes. Elasticsearch needs flat searchable documents and SIMD-fast parsing.
+
+  Want me to dig into the FFI boundary, the transform pipeline, or the Postgres
+  CDC source connector?
+
+✻ Sautéed for 5m 57s
+
+❯ Do you mean once something is in journal but is being written to disk - it is 
+ SHOWN as a copy in in-flight buffer - just so that queries to it are NOT       
+missing? which means the moment it gets written into the disk some piece of     
+code ensures that it is no longer part of in-flight buffer                      
+
+⏺ Yes, exactly right. The sequence is:
+
+   1. journal.commit()          → data LEAVES journal (std::mem::take)
+   2. batch.freeze()            → mutable buffer → immutable Bytes (Arc)
+   3. set_in_flight(frozen)     → data VISIBLE in in-flight buffer
+   4. writev() to .log + .index → async disk write happens
+   5. clear_in_flight()         → data REMOVED from in-flight buffer
+
+  The in-flight buffer exists solely to prevent a visibility gap:
+
+   WITHOUT in-flight:
+     journal.commit() → data gone from journal
+     disk write...    → not on disk yet
+     consumer polls   → WHERE IS IT? NOWHERE. Lost.
+
+   WITH in-flight:
+     journal.commit() → data gone from journal
+     set_in_flight()  → data visible HERE
+     disk write...    → happening in background
+     consumer polls   → found in in-flight! Served.
+     clear_in_flight()→ now consumer reads from disk
+
+  Step 3 happens BEFORE step 4. Step 5 happens AFTER step 4 completes. So there
+  is never a moment where the data is invisible. The freeze() call makes it an
+  Arc-counted Bytes object -- the in-flight buffer and the disk writer both hold
+   references to the same memory, zero copies.
+
+❯ @"eli5-ascii-explainer (agent)" the design decision for this 3 zones thing -  
+where is the precedence from - check ghcli for comments that might be there     
+when this was implemented - or in the industry -- also explain this at code     
+level                                                                           
+
+⏺ eli5-ascii-explainer(ELI5 three-tier design precedence and code)
+  ⎿  Done (40 tool uses · 72.1k tokens · 1h 49m 11s)
+  (ctrl+o to expand)
+
+⏺ The Three-Tier Design: Where It Came From and How It Works in Code
+
+  It Was Born From a Bug
+
+  The in-flight buffer was not planned from the start. It was created to fix a
+  production visibility gap, discovered in PR #2575:
+
+  fix(server): maintain message availability during async disk I/O (#2575)
+
+  Messages were temporarily unreadable after journal commit but
+  before disk write completed.
+
+  The original two-tier system (journal + disk) had a fatal window:
+
+   BEFORE THE FIX (two tiers, broken):
+
+   journal.commit() → journal EMPTY
+   disk write starts → disk NOT READY YET
+
+   Consumer polls → NOWHERE TO FIND THE DATA → empty response
+
+  ---
+  Industry Precedent: LSM-Tree's Immutable Memtable
+
+  The closest match is the LSM-tree pattern (RocksDB, LevelDB, Cassandra):
+
+    LSM-TREE (RocksDB)              IGGY PARTITION
+   ┌────────────────────┐    ┌────────────────────┐
+   │  Active Memtable   │    │  Journal            │
+   │  (mutable, newest) │    │  (mutable, newest)  │
+   ├────────────────────┤    ├────────────────────┤
+   │  Immutable         │    │  In-Flight Buffer   │
+   │  Memtable          │    │  (frozen, Arc-backed│
+   │  (frozen, pending  │    │   pending disk)     │
+   │   flush to L0)     │    │                     │
+   ├────────────────────┤    ├────────────────────┤
+   │  SSTable files     │    │  Segment files      │
+   │  (on disk)         │    │  (.log + .index)    │
+   └────────────────────┘    └────────────────────┘
+
+   READ: memtable → imm → SSTables
+   READ: journal → in-flight → segments
+
+  Invented by Patrick O'Neil et al. (1996), refined by Google Bigtable (2006),
+  popularized by LevelDB (2011) and RocksDB (2012).
+
+  ---
+  The Actual Code (with file:line references)
+
+  Step 1: Drain journal — journal.rs:127
+  fn commit(&mut self) -> Self::Container {
+      self.inner.base_offset = self.inner.current_offset + 1;
+      self.inner.messages_count = 0;
+      std::mem::take(&mut self.batches)  // ← O(1) pointer swap
+  }
+
+  Step 2: Freeze — messages_batch_mut.rs:277
+  pub fn freeze(&mut self) -> IggyMessagesBatch {
+      let indexes = self.indexes.freeze();
+      let messages = self.messages.freeze();  // PooledBuffer → Arc<Bytes>
+      IggyMessagesBatch::new(indexes, messages, self.count())
+  }
+
+  Step 3: Park in in-flight — in_flight.rs:46
+  pub fn set(&mut self, batches: Vec<IggyMessagesBatch>) {
+      self.first_offset = batches.first().and_then(|b| b.first_offset());
+      self.last_offset = batches.last().and_then(|b| b.last_offset());
+      self.batches = batches;
+  }
+
+  Step 4: Write to disk + Step 5: Clear — messages.rs:421-529
+  // Park clones for readers (step 3)
+  partition.log.set_in_flight(frozen.clone());  // Arc refcount++
+
+  // Write SAME bytes to disk (step 4)
+  persist_frozen_batches_to_disk(frozen_batches).await?;
+
+  // Remove from in-flight (step 5)
+  partition.log.clear_in_flight();
+
+  The three-tier read — ops.rs:183-242
+  // Phase 1: DISK
+  if current < in_memory_floor { load_messages_from_disk(...) }
+
+  // Phase 2: IN-FLIGHT
+  if current >= in_flight_first && current <= in_flight_last {
+      in_flight.get_by_offset(current, count)
+  }
+
+  // Phase 3: JOURNAL
+  if current >= journal_first_offset {
+      journal.get(|batches| batches.get_by_offset(current, remaining))
+  }
+
+  ---
+  The Iggy Twist: No Locks Needed
+
+  RocksDB needs mutexes for its immutable memtable because multiple threads
+  access it. Iggy runs on a single-threaded compio shard, so no locks on the hot
+   path:
+
+   ops.rs:24-36 (actual comment):
+
+   // The snapshot-then-read pattern is safe only under
+   // single-threaded shard execution (compio runtime).
+   // No other shard request can mutate the partition
+   // between snapshot and reads.
+
+  ---
+  Git Archaeology: The Commits That Built This
+
+  ┌───────────────────┬───────────────────────────────────────────────────┐
+  │      Commit       │                       What                        │
+  ├───────────────────┼───────────────────────────────────────────────────┤
+  │ a53a4ed3d (#2575) │ Birth of in-flight buffer -- fixed visibility gap │
+  ├───────────────────┼───────────────────────────────────────────────────┤
+  │ f5f9bb51c (#2578) │ Extended fix to background message_saver          │
+  ├───────────────────┼───────────────────────────────────────────────────┤
+  │ 298cd3282 (#2958) │ Fixed three-tier traversal itself (issue #2715)   │
+  └───────────────────┴───────────────────────────────────────────────────┘
+
+  The integration test read_during_persistence_scenario.rs is a targeted
+  race-condition detector that asserts every poll returns complete data even
+  during async disk writes.
+
+✻ Worked for 4m 3s
+
+❯   └──────────────────┬──────────────────────────┘                             
+                      │  poll_messages (TCP)                                    
+Why did Apache Iggy probably choose `pole_messages` with a TCP instead of using 
+ a wire protocol, and also compare this decision against other competitors like 
+ Kafka? I also want you to use `GHCLI` to check out the comments when this      
+particular decision was being made or the commit was being committed, so that   
+we can know the origin or the story of the evolution of `pole_messages` to be   
+TCP. There must be some GitHub discussions, or there must be comments in the    
+commits, or so on and so forth.                                                 
+
+⏺ eli5-ascii-explainer(Research TCP protocol design decisions)
+  ⎿  Done (63 tool uses · 88.3k tokens · 7m 19s)
+  (ctrl+o to expand)
+
+⏺ Why Iggy Uses Custom Binary TCP (And Its Origin Story)
+
+  The Surprise: It Started With QUIC, Not TCP
+
+  Git archaeology reveals Iggy did NOT start with TCP:
+
+   TIMELINE (from earliest commits):
+
+   5fe989e5  "init"
+       │     Binary protocol from day one. No HTTP. No JSON.
+       v
+   86e28397  "Added basic samples for QUIC protocol"
+       │     QUIC was the FIRST transport!
+       v
+   a2de826c  "Added TCP transport to server"
+       │     TCP came SECOND. Shared binary codec extracted.
+       v
+   876f547c  "Implement SDK for TCP, QUIC and HTTP" (#779)
+       │     HTTP added THIRD, as a convenience layer.
+       v
+   4f9429f1  "feat: implement zero-copy message handling" (#1679)
+       │     Messages now flow disk → wire with no copies.
+       v
+   fd1b5d61  "Add WebSocket server support" (#2250)
+             Fourth transport. Same binary codec underneath.
+
+  The binary protocol was always the source of truth -- transports are just 
+  pipes.
+
+  ---
+  What Actually Goes Over the Wire
+
+   IGGY BINARY TCP: 8 bytes framing overhead
+
+   REQUEST:  [length:4 LE][code:4 LE][payload: ~38 bytes]
+   RESPONSE: [status:4 LE][length:4 LE][messages: raw bytes from disk]
+
+   Total poll_messages request: ~46 bytes
+
+
+   HTTP/REST: ~400-600 bytes overhead (same server!)
+
+   GET /streams/1/topics/1/messages?consumer.kind=consumer
+     &consumer.id=1&strategy.kind=offset&strategy.value=0
+     &count=100&auto_commit=false
+   Host: localhost:3000
+   Authorization: Bearer eyJ...
+   Accept: application/json
+
+  ---
+  The Zero-Copy Magic (Why Binary Wins)
+
+   BINARY TCP PATH:                    HTTP PATH (same server!):
+
+   Disk: [64B hdr][payload]            Disk: [64B hdr][payload]
+         │                                   │
+         │ read into buffer                  │ read into buffer
+         v                                   v
+   write_vectored_all()                Deserialize → Rust structs  (COPY 1)
+   to TCP socket directly                   │
+         │                             serde_json::to_string()     (COPY 2)
+         │ SAME BYTES as disk                │
+         v                             base64 encode payloads      (BLOAT)
+   Client receives                           │
+                                       HTTP headers + JSON body
+   0 copies                                  │
+   0 allocations                       Client receives
+   ~0.6 us overhead
+                                       2 copies + allocations
+                                       ~30-80 us overhead
+
+  The on-disk byte layout IS the on-wire byte layout IS the in-memory layout.
+  One format everywhere.
+
+  ---
+  Iggy vs Kafka vs Others
+
+                   Iggy          Kafka         RabbitMQ      gRPC
+   ───────────     ──────        ──────        ────────      ────
+   Protocol        Custom bin    Custom bin    AMQP 0-9-1    HTTP/2+PB
+   Framing         8 bytes       12+ bytes     8 bytes       ~50 bytes
+   Byte order      Little-end    Big-endian    Mixed         varint
+                   (x86 native)  (Java native)
+   Zero-copy       YES           YES*          No            No
+   Correlation ID  None (FIFO)   Yes (4B)      Yes (channel) Stream mux
+   Disk=Wire       YES           Mostly        No            No
+
+  Kafka and Iggy made the same fundamental bet: raw bytes on a persistent TCP
+  connection beat everything else when the hot path is "move bytes from disk to
+  network."
+
+  Key differences:
+  - Iggy uses little-endian (x86/ARM native, zero byte-swap). Kafka uses
+  big-endian (Java native, must swap on x86)
+  - Iggy has no correlation ID -- requests are strict FIFO, Nth response = Nth
+  request. Saves 4B per request and simplifies the client
+  - Iggy aligns disk and wire format exactly. Kafka mostly does too, but with
+  big-endian encoding
+
+  ---
+  GitHub Community Evidence
+
+  From actual GitHub discussions:
+
+  - Discussion #989 (AMQP): Creator responded: "AMQP is a message queueing
+  protocol while Iggy is a message stream"
+  - Discussion #6 (Kafka compat): PR #3038 is actively adding Kafka wire
+  protocol as an adapter layer
+  - Discussion #1602 (Arrow format): Community interest in pushing zero-copy
+  further
+  - No gRPC discussion exists: The community implicitly agrees gRPC adds
+  unnecessary overhead for a streaming hot path
+  - PR #2360 (Wireshark dissector): Confirms the binary protocol is identical
+  between TCP and QUIC
+
+  ---
+  The Bottom Line
+
+   Factor              Binary TCP   HTTP/REST   gRPC
+   ──────              ──────────   ─────────   ────
+   Framing overhead    8 bytes      ~400 bytes  ~50B
+   Zero-copy possible  YES          No          No
+   Serde cost          ~0           ~20-50 us   ~10 us
+   Memory allocs       0 on poll    2+ copies   1+
+   Disk/wire aligned   YES          No          No
+   Browser support     No           Yes         Yes*
+   Debug with curl     No           Yes         No
+
+  HTTP exists for convenience (admin tools, curl debugging). Binary TCP exists
+  for performance. Both share the same server and handlers -- they just differ
+  in how bytes get wrapped for the network.
+
+✻ Worked for 8m 29s
+
+❯ /export                                                                       
+  ⎿  Conversation exported to:
+     /Users/amuldotexe/Desktop/notebook-gh/hogwarts202603/research20250315/iggy/
+     2026-04-01-230339-local-command-caveatcaveat-the-messages-below-w.txt
