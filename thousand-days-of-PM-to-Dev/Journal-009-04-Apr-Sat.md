@@ -261,3 +261,12 @@ git log --all -- fileA.rs fileB.rs
 Learning a large codebase is not a reading problem — it is a mental-model-building problem. The highest-leverage investments are: starting with product understanding and architecture documents before touching code; using the git history as a first-class source of intent and rationale; constructing visual dependency and call graphs to externalize what working memory cannot hold; running code through a debugger rather than only reading it; picking up small tasks to force engagement with real execution paths; pairing with domain experts to transfer tacit knowledge quickly; and — in 2025–2026 — leveraging AI coding assistants like Cursor and Sourcegraph Cody for cross-referential queries at scale. The goal is not omniscience but navigational fluency: the ability to rapidly locate, understand, and modify any piece of the system as tasks demand.[2][1][6]
 
 ```
+
+# Parseltongue Ideation 01
+
+``` text
+
+https://github.com/dmtrKovalenko/fff.nvim
+
+
+```
