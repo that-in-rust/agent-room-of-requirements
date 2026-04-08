@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture GitHub Repo Context"
+  short_description: "Harvest repo history and discussion context"
+  default_prompt: "Use $capture-github-repo-context to collect commit history, PR and issue conversations, discussion threads, and a source-linked Markdown digest for this GitHub repository."
