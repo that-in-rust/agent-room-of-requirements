@@ -72,6 +72,8 @@ def repo_summary(root: Path, manifest: dict[str, Any]) -> str:
 
     if manifest.get("since"):
         lines.append(bullet(f"Since filter: `{manifest['since']}`"))
+    if manifest.get("max_pages") is not None:
+        lines.append(bullet(f"Page cap per paginated surface: `{manifest['max_pages']}`"))
 
     lines.extend(
         [

@@ -32,6 +32,8 @@ Use GitHub CLI as the primary read-only interface for harvesting repository hist
 - Single commit
 - Single discussion
 
+For large repositories, start with a bounded repo survey and widen only if the user explicitly wants deeper capture.
+
 3. Pick the right GHCLI surface.
 - Use high-level `gh` commands for orientation and small focused views.
 - Use `gh api` REST endpoints for exhaustive list capture and pagination.
@@ -67,6 +69,7 @@ Use this bias by default:
 ## Use The Bundled Scripts
 
 - Use [collect_repo_context.sh](scripts/collect_repo_context.sh) for repo-wide snapshots.
+- The repo-wide collector defaults to a bounded page cap so surveys stay practical on large repositories; raise `--max-pages` or set it to `0` only when the user wants a broader crawl.
 - Use [collect_artifact_context.sh](scripts/collect_artifact_context.sh) for a focused commit, PR, issue, or discussion trace.
 - Use [render_repo_context_digest.py](scripts/render_repo_context_digest.py) to turn captured JSON into a Markdown digest.
 
@@ -78,6 +81,7 @@ Use this bias by default:
 - Do not assume Discussions are available; check `hasDiscussionsEnabled`.
 - Do not promise a perfect “entire repo conversation history” if permissions, rate limits, or pagination boundaries prevent it.
 - Do not default to repo-wide timeline harvesting; use focused traces for issue and PR timelines.
+- Do not default to unlimited repo-wide pagination on very large repositories; start bounded and expand intentionally.
 - Do not scrape the website when GHCLI and official APIs already cover the task.
 
 ## Output Contract

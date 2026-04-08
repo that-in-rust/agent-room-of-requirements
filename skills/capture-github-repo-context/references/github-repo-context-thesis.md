@@ -97,6 +97,8 @@ The default mode should never create comments, reviews, edits, or mutations.
 
 The skill should prefer canonical list and detail endpoints over lossy shortcuts. Search is helpful for discovery, but not a complete substitute for list endpoints.
 
+For very large repositories, practical collection should start with a bounded survey mode and only widen on demand. Exhaustiveness remains the ideal, but bounded-first collection is the safer default for interactive use.
+
 ### 3. Provenance
 
 Every digest should say what was queried, what was skipped, and where the facts came from.

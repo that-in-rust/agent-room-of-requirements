@@ -23,6 +23,7 @@ The final digest should help a teammate answer:
 - capture type
 - collection time
 - since filter, if any
+- page cap, if used
 
 2. `Surfaces Queried`
 - commits
