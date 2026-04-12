@@ -23,6 +23,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Emit machine-readable JSON instead of plain text",
     )
+    parser.add_argument(
+        "--editorial",
+        action="store_true",
+        help="Check for composed-page heuristics such as spacing and separate prose or diagram zones",
+    )
     return parser.parse_args()
 
 
@@ -31,6 +36,37 @@ def read_text(path_arg: str) -> tuple[str, str]:
         return sys.stdin.read(), "<stdin>"
     path = Path(path_arg).expanduser().resolve()
     return path.read_text(encoding="utf-8"), str(path)
+
+
+def split_blocks(lines: list[str]) -> list[list[str]]:
+    blocks: list[list[str]] = []
+    current: list[str] = []
+
+    for line in lines:
+        if line.strip():
+            current.append(line)
+            continue
+
+        if current:
+            blocks.append(current)
+            current = []
+
+    if current:
+        blocks.append(current)
+
+    return blocks
+
+
+def line_has_connector(line: str) -> bool:
+    connector_tokens = ("+--", "-->", "<--", "->", "<-", "|", "/", "\\")
+    stripped = line.strip()
+    return any(token in line for token in connector_tokens) or stripped in {"v", "^"}
+
+
+def block_has_prose(block: list[str]) -> bool:
+    has_letters = any(any(ch.isalpha() for ch in line) for line in block)
+    has_connector = any(line_has_connector(line) for line in block)
+    return has_letters and not has_connector
 
 
 def main() -> int:
@@ -43,8 +79,7 @@ def main() -> int:
     if not lines:
         issues.append({"line": 0, "kind": "empty", "message": "diagram is empty"})
 
-    connector_chars = set("+-|/\\<>^v")
-    has_connector = any(any(ch in connector_chars for ch in line) for line in lines)
+    has_connector = any(line_has_connector(line) for line in lines)
     if lines and not has_connector:
         issues.append(
             {
@@ -83,6 +118,48 @@ def main() -> int:
                             "message": f"non-ASCII character {ch!r} found",
                         }
                     )
+
+    if args.editorial and lines:
+        blank_line_count = sum(1 for line in lines if not line.strip())
+        blocks = split_blocks(lines)
+        has_prose_block = any(block_has_prose(block) for block in blocks)
+        has_diagram_block = any(any(line_has_connector(line) for line in block) for block in blocks)
+
+        if len(lines) >= 10 and blank_line_count < 2:
+            issues.append(
+                {
+                    "line": 0,
+                    "kind": "composition",
+                    "message": "editorial mode expects more whitespace between sections",
+                }
+            )
+
+        if len(blocks) < 2:
+            issues.append(
+                {
+                    "line": 0,
+                    "kind": "composition",
+                    "message": "editorial mode expects at least two visual blocks separated by blank lines",
+                }
+            )
+
+        if not has_prose_block:
+            issues.append(
+                {
+                    "line": 0,
+                    "kind": "setup",
+                    "message": "editorial mode expects at least one prose or glossary block outside the diagram body",
+                }
+            )
+
+        if not has_diagram_block:
+            issues.append(
+                {
+                    "line": 0,
+                    "kind": "diagram_zone",
+                    "message": "editorial mode expects at least one block that uses box or connector characters",
+                }
+            )
 
     result = {
         "source": source,

@@ -14,6 +14,8 @@
 - Is the reading direction obvious?
 - Does the diagram still make sense in raw plain text?
 - Is it ASCII-only, unless the user explicitly asked for Unicode?
+- Does the page feel composed, not dumped?
+- Is there enough whitespace for the eye to rest?
 
 ## Layout Checks
 
@@ -23,6 +25,8 @@
 - Minimize connector crossings.
 - Prefer whitespace over visual clutter.
 - Split the diagram if a single figure is carrying too much meaning.
+- If there is prose plus a diagram, give each its own visual zone.
+- If there are repeated concepts, align them as a row or column instead of staggering them.
 
 ## Label Checks
 
@@ -30,6 +34,7 @@
 - Put actions on arrows when possible.
 - Avoid repeating the same word in every node.
 - Add a legend only when abbreviations or symbols would otherwise confuse the reader.
+- If a side note exists, keep it shorter than the line it annotates.
 
 ## Failure Modes
 
@@ -41,6 +46,8 @@ These are common bad outcomes:
 - one label floats between two possible arrows
 - a wide diagram wraps in Markdown or terminal output
 - decorative ASCII art overwhelms the meaning
+- the whole page is one dense blob with no hierarchy
+- the diagram explains nothing without surrounding prose, or the prose duplicates the diagram completely
 
 ## Finish Criteria
 
@@ -51,3 +58,4 @@ A diagram is ready when:
 - the labels are short and specific
 - the layout does not collapse when copied into plain text
 - a validator pass finds no ASCII, tab, trailing-space, or width violations
+- the composition still feels deliberate when viewed as a full page

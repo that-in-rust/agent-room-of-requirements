@@ -7,7 +7,8 @@
 3. Sequence diagram
 4. Tree diagram
 5. Comparison grid
-6. Pattern selection rules
+6. Card strip
+7. Pattern selection rules
 
 ## System Map
 
@@ -131,6 +132,27 @@ Good for:
 - before/after snapshots
 - feature matrices
 
+## Card Strip
+
+Use this when several concepts should feel like a coordinated gallery instead of a generic table.
+
+```text
++-------------+  +-------------+  +-------------+
+| In-Memory   |  | Frozen      |  | Persisted   |
+|             |  |             |  |             |
+|   [data]    |  |   [data]    |  |   [data]    |
+|             |  |             |  |             |
+| writable    |  | readable    |  | durable     |
+| hot path    |  | shared      |  | on disk     |
++-------------+  +-------------+  +-------------+
+```
+
+Good for:
+
+- visual metaphors
+- ownership or tier comparisons
+- compact concept galleries
+
 ## Pattern Selection Rules
 
 - If topology matters, use `System Map`.
@@ -138,5 +160,6 @@ Good for:
 - If multiple actors exchange messages, use `Sequence Diagram`.
 - If hierarchy matters, use `Tree Diagram`.
 - If tradeoffs matter, use `Comparison Grid`.
+- If repeated concepts should read like a gallery, use `Card Strip`.
 
 When one diagram tries to do two of these jobs at once, split it.
