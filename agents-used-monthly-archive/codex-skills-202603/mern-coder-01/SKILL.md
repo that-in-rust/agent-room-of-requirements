@@ -25,6 +25,7 @@ Keep this skill lightweight: load only the relevant sections from `references/do
 
 - Validate `req.body`, `req.params`, and `req.query` at the server edge.
 - Treat client validation as UX help, not a trust boundary.
+- Keep shared DTOs, validation schemas, and API contracts in a shared layer when the repo has both client and server code.
 - Use TanStack Query for server state and keep client-only UI state separate.
 - Centralize Express async error handling.
 - Prefer `load -> mutate -> save()` for document behavior.
@@ -34,6 +35,7 @@ Keep this skill lightweight: load only the relevant sections from `references/do
 - Use deterministic sorts and range or cursor pagination for growing collections.
 - Rate-limit auth routes and use memory-hard password hashing.
 - Add request correlation ids and graceful shutdown behavior to production services.
+- Keep entity types, DTOs, and API response wrappers distinct instead of reusing one shape everywhere.
 
 ## Reference Map
 
@@ -53,6 +55,8 @@ Read these sections from `references/doctrine.md` based on the task:
   Use for password hashing, idempotency, auth throttling, and retry strategy.
 - `Operational MERN Defaults for LLMs`
   Use as the shortest end-to-end playbook for shaping new endpoints safely.
+- `Practical MERN Baseline`
+  Use when the repo has a shared types layer or the task touches DTO boundaries and response-envelope consistency.
 - `Patterns Intentionally Excluded` and `Anti-Patterns to Avoid`
   Read before adopting convenience patterns that look attractive but weaken reliability.
 

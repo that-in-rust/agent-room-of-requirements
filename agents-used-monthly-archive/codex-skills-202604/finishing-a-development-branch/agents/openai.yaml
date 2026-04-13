@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finishing A Development Branch"
+  short_description: "Commit, push, publish, or close out a finished branch"
+  default_prompt: "Use $finishing-a-development-branch to verify this work, carry out the requested commit or push path, and leave a concise next-step handoff after the branch is saved."

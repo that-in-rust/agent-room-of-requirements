@@ -46,6 +46,10 @@ Assume the reader is either:
 - Layer 2: short story version
 - Layer 3: concrete rules or examples
 
+If the user wants a visual terminal-native companion, pair this skill with `craft-ascii-diagram-layouts`:
+- this skill owns the plain-English teaching arc
+- `craft-ascii-diagram-layouts` owns the monospaced page composition
+
 4. Preserve what is source-specific.
 - If the source claims numbers like `67% faster` or `90% fewer bugs`, present them as claims from the source notes unless independently verified.
 - Keep facts separate from interpretation.
@@ -108,6 +112,7 @@ Why? The better name tells you:
 - Do not repeat hype claims as universal truth.
 - Do not drown the reader in jargon.
 - Do not explain every detail from the source; keep only the details that unlock understanding.
+- Do not default to ASCII diagrams unless the user wants a visual explainer or the layout would clearly help.
 
 ## Done Check
 

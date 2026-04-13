@@ -78,7 +78,13 @@ If the page needs curved lines, dense graph topology, or visual polish beyond ra
 - Keep side notes shorter than the line they annotate.
 - Let prose set up the diagram instead of narrating every line after it.
 
-6. Review the full scroll.
+6. Use a layered teaching cadence when explaining a concept.
+- Start with the essence in one sentence and one small figure.
+- Then expand into key parts with one focused panel each.
+- Only then add the mechanism trace or deeper walkthrough.
+- Keep each deeper section visually related to the earlier one instead of redrawing from scratch in a totally different grammar.
+
+7. Review the full scroll.
 - Check that each screenful has a coherent purpose.
 - Remove any section that repeats the previous one without adding a new angle.
 - Run [check_ascii_diagram_quality.py](scripts/check_ascii_diagram_quality.py) with `--editorial` when working from a file.
@@ -105,6 +111,7 @@ If the page needs curved lines, dense graph topology, or visual polish beyond ra
 - Use [ASCII diagram pattern library](references/ascii-diagram-pattern-library.md) to choose a layout and copy a fitting skeleton.
 - Use [ASCII diagram review checklist](references/ascii-diagram-review-checklist.md) to catch readability problems before finishing.
 - Use [check_ascii_diagram_quality.py](scripts/check_ascii_diagram_quality.py) to validate ASCII-only output, tabs, trailing whitespace, width, prose width, and composed-page heuristics with `--editorial`.
+- If the user also wants plain-English simplification, pair this skill with `explain_ai_native_eli5` and let this skill handle the terminal layout layer.
 
 ## Output Contract
 

@@ -67,6 +67,11 @@ For smaller tasks, compress the same logic into fewer sections.
 - Prefer primary documentation, official publications, research papers, and direct data sources.
 - Include links when the user would benefit from source access.
 
+## Companion Use
+
+- Pair with `timeline-traverser` when the user needs explicit future-state simulations across several choices after the evidence is gathered.
+- Use this skill for the research and thesis work; use `timeline-traverser` for the causal scenario map.
+
 ## Context Strategy
 
 Load progressively:

@@ -1,0 +1,4 @@
+interface:
+  display_name: "TDD Task Progress Context Retainer"
+  short_description: "Track resumable TDD progress with journals"
+  default_prompt: "Use $tdd-task-progress-context-retainer to capture the current RED, GREEN, or REFACTOR state, update a progress journal, and preserve the exact next step for this task."

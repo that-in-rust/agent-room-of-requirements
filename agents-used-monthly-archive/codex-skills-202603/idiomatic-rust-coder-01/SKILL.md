@@ -35,6 +35,7 @@ Use this skill to turn Rust requests into production-ready plans and code constr
 
 5. Enforce naming and module discipline.
 - Use four-word names for new functions and commands when feasible.
+- Apply the same clarity rule to new crates, folders, and top-level commands when renaming or creating new surfaces is practical.
 - Keep modules focused and cohesive.
 - Preserve compatibility when existing public APIs cannot be renamed; add adapters if needed.
 

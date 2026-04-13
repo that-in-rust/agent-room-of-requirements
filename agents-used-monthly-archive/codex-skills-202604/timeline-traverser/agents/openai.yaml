@@ -1,0 +1,4 @@
+interface:
+  display_name: "Timeline Traverser"
+  short_description: "Simulate multiple plausible futures before choosing"
+  default_prompt: "Use $timeline-traverser to map the main decision, build several plausible timelines, and compare their risks, reversibility, and likely lived experience."

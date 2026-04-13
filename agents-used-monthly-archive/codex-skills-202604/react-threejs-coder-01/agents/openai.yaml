@@ -1,0 +1,4 @@
+interface:
+  display_name: "React Threejs Coder 01"
+  short_description: "Build performant React and Three.js visualization UIs"
+  default_prompt: "Use $react-threejs-coder-01 to design or implement this React plus TypeScript plus Three.js visualization with clean state boundaries, scene ownership, and performance-aware rendering."
