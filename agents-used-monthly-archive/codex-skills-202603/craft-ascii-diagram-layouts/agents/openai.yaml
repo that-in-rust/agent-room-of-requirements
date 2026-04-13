@@ -1,4 +1,4 @@
 interface:
   display_name: "Craft ASCII Diagram Layouts"
-  short_description: "Create editorial monospace ASCII explainers"
-  default_prompt: "Use $craft-ascii-diagram-layouts to turn this topic into an editorial monospaced explainer page with a headline, short setup text, aligned sections, and a clean ASCII diagram."
+  short_description: "Create terminal-native ASCII explainers"
+  default_prompt: "Use $craft-ascii-diagram-layouts to turn this topic into a terminal-native ASCII explainer page with a title, short setup text, stable panel widths, and clean vertical sections."

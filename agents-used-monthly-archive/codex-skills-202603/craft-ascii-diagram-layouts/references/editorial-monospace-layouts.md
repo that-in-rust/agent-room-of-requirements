@@ -1,63 +1,60 @@
 # Editorial Monospace Layouts
 
+This reference is for long terminal pages that should feel composed, calm, and teachable in raw ASCII.
+
 ## Table Of Contents
 
-1. What makes the reference style feel better
-2. Pattern: narrated glossary plus card strip
-3. Pattern: layered explainer page
-4. Pattern: sidecar annotations
-5. Composition rules
+1. What terminal references do better
+2. Pattern: glossary plus panels
+3. Pattern: layered walkthrough
+4. Pattern: two-column compare
+5. Pattern: mechanism trace
+6. Pattern: tall variation gallery
+7. Page composition rules
 
-## What Makes The Reference Style Feel Better
+## What Terminal References Do Better
 
-The screenshots are not better because of more lines or more boxes. They are better because they behave like composed pages.
+The strong reference pages are not better because they have fancier symbols. They are better because they:
 
-What is happening:
+- split the explanation into small teachable sections
+- repeat panel sizes and gutters
+- keep prose narrow and calm
+- use the same alignment anchors again and again
+- reveal the system top to bottom instead of forcing horizontal scanning
 
-- a strong headline frames the page
-- one short paragraph prepares the reader
-- aligned definitions create rhythm
-- diagrams sit in clearly separated visual zones
-- whitespace gives the eye places to rest
-- important contrasts are repeated in both prose and visuals
+The goal is not “draw one great diagram.” The goal is “compose one great terminal page.”
 
-This means the skill should build **monospace explainer pages**, not only isolated diagrams.
+## Pattern: Glossary Plus Panels
 
-## Pattern: Narrated Glossary Plus Card Strip
-
-Use this when the user wants a concept explained through a list of aligned definitions and a visual row of examples.
+Use this when the reader needs a quick verbal definition first, then a repeated visual row.
 
 ```text
 ----
-Variation 6: Smart Pointers -- "The book is in a special case"
+Variation 6: Smart Pointers
 
-These are advanced. The book is wrapped in a container that
-provides extra abilities.
+These wrappers change who owns the value and where it can travel.
 
-Box<Self>      = Book in a locked box. One owner.
-Rc<Self>       = Book with a sign-out sheet. Many owners.
-Arc<Self>      = Same idea, but thread-safe.
-Pin<&mut Self> = Book nailed to the table. You can write,
-                 but you cannot move it.
+Box<Self>      = one owner on the heap
+Rc<Self>       = many owners, one thread
+Arc<Self>      = many owners, many threads
+Pin<&mut Self> = writable, cannot move
 
 +-------------+  +-------------+  +-------------+  +-------------+
 | Box<Self>   |  | Rc<Self>    |  | Arc<Self>   |  | Pin<&mut>   |
 |             |  |             |  |             |  |             |
-|   [book]    |  |   [book]    |  |   [book]    |  |   [book]    |
-|             |  |             |  |             |  |             |
-| 1 owner     |  | N owners    |  | N owners    |  | can't move  |
-| on heap     |  | 1 thread    |  | N threads   |  | it          |
+| 1 owner     |  | N owners    |  | N owners    |  | fixed in    |
+| heap        |  | 1 thread    |  | N threads   |  | place       |
 +-------------+  +-------------+  +-------------+  +-------------+
 ```
 
 Use it when:
 
-- the topic has 3 to 6 concepts to compare
-- each concept benefits from both prose and a small visual metaphor
+- the topic has 3 to 6 concepts
+- the reader benefits from both naming and visual repetition
 
-## Pattern: Layered Explainer Page
+## Pattern: Layered Walkthrough
 
-Use this when the user wants staged understanding, where each section reveals the system one level deeper.
+Use this when the explanation should unfold one layer at a time.
 
 ```text
 Level 1: The Essence
@@ -81,50 +78,103 @@ Level 2: The Write Path
 Producer sends batch
     |
     v
-Step 1: append(batch)           <- instant, RAM only
+Step 1: append(batch)           <- RAM only
     |
     v
 Step 2: threshold check
-    |
-  +----+-----------------------------+
-  |NO  |YES                          |
-  v    v                             |
-[wait] Step 3: COMMIT                |
-             |                       |
-             v                       |
-        batch.freeze()               |
-             |                       |
-             v                       |
-        Step 4: PERSIST              |
 ```
 
 Use it when:
 
-- the page has a “first intuition, then mechanism” structure
-- one diagram would become too dense without staged sections
+- the page has “intuition first, mechanism second”
+- one section would otherwise become too dense
 
-## Pattern: Sidecar Annotations
+## Pattern: Two-Column Compare
 
-Use short notes to the right or below the main path when the main flow would become unreadable if the notes lived inline.
+Use this when the point is contrast and the two sides should be scanned together.
 
 ```text
-Step 1: journal.append(batch)        <- RAM only
-Step 2: threshold check              <- decides whether to commit
-Step 3: persist                      <- disk write happens here
+Option A: Read Optimized            Option B: Write Optimized
+
++--------------------+             +--------------------+
+| old data on disk   |             | new data in memory |
+| simpler reads      |             | faster writes      |
+| slower ingestion   |             | more coordination  |
++--------------------+             +--------------------+
+
+Tradeoff:
+- left side reduces moving parts
+- right side reduces write latency
 ```
 
-Rules:
+Use it when:
 
-- keep side notes short
-- align them consistently
-- do not let side notes become a second paragraph stream
+- there are exactly two dominant options
+- the same categories should appear on both sides
 
-## Composition Rules
+## Pattern: Mechanism Trace
 
-- Start with title, then one short setup block.
-- Use blank lines between prose and diagrams.
-- Keep one idea per visual zone.
-- Align repeated structures into rows or columns.
-- Use the same indentation level for peer concepts.
-- If a page has two major sections, label them explicitly.
-- If icons are used, treat them as accents, not structure.
+Use this when one path matters most and notes should sit beside it.
+
+```text
+Producer sends batch
+    |
+    v
+Step 1: journal.append(batch)    <- instant, RAM only
+    |
+    v
+Step 2: threshold check          <- commit if size is large enough
+    |
+    v
+Step 3: batch.freeze()           <- becomes read-safe
+    |
+    v
+Step 4: persist                  <- data reaches disk
+```
+
+Use it when:
+
+- a single sequence carries the explanation
+- annotations matter but should stay short
+
+## Pattern: Tall Variation Gallery
+
+Use this when the page should stack many compact variations down a long scroll.
+
+```text
+Variation 1: Direct Ownership
+
++-------------+
+| owner = one |
+| move = yes  |
++-------------+
+
+Variation 2: Shared Ownership
+
++-------------+
+| owners = N  |
+| thread = 1  |
++-------------+
+
+Variation 3: Shared + Thread-Safe
+
++-------------+
+| owners = N  |
+| thread = N  |
++-------------+
+```
+
+Use it when:
+
+- each variation is small
+- the page should read like an atlas or field guide
+
+## Page Composition Rules
+
+- lead with a title, not a diagram
+- keep prose outside boxes
+- let each section add one new idea
+- keep card widths and gutters stable
+- keep glossary separators aligned
+- use `---` only for real section breaks
+- prefer another section over another column when width gets tight

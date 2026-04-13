@@ -8,7 +8,9 @@
 4. Tree diagram
 5. Comparison grid
 6. Card strip
-7. Pattern selection rules
+7. Two-column compare
+8. Mechanism trace
+9. Pattern selection rules
 
 ## System Map
 
@@ -153,6 +155,45 @@ Good for:
 - ownership or tier comparisons
 - compact concept galleries
 
+## Two-Column Compare
+
+Use this when the main point is contrast between exactly two alternatives.
+
+```text
+Option A                         Option B
+
++------------------+            +------------------+
+| simpler reads    |            | faster writes    |
+| more disk-first  |            | more RAM-first   |
++------------------+            +------------------+
+```
+
+Good for:
+
+- before vs after
+- approach A vs approach B
+- read path vs write path
+
+## Mechanism Trace
+
+Use this when one path should dominate and side notes stay short.
+
+```text
+Step 1: append(batch)           <- RAM only
+    |
+    v
+Step 2: threshold check         <- commit gate
+    |
+    v
+Step 3: persist                 <- disk write
+```
+
+Good for:
+
+- write paths
+- lifecycle explanations
+- commit or state transitions
+
 ## Pattern Selection Rules
 
 - If topology matters, use `System Map`.
@@ -161,5 +202,7 @@ Good for:
 - If hierarchy matters, use `Tree Diagram`.
 - If tradeoffs matter, use `Comparison Grid`.
 - If repeated concepts should read like a gallery, use `Card Strip`.
+- If two alternatives should be scanned together, use `Two-Column Compare`.
+- If one sequence plus short notes should dominate, use `Mechanism Trace`.
 
 When one diagram tries to do two of these jobs at once, split it.
