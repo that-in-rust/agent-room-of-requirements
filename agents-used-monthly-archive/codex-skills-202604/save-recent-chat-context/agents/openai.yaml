@@ -1,0 +1,4 @@
+interface:
+  display_name: "Save Recent Chat Context"
+  short_description: "Create timestamped repo-root chat checkpoint files"
+  default_prompt: "Use $save-recent-chat-context to save the most recent conversation text from this thread into a timestamped Markdown checkpoint file in the current repo root."
