@@ -1,343 +1,314 @@
 # LLM Workflow v01: Work Type Differentiation
 
-> **common-sense Core Insight**: Not all work is the same. Treating a bug fix like a new product is waste. Treating a new product like a bug fix is disaster.
+Not all work deserves the same process.
+The point of this file is to choose the lightest process that still
+protects quality.
 
----
+## Quick Classifier
 
-## Different workflows
+| Work Type | Use it for | PRD | Architecture | TDD | Time |
+| --- | --- | --- | --- | --- | --- |
+| Bug | Something broke | None | None | Fix + regression test | Hours |
+| Enhancement | Small change on existing rails | Light | Light | Yes | Days |
+| Feature | New bounded capability | Yes | Yes | Full | Weeks |
+| Product | New system or unclear scope | Deep | Extensive | Full + spikes | Months |
 
-| Work Type | PRD Needed? | Architecture Iteration? | TDD Depth? | Time |
-|-----------|-------------|------------------------|------------|------|
-| Critical bug in production | No | No | Fix + regression test | Hours |
-| Small enhancement | Minimal | Light | Yes | Days |
-| New feature | Yes | Yes | Full | Weeks |
-| New product/system | Deep | Extensive | Full + Spikes | Months |
-
-**Running a bug through 4 PRD versions is waste.**
-**Running a new system through a quick fix flow is disaster.**
-
----
+Over-process wastes time.
+Under-process builds the wrong thing.
 
 ## Work Type Framework
 
-```mermaid
-flowchart TD
-    Work[Incoming Work] --> Classify{What type?}
-    
-    Classify -->|Something broke| BUG[🔴 Bug]
-    Classify -->|Small improvement<br/>to existing| ENHANCE[🟡 Enhancement]
-    Classify -->|New capability<br/>clear scope| FEATURE[🟢 Feature]
-    Classify -->|New system<br/>unclear scope| PRODUCT[🔵 Product]
-    
-    BUG --> BugFlow[Bug Flow<br/>Diagnose → Fix → Verify]
-    ENHANCE --> EnhanceFlow[Enhancement Flow<br/>Light PRD → TDD]
-    FEATURE --> FeatureFlow[Feature Flow<br/>Full PRD → ARCH → TDD]
-    PRODUCT --> ProductFlow[Product Flow<br/>Discovery → PRD → ARCH → Spikes → TDD]
+```text
+Classify before you load process.
+
+Incoming work
+     |
+     v
+What type?
+     |
+     +--> something broke            --> Bug flow
+     +--> small improvement          --> Enhancement flow
+     +--> new capability, clear      --> Feature flow
+     +--> new system, unclear        --> Product flow
+
+Pick the lightest safe route.
 ```
 
----
+## Flow 1: Bug Flow (Hours)
 
-## Flow 1: 🔴 Bug Flow (Hours)
+Use this when something that used to work no longer works.
 
-**Trigger**: Something that worked before is now broken.
+```text
+Follow the shortest safe repair loop.
 
-**common-sense principle**: *"Don't gold-plate bug fixes. Fix it, add a regression test, move on."*
+[Reproduce] -> [Diagnose] -> [Write test]
+                               |
+                               v
+                             [Fix]
+                               |
+                               v
+                            [Verify]
+                               |
+                               v
+                    [Update anti-patterns]
 
-```mermaid
-flowchart TD
-    subgraph BUG["🔴 Bug Flow"]
-        Reproduce[1. Reproduce<br/>Can you make it fail?] --> Diagnose[2. Diagnose<br/>Find root cause]
-        Diagnose --> WriteTest[3. Write Failing Test<br/>Test that captures the bug]
-        WriteTest --> Fix[4. Fix<br/>Minimal change to pass test]
-        Fix --> Verify[5. Verify<br/>Run full test suite]
-        Verify --> UpdateAnti[6. Update Anti-Patterns<br/>Why did this happen?]
-    end
-    
-    BugReport[Bug Report<br/>───────────────────<br/>Steps to reproduce<br/>Expected vs actual<br/>Environment details] -.-> Reproduce
-    
-    AntiPatterns[Anti-Pattern Registry<br/>───────────────────<br/>Add: What caused this?<br/>Add: How to prevent?] -.-> UpdateAnti
+End with a regression and a note.
 ```
 
-**Reference files needed**:
+**Default steps**
 
-- `S07-anti-patterns-registry.md` — Update after fix
-- `C03-test-inventory.md` — Where to add regression test
+1. Reproduce the bug.
+2. Find the root cause.
+3. Write the regression test first.
+4. Make the smallest fix that passes.
+5. Run the relevant checks.
+6. Record why it slipped through.
 
-**NOT needed**: PRD, Architecture iteration, Spike
+**Load these files**
 
-**Key questions**:
+- `S07-anti-patterns-registry.md`
+- `C03-test-inventory.md`
 
-1. Can I reproduce it? (If no, get more info)
-2. What's the minimal test that captures this?
-3. What's the minimal fix?
-4. Why did this slip through? (Update anti-patterns)
+**Do not load by default**
 
----
+- PRD files
+- architecture exploration
+- spikes
 
-## Flow 2: 🟡 Enhancement Flow (Days)
+## Flow 2: Enhancement Flow (Days)
 
-**Trigger**: Small improvement to existing functionality. Scope is clear. No new systems.
+Use this when the work extends an existing pattern instead of creating
+a new one.
 
-**common-sense principle**: *"Enhancements should ride existing rails. If you're building new rails, it's a feature."*
+```text
+Use this when the rails already exist.
 
-```mermaid
-flowchart TD
-    subgraph ENHANCE["🟡 Enhancement Flow"]
-        Scope[1. Scope Check<br/>Does this fit existing patterns?] --> LightPRD[2. Light PRD<br/>One paragraph: What + Why + Done]
-        LightPRD --> FindExisting[3. Find Existing Patterns<br/>What similar code exists?]
-        FindExisting --> TDD[4. TDD<br/>Standard Red-Green-Refactor]
-        TDD --> Review[5. Quick Review<br/>Self-check + PR]
-    end
-    
-    Scope -->|No, needs new patterns| Escalate[Escalate to Feature Flow]
-    
-    ExistingCode[CONTEXT: Existing Patterns<br/>───────────────────<br/>Similar features in codebase<br/>Interfaces to extend<br/>Tests to mirror] -.-> FindExisting
-    
-    LightPRDTemplate[Light PRD Template<br/>───────────────────<br/>WHAT: One sentence<br/>WHY: User benefit<br/>DONE WHEN: Acceptance criteria<br/>NOT: What we're not doing] -.-> LightPRD
+[Scope check] -> [Light PRD] -> [Find pattern]
+                                   |
+                                   v
+                                 [TDD]
+                                   |
+                                   v
+                                [Review]
+
+If new rails are needed, move to Feature Flow.
 ```
 
-**Reference files needed**:
+**Default steps**
 
-- `C01-dependency-graph.md` — Find similar patterns
-- `C02-existing-interfaces.md` — What to extend
-- `S08-idiomatic-patterns.md` — Match existing style
+1. Confirm the change fits existing rails.
+2. Write a short PRD.
+3. Find the closest prior example in the codebase.
+4. Use TDD.
+5. Review quickly and ship.
 
-**NOT needed**: Deep PRD iteration, Architecture exploration, Spikes
+**Load these files**
 
-**Key questions**:
-
-1. Does similar code already exist? (Copy the pattern)
-2. What interface am I extending? (Not creating)
-3. What existing test can I mirror?
-
-**The "Rails Test"**: If you can describe the change as "do X like we do Y", it's an enhancement. If you can't find a Y, it's a feature.
-
----
-
-## Flow 3: 🟢 Feature Flow (Weeks)
-
-**Trigger**: New capability with clear scope. Requires new code but scope is bounded.
-
-**common-sense principle**: *"Features need enough process to prevent mistakes, not so much that you prevent progress."*
-
-```mermaid
-flowchart TD
-    subgraph FEATURE["🟢 Feature Flow"]
-        PRDv1[1. PRDv1<br/>User journey focus] --> PRDv2[2. PRDv2<br/>Architecture-aware]
-        PRDv2 --> PRDv3[3. PRDv3<br/>Minimized]
-        PRDv3 --> ARCH1[4. ARCHv1<br/>Initial design]
-        ARCH1 --> ARCH2[5. ARCHv2<br/>Varied + Rubber-ducked]
-        ARCH2 --> ARCH3[6. ARCHv3<br/>Anti-pattern filtered]
-        ARCH3 --> TDD[7. TDD<br/>Full cycle]
-        TDD --> Review[8. Review<br/>Self + Peer]
-        Review --> Ship[9. Ship + Observe]
-    end
-    
-    %% Co-evolution
-    ARCH2 -.->|Simpler arch?| PRDv2
-    
-    UserContext[CONTEXT: User Journey] -.-> PRDv1
-    DepGraph[CONTEXT: Dependency Graph] -.-> PRDv2
-    PriorArt[CONTEXT: Prior Art] -.-> ARCH1
-    AntiPatterns[CONTEXT: Anti-Patterns] -.-> ARCH3
-    Idioms[CONTEXT: Idiomatic Patterns] -.-> TDD
-```
-
-**Reference files needed**:
-
-- All Tier 1 files (S06, S07, S08)
 - `C01-dependency-graph.md`
-- Domain-specific files if relevant (D01-D04)
+- `C02-existing-interfaces.md`
+- `S08-idiomatic-patterns.md`
 
-**Key questions**:
+**Do not load by default**
 
-1. What user journey does this enable?
-2. What's the minimal version that delivers value?
-3. Can architecture be simpler → PRD simpler?
-4. What has gone wrong with similar features before?
+- deep discovery
+- long PRD cycles
+- broad architecture exploration
 
----
+**Rule of thumb**
 
-## Flow 4: 🔵 Product Flow (Months)
+If you can describe the work as "do X like we do Y," it is probably
+an enhancement.
+If you cannot find a Y, it is probably a feature.
 
-**Trigger**: New system, new domain, unclear scope. High uncertainty.
+## Flow 3: Feature Flow (Weeks)
 
-**common-sense principle**: *"New products are about learning, not executing. Process should maximize learning velocity."*
+Use this when the capability is new, but the scope is still clear and
+bounded.
 
-```mermaid
-flowchart TD
-    subgraph PRODUCT["🔵 Product Flow"]
-        subgraph DISCOVER["Discovery (Learn before building)"]
-            Signals[1. Signal Collection<br/>User pain, market gaps] --> Problem[2. Problem Framing<br/>JTBD, not features]
-            Problem --> Size[3. Opportunity Sizing<br/>Worth solving?]
-            Size --> Hypotheses[4. Key Hypotheses<br/>What must be true?]
-        end
-        
-        subgraph VALIDATE["Validation (Test hypotheses)"]
-            Hypotheses --> Spike1[5. Spike: Feasibility<br/>Can we build it?]
-            Spike1 --> Spike2[6. Spike: Desirability<br/>Do users want it?]
-            Spike2 --> Spike3[7. Spike: Viability<br/>Does it make sense?]
-        end
-        
-        subgraph BUILD["Build (Iterate to market)"]
-            Spike3 --> MVP_PRD[8. MVP PRD<br/>Smallest valuable thing]
-            MVP_PRD --> MVP_ARCH[9. MVP Architecture<br/>Simplest that works]
-            MVP_ARCH --> MVP_TDD[10. MVP TDD<br/>Build + learn]
-            MVP_TDD --> Learn[11. Learn<br/>What did users do?]
-            Learn --> Iterate{Iterate or pivot?}
-            Iterate -->|Iterate| MVP_PRD
-            Iterate -->|Pivot| Hypotheses
-        end
-    end
-    
-    UserResearch[CONTEXT: User Research<br/>───────────────────<br/>Interviews, observations<br/>Jobs to be done<br/>Current alternatives] -.-> Signals
-    
-    SpikePatterns[CONTEXT: Spike Patterns<br/>───────────────────<br/>How to spike fast<br/>Success criteria<br/>Learning extraction] -.-> Spike1
+```text
+PRD and architecture should tighten each other.
+
+[PRD v1]  -> [ARCH v1]
+    ^            |
+    |            v
+[PRD v2] <- simpler path found
+    |
+    v
+[ARCH v2] -> [TDD] -> [Ship]
+
+If the design simplifies scope, update the PRD.
 ```
 
-**Reference files needed**:
+**Default steps**
 
-- `S01-problem-discovery-patterns.md` — Critical
-- `S02-technical-spike-patterns.md` — Critical
-- All Tier 1 files for Build phase
-- Possibly new domain files to create
+1. Write the first PRD from the user journey.
+2. Tighten the PRD with implementation reality.
+3. Minimize the scope.
+4. Iterate architecture in parallel with the PRD.
+5. Run TDD against the final shape.
+6. Review and observe after shipping.
 
-**Key questions**:
+**Load these files**
 
-1. What job is the user trying to do? (Not what feature they want)
-2. What must be true for this to succeed? (Hypotheses)
-3. What's the fastest way to test each hypothesis? (Spikes)
-4. What's the smallest thing we can ship to learn? (MVP)
+- `S06`, `S07`, `S08`
+- `C01-C04`
+- domain-specific files when relevant
 
-**common-sense principle**: *"In product work, the cost of building the wrong thing exceeds the cost of slower building."*
+**Key rule**
 
----
+Let architecture remove scope.
+Do not treat the first PRD as sacred.
+
+## Flow 4: Product Flow (Months)
+
+Use this when the scope is unclear, the domain is new, or you might
+be solving the wrong problem.
+
+```text
+Discovery
+
+[Signals] --> [Problem] --> [Sizing] --> [Hypotheses]
+
+Validation
+
+[Hypotheses] --> [Feasibility] --> [Desirability] --> [Viability]
+
+Build
+
+[MVP PRD] --> [MVP ARCH] --> [MVP TDD] --> [Learn]
+                                          |
+                                          v
+                                   iterate or pivot
+```
+
+**Default steps**
+
+1. Define the problem before the feature list.
+2. Write the key hypotheses.
+3. Run spikes to test the risky assumptions.
+4. Build the smallest useful MVP.
+5. Learn from reality and loop.
+
+**Load these files**
+
+- `S01-problem-discovery-patterns.md`
+- `S02-technical-spike-patterns.md`
+- Tier 1 files for the build phase
+- new domain files if the space is new
+
+**Key rule**
+
+Product work is about learning before scale.
+Do not confuse activity with validation.
 
 ## The Classification Decision Tree
 
-```mermaid
-flowchart TD
-    Start[New Work Item] --> Q1{Is something<br/>broken?}
-    Q1 -->|Yes| BUG[🔴 Bug Flow]
-    Q1 -->|No| Q2{Does similar<br/>code exist?}
-    Q2 -->|Yes, just extend it| ENHANCE[🟡 Enhancement Flow]
-    Q2 -->|No| Q3{Is scope<br/>clear?}
-    Q3 -->|Yes, bounded| FEATURE[🟢 Feature Flow]
-    Q3 -->|No, uncertain| PRODUCT[🔵 Product Flow]
+```text
+Move through the questions in order.
+
+New work item
+     |
+     v
+Is something broken?
+     | yes
+     +--------------------------> Bug Flow
+     |
+     no
+     |
+     v
+Does similar code exist?
+     | yes
+     +--------------------------> Enhancement Flow
+     |
+     no
+     |
+     v
+Is scope clear?
+     | yes
+     +--------------------------> Feature Flow
+     |
+     no
+     |
+     v
+Product Flow
+
+Stop as soon as one answer is clear.
 ```
 
-**Classification questions**:
+**Ask in this order**
 
-| Question | If Yes | If No |
-|----------|--------|-------|
-| Is something that worked now broken? | Bug | Continue |
-| Can I describe this as "do X like we do Y"? | Enhancement | Continue |
-| Can I write acceptance criteria now? | Feature | Product |
-| Do I know what "done" looks like? | Feature | Product |
-
----
+1. Did something break?
+2. Am I extending an existing pattern?
+3. Can I define done right now?
+4. If not, am I still discovering the problem?
 
 ## Reference Files by Work Type
 
-```mermaid
-flowchart TD
-    subgraph FILES["Reference File Tiers"]
-        T1[Tier 1: Always<br/>S06, S07, S08]
-        T2[Tier 2: Phase-Specific<br/>S01-S05]
-        T3[Tier 3: Domain<br/>D01-D04]
-        T4[Tier 4: Codebase<br/>C01-C04]
-    end
-    
-    BUG[🔴 Bug] --> T1
-    BUG --> T4
-    
-    ENHANCE[🟡 Enhancement] --> T1
-    ENHANCE --> T4
-    
-    FEATURE[🟢 Feature] --> T1
-    FEATURE --> T2
-    FEATURE --> T4
-    
-    PRODUCT[🔵 Product] --> T1
-    PRODUCT --> T2
-    PRODUCT --> T3
-    PRODUCT --> T4
+```text
+Use the tiers as a loading guide.
+
+Tier 1: Always         -> S06, S07, S08
+Tier 2: Phase-specific -> S01-S05
+Tier 3: Domain         -> D01-D04
+Tier 4: Codebase       -> C01-C04
+
+Bug         -> Tier 1 + Tier 4
+Enhancement -> Tier 1 + Tier 4
+Feature     -> Tier 1 + Tier 2 + Tier 4
+Product     -> Tier 1 + Tier 2 + Tier 3 + Tier 4
+
+Load upward only when the work justifies it.
 ```
 
-| Work Type | Files Needed | Files NOT Needed |
-|-----------|--------------|------------------|
-| 🔴 Bug | S07 (anti-patterns), C03 (tests) | S01 (discovery), S02 (spikes) |
-| 🟡 Enhancement | S08 (idioms), C01-C02 (existing code) | S01 (discovery), extensive PRD |
-| 🟢 Feature | S06-S08, C01-C04 | S01 (deep discovery), multiple spikes |
-| 🔵 Product | Everything | Nothing — you need full context |
-
----
+| Work Type | Load first | Usually skip |
+| --- | --- | --- |
+| Bug | S07, C03 | discovery, spikes |
+| Enhancement | S08, C01-C02 | deep PRD, broad architecture |
+| Feature | S06-S08, C01-C04 | discovery-heavy product work |
+| Product | everything relevant | nothing by default |
 
 ## Time Budget by Work Type
 
 | Work Type | PRD | ARCH | Spike | TDD | Review | Total |
-|-----------|-----|------|-------|-----|--------|-------|
-| 🔴 Bug | 0 | 0 | 0 | 2h | 30m | 2-4 hours |
-| 🟡 Enhancement | 30m | 0 | 0 | 4h | 1h | 1-2 days |
-| 🟢 Feature | 4h | 4h | 0-4h | 16h | 4h | 1-2 weeks |
-| 🔵 Product | 8h+ | 8h+ | 16h+ | 40h+ | 8h+ | 4+ weeks |
+| --- | --- | --- | --- | --- | --- | --- |
+| Bug | 0 | 0 | 0 | 2h | 30m | 2-4 hours |
+| Enhancement | 30m | 0 | 0 | 4h | 1h | 1-2 days |
+| Feature | 4h | 4h | 0-4h | 16h | 4h | 1-2 weeks |
+| Product | 8h+ | 8h+ | 16h+ | 40h+ | 8h+ | 4+ weeks |
 
-**common-sense principle**: *"Time budget reveals true work type. If you're spending feature-time on bugs, something is wrong with your codebase. If you're spending bug-time on products, something is wrong with your judgment."*
-
----
+Time budget is a signal.
+If the real work keeps blowing past the expected budget, the
+classification is probably wrong.
 
 ## Updated Master Workflow
 
-```mermaid
-flowchart TD
-    subgraph CLASSIFY["Step 0: Classify Work"]
-        Input[Work Item] --> Type{What type?}
-        Type -->|Broken| BUG
-        Type -->|Extend existing| ENHANCE  
-        Type -->|New, clear scope| FEATURE
-        Type -->|New, unclear scope| PRODUCT
-    end
-    
-    subgraph BUG["🔴 Bug Flow"]
-        B1[Reproduce] --> B2[Diagnose] --> B3[Test] --> B4[Fix] --> B5[Update Anti-Patterns]
-    end
-    
-    subgraph ENHANCE["🟡 Enhancement Flow"]
-        E1[Scope Check] --> E2[Light PRD] --> E3[Find Patterns] --> E4[TDD] --> E5[Review]
-    end
-    
-    subgraph FEATURE["🟢 Feature Flow"]
-        F1[PRDv1-v3] --> F2[ARCHv1-v3] --> F3[TDD] --> F4[Review] --> F5[Ship]
-        F2 -.-> F1
-    end
-    
-    subgraph PRODUCT["🔵 Product Flow"]
-        P1[Discovery] --> P2[Hypotheses] --> P3[Spikes] --> P4[MVP] --> P5[Learn]
-        P5 -.-> P2
-    end
-    
-    BUG --> Done[Done]
-    ENHANCE --> Done
-    FEATURE --> Done
-    PRODUCT --> Done
-    
-    Done --> Input
+```text
+This is the whole routing model at a glance.
+
+Classify
+  |
+  +--> Bug         --> Reproduce -> Diagnose -> Test -> Fix -> Verify
+  |
+  +--> Enhancement --> Scope -> Light PRD -> Pattern -> TDD -> Review
+  |
+  +--> Feature     --> PRD <-> ARCH -> TDD -> Review -> Ship
+  |
+  +--> Product     --> Discovery -> Hypotheses -> Spikes -> MVP -> Learn
+                                                           |
+                                                           v
+                                                       iterate/pivot
+
+Choose one lane and stay disciplined inside it.
 ```
 
----
+## The Common-Sense Test
 
-## The common-sense Test
+Before starting, ask:
 
-Before starting any work, ask:
+1. What kind of work is this?
+2. What is the lightest process that still protects quality?
+3. What is the time budget?
+4. Which files actually matter for this kind of work?
 
-1. **"What type of work is this?"** — Bug, Enhancement, Feature, or Product?
-2. **"What's the appropriate process?"** — Match process to type
-3. **"What's the time budget?"** — If exceeding budget, reconsider classification
-4. **"What files do I need?"** — Load only what's needed for this type
-
-**The waste equation**:
-
-- Over-process = time wasted on unnecessary steps
-- Under-process = time wasted fixing mistakes later
-
-**The goal**: Minimum viable process for maximum confidence.
+The goal is not maximum process.
+The goal is minimum viable process with maximum confidence.
