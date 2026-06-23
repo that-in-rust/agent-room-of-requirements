@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kotlin Backend Delivery"
+  short_description: "Spec-first production delivery for Kotlin Spring Boot and Ktor backends"
+  default_prompt: "Use $kotlin-backend-delivery-01 to turn this Kotlin backend request into executable requirements, service design, verification matrix, and production-aware quality gates."

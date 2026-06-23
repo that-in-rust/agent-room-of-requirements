@@ -1,0 +1,406 @@
+# Repository Document Index
+
+Generated from `rg --files -g '*.md' -g '*.txt' -g '*.html'`, excluding this generated index file.
+
+## Summary
+
+- Markdown documents: `355`
+- Supporting text/HTML documents: `9`
+- Total indexed documents: `364`
+- Files missing Markdown H1: `8`
+
+## Top-Level Documents
+
+- [The 12 Principles of LLM-Native Development](A00-LLM-Principles01.md) — Markdown
+- [LLM Workflow v01: Work Type Differentiation](A01-LLM-Workflow01.md) — Markdown
+- [CLAUDE.md](CLAUDE.md) — Markdown
+- [Executable Specs 01](<Executable Specifications - single MD file.md>) — Markdown
+- [AI-Native Meta-Patterns Digest](<Executable Specifications Meta Patterns Reference.md>) — Markdown
+- [Executable Specs Templates](<Executable Specifications Templates.md>) — Template
+- [Rust Executable Specs 01](<Rust Executable Specifications - single MD file.md>) — Markdown
+- [Rust Executable Specs Reference](<Rust Executable Specifications Reference.md>) — Markdown
+- [Tauri Executable Specs 01](<Tauri Executable Specifications - single MD file.md>) — Markdown
+- [Tauri Executable Specs Reference](<Tauri Executable Specifications Reference.md>) — Markdown
+- [which-agents-do-we-need-next-202604](which-agents-do-we-need-next-202604.md) — Markdown
+
+## Strategic Research
+
+- [20 More Rust Hackathon Ideas After The First Shortlist](docs/strategic-research/20-more-rust-hackathon-ideas-after-the-first-shortlist.md) — Markdown
+- [How To Rank Rust Opportunities When Codex Is Helping](docs/strategic-research/how-to-rank-rust-opportunities-when-codex-is-helping.md) — Markdown
+- [How To Win A Rust Hackathon In 6 Hours](docs/strategic-research/how-to-win-a-rust-hackathon-in-6-hours.md) — Markdown
+- [Why Rust Backends Need Their Own Playbook](docs/strategic-research/why-rust-backends-need-a-separate-playbook.md) — Markdown
+
+## Claude Skills
+
+- [Claude Automation Recommender](claude-skills/plugins/claude-code-setup/SKILL.md) — Skill
+- [Hooks Recommendations](claude-skills/plugins/claude-code-setup/references/hooks-patterns.md) — Reference
+- [MCP Server Recommendations](claude-skills/plugins/claude-code-setup/references/mcp-servers.md) — Reference
+- [Plugin Recommendations](claude-skills/plugins/claude-code-setup/references/plugins-reference.md) — Reference
+- [Skills Recommendations](claude-skills/plugins/claude-code-setup/references/skills-reference.md) — Reference
+- [Subagent Recommendations](claude-skills/plugins/claude-code-setup/references/subagent-templates.md) — Reference
+- [CLAUDE.md Improver](claude-skills/plugins/claude-md-management/SKILL.md) — Skill
+- [CLAUDE.md Quality Criteria](claude-skills/plugins/claude-md-management/references/quality-criteria.md) — Reference
+- [CLAUDE.md Templates](claude-skills/plugins/claude-md-management/references/templates.md) — Reference
+- [CLAUDE.md Update Guidelines](claude-skills/plugins/claude-md-management/references/update-guidelines.md) — Reference
+- [Example Skill](claude-skills/plugins/example-plugin/SKILL.md) — Skill
+- [SKILL](claude-skills/plugins/frontend-design/SKILL.md) — Skill
+- [Writing Hookify Rules](claude-skills/plugins/hookify/SKILL.md) — Skill
+- [Playground Builder](claude-skills/plugins/playground/SKILL.md) — Skill
+- [Code Map Template](claude-skills/plugins/playground/templates/code-map.md) — Template
+- [Concept Map Template](claude-skills/plugins/playground/templates/concept-map.md) — Template
+- [Data Explorer Template](claude-skills/plugins/playground/templates/data-explorer.md) — Template
+- [Design Playground Template](claude-skills/plugins/playground/templates/design-playground.md) — Template
+- [Diff Review Template](claude-skills/plugins/playground/templates/diff-review.md) — Template
+- [Document Critique Template](claude-skills/plugins/playground/templates/document-critique.md) — Template
+- [Agent Development for Claude Code Plugins](claude-skills/plugins/plugin-dev/agent-development/SKILL.md) — Skill
+- [AI-Assisted Agent Generation Template](claude-skills/plugins/plugin-dev/agent-development/examples/agent-creation-prompt.md) — Markdown
+- [Complete Agent Examples](claude-skills/plugins/plugin-dev/agent-development/examples/complete-agent-examples.md) — Markdown
+- [Agent Creation System Prompt](claude-skills/plugins/plugin-dev/agent-development/references/agent-creation-system-prompt.md) — Reference
+- [System Prompt Design Patterns](claude-skills/plugins/plugin-dev/agent-development/references/system-prompt-design.md) — Reference
+- [Agent Triggering Examples: Best Practices](claude-skills/plugins/plugin-dev/agent-development/references/triggering-examples.md) — Reference
+- [Command Development Skill](claude-skills/plugins/plugin-dev/command-development/README.md) — Markdown
+- [Command Development for Claude Code](claude-skills/plugins/plugin-dev/command-development/SKILL.md) — Skill
+- [Plugin Command Examples](claude-skills/plugins/plugin-dev/command-development/examples/plugin-commands.md) — Markdown
+- [Simple Command Examples](claude-skills/plugins/plugin-dev/command-development/examples/simple-commands.md) — Markdown
+- [Advanced Workflow Patterns](claude-skills/plugins/plugin-dev/command-development/references/advanced-workflows.md) — Reference
+- [Command Documentation Patterns](claude-skills/plugins/plugin-dev/command-development/references/documentation-patterns.md) — Reference
+- [Command Frontmatter Reference](claude-skills/plugins/plugin-dev/command-development/references/frontmatter-reference.md) — Reference
+- [Interactive Command Patterns](claude-skills/plugins/plugin-dev/command-development/references/interactive-commands.md) — Reference
+- [Marketplace Considerations for Commands](claude-skills/plugins/plugin-dev/command-development/references/marketplace-considerations.md) — Reference
+- [Plugin-Specific Command Features Reference](claude-skills/plugins/plugin-dev/command-development/references/plugin-features-reference.md) — Reference
+- [Command Testing Strategies](claude-skills/plugins/plugin-dev/command-development/references/testing-strategies.md) — Reference
+- [Hook Development for Claude Code Plugins](claude-skills/plugins/plugin-dev/hook-development/SKILL.md) — Skill
+- [Advanced Hook Use Cases](claude-skills/plugins/plugin-dev/hook-development/references/advanced.md) — Reference
+- [Migrating from Basic to Advanced Hooks](claude-skills/plugins/plugin-dev/hook-development/references/migration.md) — Reference
+- [Common Hook Patterns](claude-skills/plugins/plugin-dev/hook-development/references/patterns.md) — Reference
+- [Hook Development Utility Scripts](claude-skills/plugins/plugin-dev/hook-development/scripts/README.md) — Markdown
+- [MCP Integration for Claude Code Plugins](claude-skills/plugins/plugin-dev/mcp-integration/SKILL.md) — Skill
+- [MCP Authentication Patterns](claude-skills/plugins/plugin-dev/mcp-integration/references/authentication.md) — Reference
+- [MCP Server Types: Deep Dive](claude-skills/plugins/plugin-dev/mcp-integration/references/server-types.md) — Reference
+- [Using MCP Tools in Commands and Agents](claude-skills/plugins/plugin-dev/mcp-integration/references/tool-usage.md) — Reference
+- [Plugin Settings Pattern for Claude Code Plugins](claude-skills/plugins/plugin-dev/plugin-settings/SKILL.md) — Skill
+- [Create Plugin Settings](claude-skills/plugins/plugin-dev/plugin-settings/examples/create-settings-command.md) — Markdown
+- [Example Plugin Settings File](claude-skills/plugins/plugin-dev/plugin-settings/examples/example-settings.md) — Markdown
+- [Settings File Parsing Techniques](claude-skills/plugins/plugin-dev/plugin-settings/references/parsing-techniques.md) — Reference
+- [Real-World Plugin Settings Examples](claude-skills/plugins/plugin-dev/plugin-settings/references/real-world-examples.md) — Reference
+- [Plugin Structure Skill](claude-skills/plugins/plugin-dev/plugin-structure/README.md) — Markdown
+- [Plugin Structure for Claude Code](claude-skills/plugins/plugin-dev/plugin-structure/SKILL.md) — Skill
+- [Advanced Plugin Example](claude-skills/plugins/plugin-dev/plugin-structure/examples/advanced-plugin.md) — Markdown
+- [Minimal Plugin Example](claude-skills/plugins/plugin-dev/plugin-structure/examples/minimal-plugin.md) — Markdown
+- [Standard Plugin Example](claude-skills/plugins/plugin-dev/plugin-structure/examples/standard-plugin.md) — Markdown
+- [Component Organization Patterns](claude-skills/plugins/plugin-dev/plugin-structure/references/component-patterns.md) — Reference
+- [Plugin Manifest Reference](claude-skills/plugins/plugin-dev/plugin-structure/references/manifest-reference.md) — Reference
+- [Skill Development for Claude Code Plugins](claude-skills/plugins/plugin-dev/skill-development/SKILL.md) — Skill
+- [Skill Creator](claude-skills/plugins/plugin-dev/skill-development/references/skill-creator-original.md) — Reference
+- [Skill Creator](claude-skills/plugins/skill-creator/SKILL.md) — Skill
+- [Post-hoc Analyzer Agent](claude-skills/plugins/skill-creator/agents/analyzer.md) — Markdown
+- [Blind Comparator Agent](claude-skills/plugins/skill-creator/agents/comparator.md) — Markdown
+- [Grader Agent](claude-skills/plugins/skill-creator/agents/grader.md) — Markdown
+- [JSON Schemas](claude-skills/plugins/skill-creator/references/schemas.md) — Reference
+- [SKILL](claude-skills/plugins/stripe/SKILL.md) — Skill
+- [Brainstorming Ideas Into Designs](claude-skills/superpowers/brainstorming/SKILL.md) — Skill
+- [Dispatching Parallel Agents](claude-skills/superpowers/dispatching-parallel-agents/SKILL.md) — Skill
+- [Executing Plans](claude-skills/superpowers/executing-plans/SKILL.md) — Skill
+- [Finishing a Development Branch](claude-skills/superpowers/finishing-a-development-branch/SKILL.md) — Skill
+- [Code Review Reception](claude-skills/superpowers/receiving-code-review/SKILL.md) — Skill
+- [Requesting Code Review](claude-skills/superpowers/requesting-code-review/SKILL.md) — Skill
+- [Code Review Agent](claude-skills/superpowers/requesting-code-review/code-reviewer.md) — Markdown
+- [Subagent-Driven Development](claude-skills/superpowers/subagent-driven-development/SKILL.md) — Skill
+- [Code Quality Reviewer Prompt Template](claude-skills/superpowers/subagent-driven-development/code-quality-reviewer-prompt.md) — Markdown
+- [Implementer Subagent Prompt Template](claude-skills/superpowers/subagent-driven-development/implementer-prompt.md) — Markdown
+- [Spec Compliance Reviewer Prompt Template](claude-skills/superpowers/subagent-driven-development/spec-reviewer-prompt.md) — Markdown
+- [Creation Log: Systematic Debugging Skill](claude-skills/superpowers/systematic-debugging/CREATION-LOG.md) — Markdown
+- [Systematic Debugging](claude-skills/superpowers/systematic-debugging/SKILL.md) — Skill
+- [Condition-Based Waiting](claude-skills/superpowers/systematic-debugging/condition-based-waiting.md) — Markdown
+- [Defense-in-Depth Validation](claude-skills/superpowers/systematic-debugging/defense-in-depth.md) — Markdown
+- [Root Cause Tracing](claude-skills/superpowers/systematic-debugging/root-cause-tracing.md) — Markdown
+- [Academic Test: Systematic Debugging Skill](claude-skills/superpowers/systematic-debugging/test-academic.md) — Markdown
+- [Pressure Test 1: Emergency Production Fix](claude-skills/superpowers/systematic-debugging/test-pressure-1.md) — Markdown
+- [Pressure Test 2: Sunk Cost + Exhaustion](claude-skills/superpowers/systematic-debugging/test-pressure-2.md) — Markdown
+- [Pressure Test 3: Authority + Social Pressure](claude-skills/superpowers/systematic-debugging/test-pressure-3.md) — Markdown
+- [Test-Driven Development (TDD)](claude-skills/superpowers/test-driven-development/SKILL.md) — Skill
+- [Testing Anti-Patterns](claude-skills/superpowers/test-driven-development/testing-anti-patterns.md) — Markdown
+- [Using Git Worktrees](claude-skills/superpowers/using-git-worktrees/SKILL.md) — Skill
+- [Using Skills](claude-skills/superpowers/using-superpowers/SKILL.md) — Skill
+- [Verification Before Completion](claude-skills/superpowers/verification-before-completion/SKILL.md) — Skill
+- [Writing Plans](claude-skills/superpowers/writing-plans/SKILL.md) — Skill
+- [Writing Skills](claude-skills/superpowers/writing-skills/SKILL.md) — Skill
+- [Skill authoring best practices](claude-skills/superpowers/writing-skills/anthropic-best-practices.md) — Markdown
+- [Testing CLAUDE.md Skills Documentation](claude-skills/superpowers/writing-skills/examples/CLAUDE_MD_TESTING.md) — Markdown
+- [Persuasion Principles for Skill Design](claude-skills/superpowers/writing-skills/persuasion-principles.md) — Markdown
+- [Testing Skills With Subagents](claude-skills/superpowers/writing-skills/testing-skills-with-subagents.md) — Markdown
+
+## Hermes Skills
+
+- [Local Vision via Ollama (qwen3.5:4b)](hermes-skills/media/local-vision-ollama/SKILL.md) — Skill
+
+## Idiomatic Reference File
+
+- [Rust Coder 1000IQ 01](<idiomatic reference file/Rust-Coder-1000IQ-01.md>) — Markdown
+
+## Agents Used Monthly Archive
+
+- [MERN Coder 01](agents-used-monthly-archive/claude-skills-202602/MERN-coder-01.md) — Archive
+- [Tauri Coder 01](agents-used-monthly-archive/claude-skills-202602/Tauri-coder-01.md) — Archive
+- [commit-push-dev-flow](agents-used-monthly-archive/claude-skills-202602/commit-push-dev-flow.md) — Archive
+- [Minto Pyramid Principle: Action Patterns for Writing, Thinking, Problem Solving, and Presentation](agents-used-monthly-archive/claude-skills-202602/minto-pyramid-01.md) — Archive
+- [AI-Native Coding: The Meta-Patterns Reference](agents-used-monthly-archive/claude-skills-202602/notes01-agent.md) — Archive
+- [React + Three.js + TypeScript Coder Agent](agents-used-monthly-archive/claude-skills-202602/react-threejs-coder-01.md) — Archive
+- [Codebase Wisdom 101](agents-used-monthly-archive/claude-skills-202602/rust-coder-01.md) — Archive
+- [Rust Coder 02](agents-used-monthly-archive/claude-skills-202602/rust-coder-02.md) — Archive
+- [tdd-task-progress-context-retainer](agents-used-monthly-archive/claude-skills-202602/tdd-task-progress-context-retainer.md) — Archive
+- [TypeScript Backend Coder 01](agents-used-monthly-archive/claude-skills-202602/typescript-backend-coder-01.md) — Archive
+- [TypeScript Coder 01](agents-used-monthly-archive/claude-skills-202602/typescript-coder-01.md) — Archive
+- [TypeScript React Coder 01](agents-used-monthly-archive/claude-skills-202602/typescript-react-coder-01.md) — Archive
+- [Visual Explainer](agents-used-monthly-archive/claude-skills-202603/personal/visual-explainer/SKILL.md) — Skill
+- [Claude Automation Recommender](agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/SKILL.md) — Skill
+- [Hooks Recommendations](agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/hooks-patterns.md) — Reference
+- [MCP Server Recommendations](agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/mcp-servers.md) — Reference
+- [Plugin Recommendations](agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/plugins-reference.md) — Reference
+- [Skills Recommendations](agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/skills-reference.md) — Reference
+- [Subagent Recommendations](agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/subagent-templates.md) — Reference
+- [CLAUDE.md Improver](agents-used-monthly-archive/claude-skills-202603/plugins/claude-md-management/SKILL.md) — Skill
+- [CLAUDE.md Quality Criteria](agents-used-monthly-archive/claude-skills-202603/plugins/claude-md-management/references/quality-criteria.md) — Reference
+- [CLAUDE.md Templates](agents-used-monthly-archive/claude-skills-202603/plugins/claude-md-management/references/templates.md) — Reference
+- [CLAUDE.md Update Guidelines](agents-used-monthly-archive/claude-skills-202603/plugins/claude-md-management/references/update-guidelines.md) — Reference
+- [Example Skill](agents-used-monthly-archive/claude-skills-202603/plugins/example-plugin/SKILL.md) — Skill
+- [SKILL](agents-used-monthly-archive/claude-skills-202603/plugins/frontend-design/SKILL.md) — Skill
+- [Writing Hookify Rules](agents-used-monthly-archive/claude-skills-202603/plugins/hookify/SKILL.md) — Skill
+- [Playground Builder](agents-used-monthly-archive/claude-skills-202603/plugins/playground/SKILL.md) — Skill
+- [Code Map Template](agents-used-monthly-archive/claude-skills-202603/plugins/playground/templates/code-map.md) — Template
+- [Concept Map Template](agents-used-monthly-archive/claude-skills-202603/plugins/playground/templates/concept-map.md) — Template
+- [Data Explorer Template](agents-used-monthly-archive/claude-skills-202603/plugins/playground/templates/data-explorer.md) — Template
+- [Design Playground Template](agents-used-monthly-archive/claude-skills-202603/plugins/playground/templates/design-playground.md) — Template
+- [Diff Review Template](agents-used-monthly-archive/claude-skills-202603/plugins/playground/templates/diff-review.md) — Template
+- [Document Critique Template](agents-used-monthly-archive/claude-skills-202603/plugins/playground/templates/document-critique.md) — Template
+- [Agent Development for Claude Code Plugins](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/agent-development/SKILL.md) — Skill
+- [AI-Assisted Agent Generation Template](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/agent-development/examples/agent-creation-prompt.md) — Archive
+- [Complete Agent Examples](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/agent-development/examples/complete-agent-examples.md) — Archive
+- [Agent Creation System Prompt](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/agent-development/references/agent-creation-system-prompt.md) — Reference
+- [System Prompt Design Patterns](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/agent-development/references/system-prompt-design.md) — Reference
+- [Agent Triggering Examples: Best Practices](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/agent-development/references/triggering-examples.md) — Reference
+- [Command Development Skill](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/README.md) — Archive
+- [Command Development for Claude Code](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/SKILL.md) — Skill
+- [Plugin Command Examples](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/examples/plugin-commands.md) — Archive
+- [Simple Command Examples](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/examples/simple-commands.md) — Archive
+- [Advanced Workflow Patterns](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/references/advanced-workflows.md) — Reference
+- [Command Documentation Patterns](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/references/documentation-patterns.md) — Reference
+- [Command Frontmatter Reference](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/references/frontmatter-reference.md) — Reference
+- [Interactive Command Patterns](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/references/interactive-commands.md) — Reference
+- [Marketplace Considerations for Commands](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/references/marketplace-considerations.md) — Reference
+- [Plugin-Specific Command Features Reference](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/references/plugin-features-reference.md) — Reference
+- [Command Testing Strategies](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/command-development/references/testing-strategies.md) — Reference
+- [Hook Development for Claude Code Plugins](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/hook-development/SKILL.md) — Skill
+- [Advanced Hook Use Cases](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/hook-development/references/advanced.md) — Reference
+- [Migrating from Basic to Advanced Hooks](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/hook-development/references/migration.md) — Reference
+- [Common Hook Patterns](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/hook-development/references/patterns.md) — Reference
+- [Hook Development Utility Scripts](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/hook-development/scripts/README.md) — Archive
+- [MCP Integration for Claude Code Plugins](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/mcp-integration/SKILL.md) — Skill
+- [MCP Authentication Patterns](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/mcp-integration/references/authentication.md) — Reference
+- [MCP Server Types: Deep Dive](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/mcp-integration/references/server-types.md) — Reference
+- [Using MCP Tools in Commands and Agents](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/mcp-integration/references/tool-usage.md) — Reference
+- [Plugin Settings Pattern for Claude Code Plugins](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-settings/SKILL.md) — Skill
+- [Create Plugin Settings](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-settings/examples/create-settings-command.md) — Archive
+- [Example Plugin Settings File](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-settings/examples/example-settings.md) — Archive
+- [Settings File Parsing Techniques](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-settings/references/parsing-techniques.md) — Reference
+- [Real-World Plugin Settings Examples](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-settings/references/real-world-examples.md) — Reference
+- [Plugin Structure Skill](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-structure/README.md) — Archive
+- [Plugin Structure for Claude Code](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-structure/SKILL.md) — Skill
+- [Advanced Plugin Example](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-structure/examples/advanced-plugin.md) — Archive
+- [Minimal Plugin Example](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-structure/examples/minimal-plugin.md) — Archive
+- [Standard Plugin Example](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-structure/examples/standard-plugin.md) — Archive
+- [Component Organization Patterns](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-structure/references/component-patterns.md) — Reference
+- [Plugin Manifest Reference](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/plugin-structure/references/manifest-reference.md) — Reference
+- [Skill Development for Claude Code Plugins](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/skill-development/SKILL.md) — Skill
+- [Skill Creator](agents-used-monthly-archive/claude-skills-202603/plugins/plugin-dev/skill-development/references/skill-creator-original.md) — Reference
+- [Skill Creator](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/SKILL.md) — Skill
+- [Post-hoc Analyzer Agent](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/agents/analyzer.md) — Archive
+- [Blind Comparator Agent](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/agents/comparator.md) — Archive
+- [Grader Agent](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/agents/grader.md) — Archive
+- [JSON Schemas](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/references/schemas.md) — Reference
+- [SKILL](agents-used-monthly-archive/claude-skills-202603/plugins/stripe/SKILL.md) — Skill
+- [Brainstorming Ideas Into Designs](agents-used-monthly-archive/claude-skills-202603/superpowers/brainstorming/SKILL.md) — Skill
+- [Dispatching Parallel Agents](agents-used-monthly-archive/claude-skills-202603/superpowers/dispatching-parallel-agents/SKILL.md) — Skill
+- [Executing Plans](agents-used-monthly-archive/claude-skills-202603/superpowers/executing-plans/SKILL.md) — Skill
+- [Finishing a Development Branch](agents-used-monthly-archive/claude-skills-202603/superpowers/finishing-a-development-branch/SKILL.md) — Skill
+- [Code Review Reception](agents-used-monthly-archive/claude-skills-202603/superpowers/receiving-code-review/SKILL.md) — Skill
+- [Requesting Code Review](agents-used-monthly-archive/claude-skills-202603/superpowers/requesting-code-review/SKILL.md) — Skill
+- [Code Review Agent](agents-used-monthly-archive/claude-skills-202603/superpowers/requesting-code-review/code-reviewer.md) — Archive
+- [Subagent-Driven Development](agents-used-monthly-archive/claude-skills-202603/superpowers/subagent-driven-development/SKILL.md) — Skill
+- [Code Quality Reviewer Prompt Template](agents-used-monthly-archive/claude-skills-202603/superpowers/subagent-driven-development/code-quality-reviewer-prompt.md) — Archive
+- [Implementer Subagent Prompt Template](agents-used-monthly-archive/claude-skills-202603/superpowers/subagent-driven-development/implementer-prompt.md) — Archive
+- [Spec Compliance Reviewer Prompt Template](agents-used-monthly-archive/claude-skills-202603/superpowers/subagent-driven-development/spec-reviewer-prompt.md) — Archive
+- [Creation Log: Systematic Debugging Skill](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/CREATION-LOG.md) — Archive
+- [Systematic Debugging](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/SKILL.md) — Skill
+- [Condition-Based Waiting](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/condition-based-waiting.md) — Archive
+- [Defense-in-Depth Validation](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/defense-in-depth.md) — Archive
+- [Root Cause Tracing](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/root-cause-tracing.md) — Archive
+- [Academic Test: Systematic Debugging Skill](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/test-academic.md) — Archive
+- [Pressure Test 1: Emergency Production Fix](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/test-pressure-1.md) — Archive
+- [Pressure Test 2: Sunk Cost + Exhaustion](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/test-pressure-2.md) — Archive
+- [Pressure Test 3: Authority + Social Pressure](agents-used-monthly-archive/claude-skills-202603/superpowers/systematic-debugging/test-pressure-3.md) — Archive
+- [Test-Driven Development (TDD)](agents-used-monthly-archive/claude-skills-202603/superpowers/test-driven-development/SKILL.md) — Skill
+- [Testing Anti-Patterns](agents-used-monthly-archive/claude-skills-202603/superpowers/test-driven-development/testing-anti-patterns.md) — Archive
+- [Using Git Worktrees](agents-used-monthly-archive/claude-skills-202603/superpowers/using-git-worktrees/SKILL.md) — Skill
+- [Using Skills](agents-used-monthly-archive/claude-skills-202603/superpowers/using-superpowers/SKILL.md) — Skill
+- [Verification Before Completion](agents-used-monthly-archive/claude-skills-202603/superpowers/verification-before-completion/SKILL.md) — Skill
+- [Writing Plans](agents-used-monthly-archive/claude-skills-202603/superpowers/writing-plans/SKILL.md) — Skill
+- [Writing Skills](agents-used-monthly-archive/claude-skills-202603/superpowers/writing-skills/SKILL.md) — Skill
+- [Skill authoring best practices](agents-used-monthly-archive/claude-skills-202603/superpowers/writing-skills/anthropic-best-practices.md) — Archive
+- [Testing CLAUDE.md Skills Documentation](agents-used-monthly-archive/claude-skills-202603/superpowers/writing-skills/examples/CLAUDE_MD_TESTING.md) — Archive
+- [Persuasion Principles for Skill Design](agents-used-monthly-archive/claude-skills-202603/superpowers/writing-skills/persuasion-principles.md) — Archive
+- [Testing Skills With Subagents](agents-used-monthly-archive/claude-skills-202603/superpowers/writing-skills/testing-skills-with-subagents.md) — Archive
+- [Rust Web Backend Skill Explainer](agents-used-monthly-archive/claude-skills-202604/personal/rust-web-backend-skill-explainer/SKILL.md) — Skill
+- [Rust Executable Specs 01](agents-used-monthly-archive/claude-skills-202604/rust-executable-specs-01.md) — Archive
+- [Tauri Executable Specs 01](agents-used-monthly-archive/claude-skills-202604/tauri-executable-specs-01.md) — Archive
+- [Agent Debate 01](agents-used-monthly-archive/codex-skills-202602/agent-debate-01/SKILL.md) — Skill
+- [Debate Template and Tag Rules](agents-used-monthly-archive/codex-skills-202602/agent-debate-01/references/debate-template-and-tag-rules.md) — Reference
+- [Evidence and Convergence Guardrails](agents-used-monthly-archive/codex-skills-202602/agent-debate-01/references/evidence-and-convergence-guardrails.md) — Reference
+- [Repo Workflow Notes](agents-used-monthly-archive/codex-skills-202602/agent-debate-01/references/repo-workflow-notes.md) — Reference
+- [Dependency Map CLI Tools 01](agents-used-monthly-archive/codex-skills-202602/dependency-map-cli-tools-01/SKILL.md) — Skill
+- [Internet Precedents: No-DB Codebase Mapping](agents-used-monthly-archive/codex-skills-202602/dependency-map-cli-tools-01/references/internet-precedents.md) — Reference
+- [Executable Specs 01](agents-used-monthly-archive/codex-skills-202602/executable-specs-01/SKILL.md) — Skill
+- [Executable Specs Templates](agents-used-monthly-archive/codex-skills-202602/executable-specs-01/references/executable-specs-templates.md) — Reference
+- [AI-Native Meta-Patterns Digest](agents-used-monthly-archive/codex-skills-202602/executable-specs-01/references/meta-patterns-reference.md) — Reference
+- [Idiomatic Rust Coder 01](agents-used-monthly-archive/codex-skills-202602/idiomatic-rust-coder-01/SKILL.md) — Skill
+- [Rust Executable Specs Templates](agents-used-monthly-archive/codex-skills-202602/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md) — Reference
+- [Rust Idioms Checklist](agents-used-monthly-archive/codex-skills-202602/idiomatic-rust-coder-01/references/rust-idioms-checklist.md) — Reference
+- [Rust Quality Gates and Anti-Patterns](agents-used-monthly-archive/codex-skills-202602/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md) — Reference
+- [Tdd Context Retainer Orchestrator 01](agents-used-monthly-archive/codex-skills-202602/tdd-context-retainer-orchestrator-01/SKILL.md) — Skill
+- [Progress Journal Schema](agents-used-monthly-archive/codex-skills-202602/tdd-context-retainer-orchestrator-01/references/progress-journal-schema.md) — Reference
+- [Resume and Handoff Prompts](agents-used-monthly-archive/codex-skills-202602/tdd-context-retainer-orchestrator-01/references/resume-handoff-prompts.md) — Reference
+- [TDD Checkpoint Cadence Playbook](agents-used-monthly-archive/codex-skills-202602/tdd-context-retainer-orchestrator-01/references/tdd-checkpoint-cadence-playbook.md) — Reference
+- [Agent Debate 01](agents-used-monthly-archive/codex-skills-202603/agent-debate-01/SKILL.md) — Skill
+- [Debate Template and Tag Rules](agents-used-monthly-archive/codex-skills-202603/agent-debate-01/references/debate-template-and-tag-rules.md) — Reference
+- [Evidence and Convergence Guardrails](agents-used-monthly-archive/codex-skills-202603/agent-debate-01/references/evidence-and-convergence-guardrails.md) — Reference
+- [Repo Workflow Notes](agents-used-monthly-archive/codex-skills-202603/agent-debate-01/references/repo-workflow-notes.md) — Reference
+- [Capture GitHub Repo Context](agents-used-monthly-archive/codex-skills-202603/capture-github-repo-context/SKILL.md) — Skill
+- [Discussions GraphQL Patterns](agents-used-monthly-archive/codex-skills-202603/capture-github-repo-context/references/discussions-graphql-patterns.md) — Reference
+- [GHCLI Surface Map](agents-used-monthly-archive/codex-skills-202603/capture-github-repo-context/references/ghcli-surface-map.md) — Reference
+- [GitHub Repo Context Thesis](agents-used-monthly-archive/codex-skills-202603/capture-github-repo-context/references/github-repo-context-thesis.md) — Reference
+- [Output Contract](agents-used-monthly-archive/codex-skills-202603/capture-github-repo-context/references/output-contract.md) — Reference
+- [Craft ASCII Diagram Layouts](agents-used-monthly-archive/codex-skills-202603/craft-ascii-diagram-layouts/SKILL.md) — Skill
+- [ASCII Diagram Pattern Library](agents-used-monthly-archive/codex-skills-202603/craft-ascii-diagram-layouts/references/ascii-diagram-pattern-library.md) — Reference
+- [ASCII Diagram Review Checklist](agents-used-monthly-archive/codex-skills-202603/craft-ascii-diagram-layouts/references/ascii-diagram-review-checklist.md) — Reference
+- [Editorial Monospace Layouts](agents-used-monthly-archive/codex-skills-202603/craft-ascii-diagram-layouts/references/editorial-monospace-layouts.md) — Reference
+- [Terminal Page Grid Rules](agents-used-monthly-archive/codex-skills-202603/craft-ascii-diagram-layouts/references/terminal-page-grid-rules.md) — Reference
+- [Deep Exploration 01](agents-used-monthly-archive/codex-skills-202603/deep-exploration-01/SKILL.md) — Skill
+- [Expert Lens and Verification Playbook](agents-used-monthly-archive/codex-skills-202603/deep-exploration-01/references/expert-lens-and-verification-playbook.md) — Reference
+- [Exploration Output Patterns](agents-used-monthly-archive/codex-skills-202603/deep-exploration-01/references/exploration-output-patterns.md) — Reference
+- [Dependency Map CLI Tools 01](agents-used-monthly-archive/codex-skills-202603/dependency-map-cli-tools-01/SKILL.md) — Skill
+- [Internet Precedents: No-DB Codebase Mapping](agents-used-monthly-archive/codex-skills-202603/dependency-map-cli-tools-01/references/internet-precedents.md) — Reference
+- [Executable Specs 01](agents-used-monthly-archive/codex-skills-202603/executable-specs-01/SKILL.md) — Skill
+- [Executable Specs Templates](agents-used-monthly-archive/codex-skills-202603/executable-specs-01/references/executable-specs-templates.md) — Reference
+- [AI-Native Meta-Patterns Digest](agents-used-monthly-archive/codex-skills-202603/executable-specs-01/references/meta-patterns-reference.md) — Reference
+- [Explain HTML Skill](agents-used-monthly-archive/codex-skills-202603/explain-html-skill/SKILL.md) — Skill
+- [Elegant Explainer Pattern](agents-used-monthly-archive/codex-skills-202603/explain-html-skill/references/elegant-explainer-pattern.md) — Reference
+- [Explain AI Native ELI5](agents-used-monthly-archive/codex-skills-202603/explain_ai_native_eli5/SKILL.md) — Skill
+- [AI Native Engineering ELI5](agents-used-monthly-archive/codex-skills-202603/explain_ai_native_eli5/references/ai_native_engineering_eli5.md) — Reference
+- [Idiomatic Rust Coder 01](agents-used-monthly-archive/codex-skills-202603/idiomatic-rust-coder-01/SKILL.md) — Skill
+- [Rust Executable Specs Templates](agents-used-monthly-archive/codex-skills-202603/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md) — Reference
+- [Rust Idioms Checklist](agents-used-monthly-archive/codex-skills-202603/idiomatic-rust-coder-01/references/rust-idioms-checklist.md) — Reference
+- [Rust Quality Gates and Anti-Patterns](agents-used-monthly-archive/codex-skills-202603/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md) — Reference
+- [MERN Coder 01](agents-used-monthly-archive/codex-skills-202603/mern-coder-01/SKILL.md) — Skill
+- [MERN Coder 01](agents-used-monthly-archive/codex-skills-202603/mern-coder-01/references/doctrine.md) — Reference
+- [Minto Pyramid 01](agents-used-monthly-archive/codex-skills-202603/minto-pyramid-01/SKILL.md) — Skill
+- [Problem Solving and Presentation Reference](agents-used-monthly-archive/codex-skills-202603/minto-pyramid-01/references/problem-solving-and-presentation.md) — Reference
+- [Pyramid Writing Reference](agents-used-monthly-archive/codex-skills-202603/minto-pyramid-01/references/pyramid-writing.md) — Reference
+- [Minto Templates](agents-used-monthly-archive/codex-skills-202603/minto-pyramid-01/references/templates.md) — Reference
+- [Run Parseltongue 1.7.2](agents-used-monthly-archive/codex-skills-202603/run-parseltongue-1-7-2/SKILL.md) — Skill
+- [Parseltongue 1.7.2 Bidirectional Workflows](agents-used-monthly-archive/codex-skills-202603/run-parseltongue-1-7-2/references/parseltongue_1_7_2_bidirectional_workflows.md) — Reference
+- [Parseltongue 1.7.2 Endpoints](agents-used-monthly-archive/codex-skills-202603/run-parseltongue-1-7-2/references/parseltongue_1_7_2_endpoints.md) — Reference
+- [Parseltongue 1.7.2 Flow Patterns](agents-used-monthly-archive/codex-skills-202603/run-parseltongue-1-7-2/references/parseltongue_1_7_2_flow_patterns.md) — Reference
+- [Rust Reliability](agents-used-monthly-archive/codex-skills-202603/rust-coder-02/SKILL.md) — Skill
+- [Reference Map](agents-used-monthly-archive/codex-skills-202603/rust-coder-02/references/reference-map.md) — Reference
+- [Rust Coder 02](agents-used-monthly-archive/codex-skills-202603/rust-coder-02/references/rust-reliability-reference.md) — Reference
+- [Tauri Coder 01](agents-used-monthly-archive/codex-skills-202603/tauri-coder-01/SKILL.md) — Skill
+- [Tauri Coder 01](agents-used-monthly-archive/codex-skills-202603/tauri-coder-01/references/doctrine.md) — Reference
+- [Reference Map](agents-used-monthly-archive/codex-skills-202603/tauri-coder-01/references/reference-map.md) — Reference
+- [TypeScript Backend Reliability](agents-used-monthly-archive/codex-skills-202603/typescript-backend-coder-01/SKILL.md) — Skill
+- [TypeScript Backend Coder 01](agents-used-monthly-archive/codex-skills-202603/typescript-backend-coder-01/references/backend-reliability-reference.md) — Reference
+- [Reference Map](agents-used-monthly-archive/codex-skills-202603/typescript-backend-coder-01/references/reference-map.md) — Reference
+- [TypeScript Backend Coder 01](agents-used-monthly-archive/codex-skills-202603/typescript-backend-coder-01/references/typescript-backend-coder-01.md) — Reference
+- [TypeScript Reliability](agents-used-monthly-archive/codex-skills-202603/typescript-coder-01/SKILL.md) — Skill
+- [Reference Map](agents-used-monthly-archive/codex-skills-202603/typescript-coder-01/references/reference-map.md) — Reference
+- [TypeScript Coder 01](agents-used-monthly-archive/codex-skills-202603/typescript-coder-01/references/typescript-coder-01.md) — Reference
+- [TypeScript Coder 01](agents-used-monthly-archive/codex-skills-202603/typescript-coder-01/references/typescript-reliability-reference.md) — Reference
+- [TypeScript React Reliability](agents-used-monthly-archive/codex-skills-202603/typescript-react-coder-01/SKILL.md) — Skill
+- [TypeScript React Coder 01](agents-used-monthly-archive/codex-skills-202603/typescript-react-coder-01/references/react-reliability-reference.md) — Reference
+- [Reference Map](agents-used-monthly-archive/codex-skills-202603/typescript-react-coder-01/references/reference-map.md) — Reference
+- [TypeScript React Coder 01](agents-used-monthly-archive/codex-skills-202603/typescript-react-coder-01/references/typescript-react-coder-01.md) — Reference
+- [Algorithmic Art](agents-used-monthly-archive/codex-skills-202604/algorithmic-art/SKILL.md) — Skill
+- [Algorithmic Philosophy Template](agents-used-monthly-archive/codex-skills-202604/algorithmic-art/references/algorithmic-philosophy-template.md) — Reference
+- [Generative Pattern Menu](agents-used-monthly-archive/codex-skills-202604/algorithmic-art/references/generative-pattern-menu.md) — Reference
+- [Finishing a Development Branch](agents-used-monthly-archive/codex-skills-202604/finishing-a-development-branch/SKILL.md) — Skill
+- [React Threejs Coder 01](agents-used-monthly-archive/codex-skills-202604/react-threejs-coder-01/SKILL.md) — Skill
+- [Force Graph And Scene Checklist](agents-used-monthly-archive/codex-skills-202604/react-threejs-coder-01/references/force-graph-scene-checklist.md) — Reference
+- [React Three.js Patterns](agents-used-monthly-archive/codex-skills-202604/react-threejs-coder-01/references/react-threejs-patterns.md) — Reference
+- [Rust Executable Specs 01](agents-used-monthly-archive/codex-skills-202604/rust-executable-specs-01/SKILL.md) — Skill
+- [Reference Map](agents-used-monthly-archive/codex-skills-202604/rust-executable-specs-01/references/reference-map.md) — Reference
+- [Rust Conventions and Gates](agents-used-monthly-archive/codex-skills-202604/rust-executable-specs-01/references/rust-conventions-and-gates.md) — Reference
+- [Rust Executable Specs Playbook](agents-used-monthly-archive/codex-skills-202604/rust-executable-specs-01/references/rust-executable-specs-playbook.md) — Reference
+- [Rust Coder 02](agents-used-monthly-archive/codex-skills-202604/rust-executable-specs-01/references/rust-reliability-reference.md) — Reference
+- [Rust Web Backend Delivery 01](agents-used-monthly-archive/codex-skills-202604/rust-web-backend-delivery-01/SKILL.md) — Skill
+- [Reference Map](agents-used-monthly-archive/codex-skills-202604/rust-web-backend-delivery-01/references/reference-map.md) — Reference
+- [Rust Backend Runtime And Ops](agents-used-monthly-archive/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-runtime-and-ops.md) — Reference
+- [Rust Backend Security And Resilience](agents-used-monthly-archive/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-security-and-resilience.md) — Reference
+- [Rust Backend Testing And Fixtures](agents-used-monthly-archive/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-testing-and-fixtures.md) — Reference
+- [Rust Web Backend Playbook](agents-used-monthly-archive/codex-skills-202604/rust-web-backend-delivery-01/references/rust-web-backend-playbook.md) — Reference
+- [Save Recent Chat Context](agents-used-monthly-archive/codex-skills-202604/save-recent-chat-context/SKILL.md) — Skill
+- [Checkpoint Template](agents-used-monthly-archive/codex-skills-202604/save-recent-chat-context/references/checkpoint-template.md) — Reference
+- [Tauri Executable Specs 01](agents-used-monthly-archive/codex-skills-202604/tauri-executable-specs-01/SKILL.md) — Skill
+- [Reference Map](agents-used-monthly-archive/codex-skills-202604/tauri-executable-specs-01/references/reference-map.md) — Reference
+- [Tauri Conventions and Gates](agents-used-monthly-archive/codex-skills-202604/tauri-executable-specs-01/references/tauri-conventions-and-gates.md) — Reference
+- [Tauri Doctrine](agents-used-monthly-archive/codex-skills-202604/tauri-executable-specs-01/references/tauri-doctrine.md) — Reference
+- [Tauri Executable Specs Playbook](agents-used-monthly-archive/codex-skills-202604/tauri-executable-specs-01/references/tauri-executable-specs-playbook.md) — Reference
+- [Tdd Task Progress Context Retainer](agents-used-monthly-archive/codex-skills-202604/tdd-task-progress-context-retainer/SKILL.md) — Skill
+- [Progress Journal Schema](agents-used-monthly-archive/codex-skills-202604/tdd-task-progress-context-retainer/references/progress-journal-schema.md) — Reference
+- [Resume and Handoff Prompts](agents-used-monthly-archive/codex-skills-202604/tdd-task-progress-context-retainer/references/resume-handoff-prompts.md) — Reference
+- [TDD Checkpoint Cadence Playbook](agents-used-monthly-archive/codex-skills-202604/tdd-task-progress-context-retainer/references/tdd-checkpoint-cadence-playbook.md) — Reference
+- [Timeline Traverser](agents-used-monthly-archive/codex-skills-202604/timeline-traverser/SKILL.md) — Skill
+- [Timeline Comparison Template](agents-used-monthly-archive/codex-skills-202604/timeline-traverser/references/timeline-comparison-template.md) — Reference
+- [Kotlin Backend Delivery 01](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/SKILL.md) — Skill
+- [Kotlin Backend Playbook](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/kotlin-backend-playbook.md) — Reference
+- [Kotlin Backend Runtime And Ops](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/kotlin-backend-runtime-and-ops.md) — Reference
+- [Kotlin Backend Security And Resilience](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/kotlin-backend-security-and-resilience.md) — Reference
+- [Kotlin Backend Testing And Fixtures](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/kotlin-backend-testing-and-fixtures.md) — Reference
+- [Kotlin Spring And Ktor Idioms](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/kotlin-spring-ktor-idioms.md) — Reference
+- [Reference Map](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/reference-map.md) — Reference
+- [Sources And Research Brief](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/sources-and-research-brief.md) — Reference
+- [Idiom-DotNet-CSharp-Angular-TypeScript-Patterns.md](agents-used-monthly-archive/idiomatic-references-202602/Idiom-DotNet-CSharp-Angular-TypeScript-Patterns.md) — Archive
+- [Idiom-React-Frontend-Patterns.md](agents-used-monthly-archive/idiomatic-references-202602/Idiom-React-Frontend-Patterns.md) — Archive
+- [Idiom-ThreeJS-Visualization-Patterns.md](agents-used-monthly-archive/idiomatic-references-202602/Idiom-ThreeJS-Visualization-Patterns.md) — Archive
+- [Comprehensive Production-Grade Idiomatic Pattern Libraries](agents-used-monthly-archive/idiomatic-references-202602/Idiom96-polyglot-basic-patterns-20251205.md) — Archive
+- [The Comprehensive System Design Patterns Reference](agents-used-monthly-archive/idiomatic-references-202602/Idiom97-SystemDesignPatterns-20251205.md) — Archive
+- [S01: Polyglot Development - Core Principles & TDD Workflow](agents-used-monthly-archive/idiomatic-references-202602/Idiom98-Multi-Lang-Notes-20251205.md) — Archive
+- [MERN + TypeScript Idiomatic Pattern Library](agents-used-monthly-archive/idiomatic-references-202602/MERN-TypeScript-IdiomaticPatterns_20251206.md) — Archive
+- [agent-1000IQ-analysis](agents-used-monthly-archive/idiomatic-references-202602/agent-1000IQ-analysis.md) — Archive
+- [CONTEXT](agents-used-monthly-archive/idiomatic-references-202602/broad-idiomatic-patterns.md) — Archive
+- [OpenCode: Genius-Level Idiomatic Code Patterns](agents-used-monthly-archive/idiomatic-references-202602/opencode-genius-idiomatic-patterns.md) — Archive
+- [Rust Executable Specs Reference](agents-used-monthly-archive/idiomatic-references-202604/rust-executable-specs-01/rust-executable-specs-reference.md) — Archive
+- [Tauri Executable Specs Reference](agents-used-monthly-archive/idiomatic-references-202604/tauri-executable-specs-01/tauri-executable-specs-reference.md) — Archive
+- [The 12 Principles of LLM-Native Development](agents-used-monthly-archive/rewrite-backups-20260514/A00-LLM-Principles01.rewrite-draft.md) — Archive
+- [LLM Workflow v01: Work Type Differentiation](agents-used-monthly-archive/rewrite-backups-20260514/A01-LLM-Workflow01.rewrite-draft.md) — Archive
+
+## Supporting Text And HTML Documents
+
+- [template](agents-used-monthly-archive/claude-skills-202603/personal/visual-explainer/template.html) — HTML
+- [LICENSE](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/LICENSE.txt) — Text
+- [eval_review](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/assets/eval_review.html) — HTML
+- [viewer](agents-used-monthly-archive/claude-skills-202603/plugins/skill-creator/eval-viewer/viewer.html) — HTML
+- [elegant-explainer-template](agents-used-monthly-archive/codex-skills-202603/explain-html-skill/assets/elegant-explainer-template.html) — HTML
+- [parseltongue-query-log](agents-used-monthly-archive/codex-skills-202603/run-parseltongue-1-7-2/central-logs/parseltongue-query-log.txt) — Text
+- [LICENSE](claude-skills/plugins/skill-creator/LICENSE.txt) — Text
+- [eval_review](claude-skills/plugins/skill-creator/assets/eval_review.html) — HTML
+- [viewer](claude-skills/plugins/skill-creator/eval-viewer/viewer.html) — HTML
+
+## Files Missing H1
+
+- [agents-used-monthly-archive/claude-skills-202602/commit-push-dev-flow.md](agents-used-monthly-archive/claude-skills-202602/commit-push-dev-flow.md)
+- [agents-used-monthly-archive/claude-skills-202602/tdd-task-progress-context-retainer.md](agents-used-monthly-archive/claude-skills-202602/tdd-task-progress-context-retainer.md)
+- [agents-used-monthly-archive/claude-skills-202603/plugins/frontend-design/SKILL.md](agents-used-monthly-archive/claude-skills-202603/plugins/frontend-design/SKILL.md)
+- [agents-used-monthly-archive/claude-skills-202603/plugins/stripe/SKILL.md](agents-used-monthly-archive/claude-skills-202603/plugins/stripe/SKILL.md)
+- [agents-used-monthly-archive/idiomatic-references-202602/agent-1000IQ-analysis.md](agents-used-monthly-archive/idiomatic-references-202602/agent-1000IQ-analysis.md)
+- [claude-skills/plugins/frontend-design/SKILL.md](claude-skills/plugins/frontend-design/SKILL.md)
+- [claude-skills/plugins/stripe/SKILL.md](claude-skills/plugins/stripe/SKILL.md)
+- [which-agents-do-we-need-next-202604.md](which-agents-do-we-need-next-202604.md)
