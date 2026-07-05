@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kotlin Reliability"
+  short_description: "Idiomatic reliability baseline for Kotlin libraries, modules, coroutines, and interop"
+  default_prompt: "Use $kotlin-coder-01 to turn this Kotlin request into executable requirements, type and boundary design, verification matrix, and quality gates."

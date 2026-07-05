@@ -4,9 +4,9 @@ Generated from `rg --files -g '*.md' -g '*.txt' -g '*.html'`, excluding this gen
 
 ## Summary
 
-- Markdown documents: `355`
+- Markdown documents: `365`
 - Supporting text/HTML documents: `9`
-- Total indexed documents: `364`
+- Total indexed documents: `374`
 - Files missing Markdown H1: `8`
 
 ## Top-Level Documents
@@ -367,6 +367,16 @@ Generated from `rg --files -g '*.md' -g '*.txt' -g '*.html'`, excluding this gen
 - [Kotlin Spring And Ktor Idioms](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/kotlin-spring-ktor-idioms.md) — Reference
 - [Reference Map](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/reference-map.md) — Reference
 - [Sources And Research Brief](agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/sources-and-research-brief.md) — Reference
+- [Kotlin Reliability](agents-used-monthly-archive/codex-skills-202606/kotlin-coder-01/SKILL.md) — Skill
+- [Kotlin Quality Gates And Anti-Patterns](agents-used-monthly-archive/codex-skills-202606/kotlin-coder-01/references/kotlin-quality-gates-and-anti-patterns.md) — Reference
+- [Kotlin Reliability Reference](agents-used-monthly-archive/codex-skills-202606/kotlin-coder-01/references/kotlin-reliability-reference.md) — Reference
+- [Reference Map](agents-used-monthly-archive/codex-skills-202606/kotlin-coder-01/references/reference-map.md) — Reference
+- [Sources And Research Brief](agents-used-monthly-archive/codex-skills-202606/kotlin-coder-01/references/sources-and-research-brief.md) — Reference
+- [Python Reliability](agents-used-monthly-archive/codex-skills-202606/python-coder-01/SKILL.md) — Skill
+- [Python Quality Gates And Anti-Patterns](agents-used-monthly-archive/codex-skills-202606/python-coder-01/references/python-quality-gates-and-anti-patterns.md) — Reference
+- [Python Reliability Reference](agents-used-monthly-archive/codex-skills-202606/python-coder-01/references/python-reliability-reference.md) — Reference
+- [Reference Map](agents-used-monthly-archive/codex-skills-202606/python-coder-01/references/reference-map.md) — Reference
+- [Sources And Research Brief](agents-used-monthly-archive/codex-skills-202606/python-coder-01/references/sources-and-research-brief.md) — Reference
 - [Idiom-DotNet-CSharp-Angular-TypeScript-Patterns.md](agents-used-monthly-archive/idiomatic-references-202602/Idiom-DotNet-CSharp-Angular-TypeScript-Patterns.md) — Archive
 - [Idiom-React-Frontend-Patterns.md](agents-used-monthly-archive/idiomatic-references-202602/Idiom-React-Frontend-Patterns.md) — Archive
 - [Idiom-ThreeJS-Visualization-Patterns.md](agents-used-monthly-archive/idiomatic-references-202602/Idiom-ThreeJS-Visualization-Patterns.md) — Archive

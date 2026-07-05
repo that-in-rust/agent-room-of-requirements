@@ -1,0 +1,4 @@
+interface:
+  display_name: "Python Reliability"
+  short_description: "Idiomatic reliability baseline for Python packages, CLIs, async code, tests, and typed modules"
+  default_prompt: "Use $python-coder-01 to turn this Python request into executable requirements, boundary and type design, verification matrix, and quality gates."
