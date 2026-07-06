@@ -134,6 +134,68 @@ Adjacent reference 1: consider the writing adjacent reference when the current t
 Adjacent reference 2: consider the skills adjacent reference when the current task pivots away from writing skills validation patterns.
 Adjacent reference 3: consider the validation adjacent reference when the current task pivots away from writing skills validation patterns.
 
+## Workload Model
+
+`combined_evidence_inference_note`: Treat Writing Skills Validation Patterns as a documentation reference operating reference, not as a prose summary.
+
+| workload_dimension_name | workload_boundary_value | verification_pressure_point |
+| --- | --- | --- |
+| primary_usage_surface | reference selection, writing, roadmap, or explanation work where the output should improve the next human or agent decision | verify that the reference changes the next implementation or review action |
+| bounded_capacity_model | one audience, one decision, up to 12 source documents, and one verification checklist per reference use | split the task or create a narrower reference when this boundary is exceeded |
+| source_pressure_model | local heading signals include Writing Skills; Overview; What is a Skill?; TDD Mapping for Skills; When to Create a Skill; Skill Types; Testing Skills With Subagents; Overview; When | compare guidance against canonical local sources before following external examples |
+| artifact_pressure_model | required artifact is reader promise with before/after rewrite and plain-language acceptance test | require the artifact before claiming the reference is operationally usable |
+
+## Reliability Target
+
+| reliability_target_name | measurable_threshold_value | evidence_collection_method |
+| --- | --- | --- |
+| source_boundary_preservation | 100 percent of recommendations keep local, external, and inference boundaries visible | review generated text for the three evidence labels before reuse |
+| decision_accuracy_sample | at least 18 of 20 sampled uses route to the correct adopt, adapt, avoid, or adjacent-reference decision | sample downstream tasks and record reviewer verdicts |
+| unsupported_claim_rate | zero unsupported production, security, latency, or reliability claims in final guidance | reject claims without source row, explicit inference note, or verification method |
+| recovery_path_clarity | every avoid or failure case names the rollback, escalation, or next-reference route | inspect failure-mode and adjacent-routing sections together |
+
+## Failure Mode Table
+
+| failure_mode_name | likely_trigger_condition | required_mitigation_action |
+| --- | --- | --- |
+| source drift hides truth | external or local guidance changes after the reference was written | refresh public evidence, rerun local corpus gate, and mark stale claims before reuse |
+| generic advice escapes review | agent copies plausible best practices without theme-specific verification | block completion until the verification gate names concrete command, reviewer question, or metric |
+| decision path remains implicit | reader cannot tell when to adopt, adapt, or avoid the pattern | add decision table, cost of being wrong, and adjacent-reference route |
+| large corpus becomes list | many sources are indexed but not synthesized into ranked guidance | classify canonical, supporting, legacy, duplicate, and conflicting sources |
+
+## Retry Backpressure Guidance
+
+- Retry only after the failed verification signal is classified as transient, stale evidence, missing context, or true contradiction.
+- Use one bounded retry for stale external evidence refresh, then escalate to a human or a narrower source-specific reference.
+- Apply backpressure by stopping new generation or implementation work when source coverage, critique coverage, or verification gates are red.
+- For long-running agent workflows, checkpoint after each batch and re-read the current spec before any broad rewrite, commit, push, or destructive operation.
+- For distributed execution, assign one owner per generated file or theme batch and require merge-time verification of exact path, heading, and evidence-boundary invariants.
+
+## Observability Checklist
+
+- Record which local sources were loaded and which were intentionally skipped.
+- Record the exact verification command, reviewer question, or rendered artifact used as proof.
+- Record p50/p95/p99 latency or reviewer-time measurements when the reference affects runtime or workflow speed.
+- Capture reviewer decision, unresolved uncertainty, and next refresh trigger.
+- Record leading indicator and failure signal from this file in the coverage manifest or journal when the reference drives real work.
+- Keep audit evidence small enough to review: command output summary, changed-file list, and unresolved-risk notes are preferred over raw transcript dumps.
+
+## Performance Verification Method
+
+Performance method: require the reader to find the correct next action in 10 minutes or less during review sampling.
+Leading indicator to measure: a new reader can apply the reference without asking the author for hidden context.
+Failure signal to watch: the reference is a literature dump instead of a guided explanation.
+Required measurement packet: capture input size, source count, tool-call count, wall-clock time, p50/p95/p99 latency where runtime applies, and reviewer decision time where documentation applies.
+Pass condition: the reference must let a reviewer identify the correct next action, verification gate, and stop condition without reading unrelated files.
+Fail condition: the reference encourages implementation before the workload, reliability target, and failure-mode table are explicit.
+
+## Scale Boundary Statement
+
+Writing Skills Validation Patterns stops being sufficient when the task spans multiple independent systems, more than one ownership boundary, unbounded source discovery, or production traffic without an explicit SLO.
+Under distributed execution, split work by theme file and preserve one verification owner per split; do not let parallel agents rewrite the same reference without a merge checkpoint.
+Under long-running agent workflows, treat context drift as a reliability failure: checkpoint state, summarize open risks, and verify against the spec before continuing.
+Under large-codebase scale, require dependency or source-graph narrowing before applying this reference; a source list without ranked canonical guidance is not enough.
+
 ## Future Refresh Search Queries
 
 | search_query_label_name | search_query_text_value |

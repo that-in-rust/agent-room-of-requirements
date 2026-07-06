@@ -137,6 +137,68 @@ Adjacent reference 1: consider the branch adjacent reference when the current ta
 Adjacent reference 2: consider the finish adjacent reference when the current task pivots away from branch finish worktree patterns.
 Adjacent reference 3: consider the worktree adjacent reference when the current task pivots away from branch finish worktree patterns.
 
+## Workload Model
+
+`combined_evidence_inference_note`: Treat Branch Finish Worktree Patterns as a repository operation operating reference, not as a prose summary.
+
+| workload_dimension_name | workload_boundary_value | verification_pressure_point |
+| --- | --- | --- |
+| primary_usage_surface | repository navigation, branch/worktree operation, dependency analysis, or GitHub context capture where stale state can corrupt the next action | verify that the reference changes the next implementation or review action |
+| bounded_capacity_model | one branch or worktree, one dependency slice, up to 500 changed files in discovery mode, and one explicit clean/dirty-state check | split the task or create a narrower reference when this boundary is exceeded |
+| source_pressure_model | local heading signals include Finishing a Development Branch; Overview; The Process; Step 1: Verify Tests; Run project's test suite; Step 2: Determine Base Branch; Using Git Worktr | compare guidance against canonical local sources before following external examples |
+| artifact_pressure_model | required artifact is dirty-worktree matrix with commit scope, push decision, and recovery commands | require the artifact before claiming the reference is operationally usable |
+
+## Reliability Target
+
+| reliability_target_name | measurable_threshold_value | evidence_collection_method |
+| --- | --- | --- |
+| source_boundary_preservation | 100 percent of recommendations keep local, external, and inference boundaries visible | review generated text for the three evidence labels before reuse |
+| decision_accuracy_sample | at least 18 of 20 sampled uses route to the correct adopt, adapt, avoid, or adjacent-reference decision | sample downstream tasks and record reviewer verdicts |
+| unsupported_claim_rate | zero unsupported production, security, latency, or reliability claims in final guidance | reject claims without source row, explicit inference note, or verification method |
+| recovery_path_clarity | every avoid or failure case names the rollback, escalation, or next-reference route | inspect failure-mode and adjacent-routing sections together |
+
+## Failure Mode Table
+
+| failure_mode_name | likely_trigger_condition | required_mitigation_action |
+| --- | --- | --- |
+| source drift hides truth | external or local guidance changes after the reference was written | refresh public evidence, rerun local corpus gate, and mark stale claims before reuse |
+| generic advice escapes review | agent copies plausible best practices without theme-specific verification | block completion until the verification gate names concrete command, reviewer question, or metric |
+| dirty tree loses intent | mutation starts before separating user changes from generated changes | inspect git status, isolate touched paths, and record ownership before edits |
+| blast radius exceeds review | broad search or rewrite touches files outside the intended scope | limit pathspecs and summarize changed files before final verification |
+
+## Retry Backpressure Guidance
+
+- Retry only after the failed verification signal is classified as transient, stale evidence, missing context, or true contradiction.
+- Use one bounded retry for stale external evidence refresh, then escalate to a human or a narrower source-specific reference.
+- Apply backpressure by stopping new generation or implementation work when source coverage, critique coverage, or verification gates are red.
+- For long-running agent workflows, checkpoint after each batch and re-read the current spec before any broad rewrite, commit, push, or destructive operation.
+- For distributed execution, assign one owner per generated file or theme batch and require merge-time verification of exact path, heading, and evidence-boundary invariants.
+
+## Observability Checklist
+
+- Record which local sources were loaded and which were intentionally skipped.
+- Record the exact verification command, reviewer question, or rendered artifact used as proof.
+- Record p50/p95/p99 latency or reviewer-time measurements when the reference affects runtime or workflow speed.
+- Capture branch name, dirty-state summary, pathspec, changed-file count, and push/commit boundary.
+- Record leading indicator and failure signal from this file in the coverage manifest or journal when the reference drives real work.
+- Keep audit evidence small enough to review: command output summary, changed-file list, and unresolved-risk notes are preferred over raw transcript dumps.
+
+## Performance Verification Method
+
+Performance method: require status checks before mutation and a bounded blast-radius report before broad repository edits.
+Leading indicator to measure: the next task uses the reference to make a better decision with less ambiguity.
+Failure signal to watch: the reference remains a source map and never becomes an operating guide.
+Required measurement packet: capture input size, source count, tool-call count, wall-clock time, p50/p95/p99 latency where runtime applies, and reviewer decision time where documentation applies.
+Pass condition: the reference must let a reviewer identify the correct next action, verification gate, and stop condition without reading unrelated files.
+Fail condition: the reference encourages implementation before the workload, reliability target, and failure-mode table are explicit.
+
+## Scale Boundary Statement
+
+Branch Finish Worktree Patterns stops being sufficient when the task spans multiple independent systems, more than one ownership boundary, unbounded source discovery, or production traffic without an explicit SLO.
+Under distributed execution, split work by theme file and preserve one verification owner per split; do not let parallel agents rewrite the same reference without a merge checkpoint.
+Under long-running agent workflows, treat context drift as a reliability failure: checkpoint state, summarize open risks, and verify against the spec before continuing.
+Under large-codebase scale, require dependency or source-graph narrowing before applying this reference; a source list without ranked canonical guidance is not enough.
+
 ## Future Refresh Search Queries
 
 | search_query_label_name | search_query_text_value |

@@ -133,6 +133,68 @@ Adjacent reference 1: consider the rust adjacent reference when the current task
 Adjacent reference 2: consider the executable adjacent reference when the current task pivots away from rust executable reference maps.
 Adjacent reference 3: consider the reference adjacent reference when the current task pivots away from rust executable reference maps.
 
+## Workload Model
+
+`combined_evidence_inference_note`: Treat Rust Executable Reference Maps as a rust system operating reference, not as a prose summary.
+
+| workload_dimension_name | workload_boundary_value | verification_pressure_point |
+| --- | --- | --- |
+| primary_usage_surface | systems implementation, CLI or service hardening, async/runtime review, and safety-sensitive refactoring where compile success is necessary but not sufficient | verify that the reference changes the next implementation or review action |
+| bounded_capacity_model | one crate or bounded workspace slice, up to 100 changed symbols, and one integration path that exercises error handling | split the task or create a narrower reference when this boundary is exceeded |
+| source_pressure_model | local heading signals include Reference Map; 1) Choose the Work Mode; 2) Choose by Task Type; Library or Public API; CLI or Binary; Async Service or Backend; Rust Executable Specs  | compare guidance against canonical local sources before following external examples |
+| artifact_pressure_model | required artifact is reference freshness workflow with canonical source policy and update checklist | require the artifact before claiming the reference is operationally usable |
+
+## Reliability Target
+
+| reliability_target_name | measurable_threshold_value | evidence_collection_method |
+| --- | --- | --- |
+| source_boundary_preservation | 100 percent of recommendations keep local, external, and inference boundaries visible | review generated text for the three evidence labels before reuse |
+| decision_accuracy_sample | at least 18 of 20 sampled uses route to the correct adopt, adapt, avoid, or adjacent-reference decision | sample downstream tasks and record reviewer verdicts |
+| unsupported_claim_rate | zero unsupported production, security, latency, or reliability claims in final guidance | reject claims without source row, explicit inference note, or verification method |
+| recovery_path_clarity | every avoid or failure case names the rollback, escalation, or next-reference route | inspect failure-mode and adjacent-routing sections together |
+
+## Failure Mode Table
+
+| failure_mode_name | likely_trigger_condition | required_mitigation_action |
+| --- | --- | --- |
+| source drift hides truth | external or local guidance changes after the reference was written | refresh public evidence, rerun local corpus gate, and mark stale claims before reuse |
+| generic advice escapes review | agent copies plausible best practices without theme-specific verification | block completion until the verification gate names concrete command, reviewer question, or metric |
+| runtime contention masks failure | async tasks, locks, or shared state degrade under concurrent load | add contention benchmark, timeout budget, and structured cancellation path |
+| panic path reaches production | unwrap or unchecked invariant survives compile and unit tests | require panic audit, Result propagation, and integration failure fixture |
+
+## Retry Backpressure Guidance
+
+- Retry only after the failed verification signal is classified as transient, stale evidence, missing context, or true contradiction.
+- Use one bounded retry for stale external evidence refresh, then escalate to a human or a narrower source-specific reference.
+- Apply backpressure by stopping new generation or implementation work when source coverage, critique coverage, or verification gates are red.
+- For long-running agent workflows, checkpoint after each batch and re-read the current spec before any broad rewrite, commit, push, or destructive operation.
+- For distributed execution, assign one owner per generated file or theme batch and require merge-time verification of exact path, heading, and evidence-boundary invariants.
+
+## Observability Checklist
+
+- Record which local sources were loaded and which were intentionally skipped.
+- Record the exact verification command, reviewer question, or rendered artifact used as proof.
+- Record p50/p95/p99 latency or reviewer-time measurements when the reference affects runtime or workflow speed.
+- Capture error count, timeout count, retry count, saturation signal, and rollback trigger.
+- Record leading indicator and failure signal from this file in the coverage manifest or journal when the reference drives real work.
+- Keep audit evidence small enough to review: command output summary, changed-file list, and unresolved-risk notes are preferred over raw transcript dumps.
+
+## Performance Verification Method
+
+Performance method: require memory, panic, and concurrency evidence; hot-path operations need p95 under 10 ms locally or an explicit benchmark exception.
+Leading indicator to measure: compile attempts and review comments decrease because the API shape is explicit before implementation.
+Failure signal to watch: the reference hides ownership or error tradeoffs behind generic guidance.
+Required measurement packet: capture input size, source count, tool-call count, wall-clock time, p50/p95/p99 latency where runtime applies, and reviewer decision time where documentation applies.
+Pass condition: the reference must let a reviewer identify the correct next action, verification gate, and stop condition without reading unrelated files.
+Fail condition: the reference encourages implementation before the workload, reliability target, and failure-mode table are explicit.
+
+## Scale Boundary Statement
+
+Rust Executable Reference Maps stops being sufficient when the task spans multiple independent systems, more than one ownership boundary, unbounded source discovery, or production traffic without an explicit SLO.
+Under distributed execution, split work by theme file and preserve one verification owner per split; do not let parallel agents rewrite the same reference without a merge checkpoint.
+Under long-running agent workflows, treat context drift as a reliability failure: checkpoint state, summarize open risks, and verify against the spec before continuing.
+Under large-codebase scale, require dependency or source-graph narrowing before applying this reference; a source list without ranked canonical guidance is not enough.
+
 ## Future Refresh Search Queries
 
 | search_query_label_name | search_query_text_value |

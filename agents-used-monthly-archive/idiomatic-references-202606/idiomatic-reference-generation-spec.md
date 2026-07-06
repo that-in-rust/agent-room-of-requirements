@@ -114,6 +114,34 @@
 **AND** SHALL record RED and GREEN checkpoints for critique file existence, all-99 path coverage, and filename-header-plus-text-block formatting
 **SHALL** keep the latest critique journal checkpoint aligned with the final verification output
 
+### REQ-REF-017.0: Produce Jeff-Dean systems critique coverage
+
+**WHEN** the `generated-references/` directory contains the verified `99` Markdown reference files
+**THEN** the workstream SHALL create `agents-used-monthly-archive/idiomatic-references-202606/critique-JD-01.md`
+**AND** SHALL include one section per generated reference with the file name as a Markdown header, the exact generated file path, and a fenced `text` critique block
+**SHALL** fail verification when any generated reference file lacks exactly one Jeff-Dean critique section
+
+### REQ-REF-018.0: Capture production-systems critique findings
+
+**WHEN** a generated reference is critiqued from a Jeff Dean systems-engineering lens
+**THEN** the critique block SHALL identify missing scale limits, reliability guarantees, operational robustness, technical grounding, production-load risks, and simplification opportunities
+**AND** SHALL include explicit critique markers for scale model, reliability model, instrumentation, failure modes, backpressure, observability, and `p50/p95/p99 latency`
+**SHALL** avoid generic framework enthusiasm, opinion-only advice, or recommendations without measurable production constraints
+
+### REQ-REF-019.0: Upgrade references with production-readiness apparatus
+
+**WHEN** a generated reference is revised after Jeff-Dean critique
+**THEN** the reference SHALL include a workload model, reliability target, failure-mode table, retry/backpressure guidance, observability checklist, and measurable performance verification method
+**AND** SHALL state where the guidance stops applying under distributed execution, long-running agent workflows, or large-codebase scale
+**SHALL** fail review when the file contains best-practice claims without concrete capacity, latency, durability, or error-rate verification
+
+### REQ-REF-020.0: Track Jeff-Dean critique pass with TDD journal
+
+**WHEN** the Jeff-Dean critique pass starts
+**THEN** the workstream SHALL initialize `agents-used-monthly-archive/idiomatic-references-202606/critique-JD-progress.md` using `tdd-task-progress-context-retainer`
+**AND** SHALL record RED and GREEN checkpoints for critique file existence, all-99 path coverage, filename-header-plus-text-block formatting, and systems-marker coverage
+**SHALL** keep the latest Jeff-Dean critique journal checkpoint aligned with the final verification output
+
 ## Test Matrix
 
 | req_id | test_id | test_type | assertion | target |
@@ -134,6 +162,10 @@
 | REQ-REF-014.0 | TEST-SPEC-014 | source synthesis | revised references classify local corpus sources and convert heading signals into guidance | generated theme files |
 | REQ-REF-015.0 | TEST-SPEC-015 | completeness | revised references include theme artifact, good/bad/borderline examples, metrics, adjacent routing, and checklist | generated theme files |
 | REQ-REF-016.0 | TEST-SPEC-016 | critique journal | critique progress journal records RED and GREEN checkpoints with latest verification metrics | `critique-SD-progress.md` |
+| REQ-REF-017.0 | TEST-SPEC-017 | systems critique coverage | Jeff-Dean critique file has one filename header, exact path, and fenced text block per generated file | `critique-JD-01.md` |
+| REQ-REF-018.0 | TEST-SPEC-018 | systems critique quality | every Jeff-Dean critique block names scale, reliability, instrumentation, failure modes, production-load risk, and simplification markers | `critique-JD-01.md` |
+| REQ-REF-019.0 | TEST-SPEC-019 | production readiness | revised references include workload model, reliability target, failure table, retry/backpressure guidance, observability checklist, and measurable performance method | generated theme files |
+| REQ-REF-020.0 | TEST-SPEC-020 | systems critique journal | Jeff-Dean critique progress journal records RED and GREEN checkpoints with final verification metrics | `critique-JD-progress.md` |
 
 ## TDD Plan
 
@@ -175,6 +207,8 @@ If the script is unavailable in this repo, create the journal manually using the
 4. Preserve sourced fact, external fact, and inference boundaries.
 5. Promote generated files from evidence indexes into decision-quality operating references by adding user journey, source hierarchy, examples, and metrics.
 6. Run a Shreyas-Doshi critique pass to identify missing comprehensiveness and convert the findings into a rewrite backlog.
+7. Run a Jeff-Dean critique pass to identify missing scale models, reliability contracts, instrumentation, production-load boundaries, and simplification opportunities.
+8. Convert Jeff-Dean findings into production-readiness apparatus for each reference: workload model, failure-mode table, retry/backpressure guidance, observability checklist, and measurable performance verification.
 
 ### VERIFY
 
@@ -184,7 +218,10 @@ If the script is unavailable in this repo, create the journal manually using the
 4. Confirm every generated file includes external evidence or an explicit unavailable reason.
 5. Confirm `critique-SD-01.md` covers every generated file exactly once with filename header, exact path, and fenced critique block.
 6. Confirm critique blocks name missing user journey, missing decision quality, missing comprehensiveness, missing source synthesis, and concrete additions.
-7. Capture final generation and critique journal checkpoints with phase `Refactor` or `Green`, exact verification status, and next steps.
+7. Confirm `critique-JD-01.md` covers every generated file exactly once with filename header, exact path, and fenced critique block.
+8. Confirm Jeff-Dean critique blocks name scale model, reliability model, instrumentation, failure modes, backpressure, observability, `p50/p95/p99 latency`, production-load risk, and simplification opportunities.
+9. Confirm revised references include production-readiness apparatus before treating `REQ-REF-019.0` as complete.
+10. Capture final generation and critique journal checkpoints with phase `Refactor` or `Green`, exact verification status, and next steps.
 
 ## Quality Gates
 
@@ -415,8 +452,118 @@ print('critique_progress_journal_ok')
 PY
 ```
 
+### Jeff Dean Critique Coverage Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import re
+base = Path('agents-used-monthly-archive/idiomatic-references-202606')
+critique = base / 'critique-JD-01.md'
+generated = sorted((base / 'generated-references').glob('*.md'))
+text = critique.read_text()
+headers = re.findall(r'^## ([^\n]+\.md)$', text, flags=re.M)
+blocks = re.findall(r'```text\n(.*?)\n```', text, flags=re.S)
+assert len(generated) == 99, len(generated)
+assert len(headers) == 99, len(headers)
+assert len(set(headers)) == 99, len(set(headers))
+assert len(blocks) == 99, len(blocks)
+for path in generated:
+    rel = path.as_posix()
+    assert f'## {path.name}' in text, path.name
+    assert text.count(f'Exact path: `{rel}`') == 1, rel
+print('jeff_dean_critique_coverage_ok', len(blocks))
+PY
+```
+
+### Jeff Dean Critique Quality Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import re
+critique = Path('agents-used-monthly-archive/idiomatic-references-202606/critique-JD-01.md')
+blocks = re.findall(r'```text\n(.*?)\n```', critique.read_text(), flags=re.S)
+required_markers = [
+    'Jeff Dean-style systems critique',
+    'What is missing for scale, reliability, and operational robustness:',
+    'Where the reference is too hand-wavy or not technically grounded:',
+    'What concrete systems thinking should be added:',
+    'Where it would fail under production load or large-codebase use:',
+    'What should be simplified, made composable, or made measurable:',
+    'Scale model:',
+    'Reliability model:',
+    'Instrumentation:',
+    'Failure modes:',
+    'backpressure',
+    'observability',
+    'p50/p95/p99 latency',
+]
+failures = []
+for index, block in enumerate(blocks, 1):
+    missing = [marker for marker in required_markers if marker not in block]
+    if missing:
+        failures.append((index, missing))
+    if len(block.splitlines()) < 35:
+        failures.append((index, ['critique block shorter than 35 lines']))
+assert not failures, failures[:5]
+print('jeff_dean_critique_quality_ok', len(blocks))
+PY
+```
+
+### Production Readiness Reference Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+out = Path('agents-used-monthly-archive/idiomatic-references-202606/generated-references')
+required_markers = [
+    '## Workload Model',
+    '## Reliability Target',
+    '## Failure Mode Table',
+    '## Retry Backpressure Guidance',
+    '## Observability Checklist',
+    '## Performance Verification Method',
+    '## Scale Boundary Statement',
+]
+failures = []
+for path in out.glob('*.md'):
+    text = path.read_text()
+    missing = [marker for marker in required_markers if marker not in text]
+    if missing:
+        failures.append((str(path), missing))
+assert not failures, failures[:3]
+print('production_readiness_reference_ok')
+PY
+```
+
+This gate is required for completed post-critique rewrite passes that implement `REQ-REF-019.0`.
+
+### Jeff Dean Progress Journal Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+journal = Path('agents-used-monthly-archive/idiomatic-references-202606/critique-JD-progress.md')
+text = journal.read_text()
+required = [
+    'Current Phase: Green',
+    'test_jd_critique_file_exists: passing',
+    'test_all_99_reference_paths_present: passing',
+    'test_each_section_has_header_and_text_block: passing',
+    'test_jd_systems_markers_present: passing',
+    'verification_errors=0',
+]
+missing = [marker for marker in required if marker not in text]
+assert not missing, missing
+print('jeff_dean_progress_journal_ok')
+PY
+```
+
 ## Open Questions
 
 1. Should `REQ-REF-013.0` through `REQ-REF-015.0` become blockers for the current generated corpus, or should they define the next rewrite pass after `critique-SD-01.md`?
 2. Should internet/GitHub research require a minimum number of external sources per theme, or is `external_evidence_unavailable_reason` acceptable for internal-only agent workflow themes?
 3. Should Shreyas-Doshi critique output remain a separate review artifact, or should each critique item be converted into tracked rewrite issues per generated reference?
+4. Should `REQ-REF-019.0` be applied to all 99 references immediately, or should production-readiness upgrades start with the highest-risk themes such as backend security, agent orchestration, observability, and long-running workflows?
+5. Should production readiness use one universal SLO template, or should each theme define its own workload, latency, reliability, and failure-mode thresholds?

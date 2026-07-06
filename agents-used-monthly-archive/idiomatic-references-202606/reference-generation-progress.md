@@ -162,3 +162,77 @@ Audit the evolved reference corpus and keep the full 16-test verifier green afte
 ### Performance/Metrics:
 - Generated files: 99.
 - Full verifier result after evolution: 16 pass, 0 failures.
+
+### Session: 2026-07-06 13:51:50Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- test_inventory_theme_count: passing - parsed 99 four-word PRD themes
+- test_generated_file_count: passing - generated-references contains exactly 99 theme files
+- test_existing_spec_gates_except_production_readiness: passing - 14 of 15 current gates passed in baseline audit
+- test_production_readiness_reference_gate: failing - 99 files missing Workload Model, Reliability Target, Failure Mode Table, Retry Backpressure Guidance, Observability Checklist, Performance Verification Method, and Scale Boundary Statement
+
+#### Implementation Progress:
+- agents-used-monthly-archive/idiomatic-references-202606/generated-references/*.md: no production-readiness sections yet
+
+#### Current Focus:
+Implement REQ-REF-019.0 production-readiness apparatus across all 99 generated references
+
+#### Next Steps:
+- Add theme-aware production-readiness sections to all 99 generated reference files
+- Run production readiness gate and full spec gate audit
+- Record GREEN checkpoint with exact verification metrics
+
+#### Context Notes:
+- Deep-exploration lenses selected: systems operator, domain implementer, documentation user, and skeptical engineer; skeptical finding is that the only current blocker is missing concrete production apparatus in each generated reference
+
+#### Performance/Metrics:
+- baseline_gates_passed=14; baseline_gates_total=15; production_readiness_missing_files=99
+
+### Session: 2026-07-06 13:58:34Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- TEST-SPEC-001: passing - inventory parses 99 four-word PRD themes
+- TEST-SPEC-002: passing - generated directory contains exactly 99 theme files
+- TEST-SPEC-003: passing - all local corpus paths remain present in matching generated files
+- TEST-SPEC-004: passing - external evidence accounting remains present
+- TEST-SPEC-005: passing - A02 and evolved production-readiness sections are present
+- TEST-SPEC-006: passing - backticked snake_case labels remain four-word compliant
+- TEST-SPEC-007: passing - agent usage and verification guidance remain present
+- TEST-SPEC-008: passing - progress journal has non-empty next steps and TEST-SPEC references
+- TEST-SPEC-009: passing - coverage manifest has 99 production-ready rows
+- TEST-SPEC-010: passing - local, external, and inference evidence boundaries remain present
+- TEST-SPEC-011: passing - Shreyas critique coverage remains one section per generated reference
+- TEST-SPEC-012: passing - Shreyas critique quality markers remain present
+- TEST-SPEC-013: passing - decision-utility sections remain present
+- TEST-SPEC-014: passing - local corpus hierarchy sections remain present
+- TEST-SPEC-015: passing - theme artifact, examples, metrics, checklist, and routing remain present
+- TEST-SPEC-016: passing - Shreyas critique journal remains green
+- TEST-SPEC-017: passing - Jeff Dean critique coverage has 99 headers and 99 text blocks
+- TEST-SPEC-018: passing - Jeff Dean critique quality markers remain present
+- TEST-SPEC-019: passing - all 99 generated files include workload, reliability, failure, backpressure, observability, performance, and scale-boundary sections
+- TEST-SPEC-020: passing - Jeff Dean critique journal remains green
+
+#### Implementation Progress:
+- agents-used-monthly-archive/idiomatic-references-202606/generated-references/*.md: added production-readiness apparatus to all 99 files
+- agents-used-monthly-archive/idiomatic-references-202606/tools/verify_reference_generation.py: expanded final verifier from TEST-SPEC-001..016 to TEST-SPEC-001..020
+- agents-used-monthly-archive/idiomatic-references-202606/reference-generation-coverage.md: updated all 99 rows to generated_production_ready_verified
+- agents-used-monthly-archive/idiomatic-references-202606/reference-generation-progress.md: recorded RED and GREEN production-readiness checkpoints
+
+#### Current Focus:
+Complete production-readiness evolution for all 99 generated references under REQ-REF-019.0
+
+#### Next Steps:
+- Run final completion audit with verifier, diff check, generated section count, coverage manifest count, and git status
+- Review representative generated references for rendered Markdown and theme-aware production-readiness content
+- If requested, commit the modified spec, verifier, manifest, critique files, journal, and generated references
+
+#### Context Notes:
+- Deep-exploration synthesis used systems operator, domain implementer, documentation user, and skeptical engineer lenses; selected repeatable verifier-backed evolution over one-off prose edits
+- Full verifier output after implementation: TEST-SPEC-001 through TEST-SPEC-020 PASS, VERIFY PASS
+
+#### Performance/Metrics:
+- generated_reference_files=99; production_ready_rows=99; verifier_tests_passing=20; verifier_failures=0
