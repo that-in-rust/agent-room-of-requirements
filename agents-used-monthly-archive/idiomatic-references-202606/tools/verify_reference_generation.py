@@ -16,6 +16,8 @@ PRD_PATH = WORK_DIR / "prd-idiomatic-202606.md"
 GENERATED_DIR = WORK_DIR / "generated-references"
 COVERAGE_PATH = WORK_DIR / "reference-generation-coverage.md"
 JOURNAL_PATH = WORK_DIR / "reference-generation-progress.md"
+CRITIQUE_PATH = WORK_DIR / "critique-SD-01.md"
+CRITIQUE_JOURNAL_PATH = WORK_DIR / "critique-SD-progress.md"
 
 REQUIRED_SECTIONS = [
     "## Source Evidence Mapping Table",
@@ -28,6 +30,14 @@ REQUIRED_SECTIONS = [
     "## Agent Usage Decision Guide",
     "## Future Refresh Search Queries",
     "## Evidence Boundary Notes",
+    "## User Journey Scenario",
+    "## Decision Tradeoff Guide",
+    "## Local Corpus Hierarchy",
+    "## Theme Specific Artifact",
+    "## Worked Example Set",
+    "## Outcome Metrics and Feedback Loops",
+    "## Completeness Checklist",
+    "## Adjacent Reference Routing",
 ]
 
 JOURNAL_SECTIONS = [
@@ -98,6 +108,27 @@ def assert_theme_file_valid(row: ThemeRow) -> None:
     assert "combined_evidence_inference_note" in text, f"{path}: missing inference boundary"
     assert "agent_usage_decision_guide" in text, f"{path}: missing agent usage guide key"
     assert "verification_gate_command_set" in text, f"{path}: missing verification command key"
+    decision_markers = [
+        "Role based opening scenario:",
+        "Primary user starting state:",
+        "Decision being made:",
+        "Reference opening trigger:",
+        "Adopt when",
+        "Adapt when",
+        "Avoid when",
+        "Cost of being wrong",
+        "canonical",
+        "supporting",
+        "Theme specific artifact:",
+        "Good example:",
+        "Bad example:",
+        "Borderline case:",
+        "Leading indicator:",
+        "Failure signal:",
+        "Adjacent reference",
+    ]
+    missing_decision_markers = [marker for marker in decision_markers if marker not in text]
+    assert not missing_decision_markers, f"{path}: missing decision markers {missing_decision_markers}"
     for label in re.findall(r"`([a-z][a-z0-9]*(?:_[a-z0-9]+)+)`", text):
         assert len(label.split("_")) == 4, f"{path}: non-four-word label `{label}`"
     assert not any(line.rstrip() != line for line in text.splitlines()), f"{path}: trailing whitespace"
@@ -126,6 +157,57 @@ def assert_progress_journal_valid() -> None:
     assert "TEST-SPEC-" in text, "journal does not mention verification tests"
 
 
+def assert_critique_coverage_valid(rows: list[ThemeRow]) -> None:
+    assert CRITIQUE_PATH.exists(), f"missing critique file: {CRITIQUE_PATH}"
+    text = CRITIQUE_PATH.read_text()
+    headers = re.findall(r"^## ([^\n]+\.md)$", text, flags=re.M)
+    blocks = re.findall(r"```text\n(.*?)\n```", text, flags=re.S)
+    assert len(headers) == 99, f"expected 99 critique headers, found {len(headers)}"
+    assert len(set(headers)) == len(headers), "duplicate critique headers found"
+    assert len(blocks) == 99, f"expected 99 critique text blocks, found {len(blocks)}"
+    for row in rows:
+        generated_path = GENERATED_DIR / f"{row.theme}.md"
+        assert f"## {generated_path.name}" in text, f"missing critique header for {generated_path.name}"
+        assert (
+            text.count(f"Exact path: `{generated_path.relative_to(ROOT_DIR)}`") == 1
+        ), f"critique exact path not once: {generated_path.relative_to(ROOT_DIR)}"
+
+
+def assert_critique_quality_valid() -> None:
+    assert CRITIQUE_PATH.exists(), f"missing critique file: {CRITIQUE_PATH}"
+    blocks = re.findall(r"```text\n(.*?)\n```", CRITIQUE_PATH.read_text(), flags=re.S)
+    required_markers = [
+        "What is missing:",
+        "What to add next:",
+        "User and situation clarity:",
+        "Decision quality:",
+        "Evidence shape:",
+        "Source synthesis gap:",
+        "Theme-specific gap:",
+        "Build the missing theme-specific artifact:",
+    ]
+    failures: list[tuple[int, list[str]]] = []
+    for index, block in enumerate(blocks, 1):
+        missing = [marker for marker in required_markers if marker not in block]
+        if missing:
+            failures.append((index, missing))
+    assert not failures, f"critique quality failures: {failures[:5]}"
+
+
+def assert_critique_journal_valid() -> None:
+    assert CRITIQUE_JOURNAL_PATH.exists(), f"missing critique journal: {CRITIQUE_JOURNAL_PATH}"
+    text = CRITIQUE_JOURNAL_PATH.read_text()
+    required = [
+        "Current Phase: Green",
+        "test_critique_file_exists: passing",
+        "test_all_99_reference_paths_present: passing",
+        "test_each_section_has_header_and_text_block: passing",
+        "verification_errors=0",
+    ]
+    missing = [marker for marker in required if marker not in text]
+    assert not missing, f"critique journal missing markers: {missing}"
+
+
 def run_verification(stage: str) -> int:
     checks = [
         ("TEST-SPEC-001", lambda rows: assert_inventory_valid(rows)),
@@ -138,6 +220,12 @@ def run_verification(stage: str) -> int:
         ("TEST-SPEC-008", lambda rows: assert_progress_journal_valid()),
         ("TEST-SPEC-009", lambda rows: assert_coverage_manifest_valid(rows)),
         ("TEST-SPEC-010", lambda rows: [assert_theme_file_valid(row) for row in rows]),
+        ("TEST-SPEC-011", lambda rows: assert_critique_coverage_valid(rows)),
+        ("TEST-SPEC-012", lambda rows: assert_critique_quality_valid()),
+        ("TEST-SPEC-013", lambda rows: [assert_theme_file_valid(row) for row in rows]),
+        ("TEST-SPEC-014", lambda rows: [assert_theme_file_valid(row) for row in rows]),
+        ("TEST-SPEC-015", lambda rows: [assert_theme_file_valid(row) for row in rows]),
+        ("TEST-SPEC-016", lambda rows: assert_critique_journal_valid()),
     ]
     rows = parse_theme_rows()
     failures: list[tuple[str, str]] = []

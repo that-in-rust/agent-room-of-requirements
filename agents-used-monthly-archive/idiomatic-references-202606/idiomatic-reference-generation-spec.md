@@ -72,6 +72,48 @@
 **AND** SHALL include uncertainty notes for conflicts, stale sources, or missing primary documentation
 **SHALL** reject unsourced recommendations that are presented as fact
 
+### REQ-REF-011.0: Produce Shreyas-Doshi critique coverage
+
+**WHEN** the `generated-references/` directory contains the verified `99` Markdown reference files
+**THEN** the workstream SHALL create `agents-used-monthly-archive/idiomatic-references-202606/critique-SD-01.md`
+**AND** SHALL include one section per generated reference with the file name as a Markdown header, the exact generated file path, and a fenced `text` critique block
+**SHALL** fail verification when any generated reference file lacks exactly one critique section
+
+### REQ-REF-012.0: Capture decision-quality critique findings
+
+**WHEN** a generated reference is critiqued from a Shreyas Doshi product-strategy lens
+**THEN** the critique block SHALL identify missing user journey clarity, missing decision tradeoffs, missing comprehensiveness, missing source synthesis, and concrete additions
+**AND** SHALL include at least one theme-specific missing artifact such as a threat model, decision table, worked example, runbook, rubric, or checklist
+**SHALL** avoid generic praise or summary-only review text
+
+### REQ-REF-013.0: Upgrade references beyond evidence indexes
+
+**WHEN** a generated reference is revised after critique
+**THEN** the reference SHALL include a role-based opening scenario, primary user starting state, decision being made, and the trigger for opening that reference
+**AND** SHALL include adopt/adapt/avoid guidance with the cost of being wrong for that theme
+**SHALL** fail review when the file only lists sources, scores, and generic anti-patterns without guiding a concrete user decision
+
+### REQ-REF-014.0: Synthesize local corpus hierarchy
+
+**WHEN** a generated reference includes multiple local corpus paths or extracted heading signals
+**THEN** the reference SHALL classify local sources as canonical, supporting, legacy, duplicate, or conflicting
+**AND** SHALL convert the most important heading signals into ordered guidance or review questions
+**SHALL** include a confidence warning when only one local corpus source exists
+
+### REQ-REF-015.0: Add theme-specific completeness apparatus
+
+**WHEN** a generated reference is intended for agent or human reuse
+**THEN** it SHALL include one theme-specific artifact required by the critique, one good example, one bad example, one borderline case, and a completeness checklist
+**AND** SHALL include metrics, leading indicators, or failure signals that show whether the reference improved the next task outcome
+**SHALL** include adjacent-reference routing for cases where a neighboring reference is more appropriate
+
+### REQ-REF-016.0: Track critique pass with TDD journal
+
+**WHEN** the Shreyas-Doshi critique pass starts
+**THEN** the workstream SHALL initialize `agents-used-monthly-archive/idiomatic-references-202606/critique-SD-progress.md` using `tdd-task-progress-context-retainer`
+**AND** SHALL record RED and GREEN checkpoints for critique file existence, all-99 path coverage, and filename-header-plus-text-block formatting
+**SHALL** keep the latest critique journal checkpoint aligned with the final verification output
+
 ## Test Matrix
 
 | req_id | test_id | test_type | assertion | target |
@@ -86,6 +128,12 @@
 | REQ-REF-008.0 | TEST-SPEC-008 | journal | progress journal exists and latest checkpoint has non-empty next steps | progress journal |
 | REQ-REF-009.0 | TEST-SPEC-009 | coverage | coverage manifest has one row for each theme and no duplicates | coverage manifest |
 | REQ-REF-010.0 | TEST-SPEC-010 | evidence | recommendations distinguish local fact, external fact, and inference | generated theme files |
+| REQ-REF-011.0 | TEST-SPEC-011 | critique coverage | critique file has one filename header, exact path, and fenced text block per generated file | `critique-SD-01.md` |
+| REQ-REF-012.0 | TEST-SPEC-012 | critique quality | every critique block names missing user journey, tradeoffs, comprehensiveness, source synthesis, and concrete additions | `critique-SD-01.md` |
+| REQ-REF-013.0 | TEST-SPEC-013 | decision utility | revised references include role scenario and adopt/adapt/avoid decision guidance | generated theme files |
+| REQ-REF-014.0 | TEST-SPEC-014 | source synthesis | revised references classify local corpus sources and convert heading signals into guidance | generated theme files |
+| REQ-REF-015.0 | TEST-SPEC-015 | completeness | revised references include theme artifact, good/bad/borderline examples, metrics, adjacent routing, and checklist | generated theme files |
+| REQ-REF-016.0 | TEST-SPEC-016 | critique journal | critique progress journal records RED and GREEN checkpoints with latest verification metrics | `critique-SD-progress.md` |
 
 ## TDD Plan
 
@@ -125,6 +173,8 @@ If the script is unavailable in this repo, create the journal manually using the
 2. Remove duplicated prose that does not improve agent decisions.
 3. Tighten labels that fail the four-word reusable-label rule.
 4. Preserve sourced fact, external fact, and inference boundaries.
+5. Promote generated files from evidence indexes into decision-quality operating references by adding user journey, source hierarchy, examples, and metrics.
+6. Run a Shreyas-Doshi critique pass to identify missing comprehensiveness and convert the findings into a rewrite backlog.
 
 ### VERIFY
 
@@ -132,7 +182,9 @@ If the script is unavailable in this repo, create the journal manually using the
 2. Confirm `99` generated files, `99` coverage rows, and `99` completed themes.
 3. Confirm every generated file references all local source paths from its PRD row.
 4. Confirm every generated file includes external evidence or an explicit unavailable reason.
-5. Capture a final journal checkpoint with phase `Refactor` or `Green`, exact verification status, and next steps.
+5. Confirm `critique-SD-01.md` covers every generated file exactly once with filename header, exact path, and fenced critique block.
+6. Confirm critique blocks name missing user journey, missing decision quality, missing comprehensiveness, missing source synthesis, and concrete additions.
+7. Capture final generation and critique journal checkpoints with phase `Refactor` or `Green`, exact verification status, and next steps.
 
 ## Quality Gates
 
@@ -264,8 +316,107 @@ print('coverage_manifest_ok', len(rows))
 PY
 ```
 
+### Shreyas Critique Coverage Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import re
+base = Path('agents-used-monthly-archive/idiomatic-references-202606')
+critique = base / 'critique-SD-01.md'
+generated = sorted((base / 'generated-references').glob('*.md'))
+text = critique.read_text()
+headers = re.findall(r'^## ([^\n]+\.md)$', text, flags=re.M)
+blocks = re.findall(r'```text\n(.*?)\n```', text, flags=re.S)
+assert len(generated) == 99, len(generated)
+assert len(headers) == 99, len(headers)
+assert len(set(headers)) == 99, len(set(headers))
+assert len(blocks) == 99, len(blocks)
+for path in generated:
+    assert f'## {path.name}' in text, path.name
+    assert text.count(f'Exact path: `{path}`') == 1, str(path)
+print('shreyas_critique_coverage_ok', len(blocks))
+PY
+```
+
+### Shreyas Critique Quality Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+import re
+critique = Path('agents-used-monthly-archive/idiomatic-references-202606/critique-SD-01.md')
+blocks = re.findall(r'```text\n(.*?)\n```', critique.read_text(), flags=re.S)
+required_markers = [
+    'What is missing:',
+    'What to add next:',
+    'User and situation clarity:',
+    'Decision quality:',
+    'Evidence shape:',
+    'Source synthesis gap:',
+    'Theme-specific gap:',
+    'Build the missing theme-specific artifact:',
+]
+failures = []
+for index, block in enumerate(blocks, 1):
+    missing = [marker for marker in required_markers if marker not in block]
+    if missing:
+        failures.append((index, missing))
+assert not failures, failures[:5]
+print('shreyas_critique_quality_ok', len(blocks))
+PY
+```
+
+### Decision-Quality Reference Upgrade Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+out = Path('agents-used-monthly-archive/idiomatic-references-202606/generated-references')
+required_markers = [
+    '## User Journey Scenario',
+    '## Decision Tradeoff Guide',
+    '## Local Corpus Hierarchy',
+    '## Theme Specific Artifact',
+    '## Worked Example Set',
+    '## Completeness Checklist',
+    '## Adjacent Reference Routing',
+]
+failures = []
+for path in out.glob('*.md'):
+    text = path.read_text()
+    missing = [marker for marker in required_markers if marker not in text]
+    if missing:
+        failures.append((str(path), missing))
+assert not failures, failures[:3]
+print('decision_quality_reference_upgrade_ok')
+PY
+```
+
+This gate is required for completed post-critique rewrite passes that implement `REQ-REF-013.0` through `REQ-REF-015.0`.
+
+### Critique Progress Journal Gate
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+journal = Path('agents-used-monthly-archive/idiomatic-references-202606/critique-SD-progress.md')
+text = journal.read_text()
+required = [
+    'Current Phase: Green',
+    'test_critique_file_exists: passing',
+    'test_all_99_reference_paths_present: passing',
+    'test_each_section_has_header_and_text_block: passing',
+    'verification_errors=0',
+]
+missing = [marker for marker in required if marker not in text]
+assert not missing, missing
+print('critique_progress_journal_ok')
+PY
+```
+
 ## Open Questions
 
-1. Should generated references live under `generated-references/` as specified, or should they be flat beside `prd-idiomatic-202606.md`?
+1. Should `REQ-REF-013.0` through `REQ-REF-015.0` become blockers for the current generated corpus, or should they define the next rewrite pass after `critique-SD-01.md`?
 2. Should internet/GitHub research require a minimum number of external sources per theme, or is `external_evidence_unavailable_reason` acceptable for internal-only agent workflow themes?
-3. Should completion require committing the 99 generated files, coverage manifest, and journal, or only leaving them verified in the worktree?
+3. Should Shreyas-Doshi critique output remain a separate review artifact, or should each critique item be converted into tracked rewrite issues per generated reference?

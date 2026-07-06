@@ -62,6 +62,70 @@ python3 agents-used-monthly-archive/idiomatic-references-202606/tools/verify_ref
 - Treat external sources as freshness and ecosystem checks, not replacements for local repo conventions.
 - Preserve the evidence boundary labels when reusing recommendations.
 
+## User Journey Scenario
+
+Role based opening scenario: The system designer or debugger is starting from a design choice, failure symptom, dependency map, or unclear boundary and needs a reference that turns source evidence into an executable next step.
+Primary user starting state: The user has a `system_design_architecture_patterns` task, one or more local source paths, and uncertainty about which pattern should drive implementation.
+Decision being made: choosing the evidence, option set, tradeoff, and validation probe before changing structure.
+Reference opening trigger: Open this file when the task mentions system design architecture patterns, any mapped local source path, or an adjacent workflow with the same failure mode.
+
+## Decision Tradeoff Guide
+
+| decision_option_name | when_to_choose_condition | tradeoff_cost_description | verification_question_prompt |
+| --- | --- | --- | --- |
+| Adopt when | local corpus and external evidence agree on the system design architecture patterns pattern | fastest path, but can copy stale local assumptions | Does the selected pattern appear in the canonical source and current external evidence? |
+| Adapt when | local sources are strong but public ecosystem guidance has changed | preserves repo fit, but requires explicit inference notes | Did the reference label the local fact, external fact, and combined inference separately? |
+| Avoid when | source evidence is thin, conflicting, or unrelated to the user journey | prevents false confidence, but may require deeper research | Is there a confidence warning or adjacent reference route? |
+| Cost of being wrong | wrong system design architecture patterns guidance can send an agent to the wrong files, tests, or abstraction | wasted implementation loop and weaker verification | Would a reviewer know what to undo and what to inspect next? |
+
+## Local Corpus Hierarchy
+
+Classification vocabulary includes canonical, supporting, legacy, duplicate, and conflicting source roles.
+Confidence warning: only one local corpus source is mapped, so this reference should invite adjacent-source discovery before becoming canonical policy.
+
+| local_source_filepath_value | corpus_hierarchy_role | heading_signal_to_convert | reviewer_question_to_answer |
+| --- | --- | --- | --- |
+| agents-used-monthly-archive/idiomatic-references-202602/Idiom97-SystemDesignPatterns-20251205.md | canonical primary source | The Comprehensive System Design Patterns Reference; Table of Contents; Kubernetes & Container Orchestration | What guidance, warning, or example should this source contribute to System Design Architecture Patterns? |
+
+## Theme Specific Artifact
+
+Theme specific artifact: decision record with boundary options, rejected alternatives, and migration sequence.
+
+| artifact_field_name | artifact_completion_rule | evidence_source_hint |
+| --- | --- | --- |
+| user_goal_statement | state the user's concrete goal before applying System Design Architecture Patterns | local corpus hierarchy plus critique findings |
+| decision_boundary_rule | define the point where this reference should be used or avoided | decision tradeoff guide |
+| verification_gate_rule | define the command, checklist, or review question that proves the artifact worked | verification gate command set |
+
+## Worked Example Set
+
+Good example: Use System Design Architecture Patterns after loading the canonical source, confirming the external evidence boundary, and writing a verification gate before implementation.
+Bad example: Use System Design Architecture Patterns as a generic tutorial while ignoring the mapped local paths, source hierarchy, and cost of being wrong.
+Borderline case: Use System Design Architecture Patterns only after adding a confidence warning when local evidence is thin or conflicts with current ecosystem guidance.
+
+## Outcome Metrics and Feedback Loops
+
+Leading indicator: the chosen boundary reduces blast radius or uncertainty measured by explicit probes.
+Failure signal: the reference jumps to a pattern before proving the problem shape.
+Review cadence: Re-run the verifier after every generated-reference edit and refresh external sources when public APIs, docs, or tooling releases change.
+
+## Completeness Checklist
+
+- The role scenario names the user, starting state, decision, and trigger for System Design Architecture Patterns.
+- The decision guide includes Adopt when, Adapt when, Avoid when, and Cost of being wrong.
+- The local corpus hierarchy identifies canonical and supporting sources or gives a confidence warning.
+- The theme specific artifact is concrete enough to review without reading every mapped source.
+- The examples cover good, bad, and borderline usage.
+- The metrics section names one leading indicator and one failure signal.
+- The adjacent routing section points to a better reference when this one is not the right fit.
+
+## Adjacent Reference Routing
+
+Adjacent reference guidance: Use dependency, debugging, timeline, or system design references when the inquiry narrows.
+Adjacent reference 1: consider the system adjacent reference when the current task pivots away from system design architecture patterns.
+Adjacent reference 2: consider the design adjacent reference when the current task pivots away from system design architecture patterns.
+Adjacent reference 3: consider the architecture adjacent reference when the current task pivots away from system design architecture patterns.
+
 ## Future Refresh Search Queries
 
 | search_query_label_name | search_query_text_value |
