@@ -1,0 +1,10 @@
+{
+  "total_markers": 911,
+  "repo_coverage": 778,
+  "skipped_repo": 133,
+  "worker_or_existing": 206,
+  "coordinator": 705,
+  "rust_or_cargo": 494,
+  "tree_sitter_candidate": 410,
+  "parser_candidate": 708
+}

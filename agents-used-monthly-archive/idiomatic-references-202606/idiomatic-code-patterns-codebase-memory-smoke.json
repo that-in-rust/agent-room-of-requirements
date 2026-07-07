@@ -1,0 +1,45 @@
+[
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/methods-agents-hub/agent-room-of-requirements",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/agent-room-of-requirements-20260706-224657",
+    "stderr_tail": ""
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/polars",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/polars-20260706-224708",
+    "stderr_tail": ""
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/streamlit",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/streamlit-20260706-224716",
+    "stderr_tail": ""
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/knight-bus-graph-walker-20260706-224658",
+    "stderr_tail": ""
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-dsl-src",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/cypher-dsl-src-20260706-234238",
+    "stderr_tail": "",
+    "source": "bounded_python_runner_batch4_setup"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/reference-repos-yard/tauri",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/tauri-20260706-224720",
+    "stderr_tail": ""
+  }
+]

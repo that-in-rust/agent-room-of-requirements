@@ -1,0 +1,61 @@
+[
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/codecrafters-http-server-rust",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/codecrafters-http-server-rust-20260706-225736",
+    "stats_tail": "No configuration file found. Using defaults.\nUsing database: ladybugdb (source: runtime-env (CGC_RUNTIME_DB_TYPE))\nResolving context...\nInitializing services and database connection...\nServices initialized.\n\ud83d\udcca Overall Database Statistics\n\n\u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2533\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513\n\u2503 Metric       \u2503 Count \u2503\n\u2521\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2547\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2529\n\u2502 Repositories \u2502     1 \u2502\n\u2502 Files        \u2502     7 \u2502\n\u2502 Functions    \u2502     1 \u2502\n\u2502 Classes      \u2502     0 \u2502\n\u2502 Modules      \u2502     1 \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n",
+    "files_query_head": "No configuration file found. Using defaults.\nUsing database: ladybugdb (source: runtime-env (CGC_RUNTIME_DB_TYPE))\nResolving context...\nInitializing services and database connection...\nServices initialized.\n[\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/codecrafters-http-server-rust/.co\ndecrafters/compile.sh\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/codecrafters-http-server-rust/.co\ndecrafters/run.sh\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/codecrafters-http-server-rust/Car\ngo.toml\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/codecrafters-http-server-rust/REA\nDME.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/codecrafters-http-server-rust/cod\necrafters.yml\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/codecrafters-http-server-rust/src\n/main.rs\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/codecrafter"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/knight-bus-graph-walker-20260706-225736",
+    "stats_tail": "No configuration file found. Using defaults.\nUsing database: ladybugdb (source: runtime-env (CGC_RUNTIME_DB_TYPE))\nResolving context...\nInitializing services and database connection...\nServices initialized.\n\ud83d\udcca Overall Database Statistics\n\n\u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2533\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513\n\u2503 Metric       \u2503 Count \u2503\n\u2521\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2547\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2529\n\u2502 Repositories \u2502     1 \u2502\n\u2502 Files        \u2502   259 \u2502\n\u2502 Functions    \u2502   560 \u2502\n\u2502 Classes      \u2502     3 \u2502\n\u2502 Traits       \u2502     6 \u2502\n\u2502 Structs      \u2502    66 \u2502\n\u2502 Enums        \u2502    25 \u2502\n\u2502 Modules      \u2502    80 \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n",
+    "files_query_head": "No configuration file found. Using defaults.\nUsing database: ladybugdb (source: runtime-env (CGC_RUNTIME_DB_TYPE))\nResolving context...\nInitializing services and database connection...\nServices initialized.\n[\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/.code-map\n/all_files.txt\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/.code-map\n/code_files.txt\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/.code-map\n/summary.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/.rust-onb\noard/entrypoints.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/.rust-onb\noard/packages.json\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/.rust-onb\noard/summary.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-re"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/nostd-fmt-fixed-capacity-20260706-225736",
+    "stats_tail": "No configuration file found. Using defaults.\nUsing database: ladybugdb (source: runtime-env (CGC_RUNTIME_DB_TYPE))\nResolving context...\nInitializing services and database connection...\nServices initialized.\n\ud83d\udcca Overall Database Statistics\n\n\u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2533\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513\n\u2503 Metric       \u2503 Count \u2503\n\u2521\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2547\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2529\n\u2502 Repositories \u2502     1 \u2502\n\u2502 Files        \u2502    12 \u2502\n\u2502 Functions    \u2502    47 \u2502\n\u2502 Classes      \u2502     0 \u2502\n\u2502 Structs      \u2502     1 \u2502\n\u2502 Enums        \u2502     1 \u2502\n\u2502 Modules      \u2502     9 \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n",
+    "files_query_head": "No configuration file found. Using defaults.\nUsing database: ladybugdb (source: runtime-env (CGC_RUNTIME_DB_TYPE))\nResolving context...\nInitializing services and database connection...\nServices initialized.\n[\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity/CHANGELO\nG.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity/Cargo.to\nml\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity/IMPLEMEN\nTATION_SUMMARY.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity/PROJECT_\nCOMPLETION_SUMMARY.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity/QUICK_ST\nART.md\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity/README.m\nd\"\n  },\n  {\n    \"f.path\": \n\"/Users/amuldotexe/Desktop/personal-repos-lane/nostd-fmt-fixed-capacity/VALIDAT"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/apple__tree-sitter-pkl",
+    "status": "timeout_no_graph_claims_used",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/apple__tree-sitter-pkl-20260706-230857",
+    "source": "worker_2_batch_2_markdown"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/bytecodealliance__tree-sitter-wit",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/bytecodealliance__tree-sitter-wit-20260706-230156",
+    "stats_summary": "50 files, 36 functions, 15 classes, 14 structs, 1 enum, 40 modules",
+    "source": "worker_1_batch_2_markdown"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/casey__tree-sitter-just",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/casey__tree-sitter-just-20260706-230234",
+    "stats_summary": "44 files, 47 functions, 16 classes, 14 structs, 1 enum, 46 modules",
+    "source": "worker_5_batch_2_markdown"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/tree-sitter-grammars__tree-sitter-hcl",
+    "status": "timeout_no_graph_claims_used",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/tree-sitter-grammars__tree-sitter-hcl-20260706-230223",
+    "source": "worker_4_batch_2_markdown"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/tree-sitter__tree-sitter",
+    "status": "timeout_no_graph_claims_used",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/tree-sitter__tree-sitter-20260706-230210",
+    "source": "worker_3_batch_2_markdown"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/reference-repos-yard/hax",
+    "status": "timeout_no_graph_claims_used",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/hax-20260706-230205",
+    "source": "worker_2_batch_2_markdown"
+  }
+]
