@@ -36,6 +36,54 @@
     "source": "bounded_python_runner_batch4_setup"
   },
   {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/raphtory-src",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/raphtory-src-20260706-234445",
+    "stderr_tail": "",
+    "source": "worker_1_batch_4"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-rs-src",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/apache-arrow-rs-src-20260706-234543",
+    "stderr_tail": "",
+    "source": "worker_3_batch_4"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/MCP-Zero",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/MCP-Zero-20260707-064732",
+    "stderr_tail": "",
+    "source": "bounded_python_runner_batch5_setup"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/nostd-toposort-kahns-algorithm-20260707-065730",
+    "stderr_tail": "",
+    "source": "bounded_python_runner_batch6_setup"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/BrianHicks__tree-grepper-20260707-070915",
+    "stderr_tail": "",
+    "source": "bounded_python_runner_batch7_setup"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AB498__code-context-provider-mcp",
+    "status": "pass",
+    "returncode": 0,
+    "out_dir": "/tmp/codex-code-intel/codebase-memory/AB498__code-context-provider-mcp-20260707-072447",
+    "stderr_tail": "",
+    "source": "bounded_python_runner_batch8_setup"
+  },
+  {
     "repo_path": "/Users/amuldotexe/Desktop/reference-repos-yard/tauri",
     "status": "pass",
     "returncode": 0,

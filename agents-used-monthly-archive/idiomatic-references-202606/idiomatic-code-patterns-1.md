@@ -2192,3 +2192,2158 @@ if (functor.error_code_ != CUGRAPH_SUCCESS) {
 - Related patterns: Strict Packet Parser With Verification Gate; Deserialization Allowlist At Launcher Protocol Boundary.
 - Risks / caveats: Validation code is long and easy to partially update; missing a new optional array can cause shape mismatches downstream.
 - Agentic coding guidance: When adding a C API parameter, initialize outputs first, reinterpret once, add `CAPI_EXPECTS` shape/type checks, and propagate errors through `cugraph_error_t`.
+
+## Worker 1 Batch 5
+
+Evidence note: source was read directly with `find`, `rg`, and `sed` from the requested repos. `/Users/amuldotexe/Desktop/personal-repos-lane/floo-network` was skipped because its available code files, including `src/main.rs` and `Cargo.toml`, are empty; the remaining files are reference text rather than useful source evidence.
+
+### Persisted Async Asset Identity Split
+- Where found: `/Users/amuldotexe/Desktop/oss-read-only/warp` - `/Users/amuldotexe/Desktop/oss-read-only/warp/crates/asset_cache/src/lib.rs`
+- Language / framework / stack: Rust, Warp UI asset cache, reqwest, async-fs
+- Code shape/snippet:
+```rust
+pub struct UrlAssetWithoutPersistence;
+impl AsyncAssetType for UrlAssetWithoutPersistence {}
+
+pub struct UrlAssetWithPersistence;
+impl AsyncAssetType for UrlAssetWithPersistence {}
+
+pub fn url_source_with_persistence(url: impl Into<String>, cache_dir: &Path) -> AssetSource {
+    let url = url.into();
+    let url_for_fetch = url.clone();
+    let cache_dir_owned = cache_dir.to_path_buf();
+    AssetSource::Async {
+        id: AsyncAssetId::new::<UrlAssetWithPersistence>(url),
+        fetch: Arc::new(move || {
+            let url = url_for_fetch.clone();
+            let cache_dir = cache_dir_owned.clone();
+            Box::pin(async move {
+                let parsed = Url::parse(&url)?;
+                let file = get_file_path_for_asset(&parsed, &cache_dir);
+                fetch_asset_from_url(parsed, Some(file)).await
+            })
+        }),
+    }
+}
+```
+- Why it matters: The same URL has two cache identities depending on whether persistence is required, so an earlier non-persistent fetch cannot suppress a later persistent write.
+- When to use: Use when an async cache has different durability, authorization, or freshness modes for the same logical resource key.
+- When not to use: Avoid when cache mode does not change semantics; one key namespace is simpler and easier to invalidate.
+- Transferable principle: Encode cache policy into the cache key type, not only into the fetch closure.
+- Related patterns: Cached Object Store Attachment Registry; Cache-Stable LLM Call Wrapper.
+- Risks / caveats: Multiple namespaces can duplicate memory or disk work; persistence errors are logged but not returned to callers.
+- Agentic coding guidance: When adding a new cache mode, create a distinct marker type, derive a deterministic file key, and test the transition from non-persistent to persistent fetch.
+
+### Platform-Specific Async Trait Set
+- Where found: `/Users/amuldotexe/Desktop/oss-read-only/warp` - `/Users/amuldotexe/Desktop/oss-read-only/warp/crates/warpui_core/src/async/native/mod.rs`, `/Users/amuldotexe/Desktop/oss-read-only/warp/crates/warpui_core/src/async/wasm/mod.rs`
+- Language / framework / stack: Rust, cross-platform async runtime abstraction, native and WASM
+- Code shape/snippet:
+```rust
+// native/mod.rs
+trait_set::trait_set! {
+    pub trait Spawnable = 'static + Future + Send;
+    pub trait Stream = 'static + futures::Stream + Send;
+    pub trait SpawnableOutput = Send;
+    pub trait TransportStream = Unpin + Send + 'static;
+}
+
+// wasm/mod.rs
+trait Unrestricted {}
+impl<T> Unrestricted for T {}
+
+trait_set::trait_set! {
+    pub trait Spawnable = 'static + Future;
+    pub trait Stream = 'static + futures::Stream;
+    pub trait SpawnableOutput = Unrestricted;
+    pub trait TransportStream = Unpin + 'static;
+}
+```
+- Why it matters: The public async API can talk about `Spawnable` and `TransportStream` while each target supplies the right `Send` constraints.
+- When to use: Use for libraries that compile to both native multi-threaded runtimes and single-threaded browser/WASM runtimes.
+- When not to use: Avoid if the target set is fixed to one runtime; direct trait bounds are clearer.
+- Transferable principle: Hide platform-specific concurrency constraints behind a small vocabulary of local trait aliases.
+- Related patterns: Hooked HTTP Request Builder With Runtime Adapters; Cross-Target Websocket Boundary.
+- Risks / caveats: The alias names must stay semantically narrow; too many aliases can obscure which operations actually cross threads.
+- Agentic coding guidance: When adding cross-platform async code, use these aliases at API boundaries and verify both target families before introducing a direct `Send` bound.
+
+### Hooked HTTP Request Builder With Runtime Adapters
+- Where found: `/Users/amuldotexe/Desktop/oss-read-only/warp` - `/Users/amuldotexe/Desktop/oss-read-only/warp/crates/http_client/src/lib.rs`
+- Language / framework / stack: Rust, reqwest wrapper, async-compat, Warp telemetry hooks
+- Code shape/snippet:
+```rust
+pub struct RequestBuilder<'a> {
+    wrapped: reqwest::RequestBuilder,
+    client: &'a Client,
+    serialized_payload: Option<String>,
+    prevent_sleep_reason: Option<&'static str>,
+}
+
+pub async fn execute(&self, request: Request) -> reqwest::Result<Response> {
+    if let Some(before_response_send_fn) = &self.before_request_sent {
+        before_response_send_fn(&request, &serialized_payload);
+    }
+
+    let _guard = prevent_sleep_reason.map(prevent_sleep::prevent_sleep);
+
+    cfg_if::cfg_if! {
+        if #[cfg(target_family = "wasm")] {
+            let result = self.wrapped.execute(request).await?;
+        } else {
+            let result = Compat::new(async { self.wrapped.execute(request).await }).await?;
+        }
+    }
+
+    if let Some(after_response_received_fn) = &self.after_response_received {
+        after_response_received_fn(&result);
+    }
+    Ok(Response(result))
+}
+```
+- Why it matters: Request hooks, payload capture, sleep prevention, Warp headers, and runtime adaptation are centralized at the HTTP boundary.
+- When to use: Use for application SDK clients where every request needs common observability and platform behavior.
+- When not to use: Avoid for tiny crates that should expose raw reqwest behavior without policy.
+- Transferable principle: Wrap the transport builder once, then keep all cross-cutting request policy outside feature call sites.
+- Related patterns: HTTP Client Hooks With Retry Telemetry; Platform-Specific Async Trait Set.
+- Risks / caveats: A custom wrapper must keep pace with reqwest features; logged payloads must be reviewed for sensitive data exposure.
+- Agentic coding guidance: Add new request modifiers on the wrapper and preserve hook execution order: build, before hook, sleep guard, adapted execute, after hook.
+
+### CLI Plugin Manager With Logged Command Steps
+- Where found: `/Users/amuldotexe/Desktop/oss-read-only/warp` - `/Users/amuldotexe/Desktop/oss-read-only/warp/app/src/terminal/cli_agent_sessions/plugin_manager/mod.rs`, `/Users/amuldotexe/Desktop/oss-read-only/warp/app/src/terminal/cli_agent_sessions/plugin_manager/claude.rs`
+- Language / framework / stack: Rust, async_trait, local shell command execution, CLI agent integrations
+- Code shape/snippet:
+```rust
+pub(crate) async fn run_cli_command_logged(
+    cli_name: &str,
+    args: &[&str],
+    executor: &LocalCommandExecutor,
+    env_vars: Option<HashMap<String, String>>,
+    log: &mut String,
+) -> Result<(), PluginInstallError> {
+    let display_cmd = format!("{cli_name} {}", args.join(" "));
+    log.push_str(&format!("$ {display_cmd}\n"));
+    let result = executor.execute_local_command_in_login_shell(&display_cmd, None, env_vars).await;
+    ...
+}
+
+#[async_trait]
+pub(crate) trait CliAgentPluginManager: Send + Sync {
+    fn minimum_plugin_version(&self) -> &'static str;
+    fn can_auto_install(&self) -> bool;
+    async fn install(&self) -> Result<(), PluginInstallError>;
+    async fn update(&self) -> Result<(), PluginInstallError>;
+    fn install_instructions(&self) -> &'static PluginInstructions;
+}
+```
+- Why it matters: Auto-install behavior, manual instructions, version checks, and failure logs share one trait while each CLI agent supplies its own commands.
+- When to use: Use when one product integrates several external CLIs with similar lifecycle operations but different command syntax.
+- When not to use: Avoid when there is only one external tool and no UI needs to show installation state.
+- Transferable principle: Put the shared lifecycle contract in a trait and preserve exact command transcripts for supportability.
+- Related patterns: Explicit Hook Marker Plugin Manager; Provider Manifest Hot Reload.
+- Risks / caveats: Shell command strings need quoting discipline; logs can contain environment-derived values if commands echo them.
+- Agentic coding guidance: For a new CLI agent, implement the trait, route commands through `run_cli_command_logged`, and add a post-update version sanity check when auto-update is supported.
+
+### Serializable Agent Search Tree
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/StableToolBench` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/StableToolBench/toolbench/inference/Tree/Tree.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/StableToolBench/toolbench/inference/Algorithms/DFS.py`
+- Language / framework / stack: Python, ToolBench agent inference, DFS tree search
+- Code shape/snippet:
+```python
+class tree_node:
+    def __init__(self):
+        self.is_terminal = False
+        self.pruned = False
+        self.finished = False
+        self.node_type = None
+        self.description = ""
+        self.observation = ""
+        self.children = []
+        self.father = None
+        self.io_state = None
+        self.expand_num = 0
+        self.Elo = 1000.0
+        self.messages = []
+
+    def get_chain_result_from_this_node(self, use_messages=False):
+        now_node = self
+        result = []
+        while now_node.father != None:
+            result = [now_node.to_json(use_messages=use_messages)] + result
+            now_node = now_node.father
+        return result
+```
+- Why it matters: Search state is not just control flow; it is serializable evidence with observations, messages, pruning status, depth, and IO snapshots.
+- When to use: Use for agent search, self-play, or tool-use exploration where failed branches are valuable training and debugging artifacts.
+- When not to use: Avoid for simple linear ReAct loops where retaining a full branch tree adds little value.
+- Transferable principle: Make trajectory state inspectable and exportable before optimizing the search strategy.
+- Related patterns: Context Manager Requirement Test Tracker; Ralph Loop for Long-Running Tasks.
+- Risks / caveats: Parent pointers and deep-copied IO state can consume memory quickly; recursive serialization needs depth controls.
+- Agentic coding guidance: When adding a node field, update `to_json`, chain extraction, pruning, and any training-message extraction together.
+
+### Mirror API Simulator With Result Gate
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/StableToolBench` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/StableToolBench/server/main_mirrorapi.py`
+- Language / framework / stack: Python, FastAPI, Pydantic, tool-call simulation
+- Code shape/snippet:
+```python
+class Info(BaseModel):
+    category: str
+    tool_name: str
+    api_name: str
+    tool_input: Union[str, dict]
+    strip: str
+    toolbench_key: str
+
+def check_result(processes_value: dict):
+    if 'error' not in processes_value or processes_value['error'] != '':
+        return False
+    if 'response' not in processes_value:
+        return False
+    response = str(processes_value['response'])
+    if 'rate limit' in response.lower() or 'time out' in response.lower() or '404' in response:
+        return False
+    elif 'authoriz' in response.lower() or '401' in response.lower() or '403' in response.lower():
+        return False
+    return True
+```
+- Why it matters: The server normalizes tool/category/API names, parses potentially stringified tool input, loads API docs, and rejects simulated outputs that look like transport, auth, or parameter failures.
+- When to use: Use for benchmark harnesses that need deterministic-ish stand-ins for live third-party APIs.
+- When not to use: Avoid in production business flows where heuristic response classification could hide real errors.
+- Transferable principle: Put simulator input normalization and result acceptability checks next to the simulator boundary.
+- Related patterns: Deterministic Plus Semantic Verification Pipeline; C API Type Validation Funnel.
+- Risks / caveats: String heuristics are brittle and language-specific; missing API docs can still produce fragile paths.
+- Agentic coding guidance: Add new failure signatures as tests around `check_result`, and keep Pydantic request validation ahead of simulator prompting.
+
+### Context Manager Requirement Test Tracker
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld/src/appworld/evaluator.py`
+- Language / framework / stack: Python, AppWorld evaluator, Rich reporting
+- Code shape/snippet:
+```python
+def __call__(self, requirement: str) -> Self:
+    self.requirement = dedent(requirement).strip()
+    return self.__enter__()
+
+def __exit__(self, exc_type, exc_value, traceback) -> bool:
+    if exc_type is None:
+        self.passes.append({"requirement": pass_requirement, "label": label})
+    else:
+        fail_trace = ""
+        if isinstance(exc_value, Exception):
+            fail_trace = build_fail_trace(exc_value)
+        self.failures.append({
+            "requirement": fail_requirement,
+            "trace": fail_trace,
+            "label": label,
+        })
+    self.requirement = None
+    return self.suppress_errors
+```
+- Why it matters: Each human-readable requirement becomes an executable block that records pass/fail labels and tracebacks without stopping the whole evaluation by default.
+- When to use: Use for benchmark tasks with many independent requirements where partial credit and diagnostic reports matter.
+- When not to use: Avoid for safety-critical tests where the first assertion failure must abort immediately.
+- Transferable principle: Treat requirements as context-managed evidence units, not just comments around assertions.
+- Related patterns: TDD-First Cycle; Serializable Agent Search Tree.
+- Risks / caveats: `suppress_errors=True` can hide failures if callers forget to inspect the report.
+- Agentic coding guidance: When generating tests with this style, wrap each requirement separately and always assert `test_tracker.success` or emit `report()` at the end.
+
+### Cache-Stable LLM Call Wrapper
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld/experiments/code/simplified/language_model.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld/experiments/code/smolagents/models.py`
+- Language / framework / stack: Python, OpenAI/LiteLLM/smolagents, joblib cache
+- Code shape/snippet:
+```python
+def make_response_stable(response: dict[str, Any]) -> None:
+    for choice in response["choices"]:
+        message = choice["message"]
+        for tool_call in message.get("tool_calls", []) or []:
+            if "call_id" in tool_call:
+                tool_call["call_id"] = get_stable_id(tool_call["call_id"])
+            if "id" in tool_call:
+                tool_call["id"] = get_stable_id(tool_call["id"])
+
+@cache.cache
+@validate_call
+def cached_lm_call(...):
+    return non_cached_lm_call(...)
+
+def patch_generate_with_cache(model_instance: Any, *, model_payload: dict[str, Any]) -> None:
+    original = model_instance.generate
+    def _wrapper(_self: Any, *args: Any, **kwargs: Any) -> Any:
+        return _cached_call(call=original, model_payload=model_payload, args=args, kwargs=kwargs)
+    model_instance.generate = types.MethodType(_wrapper, model_instance)
+```
+- Why it matters: Non-deterministic response IDs are normalized before caching, and third-party model instances can be patched without changing the caller-facing API.
+- When to use: Use in evaluation harnesses where reproducibility and cost control depend on stable LLM cache keys.
+- When not to use: Avoid when exact provider IDs are part of the behavior being tested or audited.
+- Transferable principle: Make cache inputs and outputs deterministic at the adapter boundary.
+- Related patterns: Persisted Async Asset Identity Split; Prompt Caching for Production Agents.
+- Risks / caveats: Monkey patching can break when upstream model methods change; response normalization may remove identifiers needed for debugging.
+- Agentic coding guidance: When adding provider support, define which volatile fields must be stabilized and keep a bypass path for cache-disabled live runs.
+
+### Runtime Tool Class Generation From API Docs
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld/experiments/code/smolagents/run.py`
+- Language / framework / stack: Python, smolagents, dynamic signatures, AppWorld API docs
+- Code shape/snippet:
+```python
+def tool_generator(name_, description_, inputs_, output_type_, function) -> Tool:
+    required_input_items = [(key, value) for key, value in inputs_items if value["required"]]
+    not_required_input_items = [(key, value) for key, value in inputs_items if not value["required"]]
+    ...
+    signature = f"(self{', ' + args_str if args_str else ''}) -> {signature_output_type_}"
+
+    @with_signature(signature)
+    def forward(self: Any, *args: Any, **kwargs: Any) -> Any:
+        return self._function(*args, **kwargs)
+
+    class GeneratedTool(Tool):
+        name = name_
+        description = description_
+        inputs = inputs_
+        output_type = output_type_
+        _function = staticmethod(function)
+
+    GeneratedTool.forward = MethodType(forward, GeneratedTool)
+    return GeneratedTool()
+```
+- Why it matters: API documentation becomes executable tool classes with accurate signatures, required/optional argument ordering, and smolagents-compatible metadata.
+- When to use: Use when many documented APIs need to become tool-callable without hand-writing wrappers for each endpoint.
+- When not to use: Avoid when tools require complex hand-written validation or side-effect policy per endpoint.
+- Transferable principle: Generate the thin adapter from the schema, but keep the actual implementation function unchanged.
+- Related patterns: Schema-Typed SDK Tool Adapter; Provider Manifest Hot Reload.
+- Risks / caveats: Dynamic signatures are harder for static analyzers; schema mistakes become runtime tool bugs.
+- Agentic coding guidance: When extending generated tools, add schema-level fixtures that verify signature text, required argument order, and `inputs` metadata.
+
+### Multi-Stage Tool Router With Timed Score Lanes
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN/src/lib/router.ts`
+- Language / framework / stack: TypeScript, MCP tool registry, BM25, vector search
+- Code shape/snippet:
+```typescript
+async route(query: string, options: { topK?: number; threshold?: number } = {}) {
+  const scores = new Map<string, StageScores>();
+  const timing: SearchTiming = { stage1: 0, stage2: 0, stage3: 0, merge: 0, total: 0 };
+
+  if (this._idfDirty) this._buildIDF();
+  this._stage1TriggerMatch(query, scores);
+  this._stage2BM25(query, scores);
+  await this._stage3SemanticSearch(query, scores);
+
+  const results = this._mergeAndRank(scores, topK, threshold);
+  return { results, timing };
+}
+
+const rawScore = (s.stage1 || 0) + (s.stage2 || 0) + (s.stage3 || 0)
+  + usageBonus + successBonus;
+const finalScore = rawScore * sourceWeight;
+```
+- Why it matters: Exact triggers, lexical search, semantic search, usage history, success rate, recency, and source weights remain visible as separate score lanes.
+- When to use: Use for tool routers where users and maintainers need to debug why a tool was selected.
+- When not to use: Avoid when ranking must be learned end-to-end and manual score lanes would become misleading.
+- Transferable principle: Preserve intermediate ranking evidence so routing quality can be tuned without guessing.
+- Related patterns: Smart Context Algorithm; Centroid-Partitioned Vector Search.
+- Risks / caveats: Hand-tuned weights can overfit small corpora; the 5 percent explorer slot introduces nondeterminism.
+- Agentic coding guidance: When adjusting routing, add tests against stage scores, final score ordering, and timing fields instead of only checking the top tool name.
+
+### Provider Manifest Hot Reload With Idempotent Purge
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN/src/lib/provider-loader.ts`
+- Language / framework / stack: TypeScript, Node fs watcher, MCP provider registry
+- Code shape/snippet:
+```typescript
+export function loadProviders(providersDir: string, registry: Registry): ProviderLoadResult {
+  const result: ProviderLoadResult = { loaded: 0, skipped: 0, failed: 0, details: [] };
+  const files = fs.readdirSync(providersDir).filter((f: string) => f.endsWith('.json'));
+
+  for (const file of files) {
+    const manifest = _parseManifest(filePath);
+    const tools = _normalizeTools(manifest);
+    registry.purgeBySource(`provider:${manifest.provider}`);
+    const count = registry.registerBatch(tools);
+    result.loaded += count;
+  }
+  return result;
+}
+
+const watcher = fs.watch(providersDir, (eventType, filename) => {
+  if (!filename || !filename.endsWith('.json')) return;
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => loadProviders(providersDir, registry), DEBOUNCE_MS);
+});
+```
+- Why it matters: Re-loading a provider does not duplicate stale tools because old entries from the same provider source are purged before registration.
+- When to use: Use for plugin/provider ecosystems where manifests change during development or deployment.
+- When not to use: Avoid if providers require transactional migrations or cross-provider dependency resolution.
+- Transferable principle: Make reload idempotent by scoping ownership with a stable source prefix.
+- Related patterns: Runtime Tool Class Generation From API Docs; Cached Object Store Attachment Registry.
+- Risks / caveats: `fs.watch` behavior varies by platform; partial writes can produce transient parse failures.
+- Agentic coding guidance: When adding provider fields, update parse validation, normalization defaults, load-result details, and hot-reload tests together.
+
+### Accumulating Validator With Warnings
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN/src/lib/validator.ts`
+- Language / framework / stack: TypeScript, registry validation, tool metadata quality gates
+- Code shape/snippet:
+```typescript
+function _validateName(name: string | undefined, errors: ValidationError[]): void {
+  if (!name || name.trim() === '') {
+    errors.push({ field: 'name', message: 'name is required', severity: 'error' });
+  } else if (!NAME_PATTERN.test(name)) {
+    errors.push({ field: 'name', message: `'${name}' must follow verb_target format`, severity: 'error' });
+  }
+}
+
+export function validateToolEntry(params: ValidatableParams, registry: RegistryLike): ValidationResult {
+  const errors: ValidationError[] = [];
+  _validateName(params.name, errors);
+  _validateDescription(params.description, errors);
+  _validateCategory(params.category, errors);
+  if (!params.tags || params.tags.length === 0) {
+    errors.push({ field: 'tags', message: 'no tags specified', severity: 'warning' });
+  }
+  const errorCount = errors.filter(e => e.severity === 'error').length;
+  return { valid: errorCount === 0, errors };
+}
+```
+- Why it matters: Callers get all validation problems at once, while warnings can guide metadata quality without blocking registration.
+- When to use: Use for admin tooling, registries, schema intake, and content validation where users benefit from a complete fix list.
+- When not to use: Avoid for hot paths where fail-fast validation is cheaper and clearer.
+- Transferable principle: Accumulate structured diagnostics, then decide validity from severity.
+- Related patterns: Context Manager Requirement Test Tracker; Local Subclass Parser Instrumentation.
+- Risks / caveats: Warnings can be ignored indefinitely; severity definitions need product discipline.
+- Agentic coding guidance: When adding validation, return `{ field, message, severity }` and update formatted output plus create/update validation paths.
+
+### Deterministic Plus Semantic Verification Pipeline
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/confido-exploration-01` - `/Users/amuldotexe/Desktop/personal-repos-lane/confido-exploration-01/Sol-variant-01/src/deterministic_verifier.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/confido-exploration-01/Sol-variant-01/src/commands.rs`
+- Language / framework / stack: Rust, Tauri-ready command core, OpenAI verification adapter
+- Code shape/snippet:
+```rust
+pub fn check_update_deterministically(
+    prompt: &AssignmentPrompt,
+    _original_prompt_json: &str,
+    updated_prompt_json: &str,
+) -> Result<Vec<DeterministicCheck>, PieError> {
+    let updated: serde_json::Value = serde_json::from_str(updated_prompt_json)?;
+    let json_shape_ok = updated.get("agent_name").is_some()
+        && updated.get("model").is_some()
+        && updated.get("general_prompt").is_some()
+        && updated.get("general_tools").is_some();
+
+    Ok(vec![
+        DeterministicCheck { scenario_id: "assignment_json_shape".to_string(), passed: json_shape_ok, ... },
+        waitlist_without_tool_check(prompt),
+        unsafe_reschedule_check(prompt),
+        emergency_escalation_check(prompt),
+        phi_before_verification_check(prompt),
+    ])
+}
+
+let deterministic_checks = check_update_deterministically(&prompt, &original_prompt_json, &updated_prompt_json)?;
+let semantic_checks = client.verify_semantic_update(verify_request).await?;
+```
+- Why it matters: Cheap, deterministic safety checks run before the LLM semantic verifier, and the final report includes both evidence types.
+- When to use: Use for AI-assisted edits in regulated or safety-sensitive workflows where structural invariants can be checked locally.
+- When not to use: Avoid replacing domain review entirely with heuristics and LLM verification.
+- Transferable principle: Combine deterministic invariants with model-based review instead of asking the model to validate everything.
+- Related patterns: Mirror API Simulator With Result Gate; Executable Specifications Over Narratives.
+- Risks / caveats: String matching can miss paraphrases; deterministic checks must be refreshed as the prompt schema evolves.
+- Agentic coding guidance: Add a deterministic check for every invariant that can be expressed without an LLM, then keep semantic checks focused on meaning preservation.
+
+### Redacted JSONL Diagnostic Logger
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/confido-exploration-01` - `/Users/amuldotexe/Desktop/personal-repos-lane/confido-exploration-01/Sol-variant-01/src/diagnostic_logger.rs`
+- Language / framework / stack: Rust, serde JSONL logging, Tauri-supporting diagnostics
+- Code shape/snippet:
+```rust
+pub fn record_error_event(
+    &self,
+    event: &str,
+    command: Option<&str>,
+    message: &str,
+    error_code: Option<&str>,
+) -> Result<(), PieError> {
+    self.append_log_entry(DiagnosticLogEntry {
+        timestamp: Utc::now().to_rfc3339(),
+        level: DiagnosticLogLevel::Error,
+        event,
+        command,
+        message: redact_sensitive_values_from(message),
+        error_code,
+        model_label: model_label_text(),
+    })
+}
+
+fn redact_sensitive_values_from(input: &str) -> String {
+    if remaining.starts_with("Bearer ") || remaining.starts_with("sk-") {
+        redacted.push_str("[redacted-key]");
+        ...
+    }
+}
+```
+- Why it matters: Diagnostics are append-only JSON lines, but secrets are stripped before writing and again when exporting the report.
+- When to use: Use in local apps that need supportable command logs while handling API keys or bearer tokens.
+- When not to use: Avoid as the only security control for highly sensitive logs; upstream callers should still avoid logging secrets.
+- Transferable principle: Redact at both ingestion and export boundaries, and make logs structured enough for later tooling.
+- Related patterns: Hooked HTTP Request Builder With Runtime Adapters; HTTP Client Hooks With Retry Telemetry.
+- Risks / caveats: Redaction is pattern-based and may miss nonstandard secret formats.
+- Agentic coding guidance: When adding new diagnostic events, pass raw messages through logger methods only, and extend delimiter/secret tests for every new credential shape.
+
+## Worker 1 Batch 6
+
+### Shell Command Metadata Registry
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-shell-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-shell-src/cypher-shell/src/main/java/org/neo4j/shell/commands/Command.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-shell-src/cypher-shell/src/main/java/org/neo4j/shell/commands/CommandHelper.java`
+- Language/framework/stack: Java, Neo4j Cypher Shell CLI
+- Code shape/snippet:
+```java
+public interface Command {
+    String getName();
+    String getDescription();
+    String getUsage();
+    String getHelp();
+    List<String> getAliases();
+    void execute(String args) throws ExitException, CommandException;
+}
+
+private final TreeMap<String, Command> commands =
+        new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+
+private void registerCommand(final Command command) {
+    if (commands.containsKey(command.getName())) {
+        throw new DuplicateCommandException(...);
+    }
+    commands.put(command.getName(), command);
+    for (String alias : command.getAliases()) {
+        if (commands.containsKey(alias)) {
+            throw new DuplicateCommandException(...);
+        }
+        commands.put(alias, command);
+    }
+}
+```
+- Why it matters: The command object carries executable behavior and user-facing help in one contract, while the registry enforces case-insensitive lookup and duplicate alias safety.
+- When to use: Use for CLI or REPL command systems where commands need help text, aliases, and shared validation before dispatch.
+- When not to use: Avoid for tiny one-off CLIs where picocli, clap, argparse, or framework routing already provides the command tree.
+- Transferable principle: Put metadata, aliases, and execution behind one command interface, then centralize registration invariants.
+- Related patterns: First-Match Browser Command Table; Command Descriptor Wrapper; Explicit Hook Marker Plugin Manager.
+- Risks/caveats: Alias collisions become runtime failures unless the registry is exercised in tests; metadata can drift if help strings are not covered.
+- Agentic coding guidance: When adding a command, implement the full metadata surface, register it once, add duplicate/alias tests, and avoid ad hoc string dispatch outside the registry.
+
+### Cypher-Aware Incremental Statement Parser
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-shell-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-shell-src/cypher-shell/src/main/java/org/neo4j/shell/parser/ShellStatementParser.java`
+- Language/framework/stack: Java, Neo4j Cypher Shell parser
+- Code shape/snippet:
+```java
+if (statementNotStarted() && SHELL_CMD_PATTERN.matcher(line).find()) {
+    parsedStatements.add(line);
+    return;
+}
+
+statement.append(c);
+if (handleComments(prev, current)) {
+    continue;
+}
+if (current == BACKSLASH) {
+    skipNext = true;
+    continue;
+}
+if (handleQuotes(prev, current)) {
+    continue;
+}
+if (handleSemicolon(current)) {
+    continue;
+}
+awaitedRightDelimiter = getRightDelimiter(prev, current);
+```
+- Why it matters: Shell commands are recognized only before a Cypher statement begins, and semicolons inside quotes or comments do not prematurely flush a statement.
+- When to use: Use for REPLs that mix meta-commands with a host language where users can enter multiline statements.
+- When not to use: Avoid hand parsers for full language validation; defer complete grammar semantics to the database/compiler.
+- Transferable principle: Track the smallest lexical state needed for buffering, not the whole grammar.
+- Related patterns: Shell Command Metadata Registry; Guarded Shell Command Parser; Declarative Grammar Helpers For Repeated Syntax.
+- Risks/caveats: Character-state parsers need regression tests for escapes, comments, backticks, and unterminated text.
+- Agentic coding guidance: Add parser tests before changing delimiter behavior, especially for semicolons inside comments, escaped quotes, and shell commands after partial Cypher input.
+
+### Bounded Browser Worker Pool
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-browser-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-browser-src/src/shared/services/WorkPool.ts`
+- Language/framework/stack: TypeScript, Neo4j Browser, web workers
+- Code shape/snippet:
+```ts
+class WorkPool {
+  private readonly queue: Array<Work> = []
+  private readonly register: Array<Worker> = []
+
+  constructor(
+    private readonly createWorker: () => BoltWorkerModule,
+    private readonly maxPoolSize = 15
+  ) {}
+
+  private getFreeWorker() {
+    const freeWorker = this.register.find(
+      worker => worker.state === WORKER_STATE.FREE
+    )
+    if (freeWorker) return freeWorker
+    if (this.getPoolSize() < this.maxPoolSize) {
+      const workerObj = new Worker(this.createWorker())
+      this.register.push(workerObj)
+      return workerObj
+    }
+    return null
+  }
+}
+```
+- Why it matters: Query work is queued, assigned to reusable workers, and bounded by `maxPoolSize`, preventing runaway browser worker creation.
+- When to use: Use when browser-side tasks are expensive, cancelable, and safe to serialize through worker messages.
+- When not to use: Avoid for latency-sensitive UI updates that should stay synchronous or for tasks that need shared mutable worker state across jobs.
+- Transferable principle: Treat background execution as a small scheduler with queue, registry, state, and completion hooks.
+- Related patterns: Worker-Local Client Task Queue; Non-Blocking Shard Pump Dispatch; Bounded Async Event Store Reads.
+- Risks/caveats: Worker lifecycle bugs can leave work stuck in `BUSY`; cancellation must cover queued and in-flight work.
+- Agentic coding guidance: When adding work types, preserve ID-based lookup, finish hooks, and `next()` scheduling; add tests for queued cancellation and pool saturation.
+
+### First-Match Browser Command Table
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-browser-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-browser-src/src/shared/services/commandInterpreterHelper.ts`
+- Language/framework/stack: TypeScript, Redux, Neo4j Browser command interpreter
+- Code shape/snippet:
+```ts
+const availableCommands = [
+  {
+    name: 'use-db',
+    match: (cmd: any) => new RegExp(`^${useDbCommand}\\s[^$]+$`).test(cmd),
+    async exec(action: any, put: any, store: any): Promise<any> {
+      ...
+    }
+  },
+  {
+    name: 'catch-all',
+    match: () => true,
+    exec: (action: any, put: any, store: any) => {
+      put(frames.add({ ...action, error: UnknownCommandError(action), type: 'error' }))
+    }
+  }
+]
+
+const interpret = (cmd: string) =>
+  availableCommands.reduce((match: any, candidate) => {
+    if (match) return match
+    return candidate.match(cmd.toLowerCase().trim()) ? candidate : null
+  }, null)
+```
+- Why it matters: Command priority is encoded by table order, and the catch-all keeps unknown input inside the same frame/error flow.
+- When to use: Use for product command palettes or browser consoles where matching is domain-specific and commands dispatch side effects.
+- When not to use: Avoid if the command language needs nested grammar, backtracking, or user-installable extensions with independent precedence.
+- Transferable principle: A command table can be both routing data and product documentation when each entry has `name`, `match`, and `exec`.
+- Related patterns: Shell Command Metadata Registry; Selection Pipeline With Indirect Modes; Multi-Stage Tool Router With Timed Score Lanes.
+- Risks/caveats: Earlier broad matchers can shadow later commands; regex command parsing should be tested with representative whitespace and casing.
+- Agentic coding guidance: Insert new commands before `catch-all`, add focused match tests, and check whether a new matcher shadows an existing command.
+
+### Context-Aware Managed Transaction Retry
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src/neo4j/session.go`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src/neo4j/internal/retry/state.go`
+- Language/framework/stack: Go, Neo4j driver, context-aware database transactions
+- Code shape/snippet:
+```go
+func (s *session) ExecuteRead(ctx context.Context,
+    work ManagedTransactionWork, configurers ...func(*TransactionConfig)) (any, error) {
+    return s.runRetriable(ctx, idb.ReadMode, work, true, telemetry.ManagedTransaction, configurers...)
+}
+
+state := retry.State{
+    MaxTransactionRetryTime: s.driverConfig.MaxTransactionRetryTime,
+    Sleep:              s.sleep,
+    Throttle:           retry.Throttler(s.throttleTime),
+    MaxDeadConnections: s.driverConfig.MaxConnectionPoolSize,
+}
+for state.Continue(ctx) {
+    if done, result := s.executeTransactionFunction(...); done {
+        return result, nil
+    }
+}
+return nil, state.ProduceError()
+```
+- Why it matters: Retry limits, backoff, connection death, telemetry, and context cancellation are modeled as one state machine around managed transaction work.
+- When to use: Use for database drivers and SDKs where the library owns retryable transaction boundaries.
+- When not to use: Avoid for non-idempotent user code unless the API clearly tells users the work function may run multiple times.
+- Transferable principle: Retry policy belongs at the operation boundary with explicit state, not scattered through call sites.
+- Related patterns: Retryable Error Taxonomy With Mockable Sleep; HTTP Client Hooks With Retry Telemetry; Deterministic Plus Semantic Verification Pipeline.
+- Risks/caveats: Retried work must be side-effect safe; context deadlines that fire too early can damage pool health and user expectations.
+- Agentic coding guidance: When changing retry behavior, inspect `State.Continue`, error classification, commit-failure handling, and add tests for context cancellation plus max retry time.
+
+### Bookmark Manager With Supply And Consume Hooks
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src/neo4j/bookmarks.go`
+- Language/framework/stack: Go, Neo4j driver causal consistency
+- Code shape/snippet:
+```go
+type BookmarkManagerConfig struct {
+    InitialBookmarks Bookmarks
+    BookmarkSupplier func(context.Context) (Bookmarks, error)
+    BookmarkConsumer func(ctx context.Context, bookmarks Bookmarks) error
+}
+
+func (b *bookmarkManager) UpdateBookmarks(ctx context.Context, previousBookmarks, newBookmarks Bookmarks) error {
+    if len(newBookmarks) == 0 { return nil }
+    b.mutex.Lock()
+    defer b.mutex.Unlock()
+    b.bookmarks.RemoveAll(previousBookmarks)
+    b.bookmarks.AddAll(newBookmarks)
+    if b.consumeBookmarks != nil {
+        return b.consumeBookmarks(ctx, b.bookmarks.Values())
+    }
+    return nil
+}
+```
+- Why it matters: Causal consistency state is centralized, deduplicated, concurrency-protected, and extensible through supplier/consumer hooks.
+- When to use: Use when a client library needs to merge server-issued continuation tokens with external persistence or cross-session state.
+- When not to use: Avoid if ordering is semantically important, since the API notes bookmark order is not guaranteed.
+- Transferable principle: Model synchronization tokens as set state plus explicit import/export hooks.
+- Related patterns: History Newtype With Trait-Erased Sharing; Namespace-Aware Capability Registry; Cached Object Store Attachment Registry.
+- Risks/caveats: Consumers run under update flow and can make session completion fail; hook latency and lock scope matter.
+- Agentic coding guidance: Preserve the remove-old/add-new sequence, hold locks around set mutation, and test supplier errors, empty updates, and concurrent reads.
+
+### Bolt Message Queue With Response Handler FIFO
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src/neo4j/internal/bolt/message_queue.go`
+- Language/framework/stack: Go, Neo4j Bolt protocol client
+- Code shape/snippet:
+```go
+type messageQueue struct {
+    handlers list.List // List[responseHandler]
+    err      error
+}
+
+func (q *messageQueue) appendRun(cypher string, params, meta map[string]any, runHandler responseHandler) {
+    q.out.appendRun(cypher, params, meta)
+    q.enqueueCallback(runHandler)
+}
+
+func (q *messageQueue) receive(ctx context.Context) error {
+    res := q.receiveMsg(ctx)
+    if q.handlers.Len() == 0 {
+        return errors.New("no more response callback to apply")
+    }
+    handler := q.pop()
+    switch message := res.(type) {
+    case *db.Record:
+        handler.onRecord(message)
+    case *success:
+        handler.onSuccess(message)
+    case *db.Neo4jError:
+        handler.onFailure(ctx, message)
+        return message
+    }
+    return nil
+}
+```
+- Why it matters: Outgoing protocol messages enqueue their expected response handlers in the same order, making asynchronous Bolt responses deterministic to consume.
+- When to use: Use for request/response protocols with pipelining where each outgoing message has a typed response contract.
+- When not to use: Avoid if responses can arrive out of order or be multiplexed across independent streams without correlation IDs.
+- Transferable principle: Pair every append/send operation with a queued callback contract at the protocol boundary.
+- Related patterns: Strict Packet Parser With Verification Gate; Drop-Based Generation Completion Notification; Hooked HTTP Request Builder With Runtime Adapters.
+- Risks/caveats: Missing handlers become protocol violations; handler ordering is fragile if a new message expects no response.
+- Agentic coding guidance: When adding Bolt messages, add append plus handler enqueue together, and test unexpected `RECORD`, `SUCCESS`, `FAILURE`, and `IGNORED` paths.
+
+### Typed Config Options With Predicate Checkers
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-hugegraph-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-hugegraph-src/hugegraph-commons/hugegraph-common/src/main/java/org/apache/hugegraph/config/TypedOption.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-hugegraph-src/hugegraph-commons/hugegraph-common/src/main/java/org/apache/hugegraph/config/OptionChecker.java`
+- Language/framework/stack: Java, Apache HugeGraph commons configuration
+- Code shape/snippet:
+```java
+public R parseConvert(String value) {
+    T parsed = this.parse(value);
+    this.check(parsed);
+    return this.convert(parsed);
+}
+
+protected void check(Object value) {
+    E.checkNotNull(value, "value", this.name);
+    if (!this.dataType.isInstance(value)) {
+        throw new ConfigException("Invalid type of value '%s' for option '%s'", value, this.name);
+    }
+    if (this.checkFunc != null && !this.checkFunc.apply((T) value)) {
+        throw new ConfigException("Invalid option value for '%s': %s", this.name, value);
+    }
+}
+
+public static <N extends Number> Predicate<N> rangeInt(N min, N max) { ... }
+```
+- Why it matters: Parsing, type checking, default value validation, and domain predicates are attached to the option definition instead of delayed to consumers.
+- When to use: Use for server configuration with many typed options and reusable validation rules.
+- When not to use: Avoid for schema formats that already have strong declarative validation and error localization.
+- Transferable principle: Convert configuration strings to typed values once, at the boundary, with reusable predicate checkers.
+- Related patterns: Validated Configuration Properties; Schema-Driven Validator Cache; Accumulating Validator With Warnings.
+- Risks/caveats: Reflection-based parsing can hide unsupported type cases until runtime; allowed type lists must evolve carefully.
+- Agentic coding guidance: When adding options, provide a predicate from `OptionChecker` or a focused equivalent, and add tests for parsing, bad type, and invalid value.
+
+### Ordered Striped Key Locks
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-hugegraph-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-hugegraph-src/hugegraph-commons/hugegraph-common/src/main/java/org/apache/hugegraph/concurrent/KeyLock.java`
+- Language/framework/stack: Java, Apache HugeGraph commons concurrency, Guava `Striped`
+- Code shape/snippet:
+```java
+public final List<Lock> lockAll(Object... keys) {
+    List<Lock> locks = new ArrayList<>(keys.length);
+    for (Object key : keys) {
+        E.checkArgument(key != null, "Lock key can't be null");
+        locks.add(this.locks.get(key));
+    }
+    locks.sort((a, b) -> {
+        int diff = a.hashCode() - b.hashCode();
+        if (diff == 0 && a != b) {
+            diff = this.indexOf(a) - this.indexOf(b);
+        }
+        return diff;
+    });
+    for (Lock lock : locks) {
+        lock.lock();
+    }
+    return Collections.unmodifiableList(locks);
+}
+
+public final void unlockAll(List<Lock> locks) {
+    for (int i = locks.size(); i > 0; i--) {
+        locks.get(i - 1).unlock();
+    }
+}
+```
+- Why it matters: Multiple entity locks are acquired in a deterministic order and released in reverse order, reducing deadlock risk while keeping lock count bounded by stripes.
+- When to use: Use when operations need to mutate several keyed resources atomically without allocating one lock per resource forever.
+- When not to use: Avoid for long-running I/O critical sections or when strict per-key fairness is required.
+- Transferable principle: Normalize multi-lock acquisition order and return an opaque lock handle/list for reverse release.
+- Related patterns: Move-Only Cache Entry Ownership States; Self-Pruning Arc Interner With Pointer Equality; Status-Gated Managed Directory Handles.
+- Risks/caveats: Striped locks can serialize unrelated keys that hash to the same stripe; callers must always release in `finally`.
+- Agentic coding guidance: Wrap `lockAll` usage in try/finally, never sort by original keys differently at call sites, and test two-key collision/order behavior.
+
+### Direction-Optimizing Frontier Switch
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src/src/bfs.cc`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src/src/sliding_queue.h`
+- Language/framework/stack: C++, OpenMP, GAP Benchmark Suite graph kernels
+- Code shape/snippet:
+```cpp
+while (!queue.empty()) {
+  if (scout_count > edges_to_check / alpha) {
+    TIME_OP(t, QueueToBitmap(queue, front));
+    queue.slide_window();
+    do {
+      old_awake_count = awake_count;
+      awake_count = BUStep(g, parent, front, curr);
+      front.swap(curr);
+    } while ((awake_count >= old_awake_count) ||
+             (awake_count > g.num_nodes() / beta));
+    TIME_OP(t, BitmapToQueue(g, front, queue));
+    scout_count = 1;
+  } else {
+    edges_to_check -= scout_count;
+    scout_count = TDStep(g, parent, queue);
+    queue.slide_window();
+  }
+}
+```
+- Why it matters: BFS switches between top-down queue expansion and bottom-up bitmap scanning based on frontier work, reducing edge checks on large frontiers.
+- When to use: Use for graph traversal kernels on scale-free or large sparse graphs where frontier density changes dramatically by level.
+- When not to use: Avoid for small graphs or traversal code where simplicity and determinism matter more than throughput.
+- Transferable principle: Represent the same frontier in two data structures and switch when the cost model crosses a threshold.
+- Related patterns: Bounded Browser Worker Pool; Parallel Arrow Encoder With Sink Factory; Non-Blocking Shard Pump Dispatch.
+- Risks/caveats: Thresholds (`alpha`, `beta`) are workload-sensitive; parent-array degree encoding is clever but easy to break.
+- Agentic coding guidance: Preserve verifier coverage when changing frontier logic, and keep queue/bitmap conversion tests around isolated boundary levels.
+
+### Benchmark Kernel Harness With Verifier Hook
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src/src/benchmark.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src/src/bfs.cc`
+- Language/framework/stack: C++, GAP Benchmark Suite benchmark harness
+- Code shape/snippet:
+```cpp
+template<typename GraphT_, typename GraphFunc, typename AnalysisFunc,
+         typename VerifierFunc>
+void BenchmarkKernel(const CLApp &cli, const GraphT_ &g,
+                     GraphFunc kernel, AnalysisFunc stats,
+                     VerifierFunc verify) {
+  for (int iter=0; iter < cli.num_trials(); iter++) {
+    trial_timer.Start();
+    auto result = kernel(g);
+    trial_timer.Stop();
+    if (cli.do_analysis() && (iter == (cli.num_trials()-1)))
+      stats(g, result);
+    if (cli.do_verify()) {
+      PrintLabel("Verification",
+                 verify(std::ref(g), std::ref(result)) ? "PASS" : "FAIL");
+    }
+  }
+}
+```
+- Why it matters: All kernels share the same trial timing, optional analysis, and verification protocol, so performance code stays comparable.
+- When to use: Use for benchmark suites where each algorithm returns a result that can be independently analyzed and verified.
+- When not to use: Avoid for production serving paths; the harness assumes command-line batch runs and full-result materialization.
+- Transferable principle: Make verification a first-class callback beside the timed kernel, not an afterthought in separate scripts.
+- Related patterns: Mirror API Simulator With Result Gate; Deterministic Plus Semantic Verification Pipeline; Paired App And E2E Regression Test.
+- Risks/caveats: Verification can be expensive and must not be accidentally included in kernel timing.
+- Agentic coding guidance: For every new kernel, provide a verifier or explicitly wire `VerifyUnimplemented`, then keep the timed region limited to algorithm work.
+
+### In-Place CSR Builder With Prefix Offsets
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src/src/builder.h`
+- Language/framework/stack: C++, OpenMP, compressed sparse row graph construction
+- Code shape/snippet:
+```cpp
+pvector<NodeID_> CountDegrees(const EdgeList &el, bool transpose) {
+  pvector<NodeID_> degrees(num_nodes_, 0);
+  #pragma omp parallel for
+  for (auto it = el.begin(); it < el.end(); it++) {
+    Edge e = *it;
+    if (symmetrize_ || (!symmetrize_ && !transpose))
+      fetch_and_add(degrees[e.u], 1);
+    if ((symmetrize_ && !in_place_) || (!symmetrize_ && transpose))
+      fetch_and_add(degrees[(NodeID_) e.v], 1);
+  }
+  return degrees;
+}
+
+pvector<SGOffset> offsets = ParallelPrefixSum(degrees);
+*neighs = reinterpret_cast<DestID_*>(el.data());
+for (Edge e : el)
+  (*neighs)[offsets[e.u]++] = e.v;
+el.leak();
+```
+- Why it matters: The builder turns edge lists into CSR with degree counting, prefix sums, and optional in-place memory reuse to reduce allocation pressure.
+- When to use: Use for graph-loading pipelines where an immutable CSR representation is the hot-path format.
+- When not to use: Avoid if the graph is updated frequently or if memory ownership tricks would make safety more important than peak performance.
+- Transferable principle: Build dense adjacency by counting first, prefixing offsets second, and filling contiguous storage last.
+- Related patterns: Parallel Arrow Encoder With Sink Factory; WAL Chunk Writer With Backfilled Header; ResourceIterator Snapshot Boundary.
+- Risks/caveats: In-place reinterpretation and `leak()` demand strict ownership discipline; weighted graphs and symmetrization branches are easy to mix up.
+- Agentic coding guidance: Do not modify CSR construction without tests for directed, symmetrized, self-loop, duplicate, weighted, and in-place modes.
+
+### Vertex Program Lifecycle Hooks
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src/src/api/graphchi_program.hpp`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src/example_apps/pagerank.cpp`
+- Language/framework/stack: C++, GraphChi vertex-centric graph engine
+- Code shape/snippet:
+```cpp
+template <typename VertexDataType_, typename EdgeDataType_, typename vertex_t>
+class GraphChiProgram {
+public:
+  virtual void before_iteration(int iteration, graphchi_context &gcontext) {}
+  virtual void after_iteration(int iteration, graphchi_context &gcontext) {}
+  virtual bool repeat_updates(graphchi_context &gcontext) { return false; }
+  virtual void before_exec_interval(vid_t window_st, vid_t window_en, graphchi_context &gcontext) {}
+  virtual void after_exec_interval(vid_t window_st, vid_t window_en, graphchi_context &gcontext) {}
+  virtual void update(vertex_t &v, graphchi_context &gcontext) = 0;
+};
+
+struct PagerankProgram : public GraphChiProgram<float, float> {
+  void update(graphchi_vertex<float, float> &v, graphchi_context &ginfo) { ... }
+};
+```
+- Why it matters: Graph algorithms plug into the engine with lifecycle callbacks while the engine owns interval loading, scheduling, storage, and iteration.
+- When to use: Use for frameworks where user code should express per-vertex logic without owning execution mechanics.
+- When not to use: Avoid for algorithms that need global synchronization at fine granularity not represented by the lifecycle.
+- Transferable principle: Separate algorithm callbacks from engine orchestration and make the minimal required callback pure virtual.
+- Related patterns: Explicit Hook Marker Plugin Manager; Conditional Auto-Configuration Customizer Chain; Parser Superclass Hooks For Layout Semantics.
+- Risks/caveats: Empty default hooks can hide missed lifecycle needs; mutation of edge data on disk makes initialization contracts important.
+- Agentic coding guidance: When adding algorithms, implement `update` first, then add lifecycle hooks only when the algorithm requires interval or iteration state.
+
+### Double-Buffered Bitset Scheduler
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src/src/engine/bitset_scheduler.hpp`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src/src/engine/graphchi_engine.hpp`
+- Language/framework/stack: C++, GraphChi selective scheduling
+- Code shape/snippet:
+```cpp
+void new_iteration(int iteration) {
+  if (iteration > 0) {
+    dense_bitset * tmp = curiteration_bitset;
+    curiteration_bitset = nextiteration_bitset;
+    nextiteration_bitset = tmp;
+    nextiteration_bitset->clear();
+  }
+}
+
+inline void add_task(vid_t vertex, bool also_this_iteration=false) {
+  nextiteration_bitset->set_bit(vertex);
+  if (also_this_iteration) {
+    curiteration_bitset->set_bit(vertex);
+  }
+  has_new_tasks = true;
+}
+```
+- Why it matters: Tasks scheduled during one iteration are isolated for the next iteration, while an explicit flag allows immediate scheduling when safe.
+- When to use: Use for iterative graph computations where active vertices are sparse and work should be carried between supersteps.
+- When not to use: Avoid for algorithms that always touch every vertex or where dynamic scheduling overhead exceeds saved work.
+- Transferable principle: Double-buffer scheduling state so producers and consumers do not mutate the same active set accidentally.
+- Related patterns: Rerun Request Coalescing State Machine; Drop-Based Generation Completion Notification; Status-Carrying Filesystem Path Remapper.
+- Risks/caveats: `has_new_tasks` semantics can be subtle; forgetting `new_iteration` swaps runs stale task sets.
+- Agentic coding guidance: When touching scheduler code, test first iteration, second iteration swap, `also_this_iteration`, and no-new-task early stop paths.
+
+### C Cleanup Stack For Error-Safe Allocation
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src/src/flow/flow_conversion.c`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src/src/io/pajek.c`
+- Language/framework/stack: C, igraph core library
+- Code shape/snippet:
+```c
+IGRAPH_VECTOR_INT_INIT_FINALLY(&edges, 0);
+IGRAPH_CHECK(igraph_vector_int_reserve(&edges, 2 * (no_of_edges + no_of_nodes)));
+IGRAPH_CHECK(igraph_get_edgelist(graph, &edges, 0));
+
+IGRAPH_CHECK(igraph_create(result, &edges, 2 * no_of_nodes, IGRAPH_DIRECTED));
+
+igraph_vector_int_destroy(&edges);
+IGRAPH_FINALLY_CLEAN(1);
+return IGRAPH_SUCCESS;
+```
+- Why it matters: C functions get structured cleanup around every fallible allocation or API call without `goto` clutter in the common path.
+- When to use: Use in C libraries with many owned temporaries and an error-code return convention.
+- When not to use: Avoid in C++/Rust/Go code where destructors, ownership types, or `defer` already encode cleanup more safely.
+- Transferable principle: Pair every resource acquisition with a cleanup registration immediately, and clean the stack only after explicit destruction.
+- Related patterns: Leak-Checking Recovery Cleanup Strategy; Cleanable Callback Ownership Transfer; Status-Gated Managed Directory Handles.
+- Risks/caveats: `IGRAPH_FINALLY_CLEAN(n)` counts must match registered destructors; parser callbacks may need special enter/exit handling.
+- Agentic coding guidance: When adding igraph temporaries, use the matching `*_INIT_FINALLY` macro where available and audit cleanup counts line by line.
+
+### Graph-Independent Selectors With Concrete Iterators
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src/src/graph/iterators.c`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src/src/layout/circular.c`
+- Language/framework/stack: C, igraph graph selectors and iterators
+- Code shape/snippet:
+```c
+igraph_error_t igraph_vs_all(igraph_vs_t *vs) {
+    vs->type = IGRAPH_VS_ALL;
+    return IGRAPH_SUCCESS;
+}
+
+igraph_vs_t igraph_vss_all(void) {
+    igraph_vs_t allvs;
+    allvs.type = IGRAPH_VS_ALL;
+    return allvs;
+}
+
+IGRAPH_CHECK(igraph_vit_create(graph, order, &vit));
+for (igraph_int_t i = 0; !IGRAPH_VIT_END(vit); IGRAPH_VIT_NEXT(vit), i++) {
+    igraph_int_t idx = IGRAPH_VIT_GET(vit);
+    MATRIX(*res, idx, 0) = cos(phi);
+}
+igraph_vit_destroy(&vit);
+```
+- Why it matters: A selector describes a vertex set independently of any graph, while an iterator realizes that selector against a specific graph.
+- When to use: Use for C APIs where callers need flexible subsets without allocating vectors for common cases like all, none, one, adjacent, or range.
+- When not to use: Avoid when a language's iterator/generator abstraction already provides lazy subset traversal with lifetime safety.
+- Transferable principle: Separate selection intent from traversal execution so APIs can accept rich subsets cheaply.
+- Related patterns: ResourceIterator Snapshot Boundary; Selection Pipeline With Indirect Modes; Dual Offset APIs At Host Boundaries.
+- Risks/caveats: Selector destruction rules differ between constructed and immediate selectors; iterators must be destroyed on all paths.
+- Agentic coding guidance: Choose `igraph_vss_*` immediate selectors for direct function arguments, create/destroy `igraph_vs_t` objects when storing selectors, and wrap iterator creation with cleanup macros when later calls can fail.
+
+## Worker 1 Batch 7
+
+### Dependency-Aware Worker Scheduler
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src/src/common/task_system/task_scheduler.cpp`
+- Language/framework/stack: C++, database execution runtime, worker threads, condition variables
+- Code shape/snippet:
+```cpp
+void TaskScheduler::scheduleTaskAndWaitOrError(const std::shared_ptr<Task>& task,
+    processor::ExecutionContext* context, bool launchNewWorkerThread) {
+    for (auto& dependency : task->children) {
+        scheduleTaskAndWaitOrError(dependency, context);
+        if (dependency->terminate()) {
+            return;
+        }
+    }
+    auto scheduledTask = pushTaskIntoQueue(task);
+    cv.notify_all();
+    while (true) {
+        taskLck.lock();
+        if (task->isCompletedNoLock()) {
+            taskLck.unlock();
+            break;
+        }
+        if (context->clientContext->hasTimeout()) {
+            timeout = context->clientContext->getTimeoutRemainingInMS();
+            if (timeout == 0) {
+                context->clientContext->interrupt();
+            }
+        } else if (task->hasExceptionNoLock()) {
+            context->clientContext->interrupt();
+        }
+        task->cv.wait(taskLck);
+        taskLck.unlock();
+    }
+    if (task->hasException()) {
+        removeErroringTask(scheduledTask->ID);
+        std::rethrow_exception(task->getExceptionPtr());
+    }
+}
+```
+- Why it matters: Task dependencies, timeout interruption, exception propagation, and queue cleanup live in one scheduling boundary instead of being hand-rolled by every execution operator.
+- When to use: Use for local query engines or batch processors where a task can have child dependencies and can safely run on multiple worker threads.
+- When not to use: Avoid for network-heavy jobs that need cancellation tokens, distributed leases, or retry orchestration across machines.
+- Transferable principle: Put dependency traversal and failure propagation in the scheduler, then let tasks focus on work units.
+- Related patterns: Double-Buffered Bitset Scheduler; Benchmark Kernel Harness With Verifier Hook; Worker-Local Client Task Queue.
+- Risks/caveats: The global lock around deregistration is subtle and must preserve the documented happens-before relationship between dependent tasks.
+- Agentic coding guidance: When generating new task types, expose `run`, child dependencies, and termination behavior; do not bypass `scheduleTaskAndWaitOrError` for dependent work.
+
+### Virtual Filesystem Compression Gate
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src/src/common/file_system/virtual_file_system.cpp`
+- Language/framework/stack: C++, database file system abstraction, local and compressed files
+- Code shape/snippet:
+```cpp
+std::unique_ptr<FileInfo> VirtualFileSystem::openFile(
+    const std::string& path, FileOpenFlags flags, main::ClientContext* context) {
+    auto compressionType = flags.compressionType;
+    if (compressionType == FileCompressionType::AUTO_DETECT) {
+        compressionType = autoDetectCompressionType(path);
+    }
+    auto fileHandle = findFileSystem(path)->openFile(path, flags, context);
+    if (compressionType == FileCompressionType::UNCOMPRESSED) {
+        return fileHandle;
+    }
+    if (flags.flags & FileFlags::WRITE) {
+        throw IOException{"Writing to compressed files is not supported yet."};
+    }
+    if (StringUtils::getLower(getFileExtension(path)) != ".csv") {
+        throw IOException{"Lbug currently only supports reading from compressed csv files."};
+    }
+    return compressedFileSystem.at(compressionType)->openCompressedFile(std::move(fileHandle));
+}
+
+FileSystem* VirtualFileSystem::findFileSystem(const std::string& path) const {
+    for (auto& subSystem : subSystems) {
+        if (subSystem->canHandleFile(path)) {
+            return subSystem.get();
+        }
+    }
+    return defaultFS.get();
+}
+```
+- Why it matters: File-system routing, compression auto-detection, and unsupported mode checks happen before callers receive a handle.
+- When to use: Use when storage backends should be pluggable but cross-cutting policies like compression and remote path resolution must remain centralized.
+- When not to use: Avoid if every backend has incompatible semantics that would make a single `FileInfo` contract misleading.
+- Transferable principle: Route by capability first, then decorate the returned handle only when the access policy allows it.
+- Related patterns: Status-Gated Managed Directory Handles; Opt-In Secret Persistence With Autoloaded Providers; Hooked HTTP Request Builder With Runtime Adapters.
+- Risks/caveats: `findFileSystem` first-match behavior makes subsystem registration order part of the API; compression support is intentionally narrower than the file abstraction.
+- Agentic coding guidance: Add new file systems by implementing `canHandleFile` and registering them; keep compression write support rejected until tests prove the full write path.
+
+### Alignment-Aware Null Mask Copy
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src/src/common/null_mask.cpp`
+- Language/framework/stack: C++, vectorized database execution, packed bit masks
+- Code shape/snippet:
+```cpp
+bool NullMask::copyNullMask(const uint64_t* srcNullEntries, uint64_t srcOffset,
+    uint64_t* dstNullEntries, uint64_t dstOffset, uint64_t numBitsToCopy, bool invert) {
+    if (numBitsToCopy <= 3) {
+        bool anyNull = false;
+        for (size_t i = 0; i < numBitsToCopy; i++) {
+            bool isNull = NullMask::isNull(srcNullEntries, srcOffset + i);
+            NullMask::setNull(dstNullEntries, dstOffset + i, isNull ^ invert);
+            anyNull |= isNull;
+        }
+        return anyNull;
+    }
+    if (!invert && (srcOffset % 8 == dstOffset % 8) && numBitsToCopy >= 8 &&
+        numBitsToCopy - (srcOffset % 8) >= 8) {
+        auto* src = reinterpret_cast<const uint8_t*>(srcNullEntries) + start / 8;
+        auto* dst = reinterpret_cast<uint8_t*>(dstNullEntries) + start / 8;
+        memcpy(dst, src, numBytesForAlignedCopy);
+        ...
+    } else {
+        return copyUnaligned(srcNullEntries, srcOffset, dstNullEntries, dstOffset,
+            numBitsToCopy, invert);
+    }
+}
+```
+- Why it matters: The implementation splits tiny copies, byte-aligned bulk copies, and fully unaligned bit shifting so null propagation stays fast in hot vector paths.
+- When to use: Use for packed validity/null bitmaps when copy size and alignment vary across slicing, projection, or scan operators.
+- When not to use: Avoid for sparse flags or one-off metadata where byte-level clarity is more valuable than dense bit manipulation.
+- Transferable principle: Teach low-level copy code its common fast paths explicitly, and return useful summary state such as "any null seen".
+- Related patterns: Variant-Dispatched Device Spans; Parallel Arrow Encoder With Sink Factory; In-Place CSR Builder With Prefix Offsets.
+- Risks/caveats: Offset arithmetic and masking are easy to corrupt; every branch needs tests for zero, tiny, aligned, unaligned, inverted, and boundary-spanning ranges.
+- Agentic coding guidance: Do not "simplify" packed bitmap code without benchmarks and exhaustive bit-level tests; preserve the tiny-copy special case unless new measurements disprove it.
+
+### GraphBLAS Result Remapping Boundary
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_graphblas-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_graphblas-src/src/main/c/src/algorithms/bfs.cpp`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_graphblas-src/src/main/c/src/graphio.cpp`
+- Language/framework/stack: C++, SuiteSparse GraphBLAS, LAGraph, Graphalytics output contract
+- Code shape/snippet:
+```cpp
+GrB_Matrix A = ReadMatrixMarket(parameters);
+std::vector<GrB_Index> mapping = ReadMapping(parameters);
+auto source_vertex_iter = std::find(mapping.begin(), mapping.end(), parameters.source_vertex);
+GrB_Index sourceVertex = std::distance(mapping.begin(), source_vertex_iter);
+
+GrB_Vector result = LA_BFS(A, sourceVertex, parameters.directed);
+SerializeBFSResult(result, mapping, parameters);
+
+for (GrB_Index v_id = 0; v_id < n; v_id++) {
+    GrB_Index original_index = mapping[v_id];
+    int64_t level;
+    if (I[curr_nz] == v_id) {
+        level = X[curr_nz];
+        curr_nz++;
+    } else {
+        level = 9223372036854775807;
+    }
+    file << original_index << " " << level << std::endl;
+}
+```
+- Why it matters: Internal dense GraphBLAS indices are isolated from external graph IDs and Graphalytics unreachable-vertex semantics.
+- When to use: Use whenever a high-performance native kernel requires compact integer IDs but the benchmark or API must preserve original IDs.
+- When not to use: Avoid if the upstream data already uses stable dense IDs and the output contract does not require remapping.
+- Transferable principle: Keep ID compaction and result expansion at the I/O boundary, not inside the numerical kernel.
+- Related patterns: Dual Offset APIs At Host Boundaries; Cursorable Fetch Blocks Over Multiple Backings; Graph-Independent Selectors With Concrete Iterators.
+- Risks/caveats: Sparse result iteration assumes tuple indices are in increasing order; missing values must be mapped to the benchmark's infinity sentinel consistently.
+- Agentic coding guidance: When adding GraphBLAS algorithms, define input mapping, source remapping, missing-result behavior, and output serialization before touching the kernel call.
+
+### Template Method Command Runner
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_graphblas-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_graphblas-src/src/main/java/science/atlarge/graphalytics/graphblas/GraphblasJob.java`
+- Language/framework/stack: Java, Apache Commons Exec, LDBC Graphalytics platform driver
+- Code shape/snippet:
+```java
+public int execute() throws Exception {
+    String executableDir = platformConfig.getExecutablePath();
+    commandLine = new CommandLine(Paths.get(executableDir).toFile());
+
+    appendBenchmarkParameters(jobId, logDir);
+    appendAlgorithmParameters();
+    appendDatasetParameters(inputDir, outputFile);
+    appendPlatformConfigurations(numThreads);
+
+    String commandString = StringUtils.toString(commandLine.toStrings(), " ");
+    LOG.info(String.format("Execute benchmark job with command-line: [%s]", commandString));
+
+    Executor executor = new DefaultExecutor();
+    executor.setStreamHandler(new PumpStreamHandler(System.out, System.err));
+    executor.setExitValue(0);
+    return executor.execute(commandLine);
+}
+
+protected abstract void appendAlgorithmParameters();
+```
+- Why it matters: Every algorithm job gets the same benchmark, dataset, logging, stream handling, and platform flags while subclasses only provide algorithm-specific arguments.
+- When to use: Use for benchmark or CLI adapters where many commands share most arguments but differ in a small domain-specific slice.
+- When not to use: Avoid when commands have substantially different lifecycle behavior, environment needs, or success criteria.
+- Transferable principle: Make the invariant command shape final-ish and expose one narrow override point for the variable part.
+- Related patterns: Command Descriptor Wrapper; Shell Command Metadata Registry; CLI Plugin Manager With Logged Command Steps.
+- Risks/caveats: Logging full command lines can expose paths or credentials in other domains; argument ordering becomes part of the executable contract.
+- Agentic coding guidance: Add new GraphBLAS algorithm jobs by overriding `appendAlgorithmParameters`; do not duplicate executor setup in each subclass.
+
+### AST Vtable Registry For Node Families
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/libcypher-parser-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/libcypher-parser-src/lib/src/ast.c`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/libcypher-parser-src/lib/src/ast_subscript_operator.c`
+- Language/framework/stack: C, parser library, generated-style AST node families
+- Code shape/snippet:
+```c
+struct cypher_astnode_vts
+{
+    const struct cypher_astnode_vt *statement;
+    const struct cypher_astnode_vt *query;
+    const struct cypher_astnode_vt *match;
+    const struct cypher_astnode_vt *expression;
+    const struct cypher_astnode_vt *subscript_operator;
+    const struct cypher_astnode_vt *map_projection;
+};
+
+static const struct cypher_astnode_vts cypher_astnode_vts =
+{
+    .statement = &cypher_statement_astnode_vt,
+    .query = &cypher_query_astnode_vt,
+    .match = &cypher_match_astnode_vt,
+    .subscript_operator = &cypher_subscript_operator_astnode_vt,
+};
+
+#define VT_OFFSET(name) offsetof(struct cypher_astnode_vts, name) \
+    / sizeof(struct cypher_astnode_vt *)
+```
+- Why it matters: A large C AST hierarchy gets a central registry of virtual tables while individual node files validate child types and provide node-specific accessors.
+- When to use: Use in C parsers or protocol libraries with many node variants but no language-level sum types.
+- When not to use: Avoid in languages with native enums, sealed traits, or pattern matching that encode variants more safely.
+- Transferable principle: Centralize the type registry and keep each node constructor responsible for structural validation.
+- Related patterns: Data-Driven Language Specification Registry; Declarative Grammar Helpers For Repeated Syntax; Parser Superclass Hooks For Layout Semantics.
+- Risks/caveats: Adding a node requires coordinated updates across enum values, vtables, constructors, printers, and tests.
+- Agentic coding guidance: When creating AST nodes, update the registry and one focused node implementation together, then add tests that assert exact node types and child accessors.
+
+### Parse Result Segment Ownership Merge
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/libcypher-parser-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/libcypher-parser-src/lib/src/result.c`
+- Language/framework/stack: C, libcypher-parser result and segment ownership
+- Code shape/snippet:
+```c
+int cp_result_merge_segment(cypher_parse_result_t *result,
+        cypher_parse_segment_t *segment)
+{
+    if (segment->nerrors > 0)
+    {
+        unsigned int n = result->nerrors + segment->nerrors;
+        cypher_parse_error_t *errors = realloc(result->errors,
+                n * sizeof(cypher_parse_error_t));
+        if (errors == NULL) {
+            return -1;
+        }
+        memcpy(errors + result->nerrors, segment->errors,
+                segment->nerrors * sizeof(cypher_parse_error_t));
+        segment->nerrors = 0;
+        result->errors = errors;
+        result->nerrors = n;
+    }
+    if (segment->nroots > 0) {
+        ...
+        segment->nroots = 0;
+        result->roots = roots;
+        result->nroots = n;
+    }
+    result->nnodes += segment->nnodes;
+    return 0;
+}
+
+void cypher_parse_result_free(cypher_parse_result_t *result) {
+    cp_errors_vcleanup(result->errors, result->nerrors);
+    cypher_ast_vfree(result->roots, result->nroots);
+    free(result->directives);
+    free(result);
+}
+```
+- Why it matters: Streaming parser segments can be folded into a single result without double-freeing moved roots, errors, or directives.
+- When to use: Use when a parser emits partial segments but the public API also offers an aggregate parse result.
+- When not to use: Avoid if the language runtime can express ownership transfer directly with moves or unique pointers.
+- Transferable principle: After moving ownership out of a segment, clear the segment counts and let the aggregate own cleanup.
+- Related patterns: C Cleanup Stack For Error-Safe Allocation; Leak-Checking Recovery Cleanup Strategy; WAL Chunk Writer With Backfilled Header.
+- Risks/caveats: Every `realloc` branch must preserve old ownership on failure; forgetting to zero segment counts risks double cleanup.
+- Agentic coding guidance: When changing segment fields, update merge and free functions in the same patch and add tests for multi-segment parse errors and directives.
+
+### Static Dynamic Dimension Type Algebra
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nalgebra-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nalgebra-src/src/base/dimension.rs`
+- Language/framework/stack: Rust, nalgebra, type-level dimensions, typenum, const generics
+- Code shape/snippet:
+```rust
+pub struct Dyn(pub usize);
+pub struct Const<const R: usize>;
+
+pub unsafe trait Dim: Any + Debug + Copy + PartialEq + Send + Sync {
+    fn try_to_usize() -> Option<usize>;
+    fn value(&self) -> usize;
+    fn from_usize(dim: usize) -> Self;
+}
+
+pub trait DimName: Dim {
+    const DIM: usize;
+    fn name() -> Self;
+    fn dim() -> usize;
+}
+
+macro_rules! dim_ops(
+    ($($DimOp: ident, $DimNameOp: ident, $Op: ident, $op: ident,
+       $op_path: path, $DimResOp: ident, $DimNameResOp: ident,
+       $ResOp: ident);*) => {$(
+        pub trait $DimOp<D: Dim>: Dim {
+            type Output: Dim;
+            fn $op(self, other: D) -> Self::Output;
+        }
+        impl<D: Dim> $DimOp<D> for Dyn {
+            type Output = Dyn;
+            fn $op(self, other: D) -> Dyn {
+                Dyn($op_path(self.value(), other.value()))
+            }
+        }
+    )*}
+);
+```
+- Why it matters: The same matrix APIs can represent compile-time dimensions and runtime dimensions while preserving dimension arithmetic in trait bounds.
+- When to use: Use in numerics, geometry, and tensor libraries where static shapes should be optimized but dynamic shapes must remain supported.
+- When not to use: Avoid for ordinary business objects where type-level arithmetic would obscure the domain.
+- Transferable principle: Model static and dynamic cases under one trait, then implement operations at the type level where possible and at runtime where necessary.
+- Related patterns: Validated Configuration Properties; Shape-Gated Componentwise Ops With Fast Contiguous Path; Platform-Specific Async Trait Set.
+- Risks/caveats: Unsafe trait contracts and macro-generated impls raise the maintenance bar; error messages can become intimidating.
+- Agentic coding guidance: When adding dimension operations, update both `Const` and `Dyn` behavior and compile representative static-static, static-dynamic, and dynamic-dynamic examples.
+
+### Shape-Gated Componentwise Fast Path
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nalgebra-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nalgebra-src/src/base/ops.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nalgebra-src/src/base/storage.rs`
+- Language/framework/stack: Rust, nalgebra matrix operations, generic storage traits
+- Code shape/snippet:
+```rust
+pub unsafe trait RawStorage<T, R: Dim, C: Dim = U1>: Sized {
+    type RStride: Dim;
+    type CStride: Dim;
+    fn ptr(&self) -> *const T;
+    fn shape(&self) -> (R, C);
+    fn strides(&self) -> (Self::RStride, Self::CStride);
+    fn is_contiguous(&self) -> bool;
+    unsafe fn as_slice_unchecked(&self) -> &[T];
+}
+
+if self.data.is_contiguous() && rhs.data.is_contiguous() && out.data.is_contiguous() {
+    let arr1 = self.data.as_slice_unchecked();
+    let arr2 = rhs.data.as_slice_unchecked();
+    let out = out.data.as_mut_slice_unchecked();
+    for i in 0..arr1.len() {
+        Status::init(out.get_unchecked_mut(i),
+            arr1.get_unchecked(i).clone().add(arr2.get_unchecked(i).clone()));
+    }
+} else {
+    for j in 0..self.ncols() {
+        for i in 0..self.nrows() {
+            ...
+        }
+    }
+}
+```
+- Why it matters: Shape constraints keep public APIs correct while the implementation still gets a contiguous-storage hot path for common dense matrices.
+- When to use: Use in generic numeric code where views, strides, owned matrices, and uninitialized outputs all share one operation implementation.
+- When not to use: Avoid in simple array code where one storage representation is enough.
+- Transferable principle: Split safety into public shape bounds and private unsafe fast paths guarded by storage capabilities.
+- Related patterns: Variant-Dispatched Device Spans; Alignment-Aware Null Mask Copy; ResourceIterator Snapshot Boundary.
+- Risks/caveats: Unsafe slice access depends on accurate `is_contiguous` implementations; wrong storage metadata becomes undefined behavior.
+- Agentic coding guidance: Add operations through the existing macro and storage traits; never call unchecked slice access unless shape equality and contiguity have already been established.
+
+### Lifetime-Tied Raw Iterator Wrapper
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rust-rocksdb-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rust-rocksdb-src/src/db_iterator.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rust-rocksdb-src/tests/fail/iterator_outlive_db.stderr`
+- Language/framework/stack: Rust, RocksDB FFI, lifetime-bound iterators
+- Code shape/snippet:
+```rust
+pub struct DBRawIteratorWithThreadMode<'a, D: DBAccess> {
+    inner: std::ptr::NonNull<ffi::rocksdb_iterator_t>,
+    _readopts: ReadOptions,
+    db: PhantomData<&'a D>,
+}
+
+impl<'a, D: DBAccess> DBRawIteratorWithThreadMode<'a, D> {
+    pub(crate) fn new(db: &D, readopts: ReadOptions) -> Self {
+        let inner = unsafe { db.create_iterator(&readopts) };
+        Self::from_inner(inner, readopts)
+    }
+
+    pub fn status(&self) -> Result<(), Error> {
+        unsafe {
+            ffi_try!(ffi::rocksdb_iter_get_error(self.inner.as_ptr()));
+        }
+        Ok(())
+    }
+}
+```
+```text
+error[E0597]: `db` does not live long enough
+ --> tests/fail/iterator_outlive_db.rs:6:9
+  |
+6 |         db.iterator(IteratorMode::Start)
+  |         ^^ borrowed value does not live long enough
+```
+- Why it matters: The Rust wrapper encodes that C iterators and read options cannot outlive the database and the buffers referenced by `ReadOptions`.
+- When to use: Use for FFI handles whose validity depends on a parent object and borrowed option buffers.
+- When not to use: Avoid when the C library provides independent owned handles that can safely outlive the parent.
+- Transferable principle: Store the owned option state and a `PhantomData` parent borrow in the wrapper that owns the raw pointer.
+- Related patterns: Cleanable Callback Ownership Transfer; Bound Column Family Lifetime Projection; C API Type Validation Funnel.
+- Risks/caveats: `NonNull::new(...).unwrap()` relies on RocksDB constructor behavior; wrapper safety still depends on correct `Drop` and FFI status checks.
+- Agentic coding guidance: When adding raw handle wrappers, create compile-fail tests proving children cannot outlive parents.
+
+### FFI Error Pointer Conversion Macro
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rust-rocksdb-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rust-rocksdb-src/src/ffi_util.rs`
+- Language/framework/stack: Rust, RocksDB C API, FFI utilities
+- Code shape/snippet:
+```rust
+pub(crate) unsafe fn from_cstr_and_free(ptr: *const c_char) -> String {
+    let cstr = unsafe { CStr::from_ptr(ptr as *const _) };
+    let s = String::from_utf8_lossy(cstr.to_bytes()).into_owned();
+    ffi::rocksdb_free(ptr as *mut c_void);
+    s
+}
+
+pub fn convert_rocksdb_error(rocksdb_err: *const c_char) -> Error {
+    let rocksdb_err_str = unsafe { from_cstr_and_free(rocksdb_err) };
+    Error::new(rocksdb_err_str)
+}
+
+macro_rules! ffi_try_impl {
+    ( $($function:ident)::*( $($arg:expr,)*) ) => {{
+        let mut err: *mut ::libc::c_char = ::std::ptr::null_mut();
+        let result = $($function)::*($($arg,)* &mut err);
+        if !err.is_null() {
+            return Err($crate::ffi_util::convert_rocksdb_error(err));
+        }
+        result
+    }};
+}
+```
+- Why it matters: Every RocksDB call that reports errors through an allocated C string gets converted to `Result` while freeing the error pointer exactly once.
+- When to use: Use when a C API reports nullable allocated error strings as out-parameters.
+- When not to use: Avoid when errors are returned as stable borrowed strings, integer codes, or structured status objects with separate ownership rules.
+- Transferable principle: Wrap FFI error conventions in one macro or helper so call sites cannot forget cleanup.
+- Related patterns: C Cleanup Stack For Error-Safe Allocation; Parse Result Segment Ownership Merge; CStr-Like Boundary Without Forced Allocation.
+- Risks/caveats: The macro uses early `return Err(...)`, so it only fits functions returning compatible `Result` types.
+- Agentic coding guidance: Prefer `ffi_try!` at every RocksDB error-pointer boundary and add wrapper-specific tests for both success and error paths.
+
+### Triplet Builder To Compressed Matrix
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sprs-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sprs-src/sprs/src/sparse/triplet.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sprs-src/sprs/src/sparse/csmat.rs`
+- Language/framework/stack: Rust, sprs sparse matrices, triplet/CSR/CSC formats
+- Code shape/snippet:
+```rust
+pub fn from_triplets(
+    shape: (usize, usize),
+    row_inds: Vec<I>,
+    col_inds: Vec<I>,
+    data: Vec<N>,
+) -> Self {
+    assert_eq!(row_inds.len(), col_inds.len(), "all inputs should have the same length");
+    assert!(row_inds.iter().all(|&i| i.index() < shape.0), "row indices should be within shape");
+    assert!(col_inds.iter().all(|&j| j.index() < shape.1), "col indices should be within shape");
+    Self { rows: shape.0, cols: shape.1, row_inds, col_inds, data }
+}
+
+pub fn add_triplet(&mut self, row: usize, col: usize, val: N) {
+    assert!(row < self.rows);
+    assert!(col < self.cols);
+    self.row_inds.push(I::from_usize(row));
+    self.col_inds.push(I::from_usize(col));
+    self.data.push(val);
+}
+
+pub fn to_csr<Iptr: SpIndex>(&self) -> CsMatI<N, I, Iptr>
+where
+    N: Clone + Add<Output = N>,
+{
+    self.triplet_iter().into_csr()
+}
+```
+- Why it matters: Mutation-friendly triplets are clearly separated from computation-friendly compressed matrices, and conversion is the boundary where duplicates can be summed.
+- When to use: Use for sparse matrix assembly where entries arrive incrementally or out of order before solving or multiplying.
+- When not to use: Avoid for repeated structural updates after conversion; CSR/CSC formats assume a mostly fixed sparsity pattern.
+- Transferable principle: Provide a permissive builder representation and a validated optimized representation, with explicit conversion between them.
+- Related patterns: In-Place CSR Builder With Prefix Offsets; Grouped Batch Graph Ingestion; Accumulating Validator With Warnings.
+- Risks/caveats: `from_triplets` panics on invalid inputs; fallible constructors are better for untrusted data.
+- Agentic coding guidance: Generate triplet code for assembly and convert once; do not push directly into compressed internals unless using checked constructors.
+
+### Proper Indptr Cow Boundary
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sprs-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sprs-src/sprs/src/sparse/indptr.rs`
+- Language/framework/stack: Rust, sprs compressed sparse matrix internals, FFI-safe pointer preparation
+- Code shape/snippet:
+```rust
+pub fn as_slice(&self) -> Option<&[Iptr]> {
+    if self.is_proper() {
+        Some(&self.storage[..])
+    } else {
+        None
+    }
+}
+
+pub fn to_proper(&self) -> std::borrow::Cow<'_, [Iptr]> {
+    if self.is_proper() {
+        std::borrow::Cow::Borrowed(&self.storage[..])
+    } else {
+        let offset = self.offset();
+        let proper = self.storage.iter().map(|i| *i - offset).collect();
+        std::borrow::Cow::Owned(proper)
+    }
+}
+
+pub fn iter_outer_sz(&self) -> impl DoubleEndedIterator<Item = Range<usize>>
+       + ExactSizeIterator<Item = Range<usize>> + '_ {
+    self.iter_outer().map(|range| {
+        range.start.index_unchecked()..range.end.index_unchecked()
+    })
+}
+```
+- Why it matters: Sliced matrices can have nonzero offset pointers, so the API exposes borrowed proper storage when possible and owned normalized storage when needed.
+- When to use: Use when a view's internal offsets differ from the external format or FFI contract requiring zero-based pointers.
+- When not to use: Avoid if consumers can accept offset-aware ranges directly and no raw pointer escapes are needed.
+- Transferable principle: Return `Cow` at representation-normalization boundaries so callers pay allocation only when views require it.
+- Related patterns: Dual Offset APIs At Host Boundaries; ResourceIterator Snapshot Boundary; GraphBLAS Result Remapping Boundary.
+- Risks/caveats: Raw pointers from the returned `Cow` are valid only while the `Cow` is alive; the source file documents this exact FFI hazard.
+- Agentic coding guidance: When passing indptr data to FFI, bind `let proper = indptr.to_proper();` in a scope that outlives the call; never take a pointer from a temporary.
+
+### GSQL Accumulator Output Variants
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src/GSQL/graph_algorithms/algorithms/templates/pageRank.gtmp`
+- Language/framework/stack: TigerGraph GSQL, graph algorithm templates, accumulators
+- Code shape/snippet:
+```gsql
+*ATTR*CREATE QUERY pageRank*EXT* (FLOAT maxChange, INT maxIter, FLOAT damping) FOR GRAPH *graph*{
+*ACCM*CREATE QUERY pageRank*EXT* (FLOAT maxChange, INT maxIter, FLOAT damping, BOOL display, INT outputLimit) FOR GRAPH *graph*{
+*FILE*CREATE QUERY pageRank*EXT* (FLOAT maxChange, INT maxIter, FLOAT damping, FILE f) FOR GRAPH *graph*{
+        MaxAccum<float> @@maxDiff = 9999;
+        SumAccum<float> @received_score = 0;
+        SumAccum<float> @score = 1;
+        Start = {*vertex-types*};
+        WHILE @@maxDiff > maxChange LIMIT maxIter DO
+                @@maxDiff = 0;
+                V = SELECT s
+                    FROM Start:s -(*edge-types*:e)-> :t
+                    ACCUM t.@received_score += s.@score/(*s_outdegrees*)
+                    POST-ACCUM s.@score = (1.0-damping) + damping * s.@received_score,
+                               s.@received_score = 0,
+                               @@maxDiff += abs(s.@score - s.@score');
+        END;
+*FILE*  V = SELECT s FROM Start:s
+*FILE*      POST-ACCUM f.println(s, s.@score);
+}
+```
+- Why it matters: One algorithm template is parameterized into attribute, accumulator/JSON, and file-output variants while preserving the core PageRank loop.
+- When to use: Use when graph algorithms need several deployment surfaces but the compute logic should remain identical.
+- When not to use: Avoid if output modes require different traversal semantics or consistency guarantees.
+- Transferable principle: Keep compute state in accumulators and put output-mode branching at the template boundary.
+- Related patterns: Runtime Tool Class Generation From API Docs; Schema-Typed SDK Tool Adapter; Template Method Command Runner.
+- Risks/caveats: Template markers such as `*ATTR*`, `*ACCM*`, and `*FILE*` can drift if generated examples are not compared.
+- Agentic coding guidance: When editing a GSQL algorithm template, update all output variants together and verify generated `.gsql` files for attribute, accumulator, and file modes.
+
+### GSQL Frontier Relaxation With Path Recovery
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src/GSQL/graph_algorithms/algorithms/templates/shortest_ss_pos_wt.gtmp`
+- Language/framework/stack: TigerGraph GSQL, positive-weight single-source shortest path
+- Code shape/snippet:
+```gsql
+MinAccum<float> @dis;
+OrAccum @visited;
+ListAccum<vertex> @path;
+float epsilon = 0.000000001;
+
+Source = {source};
+Source = SELECT s FROM Source:s
+         ACCUM s.@visited += true, s.@dis = 0;
+ResultSet = {source};
+
+WHILE(Source.size()>0) DO
+        Source = SELECT t
+                 FROM Source:s -(*edge-types*:e)-> :t
+                 WHERE t.@dis > s.@dis + e.*edge-weight*
+                 ACCUM t.@dis += s.@dis + e.*edge-weight*,
+                       t.@visited += true;
+        ResultSet = ResultSet UNION Source;
+END;
+
+Source = {source};
+WHILE(Source.size()>0) DO
+  Source = SELECT t
+           FROM Source:s -(*edge-types*:e)-> :t
+           WHERE abs((t.@dis) - (s.@dis+e.*edge-weight*)) < epsilon
+           ACCUM t.@path = s.@path + [t];
+END;
+```
+- Why it matters: Distance relaxation and path reconstruction are separated, which keeps the convergence loop focused on distances and the second pass focused on explainability.
+- When to use: Use for graph queries where users need both scalar shortest distances and one recoverable path.
+- When not to use: Avoid for graphs with negative weights or when all shortest paths are required.
+- Transferable principle: Compute the minimal scalar state first, then reconstruct richer artifacts from that stable state.
+- Related patterns: Direction-Optimizing Frontier Switch; Double-Buffered Bitset Scheduler; GraphBLAS Result Remapping Boundary.
+- Risks/caveats: The positive-weight assumption is encoded in the template name and logic; path equality relies on an epsilon comparison for floats.
+- Agentic coding guidance: Do not adapt this template for negative weights; add test graphs with ties, zero-weight edges, and unreachable vertices when changing path recovery.
+
+### CLI Restifier With Success Heuristics
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src/cloud/restifier/gsql.go`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src/cloud/restifier/auth.go`
+- Language/framework/stack: Go, Gin, TigerGraph GSQL CLI wrapper
+- Code shape/snippet:
+```go
+func execGSQL(username string, password string, graph *string, command string, stdin string) (string, error) {
+    args := []string{
+        "--graphstudio",
+        "-u", username,
+        "-p", password,
+        "-c", command,
+    }
+    if graph != nil {
+        args = append(args, "-g", *graph)
+    }
+    return runGSQL(stdin, args...)
+}
+
+func processOutput(stdout string, err error) (interface{}, error) {
+    if err != nil {
+        return stdout, err
+    }
+    if result := toJSON(stdout); result != nil {
+        return result, nil
+    }
+    succPattern := []string{"is created", "is dropped", "update to new version", "is successfully"}
+    for _, p := range succPattern {
+        if strings.Contains(stdout, p) {
+            return stdout, nil
+        }
+    }
+    return stdout, errors.New(stdout)
+}
+```
+- Why it matters: A legacy CLI is exposed as JSON-ish HTTP by centralizing command construction, auth forwarding, stdout parsing, and textual success detection.
+- When to use: Use for internal admin wrappers around CLIs that have no stable structured API yet.
+- When not to use: Avoid for internet-facing APIs or high-security paths; command output heuristics and password arguments are brittle.
+- Transferable principle: Keep CLI invocation and output normalization in one adapter instead of scattering shell calls through handlers.
+- Related patterns: Guarded Shell Command Parser; Shell-Aware Remote Command Construction; Centralized SSRF Guard.
+- Risks/caveats: Credentials are passed as command arguments, success is inferred from strings, and `StdinPipe` errors are ignored.
+- Agentic coding guidance: If extending this service, add request validation and tests around `processOutput` before adding routes; prefer structured TigerGraph APIs where available.
+
+## Worker 1 Batch 8
+
+### Lazy WASM Parser Bootstrap
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AB498__code-context-provider-mcp` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AB498__code-context-provider-mcp/index.js`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AB498__code-context-provider-mcp/setup.js`
+- Language / framework / stack: JavaScript, Node.js, Model Context Protocol, `web-tree-sitter`, WASM parsers
+- Code shape / snippet:
+```js
+const SUPPORTED_LANGUAGES = {
+  js: "tree-sitter-javascript.wasm",
+  jsx: "tree-sitter-javascript.wasm",
+  ts: "tree-sitter-javascript.wasm",
+  tsx: "tree-sitter-javascript.wasm",
+  py: "tree-sitter-python.wasm"
+};
+
+async function initializeTreeSitter() {
+  if (initialized) return;
+  await TreeSitter.init();
+  for (const wasmFile of new Set(Object.values(SUPPORTED_LANGUAGES))) {
+    const wasmPath = path.join(ensureParsersDirectory(), wasmFile);
+    if (fs.existsSync(wasmPath)) {
+      languageInstances[wasmFile] = await TreeSitter.Language.load(wasmPath);
+    } else {
+      missingWasmFiles.push(wasmFile);
+    }
+  }
+  if (missingWasmFiles.length > 0) {
+    const setupModule = await import("./setup.js");
+    await setupModule.setupParsers();
+    return await initializeTreeSitter();
+  }
+}
+```
+- Why this matters: Parser availability becomes a recoverable runtime concern instead of a hard startup failure, while language support remains explicit and easy to audit.
+- When to use: Use for CLI or MCP tools that depend on optional parser assets installed outside the source tree.
+- When not to use: Avoid automatic downloads in locked-down, offline, or reproducible-build environments unless the assets are vendored and checksummed.
+- Transferable principle: Put dynamic dependency bootstrap behind one initialization gate and make missing assets self-diagnosing.
+- Related patterns: Semantic Chunker With Fixed-Size Fallback; Typed Tool Schema Registry With Validated Executor.
+- Risks / caveats: Recursive retry needs an exit condition; downloaded WASM should be pinned or checksummed for supply-chain-sensitive deployments.
+- Agentic coding guidance: When adding a language, update the extension map, setup downloader, and parser extraction branch together; do not scatter parser path literals across tools.
+
+### Semantic Chunker With Fixed-Size Fallback
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AperturePlus__augmented-codebase-indexer` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AperturePlus__augmented-codebase-indexer/src/aci/core/chunker/chunker.py`
+- Language / framework / stack: Python, AST-based code indexing, tokenizer-aware chunking
+- Code shape / snippet:
+```python
+def chunk(self, file: ScannedFile, ast_nodes: list[ASTNode]) -> ChunkingResult:
+    imports = self._import_registry.extract_imports(file.content, file.language)
+    base_metadata = {"file_hash": file.content_hash, "imports": imports, "language": file.language}
+
+    if ast_nodes:
+        chunks, summaries = self._chunk_with_ast(file, ast_nodes, base_metadata, imports)
+    else:
+        chunks = self._chunk_fixed_size(file, base_metadata)
+        summaries = []
+
+    return ChunkingResult(chunks=chunks, summaries=summaries)
+
+if token_count <= self._max_tokens:
+    chunks.append(CodeChunk(..., chunk_type=node.node_type, metadata=metadata))
+else:
+    chunks.extend(self._smart_splitter.split_oversized_node(...))
+```
+- Why this matters: The best representation is used when the parser succeeds, but unsupported languages and oversized symbols still produce bounded, searchable chunks.
+- When to use: Use in code search and RAG systems that ingest heterogeneous repositories with uneven parser support.
+- When not to use: Avoid when exact AST boundaries are mandatory for downstream semantics; fallback chunks can split logical units.
+- Transferable principle: Treat structured extraction as an optimization over a reliable baseline, not as the only path to useful output.
+- Related patterns: Lazy WASM Parser Bootstrap; AST Chunk Shared By Dense And Sparse Indexes; PageRank-Budgeted Context Assembly.
+- Risks / caveats: Fixed-size fallback needs overlap and token guards, or it can miss context at boundaries and overflow model budgets.
+- Agentic coding guidance: Generate chunking changes with tests for AST-present, AST-absent, oversized-node, and docstring-prefix cases.
+
+### Hybrid Search With Graceful Channel Degradation
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeBendKit__codeseek` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeBendKit__codeseek/rust-core/src/services/hybrid_search.rs`; also `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas/src/codeatlas/search/hybrid.py`
+- Language / framework / stack: Rust and Python, vector search, BM25 or FTS5, reciprocal rank fusion, optional reranking
+- Code shape / snippet:
+```rust
+let dense_res = dense_future.await;
+let sparse_res_opt = match sparse_future {
+    Some(fut) => Some(fut.await),
+    None => None,
+};
+
+let dense_raw = dense_res.map_err(|e| anyhow!("Dense (vector) search failed: {}", e))?;
+let sparse_results = match sparse_res_opt {
+    Some(Ok(results)) => Some(results),
+    Some(Err(e)) => {
+        warn!("Sparse channel failed, falling back to dense-only: {}", e);
+        return Ok(dense_raw.into_iter().map(|sr| FusedCandidate {
+            source: CandidateSource::DenseOnly,
+            final_score: sr.score as f64,
+            ...
+        }).take(limit).collect());
+    }
+    None => None,
+};
+let fused = self.reciprocal_rank_fusion(dense_raw, sparse_results.unwrap_or_default(), rrf_limit);
+```
+- Why this matters: Search remains available when an auxiliary retrieval channel fails, but required channels still fail loudly.
+- When to use: Use for production code search where semantic retrieval is primary and keyword retrieval improves recall.
+- When not to use: Avoid silent degradation when compliance, audit, or exact-match guarantees require every backend to participate.
+- Transferable principle: Classify dependencies as required or enhancing, then encode fallback behavior at the orchestration boundary.
+- Related patterns: Weighted RRF With Position-Aware Rerank; Retrieval Trace For Explainable Ranking.
+- Risks / caveats: Fallback can hide sparse index outages unless warnings are monitored; RRF IDs must be stable across channels.
+- Agentic coding guidance: Add observability for `DenseOnly`, `SparseOnly`, and `Fused` counts whenever changing retrieval flow.
+
+### PageRank-Budgeted Context Assembly
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AperturePlus__augmented-codebase-indexer` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AperturePlus__augmented-codebase-indexer/src/aci/services/context_assembler.py`; also `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas/src/codeatlas/agent_context.py`
+- Language / framework / stack: Python, graph-backed RAG, token budgeting, PageRank
+- Code shape / snippet:
+```python
+symbols = self._apply_token_budget(symbols, request.max_tokens)
+
+def _apply_token_budget(self, symbols: list[SymbolDetail], max_tokens: int) -> list[SymbolDetail]:
+    sorted_symbols = sorted(symbols, key=lambda s: s.pagerank_score, reverse=True)
+    budget = max_tokens
+    result: list[SymbolDetail] = []
+    for sym in sorted_symbols:
+        tokens = self._count_symbol_tokens(sym)
+        if tokens <= budget:
+            result.append(sym)
+            budget -= tokens
+        else:
+            truncated = self._truncate_symbol(sym, budget)
+            if truncated is not None:
+                result.append(truncated)
+            break
+    return result
+
+def _truncate_symbol(...):
+    # 1. Drop callers/callees. 2. Truncate source. 3. Truncate summary.
+```
+- Why this matters: The context package remains within model limits while prioritizing structurally important symbols.
+- When to use: Use when agents need compact code context that mixes source, summaries, callers, and callees.
+- When not to use: Avoid PageRank-first selection when task relevance should dominate global centrality, such as narrow bug hunts.
+- Transferable principle: Make truncation policy explicit and ordered; remove lower-value context before cutting source semantics.
+- Related patterns: Context-Aware MCP Result Limits; Retrieval Trace For Explainable Ranking.
+- Risks / caveats: PageRank can overweight infrastructure hubs; token estimators should be calibrated against the target model.
+- Agentic coding guidance: Preserve metadata showing query params, symbol count, token count, and PageRank range so downstream agents can judge missing context.
+
+### Policy-Gated Agent Context Redaction
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas/src/codeatlas/context_policy.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas/src/codeatlas/context_security.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas/tests/test_context_security.py`
+- Language / framework / stack: Python, Pydantic, agent context security
+- Code shape / snippet:
+```python
+_DEFAULT_DENY = (".env", ".env.*", "*.pem", "*.key", "id_rsa", "*.tfvars")
+_REDACTION = "«redacted-secret»"
+
+def is_denied(path: str, policy: ContextPolicy) -> bool:
+    posix = path.replace("\\", "/")
+    parts = set(posix.split("/"))
+    if not policy.allow_vendor and (parts & _VENDOR_PARTS):
+        return True
+    name = Path(posix).name
+    return any(fnmatch.fnmatch(posix, pat) or fnmatch.fnmatch(name, pat)
+               for pat in policy.deny_patterns)
+
+def redact(text: str, policy: ContextPolicy) -> tuple[str, int]:
+    for _rule_id, pattern in _SECRET_PATTERNS:
+        text, n = pattern.subn(_REDACTION, text)
+        count += n
+    return text, count
+```
+- Why this matters: Unsafe files and secret-like text are removed before an agent sees the context, rather than relying on the agent to ignore them.
+- When to use: Use for hosted context packs, repository assistants, and any workflow that may expose untrusted repo text to an LLM.
+- When not to use: Avoid using regex-only scans as the sole control for high-assurance secret detection; pair with dedicated scanners.
+- Transferable principle: Put security policy between retrieval and presentation, and report what was excluded or redacted.
+- Related patterns: SSRF-Safe Fetch And Path Guard; PageRank-Budgeted Context Assembly.
+- Risks / caveats: Regex patterns can miss secrets or over-redact examples; deny patterns must be configurable per organization.
+- Agentic coding guidance: When adding context fields, pass them through the same policy/redaction path and extend tests with prompt-injection and secret fixtures.
+
+### Retrieval Trace For Explainable Ranking
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas/src/codeatlas/retrieval_trace.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AryanSaini26__CodeAtlas/tests/test_retrieval_trace.py`
+- Language / framework / stack: Python, SQLite FTS, FAISS semantic search, PageRank, reranking observability
+- Code shape / snippet:
+```python
+fts_rank = {sym.id: i + 1 for i, sym in enumerate(store.search(query, limit=50))}
+semantic_rank = {
+    sym.id: i + 1
+    for i, (sym, _) in enumerate(semantic_index.search(query, store, limit=50))
+}
+pagerank = store.compute_pagerank()
+ranked, effective_mode = _rank_candidates(store, query, mode=mode, limit=limit, semantic_index=semantic_index)
+
+candidates.append({
+    "qualified_name": sym.qualified_name,
+    "fts_rank": fts_rank.get(sym.id),
+    "semantic_rank": semantic_rank.get(sym.id),
+    "pagerank": round(pagerank.get(sym.id, 0.0), 4),
+    "final_rank": i + 1,
+})
+```
+- Why this matters: Search quality becomes debuggable because each result carries the signals that influenced its final rank.
+- When to use: Use in agent retrieval systems where users or developers ask why a symbol appeared.
+- When not to use: Avoid returning raw traces to end users if file names or rank features leak sensitive metadata.
+- Transferable principle: Run the same ranking path as production and expose per-stage signals beside the final answer.
+- Related patterns: Hybrid Search With Graceful Channel Degradation; Weighted RRF With Position-Aware Rerank.
+- Risks / caveats: Trace code can drift from production ranking if it duplicates ranking logic; this repo imports `_rank_candidates` to reduce that risk.
+- Agentic coding guidance: When changing ranking, update trace tests so every candidate still exposes `fts_rank`, `semantic_rank`, `pagerank`, and `final_rank`.
+
+### Per-Tenant Registry Sharing Heavy Resources
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EarthChen__knowledge-base-service` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EarthChen__knowledge-base-service/services/service_registry.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EarthChen__knowledge-base-service/api/request_context.py`
+- Language / framework / stack: Python, asyncio, FalkorDB, Redis, multi-tenant service layer
+- Code shape / snippet:
+```python
+class ServiceRegistry:
+    def __init__(...):
+        self._db: FalkorDB | None = None
+        self._services: dict[str, KnowledgeBaseService] = {}
+        self._lock = asyncio.Lock()
+
+    async def get_service(self, business_id: str = "default") -> KnowledgeBaseService:
+        if business_id in self._services:
+            return self._services[business_id]
+        async with self._lock:
+            if business_id in self._services:
+                return self._services[business_id]
+            svc = await self._create_service(business_id)
+            self._services[business_id] = svc
+            return svc
+
+_business_id: ContextVar[str] = ContextVar("business_id", default="default")
+```
+- Why this matters: Expensive connections and embedding models are shared while each business gets isolated graph-backed service instances.
+- When to use: Use in hosted knowledge systems with tenant-scoped data but shared infrastructure.
+- When not to use: Avoid if tenants require process-level isolation or separate credentials per tenant.
+- Transferable principle: Cache per-tenant service facades behind a locked registry, while propagating tenant identity through request-scoped context.
+- Related patterns: Unified Async And Streaming LLM Retry; Policy-Gated Agent Context Redaction.
+- Risks / caveats: Lazy creation must validate tenant existence and clean up removed tenant services; shared model state can become a noisy neighbor.
+- Agentic coding guidance: Do not instantiate `KnowledgeBaseService` directly in handlers; route access through the registry and reset contextvars after each request.
+
+### Unified Async And Streaming LLM Retry
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EarthChen__knowledge-base-service` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EarthChen__knowledge-base-service/llm/retry.py`
+- Language / framework / stack: Python, `httpx`, async LLM providers, streaming async iterators
+- Code shape / snippet:
+```python
+RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
+NON_RETRYABLE_STATUSES = {400, 401, 403, 404, 422}
+
+def llm_retry(max_retries: int = 3, max_total_time: float = 90.0, respect_retry_after: bool = True):
+    def decorator(fn):
+        async def wrapper(*args, **kwargs):
+            return await _execute_with_llm_retry(
+                lambda: fn(*args, **kwargs),
+                max_retries=max_retries,
+                max_total_time=max_total_time,
+                respect_retry_after=respect_retry_after,
+            )
+        return wrapper
+    return decorator
+
+async def llm_retry_async_iterator(factory, ...):
+    async for item in factory():
+        yield item
+```
+- Why this matters: Normal request/response calls and streaming providers get the same retry taxonomy, deadline, jitter, and `Retry-After` behavior.
+- When to use: Use for provider abstraction layers where OpenAI-compatible, Azure, and custom providers share failure handling.
+- When not to use: Avoid retrying non-idempotent side effects unless the provider guarantees safe replay.
+- Transferable principle: Centralize transient classification once and expose both value-returning and stream-returning retry wrappers.
+- Related patterns: Per-Tenant Registry Sharing Heavy Resources; Context-Aware MCP Result Limits.
+- Risks / caveats: Retrying a stream restarts it from the beginning; callers must tolerate duplicated partial output or buffer only committed chunks.
+- Agentic coding guidance: Wrap provider boundary methods, not inner helper functions, and add tests for 429 `Retry-After`, 4xx no-retry, timeout retry, and stream restart.
+
+### Structural API Hash For Change Gating
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EarthChen__knowledge-base-service` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EarthChen__knowledge-base-service/indexer/structural_hash.py`
+- Language / framework / stack: Python, code indexer, graph nodes and edges, incremental change detection
+- Code shape / snippet:
+```python
+class ChangeLevel(StrEnum):
+    NONE = "none"
+    COSMETIC = "cosmetic"
+    STRUCTURAL = "structural"
+
+def compute_structural_hash(functions: list[GraphNode], classes: list[GraphNode], imports: list[GraphEdge]) -> str:
+    parts: list[str] = []
+    for fn in sorted(functions, key=lambda n: str(n.properties.get("name", ""))):
+        parts.append(f"fn:{name}|{signature}|{parameters}|{return_type}")
+    for cls in sorted(classes, key=lambda n: str(n.properties.get("name", ""))):
+        parts.append(f"cls:{name}|{base_classes}|{interfaces}")
+    for imp in sorted(imports, key=lambda e: e.target_uid):
+        parts.append(f"imp:{imp.target_uid}")
+    return _sha256_hex("|".join(parts))
+```
+- Why this matters: Cosmetic edits to docstrings or bodies can be distinguished from API-surface changes that require re-enrichment or downstream invalidation.
+- When to use: Use for incremental code intelligence systems where expensive work depends on public structure, not every byte.
+- When not to use: Avoid when behavior changes inside function bodies must trigger the same downstream work as signature changes.
+- Transferable principle: Hash the semantic contract, not the whole file, when your invalidation unit is the API surface.
+- Related patterns: Versioned Stat-Fastpath Extraction Cache; Canonical Node ID Normalization Contract.
+- Risks / caveats: The hash ignores bodies by design; if call graph or behavior matters, add those inputs explicitly.
+- Agentic coding guidance: When adding a language extractor property, decide whether it is structural before including it in this hash.
+
+### Canonical Node ID Normalization Contract
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify/graphify/ids.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify/tests/test_id_normalization_contract.py`
+- Language / framework / stack: Python, graph extraction, Unicode normalization, property-based tests
+- Code shape / snippet:
+```python
+def normalize_id(s: str) -> str:
+    s = unicodedata.normalize("NFKC", s)
+    s = re.sub(r"[^\w]+", "_", s, flags=re.UNICODE)
+    s = re.sub(r"_+", "_", s)
+    return s.strip("_").casefold()
+
+def make_id(*parts: str) -> str:
+    return normalize_id("_".join(p.strip("_.") for p in parts if p))
+
+def test_both_callers_share_one_implementation():
+    assert _normalize_id is normalize_id
+    for fn in (_make_id, _mcp_make_id, _bash_make_id):
+        assert fn("Ångström", "Ⅳ") == make_id("Ångström", "Ⅳ")
+```
+- Why this matters: AST extractors, graph builders, and semantic agents must agree on IDs or one entity splits into disconnected graph nodes.
+- When to use: Use whenever independent producers emit IDs for the same domain entities.
+- When not to use: Avoid over-normalizing if case, punctuation, or Unicode distinctions are semantically meaningful in the target graph.
+- Transferable principle: Put canonicalization in one small module and prove every producer delegates to it.
+- Related patterns: Structural API Hash For Change Gating; Language Resolver Registry.
+- Risks / caveats: Normalization can create collisions; pair it with source path and kind when uniqueness matters.
+- Agentic coding guidance: Do not create local `_normalize_*` helpers; import the shared normalizer and add drift tests for every new producer.
+
+### SSRF-Safe Fetch And Path Guard
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify/graphify/security.py`
+- Language / framework / stack: Python, urllib, HTTP(S), graph artifact loading
+- Code shape / snippet:
+```python
+def validate_url(url: str) -> str:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_SCHEMES:
+        raise ValueError("only http and https are allowed")
+    for info in socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM):
+        ip = ipaddress.ip_address(info[4][0])
+        if _ip_is_blocked(ip):
+            raise ValueError(f"Blocked private/internal IP {ip}")
+    return url
+
+class _SSRFGuardedHTTPSConnection(http.client.HTTPSConnection):
+    def connect(self) -> None:
+        family, ip = _resolve_and_validate(self.host, self.port)
+        sock = socket.create_connection((ip, self.port), self.timeout, self.source_address)
+        self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+
+def validate_graph_path(path, base=None) -> Path:
+    resolved.relative_to(base.resolve())
+```
+- Why this matters: URL validation happens both before fetch and at connect time, eliminating DNS-rebind TOCTOU gaps; graph file reads are constrained to the graph output directory.
+- When to use: Use for tools that fetch remote inputs or load user-specified local artifacts.
+- When not to use: Avoid homegrown SSRF handling for complex proxy environments unless thoroughly tested with the deployment network model.
+- Transferable principle: Validate on every boundary crossing, then bind the operation to the validated target.
+- Related patterns: Policy-Gated Agent Context Redaction; Fail-Silent Query Logging.
+- Risks / caveats: Blocking private IPs can break legitimate intranet use; make exceptions explicit rather than weakening defaults.
+- Agentic coding guidance: Do not replace guarded connection classes with process-global socket monkey-patches; keep redirect validation and byte caps in the fetch path.
+
+### Versioned Stat-Fastpath Extraction Cache
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify/graphify/cache.py`
+- Language / framework / stack: Python, file hashing, extraction cache, atomic JSON persistence
+- Code shape / snippet:
+```python
+try:
+    _EXTRACTOR_VERSION = _pkg_version("graphifyy")
+except Exception:
+    _EXTRACTOR_VERSION = "unknown"
+
+def file_hash(path: Path, root: Path = Path(".")) -> str:
+    _ensure_stat_index(root)
+    st = p.stat()
+    entry = _stat_index.get(abs_key)
+    if entry and entry.get("hash") is not None and entry.get("size") == st.st_size and entry.get("mtime_ns") == st.st_mtime_ns:
+        return entry["hash"]
+    raw = p.read_bytes()
+    content = _body_content(raw) if p.suffix.lower() == ".md" else raw
+    h.update(content)
+    h.update(b"\x00")
+    h.update(rel.as_posix().lower().encode())
+```
+- Why this matters: Re-runs skip unchanged file reads while extractor-version namespacing prevents stale AST output after parser fixes.
+- When to use: Use for expensive file extraction where content and relative path define identity.
+- When not to use: Avoid stat-only fast paths in systems requiring cryptographic freshness against adversarial same-size, same-mtime edits.
+- Transferable principle: Separate cache correctness keys from speed hints: use hashes for identity and stat metadata only as a shortcut.
+- Related patterns: Structural API Hash For Change Gating; Canonical Node ID Normalization Contract.
+- Risks / caveats: Network filesystems with coarse mtime can produce short stale windows; the repo documents `--force` as the escape hatch.
+- Agentic coding guidance: Preserve atomic temp-file replace for index writes and keep extractor-output caches versioned when changing extraction semantics.
+
+### Reverse Impact Walk Seeded By Members
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify/graphify/affected.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Graphify-Labs__graphify/tests/test_affected_member_seed.py`
+- Language / framework / stack: Python, NetworkX, reverse dependency traversal
+- Code shape / snippet:
+```python
+def affected_nodes(graph: nx.Graph, seed: str, *, relations=DEFAULT_AFFECTED_RELATIONS, depth: int = 2):
+    seen = {seed}
+    queue: deque[tuple[str, int]] = deque([(seed, 0)])
+
+    for _s, member, data in graph.out_edges(seed, data=True):
+        if str(data.get("relation", "")) not in ("method", "contains"):
+            continue
+        if str(member) not in seen:
+            seen.add(str(member))
+            queue.append((str(member), 0))
+
+    while queue:
+        current, current_depth = queue.popleft()
+        for source, _target, data in graph.in_edges(current, data=True):
+            if str(data.get("relation", "")) in relation_set:
+                hits.append(AffectedHit(str(source), current_depth + 1, relation))
+```
+- Why this matters: Class-level impact analysis reaches callers bound to method nodes without treating all `method` or `contains` edges as affected edges.
+- When to use: Use in graph impact tools with hierarchical nodes where callers may target children of the queried entity.
+- When not to use: Avoid if child nodes are independently deployable and should not inherit parent impact.
+- Transferable principle: Seed traversal with structural children, but keep structural ownership edges out of the general dependency relation set.
+- Related patterns: PageRank-Budgeted Context Assembly; Canonical Node ID Normalization Contract.
+- Risks / caveats: Only root-owned members are seeded; deeper ownership chains require explicit design to avoid noisy impact results.
+- Agentic coding guidance: Add regression tests for class-to-method, method-to-caller, and unrelated member cases before modifying relation filters.
+
+### Context-Aware MCP Result Limits
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust/crates/codegraph-mcp-core/src/context_aware_limits.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust/crates/codegraph-mcp-tools/src/graph_tool_executor.rs`
+- Language / framework / stack: Rust, MCP, LLM context windows, JSON tool execution
+- Code shape / snippet:
+```rust
+const MCP_MAX_OUTPUT_TOKENS: usize = 52_000;
+const TOKEN_SAFETY_MARGIN: f32 = 0.85;
+const SAFE_MCP_OUTPUT_TOKENS: usize =
+    ((MCP_MAX_OUTPUT_TOKENS as f32) * TOKEN_SAFETY_MARGIN) as usize;
+
+pub enum ContextTier { Small, Medium, Large, Massive }
+
+fn truncate_if_oversized(&self, tool_name: &str, result: JsonValue) -> JsonValue {
+    let result_bytes = result.to_string().len();
+    if result_bytes <= self.max_result_bytes {
+        return result;
+    }
+    if let Some(result_array) = result.get("result").and_then(|r| r.as_array()) {
+        obj.insert("_truncated".to_string(), json!({
+            "original_items": item_count,
+            "kept_items": keep_items,
+            "reason": "Result exceeded context window limit"
+        }));
+    }
+    truncated_result
+}
+```
+- Why this matters: Tool results are sized for both MCP client limits and model context limits, with truncation metadata instead of silent clipping.
+- When to use: Use for MCP tools that can return graph traversals, search results, or arrays whose size depends on repository scale.
+- When not to use: Avoid approximate byte-to-token limits for legal, medical, or financial workflows where omitted records must be exact and auditable.
+- Transferable principle: Derive retrieval and output limits from the consumer’s capacity, then surface truncation as structured metadata.
+- Related patterns: PageRank-Budgeted Context Assembly; Typed Tool Schema Registry With Validated Executor.
+- Risks / caveats: Average bytes-per-item truncation is approximate; non-array payloads are harder to trim safely.
+- Agentic coding guidance: Whenever adding a tool that returns arrays, ensure it passes through `truncate_if_oversized` and includes enough metadata for follow-up pagination.
+
+### RAII Buffer Pool And String Interner
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust/crates/codegraph-core/src/buffer_pool.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust/crates/codegraph-core/src/memory/string_interner.rs`
+- Language / framework / stack: Rust, memory pooling, `Arc<str>`, `parking_lot`, `hashbrown`
+- Code shape / snippet:
+```rust
+pub fn get(&self) -> PooledBuffer {
+    let mut inner = self.inner.lock();
+    let buf = inner.free.pop().unwrap_or_else(|| Vec::with_capacity(inner.buffer_size));
+    inner.outstanding += 1;
+    PooledBuffer { buf: Some(buf), pool: Arc::downgrade(&self.inner), tracker: Arc::downgrade(&self.tracker) }
+}
+
+impl Drop for PooledBuffer {
+    fn drop(&mut self) {
+        if let Some(buf) = self.buf.take() {
+            if let Some(pool) = self.pool.upgrade() {
+                BufferPool { inner: pool, tracker: Arc::new(LeakTracker::new()) }.put_back(buf);
+            }
+        }
+    }
+}
+
+pub fn intern(&self, s: &str) -> Arc<str> {
+    if let Some((k, _)) = self.map.read().get_key_value(s) { return k.clone(); }
+    let arc = Arc::<str>::from(s);
+    self.map.write().insert(arc.clone(), ());
+    arc
+}
+```
+- Why this matters: Hot parsing and graph workloads reduce allocation churn and duplicate string memory without forcing callers to manage lifetimes manually.
+- When to use: Use in high-throughput indexing pipelines with repeated buffers and many duplicate identifiers or paths.
+- When not to use: Avoid for small CLIs where the pool complexity outweighs allocation cost.
+- Transferable principle: Wrap reusable resources in ownership types whose `Drop` returns capacity automatically.
+- Related patterns: Versioned Stat-Fastpath Extraction Cache; Structural API Hash For Change Gating.
+- Risks / caveats: Pools can retain peak memory; `into_inner` deliberately removes a buffer from the pool, so leak tracking and tests matter.
+- Agentic coding guidance: Prefer borrowing `buffer_mut()` and letting `Drop` return storage; add stress tests before changing capacity normalization.
+
+### Typed Tool Schema Registry With Validated Executor
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust/crates/codegraph-mcp-tools/src/graph_tool_schemas.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakedismo__codegraph-rust/crates/codegraph-mcp-tools/src/graph_tool_executor.rs`; also `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeBendKit__codeseek/rust-core/src/mcp/tools.rs`
+- Language / framework / stack: Rust, serde, JSON Schema, MCP tool calling, SurrealDB graph functions
+- Code shape / snippet:
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolSchema {
+    pub name: String,
+    pub description: String,
+    pub parameters: JsonValue,
+}
+
+impl GraphToolSchemas {
+    pub fn all() -> Vec<ToolSchema> {
+        vec![
+            Self::get_transitive_dependencies(),
+            Self::detect_circular_dependencies(),
+            Self::trace_call_chain(),
+            Self::semantic_code_search(),
+        ]
+    }
+}
+
+pub async fn execute(&self, tool_name: &str, parameters: JsonValue) -> Result<JsonValue> {
+    let _schema = GraphToolSchemas::get_by_name(tool_name)
+        .ok_or_else(|| McpError::Protocol(format!("Unknown tool: {}", tool_name)))?;
+    let result = match tool_name { "semantic_code_search" => self.execute_semantic_code_search(parameters.clone()).await?, ... };
+    Ok(self.truncate_if_oversized(tool_name, result))
+}
+```
+- Why this matters: Tool names, descriptions, parameter constraints, execution dispatch, caching, and result-size guards all meet at one registry/executor boundary.
+- When to use: Use for agent tool surfaces where schemas are consumed by LLMs and execution must still be validated server-side.
+- When not to use: Avoid stringly `match` dispatch for very large plugin ecosystems; use trait objects or generated dispatch once the tool set becomes dynamic.
+- Transferable principle: Treat tool schemas as executable contracts: register centrally, validate before dispatch, and test schema completeness.
+- Related patterns: Context-Aware MCP Result Limits; Lazy WASM Parser Bootstrap.
+- Risks / caveats: JSON Schema duplication can drift from parameter extraction; tests should assert every listed tool has an implementation.
+- Agentic coding guidance: When adding a tool, update `GraphToolSchemas::all`, implement executor dispatch, add schema serialization tests, and verify truncation/caching behavior.

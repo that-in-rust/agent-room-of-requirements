@@ -2,7 +2,7 @@
 
 - Task: Extract idiomatic code patterns across every Desktop Git repo into five parallel reference files
 - Created: 2026-07-06 17:13:30Z
-- Updated: 2026-07-06 18:15:43Z
+- Updated: 2026-07-07 01:48:57Z
 - Current Phase: Refactor
 - Status: active
 
@@ -424,3 +424,136 @@ Batch 4 parallel extraction running over high-signal pending repos
 
 #### Performance/Metrics:
 - batch4_workers_spawned=5; baseline_pattern_headings=326; pending_repos_before_batch4=783
+
+### Session: 2026-07-07 01:14:29Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- TEST-IDIOMATIC-001: passing - inventory remains 911 Desktop Git repositories
+- TEST-IDIOMATIC-002: passing - five repo-slice files still cover the inventory without duplicate assignment
+- TEST-IDIOMATIC-003: passing - five target files now contain 409 pattern headings after Batch 4
+- TEST-IDIOMATIC-004: passing - progress journal checkpoint updated with completed Batch 4 state
+
+#### Implementation Progress:
+- idiomatic-code-patterns-1.md..5.md: Batch 4 worker sections landed; part counts are 75, 96, 74, 77, 87
+- idiomatic-code-patterns-codebase-memory-smoke.json: added raphtory-src and apache-arrow-rs-src Batch 4 pass records
+- idiomatic-code-patterns-codegraphcontext-smoke.json: added GitNexus interrupted_no_graph_claims_used CGC attempt
+- idiomatic-code-patterns-coverage-ledger.json/md: refreshed to 409 patterns, 160 source_inspected, 12 graph_backed_seed, 739 pending
+
+#### Current Focus:
+Reconcile Batch 4 idiomatic-code-patterns extraction and graph evidence ledgers
+
+#### Next Steps:
+- Run final verifier and JSON validation after ledger reconciliation
+- Inspect git diff/status for only intended idiomatic-code-patterns artifacts
+- Continue future extraction batches over the first pending repos by part
+
+#### Context Notes:
+- Explicit user request to use CodeGraphContext was honored with the official wrapper on GitNexus; run was interrupted after bounded wait and no graph claims were used.
+- Other active CGC processes belong to a separate thread and were left untouched.
+
+#### Performance/Metrics:
+- pattern_headings=409; codebase_memory_passes=8; codegraphcontext_passes=5; codegraphcontext_attempts=10; pending_repos=739
+
+### Session: 2026-07-07 01:25:54Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- TEST-IDIOMATIC-001: passing - inventory remains 911 Desktop Git repositories
+- TEST-IDIOMATIC-002: passing - five repo-slice files still cover the inventory without duplicate assignment
+- TEST-IDIOMATIC-003: passing - five target files now contain 474 pattern headings after Batch 5
+- TEST-IDIOMATIC-004: passing - progress journal checkpoint updated with completed Batch 5 state
+
+#### Implementation Progress:
+- idiomatic-code-patterns-1.md: Worker 1 Batch 5 appended 14 entries; floo-network skipped for empty executable source
+- idiomatic-code-patterns-2.md: Worker 2 Batch 5 appended 13 entries across 6 repos
+- idiomatic-code-patterns-3.md: Worker 3 Batch 5 appended 13 entries; before-i-go skipped as prose-only
+- idiomatic-code-patterns-4.md: Worker 4 Batch 5 appended 12 entries across 8 repos
+- idiomatic-code-patterns-5.md: Worker 5 Batch 5 appended 13 entries; felix-felicis skipped as prose-only
+- idiomatic-code-patterns-codebase-memory-smoke.json: added MCP-Zero bounded codebase-memory pass
+- idiomatic-code-patterns-coverage-ledger.json/md: refreshed to 474 patterns, 191 source_inspected, 13 graph_backed_seed, 707 pending
+
+#### Current Focus:
+Reconcile Batch 5 idiomatic-code-patterns extraction and bounded codebase-memory evidence
+
+#### Next Steps:
+- Run final verifier, JSON validation, and git diff checks
+- Select next pending high-signal repos per part from refreshed ledger
+- Continue future batches until pending reaches zero and graph coverage is reconciled
+
+#### Context Notes:
+- Batch 5 worker handles were relaunched after earlier handles were unavailable; no Batch 5 markdown had landed before relaunch.
+- MCP-Zero codebase-memory pass completed with out_dir /tmp/codex-code-intel/codebase-memory/MCP-Zero-20260707-064732.
+
+#### Performance/Metrics:
+- pattern_headings=474; batch5_entries=65; codebase_memory_passes=9; codegraphcontext_passes=5; pending_repos=707
+
+### Session: 2026-07-07 01:36:49Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- TEST-IDIOMATIC-001: passing - inventory remains 911 Desktop Git repositories
+- TEST-IDIOMATIC-002: passing - five repo-slice files still cover the inventory without duplicate assignment
+- TEST-IDIOMATIC-003: passing - five target files now contain 547 pattern headings after Batch 6
+- TEST-IDIOMATIC-004: passing - progress journal checkpoint updated with completed Batch 6 state
+
+#### Implementation Progress:
+- idiomatic-code-patterns-1.md: Worker 1 Batch 6 appended 16 entries across cypher-shell, neo4j-browser, neo4j-go-driver, HugeGraph, GAPBS, GraphChi, and igraph
+- idiomatic-code-patterns-2.md: Worker 2 Batch 6 appended 14 entries across GDS agent, Neo4j testkit, Ballista, IndraDB, LAGraph, ndarray, and rustworkx
+- idiomatic-code-patterns-3.md: Worker 3 Batch 6 appended 14 entries; graphblas-pointers skipped as non-implementation material
+- idiomatic-code-patterns-4.md: Worker 4 Batch 6 appended 14 entries including nostd-toposort-kahns-algorithm
+- idiomatic-code-patterns-5.md: Worker 5 Batch 6 appended 15 entries across APOC, Galois, GraphBLAS, LDBC, Minigraph, ThunderRW, Mordor MCP, and ripgrep
+- idiomatic-code-patterns-codebase-memory-smoke.json: added nostd-toposort-kahns-algorithm bounded codebase-memory pass
+- idiomatic-code-patterns-codegraphcontext-smoke.json/evidence.md: added nostd-toposort-kahns-algorithm CodeGraphContext pass
+- idiomatic-code-patterns-coverage-ledger.json/md: refreshed to 547 patterns, 226 source_inspected, 14 graph_backed_seed, 671 pending
+
+#### Current Focus:
+Reconcile Batch 6 graph/data-system extraction and graph evidence
+
+#### Next Steps:
+- Run final verifier, JSON validation, and git diff checks
+- Select next pending high-signal repos per part from refreshed ledger
+- Continue future batches until pending reaches zero and graph coverage is reconciled
+
+#### Context Notes:
+- Batch 6 used both codebase-memory and CodeGraphContext on nostd-toposort-kahns-algorithm; graph findings were treated as navigation and source reads were required for entries.
+
+#### Performance/Metrics:
+- pattern_headings=547; batch6_entries=73; codebase_memory_passes=10; codegraphcontext_passes=6; pending_repos=671
+
+### Session: 2026-07-07 01:48:57Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- TEST-IDIOMATIC-001: passing - inventory remains 911 Desktop Git repositories
+- TEST-IDIOMATIC-002: passing - five repo-slice files still cover the inventory without duplicate assignment
+- TEST-IDIOMATIC-003: passing - five target files now contain 625 pattern headings after Batch 7
+- TEST-IDIOMATIC-004: passing - progress journal checkpoint updated with completed Batch 7 state
+
+#### Implementation Progress:
+- idiomatic-code-patterns-1.md: Worker 1 Batch 7 appended 16 entries across ladybug, LDBC GraphBLAS, libcypher-parser, nalgebra, rust-rocksdb, sprs, and TigerGraph ecosystem
+- idiomatic-code-patterns-2.md: Worker 2 Batch 7 appended 14 entries across docs/tooling, graph CSR, LDBC driver, Ligra, Parseltongue, Aider, and type-sitter
+- idiomatic-code-patterns-3.md: Worker 3 Batch 7 appended 16 entries across LDBC impls, Foxguard, Weave, treesitter-mcp, CodeEdit, Understand-Anything, CodingAgents, and clean-ast-linter
+- idiomatic-code-patterns-4.md: Worker 4 Batch 7 appended 16 entries including BrianHicks__tree-grepper, CodeGraphContext, and codebase-memory-mcp
+- idiomatic-code-patterns-5.md: Worker 5 Batch 7 appended 16 entries across Arcadedb platform, sparsetools, tree-sitter API, swe-agent, Bloop, Claude-code-memory, clarity-cli, and mcp-code-indexer
+- idiomatic-code-patterns-codebase-memory-smoke.json: added BrianHicks__tree-grepper bounded codebase-memory pass
+- idiomatic-code-patterns-codegraphcontext-smoke.json/evidence.md: added BrianHicks__tree-grepper CodeGraphContext pass
+- idiomatic-code-patterns-coverage-ledger.json/md: refreshed to 625 patterns, 253 source_inspected, 15 graph_backed_seed, 643 pending
+
+#### Current Focus:
+Reconcile Batch 7 graph, code-search, and agent-tooling extraction
+
+#### Next Steps:
+- Run final verifier, JSON validation, and git diff checks
+- Select next pending high-signal repos per part from refreshed ledger
+- Continue future batches until pending reaches zero and graph coverage is reconciled
+
+#### Context Notes:
+- Batch 7 used both codebase-memory and CodeGraphContext on BrianHicks__tree-grepper; graph findings were treated as navigation and source reads were required for entries.
+
+#### Performance/Metrics:
+- pattern_headings=625; batch7_entries=78; codebase_memory_passes=11; codegraphcontext_passes=7; pending_repos=643

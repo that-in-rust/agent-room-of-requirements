@@ -57,5 +57,34 @@
     "status": "timeout_no_graph_claims_used",
     "out_dir": "/tmp/codex-code-intel/codegraphcontext/hax-20260706-230205",
     "source": "worker_2_batch_2_markdown"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/reference-repos-yard/GitNexus",
+    "status": "interrupted_no_graph_claims_used",
+    "returncode": 143,
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/GitNexus-20260707-063836",
+    "source": "main_batch_4_followup",
+    "note": "Official CodeGraphContext wrapper was started after the user explicitly requested CGC usage, but it was interrupted after it exceeded the bounded wait. Output contained only startup index text and no stats/list/query files, so no graph claims were used."
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/nostd-toposort-kahns-algorithm-20260707-065736",
+    "stats_summary": "11 files, 35 functions, 1 struct, 1 enum, 6 modules",
+    "source": "main_batch_6_followup"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/BrianHicks__tree-grepper-20260707-070919",
+    "stats_summary": "16 files, 54 functions, 7 structs, 3 enums, 26 modules",
+    "source": "main_batch_7_followup"
+  },
+  {
+    "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AB498__code-context-provider-mcp",
+    "status": "pass",
+    "out_dir": "/tmp/codex-code-intel/codegraphcontext/AB498__code-context-provider-mcp-20260707-072447",
+    "stats_summary": "8 files, 16 functions, 8 modules",
+    "source": "main_batch_8_followup"
   }
 ]

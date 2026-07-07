@@ -3048,3 +3048,1853 @@ async fn admission_and_enqueue(
 - Related patterns: Semaphore Permit Attached To Message; Retryable Transaction Scope Wrapper.
 - Risks / caveats: The delay guard must be released on every delayed path; otherwise admission capacity can leak under cancellation.
 - Agentic coding guidance: When modifying scheduler admission, assert the order: reject/delay first, capacity/evict second, gauge increment immediately before spawn.
+
+## Worker 2 Batch 5
+
+Source pass counts:
+- Repositories requested: 6.
+- Repositories with useful source evidence: 6.
+- Repositories skipped: 0.
+- Pattern entries added: 13.
+
+### Async Circuit Breaker With Half-Open Probe
+- Where found: `/Users/amuldotexe/Desktop/oss-read-only/korrela-deployiq`, `/Users/amuldotexe/Desktop/oss-read-only/korrela-deployiq/crates/deployiq-core/src/circuit_breaker.rs`
+- Language / framework / stack: Rust, Tokio-compatible async service core, `Arc<Mutex<_>>`, `tracing`
+- Code shape/snippet:
+```rust
+pub async fn call<F, Fut, T, E>(&self, f: F) -> Result<T, CircuitBreakerError<E>>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Result<T, E>>,
+{
+    {
+        let mut g = self.inner.lock().expect("circuit breaker mutex poisoned");
+        g.transition_if_timeout();
+        if let State::Open { .. } = g.state {
+            warn!(name = %g.name, "Circuit breaker OPEN - rejecting call");
+            return Err(CircuitBreakerError::Open);
+        }
+    }
+
+    match f().await {
+        Ok(val) => {
+            self.on_success();
+            Ok(val)
+        }
+        Err(e) => {
+            self.on_failure();
+            Err(CircuitBreakerError::Upstream(e))
+        }
+    }
+}
+```
+- Why it matters: The state machine keeps degraded downstreams from turning every caller into a retry storm, while still allowing timed recovery probes.
+- When to use: Use around flaky remote services, ML inference servers, payment gateways, webhooks, or any async dependency where fast-fail is better than queue buildup.
+- When not to use: Avoid for cheap local operations, pure functions, or dependencies where every call must be attempted for correctness.
+- Transferable principle: Put the failure gate before the awaited work, release the lock before awaiting, and make recovery an explicit state transition.
+- Related patterns: Transactional Outbox Entry With Idempotent Relay Payload; Budgeted DFS Tool-Use Tree With Terminal/Give-Up Nodes.
+- Risks / caveats: `std::sync::Mutex` is acceptable only because the guard is dropped before `.await`; holding it across the upstream future would block other tasks.
+- Agentic coding guidance: When adding guarded calls, verify the lock scope ends before the await and test closed, open, half-open success, and half-open failure transitions.
+
+### Transactional Outbox Entry With Idempotent Relay Payload
+- Where found: `/Users/amuldotexe/Desktop/oss-read-only/korrela-deployiq`, `/Users/amuldotexe/Desktop/oss-read-only/korrela-deployiq/crates/deployiq-core/src/outbox.rs`
+- Language / framework / stack: Rust, serde JSON payloads, TimescaleDB plus Neo4j consistency boundary
+- Code shape/snippet:
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OutboxEntry {
+    pub id: Uuid,
+    pub drp_id: Uuid,
+    pub aggregate_type: String,
+    pub operation: OutboxOperation,
+    pub payload: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+    pub processed_at: Option<DateTime<Utc>>,
+    pub attempt_count: u32,
+}
+
+pub const OUTBOX_MIGRATION_SQL: &str = r#"
+CREATE TABLE IF NOT EXISTS deployment_outbox (
+    id              UUID PRIMARY KEY,
+    drp_id          UUID        NOT NULL,
+    aggregate_type  TEXT        NOT NULL,
+    operation       TEXT        NOT NULL,
+    payload         JSONB       NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at    TIMESTAMPTZ,
+    attempt_count   INTEGER     NOT NULL DEFAULT 0
+);
+"#;
+```
+- Why it matters: The source record and relay payload share one database transaction, so a failed secondary write can be retried without inventing a distributed transaction.
+- When to use: Use when one command must update a primary datastore and publish or mirror state to another system.
+- When not to use: Avoid when the secondary side effect must be synchronous and exactly-once, or when the consumer cannot tolerate idempotent retries.
+- Transferable principle: Commit intent locally first, then replay side effects from durable rows with IDs, attempt counts, and processed markers.
+- Related patterns: Async Circuit Breaker With Half-Open Probe; Hash-Gated Route Mutation With Diff Sync.
+- Risks / caveats: At-least-once delivery means the relay target must deduplicate by outbox ID or natural key.
+- Agentic coding guidance: When adding a new side effect, model it as an enum operation plus JSON payload and include enough identifiers for idempotent replay.
+
+### Embedding Tool Index With Query Cache And SIMD Cosine
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ElBruno.ModelContextProtocol`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ElBruno.ModelContextProtocol/src/ElBruno.ModelContextProtocol.MCPToolRouter/ToolIndex.cs`
+- Language / framework / stack: C#/.NET, MCP protocol models, local embeddings, `ReaderWriterLockSlim`, `System.Numerics.Vector`
+- Code shape/snippet:
+```csharp
+if (_options.QueryCacheSize > 0 && _queryCache.TryGetValue(prompt, out var cached))
+{
+    queryVector = cached;
+}
+else
+{
+    var queryEmbedding = await _embeddingGenerator
+        .GenerateEmbeddingAsync(prompt, cancellationToken: cancellationToken)
+        .ConfigureAwait(false);
+    queryVector = queryEmbedding.Vector.ToArray();
+}
+
+_lock.EnterReadLock();
+try
+{
+    var results = new List<(int Index, float Score)>(_tools.Count);
+    for (int i = 0; i < _tools.Count; i++)
+    {
+        var similarity = CosineSimilarity(queryVector.AsSpan(), _vectors[i].AsSpan());
+        if (similarity >= minScore) results.Add((i, similarity));
+    }
+    results.Sort((a, b) => b.Score.CompareTo(a.Score));
+    return results.Take(topK).Select(r => new ToolSearchResult {
+        Tool = _tools[r.Index], Score = r.Score
+    }).ToList();
+}
+finally { _lock.ExitReadLock(); }
+```
+- Why it matters: It keeps the expensive embedding path, vector scan, and mutable tool list separated, while caching repeated prompts and protecting index reads.
+- When to use: Use for medium-sized in-process tool catalogs where an external vector database is unnecessary.
+- When not to use: Avoid for million-scale indexes, distributed mutable catalogs, or cases requiring approximate nearest-neighbor latency.
+- Transferable principle: Treat the embedding index as an immutable pair of aligned arrays during reads, and clear query caches whenever vectors change.
+- Related patterns: FAISS MIPS First-Stage Retrieval Contract; Weighted Retrieval Pipeline With Graph Candidate Injection.
+- Risks / caveats: FIFO query cache eviction is simple but not workload-aware, and aligned `_tools` / `_vectors` arrays must be mutated under the write lock.
+- Agentic coding guidance: When editing index mutation methods, update tools and vectors together and invalidate query cache in the same lock-protected section.
+
+### Distilled Multi-Query Tool Routing With Discounted Merge
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ElBruno.ModelContextProtocol`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ElBruno.ModelContextProtocol/src/ElBruno.ModelContextProtocol.MCPToolRouter/ToolRouter.cs`
+- Language / framework / stack: C#/.NET, MCP tool routing, `IChatClient`, embedding search
+- Code shape/snippet:
+```csharp
+if (wasDistilled && searchText.Contains(','))
+{
+    var baselineResults = await _index.SearchAsync(
+        userPrompt, effectiveTopK, effectiveMinScore, ct).ConfigureAwait(false);
+    foreach (var r in baselineResults)
+        baselineScores[r.Tool.Name] = r;
+
+    var phrases = searchText.Split(
+        ',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Where(p => p.Length >= 3)
+        .ToArray();
+
+    foreach (var phrase in phrases)
+    {
+        var phraseResults = await _index.SearchAsync(
+            phrase, effectiveTopK, effectiveMinScore, ct).ConfigureAwait(false);
+        foreach (var r in phraseResults)
+            if (!phraseMaxScores.TryGetValue(r.Tool.Name, out var existing) || r.Score > existing.Score)
+                phraseMaxScores[r.Tool.Name] = r;
+    }
+
+    const float phraseDiscount = 0.85f;
+}
+```
+- Why it matters: The router preserves the original prompt as a baseline and uses distilled action phrases as recall boosters, not as untrusted replacements.
+- When to use: Use when user requests often bundle several actions and a distiller can extract search-friendly phrases.
+- When not to use: Avoid for low-latency single-intent routing or when the distiller is less reliable than the embedding model.
+- Transferable principle: Multi-query expansion should merge with a conservative baseline and discount expansion-only hits.
+- Related patterns: Threshold-Gated RouteChoice With Dynamic Function Extraction; Model-Specific Pooling With Length-Sorted Embedding Batches.
+- Risks / caveats: Phrase splitting assumes comma-separated output; malformed distillation can create noisy short phrases.
+- Agentic coding guidance: Preserve baseline search whenever you add LLM rewriting, and add tests for phrase-only hits, duplicate tools, and score discounting.
+
+### Budgeted DFS Tool-Use Tree With Terminal/Give-Up Nodes
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolBench`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolBench/toolbench/inference/Algorithms/DFS.py`
+- Language / framework / stack: Python, LLM tool-use search, callback instrumentation, tree search
+- Code shape/snippet:
+```python
+if now_node.get_depth() >= single_chain_max_step or now_node.pruned or now_node.is_terminal:
+    if now_node.is_terminal:
+        self.status = 1
+        self.terminal_node.append(now_node)
+        return final_answer_back_length
+    else:
+        now_node.pruned = True
+        if now_node.observation_code == 4:
+            self.give_up_node.append(now_node)
+            return prune_back_length
+        else:
+            return 1
+
+new_message, error_code, total_tokens = self.llm.parse(
+    self.io_func.functions, process_id=self.process_id)
+self.query_count += 1
+self.total_tokens += total_tokens
+if self.query_count >= max_query_count:
+    return 100000
+```
+- Why it matters: Search is bounded by depth and LLM call count, and unsuccessful exits still produce give-up nodes for training or analysis.
+- When to use: Use for agentic tool planners where exploring multiple call chains can improve reliability but must be capped.
+- When not to use: Avoid for deterministic workflows where a plan runner can execute a known sequence without model branching.
+- Transferable principle: Agent search loops need explicit budgets, terminal states, and preserved failure trajectories.
+- Related patterns: Finish Tool Envelope With Status Codes; Deterministic Plan Runner With Typed Progress Events.
+- Risks / caveats: Recursion depth and callback ordering are easy to break, and status integers need a shared contract with the environment.
+- Agentic coding guidance: When altering search behavior, trace query count, total tokens, terminal nodes, give-up nodes, and max-depth pruning in one regression fixture.
+
+### Finish Tool Envelope With Status Codes
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolBench`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolBench/toolbench/inference/Downstream_tasks/rapidapi.py`
+- Language / framework / stack: Python, OpenAI function-call style tools, RapidAPI execution wrapper
+- Code shape/snippet:
+```python
+finish_func = {
+    "name": "Finish",
+    "description": "If you believe that you have obtained a result that can answer the task, please call this function to provide the final answer.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "return_type": {"type": "string", "enum": ["give_answer", "give_up_and_restart"]},
+            "final_answer": {"type": "string"},
+        },
+        "required": ["return_type"],
+    }
+}
+self.functions.append(finish_func)
+
+if action_name == "Finish":
+    if json_data["return_type"] == "give_up_and_restart":
+        return "{\"response\":\"chose to give up and restart\"}", 4
+    elif json_data["return_type"] == "give_answer":
+        self.success = 1
+        return "{\"response\":\"successfully giving the final answer.\"}", 3
+```
+- Why it matters: A sentinel tool turns "final answer" and "give up" into ordinary tool-call outcomes that the search loop can score and serialize.
+- When to use: Use when an LLM must explicitly terminate a tool-use episode and you need machine-readable success, retry, or prune signals.
+- When not to use: Avoid when a framework already has typed finish events or when model output is constrained by a formal state machine.
+- Transferable principle: Make termination an explicit action with a schema, not a convention buried in natural language.
+- Related patterns: Budgeted DFS Tool-Use Tree With Terminal/Give-Up Nodes; Threshold-Gated RouteChoice With Dynamic Function Extraction.
+- Risks / caveats: The environment parses partially invalid JSON as a fallback, which can hide prompt/schema drift.
+- Agentic coding guidance: Keep finish-tool schemas small, verify every return code path, and make invalid finish calls fail as input errors instead of silent success.
+
+### FAISS MIPS First-Stage Retrieval Contract
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/benchmarking-tool-retrieval`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/benchmarking-tool-retrieval/toolret/eval.py`
+- Language / framework / stack: Python, FAISS, Hugging Face datasets, pytrec_eval, numpy
+- Code shape/snippet:
+```python
+tool_embeddings = model.encode_tools(tools, batch_size)
+tool_embeddings = np.asarray(tool_embeddings, dtype=np.float32)
+dim = tool_embeddings.shape[1]
+
+index = faiss.index_factory(dim, "Flat", faiss.METRIC_INNER_PRODUCT)
+index.add(tool_embeddings)
+
+query_embeddings = model.encode_queries(queries, batch_size, is_inst)
+query_embeddings = np.asarray(query_embeddings, dtype=np.float32)
+
+distance, rank = index.search(query_embeddings, top_k)
+results = {}
+for item, rk, ds in zip(queries, rank, distance):
+    results[item['id']] = {}
+    for r, d in zip(rk, ds):
+        results[item['id']][str(tools[int(r)]['id'])] = float(d)
+```
+- Why it matters: The benchmark has a clear first-stage contract: encode tools once, encode queries per task, retrieve top-k IDs, then evaluate against qrels.
+- When to use: Use for repeatable retrieval benchmarks, offline sweeps, and candidate generation before slower rerankers.
+- When not to use: Avoid if embeddings are not normalized but you intend cosine semantics, or if an approximate index is required for scale.
+- Transferable principle: Separate candidate generation, result serialization, qrels construction, and metric evaluation so models can be swapped without changing the benchmark contract.
+- Related patterns: Embedding Tool Index With Query Cache And SIMD Cosine; Model-Specific Pooling With Length-Sorted Embedding Batches.
+- Risks / caveats: Inner-product ranking assumes compatible embedding normalization or model semantics; mixing normalized and unnormalized embeddings changes meaning.
+- Agentic coding guidance: When adding a new retriever, preserve the `results[qid][doc_id] = score` shape and run the same TREC metric path.
+
+### Model-Specific Pooling With Length-Sorted Embedding Batches
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/benchmarking-tool-retrieval`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/benchmarking-tool-retrieval/toolret/encode.py`
+- Language / framework / stack: Python, PyTorch, Transformers, embedding pooling
+- Code shape/snippet:
+```python
+def get_pool(model_name):
+    if 'e5-mistral-7b-instruct' in model_name:
+        return last_token_pool
+    elif 'e5' in model_name:
+        return average_pool
+    elif 'all-MiniLM-L6-v2' in model_name:
+        return mean_pooling
+    elif 'gte' in model_name:
+        return bos_pool
+    else:
+        return bos_pool
+
+@torch.no_grad()
+def encode_data(data, tokenizer, model, pooler, batch_size=32, model_name=None, prefix=0, disable=False):
+    length_sorted_idx = np.argsort([-len(sen) for sen in data])
+    data_sorted = [data[idx] for idx in length_sorted_idx]
+    dataset = EvalData(data_sorted, tokenizer, max_length)
+    data_loader = torch.utils.data.DataLoader(dataset, collate_fn=dataset.collate_fn, shuffle=False, batch_size=batch_size, num_workers=8)
+    ...
+    all_embedding = [all_embedding[idx] for idx in np.argsort(length_sorted_idx)]
+```
+- Why it matters: Different embedding families expect different pooling, and length sorting reduces padding waste while restoring original order afterward.
+- When to use: Use when benchmarking heterogeneous embedding models under one evaluation harness.
+- When not to use: Avoid if a model's official `SentenceTransformer.encode` already owns pooling and preprocessing semantics.
+- Transferable principle: Make pooling strategy an explicit model adapter and keep batching optimizations invisible to callers by restoring input order.
+- Related patterns: FAISS MIPS First-Stage Retrieval Contract; Distilled Multi-Query Tool Routing With Discounted Merge.
+- Risks / caveats: Heuristic model-name checks can drift as new model families are added.
+- Agentic coding guidance: Add tests that preserve embedding order after length sorting and document the intended pooling for every new model pattern.
+
+### Version-Normalized OpenAPI Shape Before Ingestion
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call/graph_tool_call/ingest/normalizer.py`
+- Language / framework / stack: Python, dataclasses, OpenAPI 3.0/3.1, Swagger 2.0 ingestion
+- Code shape/snippet:
+```python
+def detect_version(spec: dict[str, Any]) -> SpecVersion:
+    if "swagger" in spec and str(spec["swagger"]).startswith("2"):
+        return SpecVersion.SWAGGER_2_0
+    if "openapi" in spec:
+        version_str = str(spec["openapi"])
+        if version_str.startswith("3.1"):
+            return SpecVersion.OPENAPI_3_1
+        if version_str.startswith("3"):
+            return SpecVersion.OPENAPI_3_0
+    raise ValueError(f"Cannot detect spec version from keys: {list(spec.keys())}")
+
+def normalize(spec: dict[str, Any]) -> NormalizedSpec:
+    version = detect_version(spec)
+    if version == SpecVersion.SWAGGER_2_0:
+        return _normalize_swagger20(spec)
+    if version == SpecVersion.OPENAPI_3_1:
+        return _normalize_openapi31(spec)
+    return _normalize_openapi30(spec)
+```
+- Why it matters: All downstream graph and tool extraction code can depend on one internal representation instead of branching on spec versions everywhere.
+- When to use: Use before ingesting external schemas, API descriptions, event formats, or provider payloads with multiple versions.
+- When not to use: Avoid if version-specific semantics must remain visible to downstream consumers.
+- Transferable principle: Normalize at the boundary, preserve raw input for audit, and generate missing stable IDs before building graph nodes.
+- Related patterns: Weighted Retrieval Pipeline With Graph Candidate Injection; Hash-Gated Route Mutation With Diff Sync.
+- Risks / caveats: Auto-generated `operationId` values can collide or differ from provider intent if path naming is ambiguous.
+- Agentic coding guidance: When adding a new spec dialect, implement conversion into `NormalizedSpec` first and keep ingestion code version-agnostic.
+
+### Weighted Retrieval Pipeline With Graph Candidate Injection
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call/graph_tool_call/retrieval/engine.py`
+- Language / framework / stack: Python, BM25, graph traversal, embedding index, annotation scoring
+- Code shape/snippet:
+```python
+score_sources: list[tuple[dict[str, float], float]] = [
+    (keyword_scores, kw),
+    (embedding_scores, ew),
+    (annotation_scores, aw),
+]
+
+final_scores = self._fuse_and_filter(score_sources)
+
+if graph_scores and gw > 0:
+    self._inject_graph_candidates(final_scores, graph_scores, gw, top_k)
+
+def _inject_graph_candidates(self, final_scores, graph_scores, graph_weight, top_k):
+    new_candidates = {
+        name: score
+        for name, score in graph_scores.items()
+        if name not in final_scores and name in self._tools
+    }
+    min_primary = min(final_scores.values()) if final_scores else 0
+    injection_base = min_primary * 0.8
+```
+- Why it matters: Graph traversal contributes missing related tools without polluting the primary BM25/embedding ranking.
+- When to use: Use when graph structure is valuable for recall but can degrade precision if fused as a normal score channel.
+- When not to use: Avoid when graph edges are noisy, stale, or untrusted, or when graph relevance should rank above primary textual matches.
+- Transferable principle: Make auxiliary retrieval channels inject conservative candidates below primary evidence unless confidence warrants promotion.
+- Related patterns: Embedding Tool Index With Query Cache And SIMD Cosine; Version-Normalized OpenAPI Shape Before Ingestion.
+- Risks / caveats: The injected score depends on primary scores; if all primary scores are tiny, useful graph candidates may be buried.
+- Agentic coding guidance: When tuning retrieval, inspect score breakdowns and test exact-match queries separately from relationship-heavy queries.
+
+### Deterministic Plan Runner With Typed Progress Events
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call/graph_tool_call/plan/runner.py`
+- Language / framework / stack: Python, dataclasses, iterator-based execution events, transport-agnostic tool caller
+- Code shape/snippet:
+```python
+def run_stream(self, plan: Plan, *, input_context: dict[str, Any] | None = None) -> Iterator[PlanEvent]:
+    yield PlanStarted(plan_id=plan.id, goal=plan.goal, step_count=len(plan.steps))
+
+    context: dict[str, Any] = {}
+    if input_context:
+        input_dict = dict(input_context)
+        context["input"] = input_dict
+        context["user_input"] = input_dict
+
+    for idx, step in enumerate(plan.steps, start=1):
+        try:
+            resolved = resolve_bindings(step.args, context)
+        except BindingError as exc:
+            yield StepFailed(step_id=step.id, tool=step.tool, error={"kind": "binding", "message": str(exc)})
+            yield PlanAborted(plan_id=plan.id, failed_step=step.id, error={"kind": "binding", "message": str(exc)})
+            return
+        output = self._call_tool(step.tool, resolved)
+        context[step.id] = output
+        yield StepCompleted(step_id=step.id, tool=step.tool, output_preview=_preview(output, self._preview_limit))
+```
+- Why it matters: Execution is deterministic and observable: binding errors, tool errors, progress, output previews, and final traces are all typed events.
+- When to use: Use for precomputed linear plans where UI, logs, or SSE streams need step-level progress without embedding integration details.
+- When not to use: Avoid for plans requiring dynamic replanning, fan-out, conditionals, or model-mediated recovery.
+- Transferable principle: Keep orchestration pure by injecting the side-effecting `call_tool` boundary and emitting structured events for every transition.
+- Related patterns: Budgeted DFS Tool-Use Tree With Terminal/Give-Up Nodes; Finish Tool Envelope With Status Codes.
+- Risks / caveats: v1 aborts on the first failure and does not retry or compensate.
+- Agentic coding guidance: When adding plan features, preserve the event contract first, then extend execution semantics behind new event types.
+
+### Threshold-Gated RouteChoice With Dynamic Function Extraction
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/semantic-router`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/semantic-router/semantic_router/routers/base.py`
+- Language / framework / stack: Python, Pydantic route models, dense-vector router, optional LLM-backed dynamic routes
+- Code shape/snippet:
+```python
+for route_name, total_score, scores in scored_routes:
+    route = self.check_for_matching_routes(top_class=route_name)
+    if current_threshold := (
+        route.score_threshold if route.score_threshold is not None else self.score_threshold
+    ):
+        passed = total_score >= current_threshold
+    else:
+        passed = True
+
+    if passed and route is not None and not simulate_static:
+        if route.function_schemas and text is None:
+            raise ValueError("Route has a function schema, but no text was provided.")
+        route_choice = route(query=text)
+        if route_choice is not None and route_choice.similarity_score is None:
+            route_choice.similarity_score = total_score
+        passed_routes.append(route_choice)
+```
+- Why it matters: Routing does not stop at nearest-neighbor lookup; route-level thresholds and optional function extraction turn similarity hits into executable choices.
+- When to use: Use for intent routing where some routes need stricter thresholds or structured arguments.
+- When not to use: Avoid when every query must map to exactly one route regardless of confidence.
+- Transferable principle: Separate vector search, score aggregation, threshold gating, and dynamic argument extraction into distinct stages.
+- Related patterns: Distilled Multi-Query Tool Routing With Discounted Merge; Finish Tool Envelope With Status Codes.
+- Risks / caveats: `0.0` thresholds are treated as falsy and therefore equivalent to no threshold; that is deliberate in docs but easy to misread.
+- Agentic coding guidance: When adding routes, set per-route thresholds deliberately and test no-match, static-match, and dynamic-function-match cases.
+
+### Hash-Gated Route Mutation With Diff Sync
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/semantic-router`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/semantic-router/semantic_router/routers/semantic.py`
+- Language / framework / stack: Python, semantic-router, vector indexes, local/remote route synchronization
+- Code shape/snippet:
+```python
+current_local_hash = self._get_hash()
+current_remote_hash = self.index._read_hash()
+if current_remote_hash.value == "":
+    current_remote_hash = current_local_hash
+
+dense_emb = self._encode(all_utterances, input_type="documents")
+self.index.add(
+    embeddings=dense_emb.tolist(),
+    routes=route_names,
+    utterances=all_utterances,
+    function_schemas=all_function_schemas,
+    metadata_list=all_metadata,
+)
+
+self.routes.extend(routes)
+if current_local_hash.value == current_remote_hash.value:
+    self._write_hash()
+else:
+    logger.warning("Local and remote route layers were not aligned. Remote hash not updated.")
+```
+- Why it matters: Route mutations update the remote hash only when local and remote state were aligned before the change, making drift visible instead of silently blessing it.
+- When to use: Use for mutable indexes that can be edited by multiple processes or restored from remote state.
+- When not to use: Avoid for purely local ephemeral routers where sync drift cannot happen.
+- Transferable principle: Compare state fingerprints before mutation and write a new fingerprint only if the prior contract matched.
+- Related patterns: Transactional Outbox Entry With Idempotent Relay Payload; Version-Normalized OpenAPI Shape Before Ingestion.
+- Risks / caveats: The add still occurs even when hashes differ; callers need a follow-up diff/sync flow to reconcile drift.
+- Agentic coding guidance: When editing add/update/delete flows, preserve the local hash, remote hash, mutation, and conditional hash-write order.
+
+## Worker 2 Batch 6
+
+Batch count: 14 patterns across 7 requested repositories.
+
+### Schema Declared Tool Registry With Handler Dispatch
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src/mcp_server/src/mcp_server_neo4j_gds/centrality_algorithm_specs.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src/mcp_server/src/mcp_server_neo4j_gds/registry.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src/mcp_server/src/mcp_server_neo4j_gds/algorithm_handler.py`
+- Language/framework/stack: Python, MCP tool schemas, Neo4j Graph Data Science client
+- Code shape/snippet:
+```python
+class AlgorithmHandler(ABC):
+    @abstractmethod
+    def execute(self, arguments: Dict[str, Any]) -> Any:
+        pass
+
+centrality_tool_definitions = [
+    types.Tool(
+        name="article_rank",
+        inputSchema={"type": "object", "required": ["graphName"], ...},
+    ),
+]
+
+class AlgorithmRegistry:
+    _handlers: Dict[str, Type[AlgorithmHandler]] = {
+        "pagerank": PageRankHandler,
+        "degree_centrality": DegreeCentralityHandler,
+    }
+
+    @classmethod
+    def get_handler(cls, name: str, gds: GraphDataScience) -> AlgorithmHandler:
+        handler_class = cls._handlers.get(name)
+        if handler_class is None:
+            raise ValueError(f"Unknown tool: {name}.")
+        return handler_class(gds)
+```
+- Why it matters: Tool shape, validation surface, and execution dispatch are separated, so the MCP layer can list stable schemas while handlers remain ordinary testable classes.
+- When to use: Use when exposing many related tools that share a transport but differ in backend method, arguments, and postprocessing.
+- When not to use: Avoid when there are only one or two operations and a registry would hide simple control flow.
+- Transferable principle: Keep external schema declaration close to product language, and keep execution behind a small handler interface.
+- Related patterns: GDS Result Budget With Warning Metadata; Deterministic Plan Runner With Typed Progress Events.
+- Risks/caveats: The schema list and registry can drift because the mapping is manual.
+- Agentic coding guidance: When adding a tool, update the schema file, handler class, registry key, and tests together; do not generate a handler without source-backed schema requirements.
+
+### GDS Result Budget With Warning Metadata
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src/mcp_server/src/mcp_server_neo4j_gds/result_limits.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src/mcp_server/src/mcp_server_neo4j_gds/server.py`
+- Language/framework/stack: Python, pandas, MCP response serialization
+- Code shape/snippet:
+```python
+SOURCE_ROW_COUNT_ATTR = "gds_agent_source_row_count"
+
+def limit_dataframe_rows(dataframe):
+    row_limit = max_result_rows()
+    total_rows = len(dataframe)
+    if total_rows <= row_limit:
+        return dataframe
+    limited = dataframe.head(row_limit).copy()
+    limited.attrs[SOURCE_ROW_COUNT_ATTR] = total_rows
+    return limited
+
+def dataframe_limit_warning(dataframe) -> str | None:
+    total_rows = dataframe.attrs.get(SOURCE_ROW_COUNT_ATTR)
+    if total_rows is None:
+        return None
+    return f"Warning: output truncated to the first {len(dataframe)} of {total_rows} rows ..."
+```
+- Why it matters: Large graph results are capped before stringification, and truncation provenance travels with the DataFrame instead of through a side channel.
+- When to use: Use for agent-facing data tools where unbounded tabular output can overwhelm transport, UI, or context budgets.
+- When not to use: Avoid when downstream callers require complete results by default or when truncation would change computed semantics.
+- Transferable principle: Apply output budgets at serialization boundaries and attach machine-readable provenance before producing human text.
+- Related patterns: Schema Declared Tool Registry With Handler Dispatch; Source-Copied Adapter With Upstream Provenance.
+- Risks/caveats: pandas `.attrs` metadata is easy to lose if later transformations copy or rebuild the frame.
+- Agentic coding guidance: Preserve warning metadata when adding postprocessing, and add tests for under-limit, over-limit, and invalid environment variable cases.
+
+### Line Numbered Script DSL With Typed Directives
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-testkit-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-testkit-src/boltstub/parsing.py`
+- Language/framework/stack: Python, Lark grammar, Neo4j Bolt stub scripting
+- Code shape/snippet:
+```python
+class LineError(lark.GrammarError):
+    def __init__(self, line, *args):
+        assert isinstance(line, Line)
+        self.line = line
+        args = (f"{args[0]}: {line}",) + args[1:] if args else (f"{line}",)
+        super().__init__(*args)
+
+class Line(str, abc.ABC):
+    def __new__(cls, line_number: int, raw_line, content: str):
+        obj = super(Line, cls).__new__(cls, raw_line)
+        obj.line_number = line_number
+        obj.content = content
+        return obj
+
+class BangLine(Line):
+    TYPE_BOLT = "bolt"
+    TYPE_HANDSHAKE = "handshake"
+    TYPE_PYTHON = "python"
+```
+- Why it matters: The test scripting language keeps raw source, canonical content, and line numbers together, producing protocol errors that point back to the exact script line.
+- When to use: Use for fixtures, protocol scripts, migrations, or generated test DSLs where source diagnostics are as important as parsed objects.
+- When not to use: Avoid for simple JSON/YAML fixtures where a mature parser already gives good path diagnostics.
+- Transferable principle: Make parsed DSL nodes carry their original location and a domain-specific type from the moment they are created.
+- Related patterns: Framed Backend JSON Protocol With Typed Rehydration; Query Files As Tooling Contracts.
+- Risks/caveats: Subclassing `str` with extra fields is compact but surprising; copying and deep copying need explicit support.
+- Agentic coding guidance: When extending the DSL, add directive constants, parse validation, canonical rendering, and failure tests with expected line numbers.
+
+### Framed Backend JSON Protocol With Typed Rehydration
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-testkit-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-testkit-src/nutkit/backend/backend.py`
+- Language/framework/stack: Python, socket IO, JSON protocol test backend
+- Code shape/snippet:
+```python
+PROTOCOL_CLASSES = dict(m for m in inspect.getmembers(protocol, inspect.isclass))
+
+class Encoder(json.JSONEncoder):
+    def default(self, o):
+        name = type(o).__name__
+        if name in PROTOCOL_CLASSES:
+            return {"name": name, "data": o.__dict__}
+        return json.JSONEncoder.default(self, o)
+
+def decode_hook(x):
+    name = x.get("name")
+    if isinstance(name, str) and name in PROTOCOL_CLASSES:
+        return PROTOCOL_CLASSES[name](**x.get("data", {}))
+    return x
+
+def send(self, req, hooks=None):
+    self._writer.write("#request begin\n")
+    self._writer.write(self._encoder.encode(req) + "\n")
+    self._writer.write("#request end\n")
+```
+- Why it matters: Messages are newline-framed for streaming logs, but payloads are rehydrated into protocol classes so tests can assert typed behavior.
+- When to use: Use for language-driver test harnesses, local backend shims, or integration harnesses where human logs and typed messages share a channel.
+- When not to use: Avoid for high-throughput binary protocols or untrusted peers where arbitrary class-name decoding is unsafe.
+- Transferable principle: Put a small typed envelope around JSON and use explicit frame markers when a stream can contain non-protocol log lines.
+- Related patterns: Callback Framed Wire Protocol IO; Line Numbered Script DSL With Typed Directives.
+- Risks/caveats: Class discovery via `inspect.getmembers` makes the protocol depend on import-time namespace contents.
+- Agentic coding guidance: When adding protocol messages, create the protocol class first, verify JSON round trip through `Encoder` and `decode_hook`, and keep frame markers stable.
+
+### Unified Tick Key And Data Event Loop
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-ballista-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-ballista-src/ballista-cli/src/tui/event.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-ballista-src/ballista-cli/src/tui/app.rs`
+- Language/framework/stack: Rust, Tokio, crossterm, ratatui TUI
+- Code shape/snippet:
+```rust
+#[derive(Clone, Debug)]
+pub enum UiData {
+    Executors(Option<SchedulerState>, Vec<Executor>, Vec<Job>),
+    Metrics(Vec<Metric>),
+    Jobs(Vec<Job>),
+    JobDetails(JobDetails),
+}
+
+#[derive(Clone, Debug)]
+pub enum Event {
+    Key(KeyEvent),
+    Tick,
+    DataLoaded { data: UiData },
+}
+
+tokio::select! {
+    _ = interval.tick() => { tx.send(Event::Tick).ok(); }
+    Some(Ok(evt)) = reader.next().fuse() => {
+        if let crossterm::event::Event::Key(key) = evt {
+            tx.send(Event::Key(key)).ok();
+        }
+    }
+}
+```
+- Why it matters: Periodic refreshes, user input, and async loaded data become one event stream, which keeps the application state machine centralized.
+- When to use: Use for terminal UIs, dashboards, and long-running clients with refresh ticks plus interactive keyboard state.
+- When not to use: Avoid when the UI framework already has a strong event loop and adding another channel would duplicate lifecycle semantics.
+- Transferable principle: Normalize environmental events into a small enum before mutating UI state.
+- Related patterns: Deterministic Plan Runner With Typed Progress Events; Bounded Send Queue With Wait Handles.
+- Risks/caveats: An unbounded channel can hide backpressure if producers outpace rendering.
+- Agentic coding guidance: Add new UI actions as `Event` or `UiData` variants first, then handle them in the app state machine; avoid direct widget-side network calls.
+
+### Typed HTTP Client With Shared Parse Boundaries
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-ballista-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-ballista-src/ballista-cli/src/tui/http_client.rs`
+- Language/framework/stack: Rust, reqwest, serde, Ballista scheduler API client
+- Code shape/snippet:
+```rust
+pub async fn get_jobs(&self) -> TuiResult<Vec<Job>> {
+    let url = self.url("jobs");
+    self.json::<Vec<Job>>(&url).await.map(|mut jobs| {
+        jobs.sort_by_key(|b| std::cmp::Reverse(b.start_time));
+        jobs
+    })
+}
+
+async fn json<R>(&self, url: &str) -> TuiResult<R>
+where
+    R: std::fmt::Debug + DeserializeOwned,
+{
+    let response = self.get(url).await?;
+    let response = response.error_for_status().map_err(TuiError::from)?;
+    response.json::<R>().await.map_err(TuiError::from)
+}
+
+fn url_encode(&self, job_id: &str) -> String {
+    percent_encode(job_id.as_bytes(), NON_ALPHANUMERIC).to_string()
+}
+```
+- Why it matters: Endpoint methods stay domain-specific, while status handling, JSON decoding, text decoding, timeout, and URL encoding are centralized.
+- When to use: Use for typed internal API clients consumed by UI or CLI code.
+- When not to use: Avoid if generated OpenAPI clients already provide correct typed boundaries and retry semantics.
+- Transferable principle: Keep every transport concern in one helper layer, and let public methods return domain types.
+- Related patterns: Unified Tick Key And Data Event Loop; HTTP Error Type Implements Response Contract.
+- Risks/caveats: Domain methods can accidentally add presentation behavior, such as sorting, that callers may not expect.
+- Agentic coding guidance: When adding endpoints, implement a typed method plus tests for URL encoding, error status mapping, and parse failure behavior.
+
+### Object Safe Transaction Facade With Datastore Adapter
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/indradb-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/indradb-src/lib/src/database.rs`
+- Language/framework/stack: Rust, graph database core, plugin-compatible datastore abstraction
+- Code shape/snippet:
+```rust
+pub type DynIter<'a, T> = Box<dyn Iterator<Item = Result<T>> + 'a>;
+
+pub trait Transaction<'a> {
+    fn all_vertices(&'a self) -> Result<DynIter<'a, Vertex>>;
+    fn specific_edges(&'a self, edges: Vec<Edge>) -> Result<DynIter<'a, Edge>>;
+    fn sync(&self) -> Result<()> {
+        Err(Error::Unsupported)
+    }
+}
+
+pub trait Datastore {
+    type Transaction<'a>: Transaction<'a>
+    where
+        Self: 'a;
+    fn transaction(&self) -> Self::Transaction<'_>;
+}
+
+pub struct Database<D: Datastore> {
+    pub datastore: D,
+}
+```
+- Why it matters: Storage engines own implementation details, while the database layer can run shared query, mutation, and validation logic over a uniform transaction boundary.
+- When to use: Use when multiple backends must share a core domain API but still expose backend-specific transaction implementations.
+- When not to use: Avoid when a single storage engine is hard-coded and dynamic plugin compatibility is not a requirement.
+- Transferable principle: Split "how to fetch and mutate primitives" from "how domain operations compose those primitives."
+- Related patterns: Branching Source Sink Transaction Contract; Transactional Operation Module Contract.
+- Risks/caveats: Object-safe iterators and boxed results cost some allocation and can obscure concrete performance profiles.
+- Agentic coding guidance: Put new graph operations on `Database` when they compose existing transaction methods; add `Transaction` methods only for storage primitives that cannot be expressed efficiently otherwise.
+
+### Composable Query AST With Output Shape Prediction
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/indradb-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/indradb-src/lib/src/models/queries.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/indradb-src/lib/src/database.rs`
+- Language/framework/stack: Rust, graph query model, typed enum AST
+- Code shape/snippet:
+```rust
+pub enum Query {
+    AllVertex,
+    SpecificEdge(SpecificEdgeQuery),
+    Pipe(PipeQuery),
+    PipeProperty(PipePropertyQuery),
+    Include(IncludeQuery),
+    Count(CountQuery),
+}
+
+impl Query {
+    pub(crate) fn output_len(&self) -> usize { ... }
+    pub(crate) fn output_type(&self) -> errors::ValidationResult<QueryOutputValue> { ... }
+}
+
+pub trait QueryExt: Into<Query> {
+    fn outbound(self) -> errors::ValidationResult<PipeQuery> {
+        PipeQuery::new(Box::new(self.into()), EdgeDirection::Outbound)
+    }
+    fn include(self) -> IncludeQuery {
+        IncludeQuery::new(Box::new(self.into()))
+    }
+}
+```
+- Why it matters: Queries are composable values rather than strings, and the engine can allocate and validate based on predicted output shape before execution.
+- When to use: Use for embedded query APIs where callers compose graph traversals inside a host language.
+- When not to use: Avoid when users need an open-ended textual query language with optimizer passes and independent tooling.
+- Transferable principle: Make query combinators produce a typed AST, then make execution a pure interpreter over that AST.
+- Related patterns: Search Scope Builder Over Semantic Graph; Typed Context Keys With Memoized Pipeline Functions.
+- Risks/caveats: Deeply nested boxed queries can become hard to inspect and may need debug rendering.
+- Agentic coding guidance: When adding a query variant, update `output_len`, `output_type`, execution matching, validation tests, and include/count interactions in one pass.
+
+### Macro Guarded Cleanup And Error Message Contract
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src/src/utility/LG_internal.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src/src/utility/LAGraph_Cached_AT.c`
+- Language/framework/stack: C, LAGraph, GraphBLAS
+- Code shape/snippet:
+```c
+#ifndef LG_FREE_ALL
+#define LG_FREE_ALL { LG_FREE_WORK ; }
+#endif
+
+#define LG_ERROR_MSG(...)                                           \
+{                                                                   \
+    if (msg != NULL && msg [0] == '\0')                             \
+    { snprintf (msg, LAGRAPH_MSG_LEN, __VA_ARGS__) ; }              \
+}
+
+#define LG_ASSERT_MSG(expression,error_status,expression_message)   \
+    LG_ASSERT_MSGF (expression,error_status,"%s",expression_message)
+
+#define LG_CLEAR_MSG_AND_BASIC_ASSERT(G,msg)                        \
+{                                                                   \
+    LG_CLEAR_MSG ;                                                  \
+    LG_ASSERT (G != NULL, GrB_NULL_POINTER) ;                       \
+    LG_ASSERT_MSG (G->A != NULL, LAGRAPH_INVALID_GRAPH,             \
+        "graph adjacency matrix is NULL") ;                         \
+}
+```
+- Why it matters: Each C function gets consistent validation, first-error message preservation, and cleanup behavior without manually duplicating every return path.
+- When to use: Use in C libraries where many functions allocate GraphBLAS resources and return integer status codes.
+- When not to use: Avoid in languages with native RAII or exceptions where macros would hide control flow without adding safety.
+- Transferable principle: In manual-resource code, make the cleanup contract explicit at the top of each function and route all errors through it.
+- Related patterns: Move-Only Scope Guard Helpers; RAII Parser Recursion Budget Macro.
+- Risks/caveats: Macro control flow can be hard to debug and can skip local cleanup if `LG_FREE_ALL` is not correctly defined.
+- Agentic coding guidance: Before adding local allocations to an LAGraph function, define or update `LG_FREE_ALL`, then use `LG_TRY`, `GRB_TRY`, and assertions instead of ad hoc returns.
+
+### Cached Graph Derivatives With Explicit Invalidator
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src/src/utility/LAGraph_Cached_AT.c`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src/src/utility/LAGraph_DeleteCached.c`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src/src/algorithm/LAGr_BreadthFirstSearch.c`
+- Language/framework/stack: C, LAGraph, GraphBLAS cached graph properties
+- Code shape/snippet:
+```c
+if (G->AT != NULL)
+{
+    return (GrB_SUCCESS) ;
+}
+
+if (G->kind == LAGraph_ADJACENCY_UNDIRECTED)
+{
+    return (LAGRAPH_CACHE_NOT_NEEDED) ;
+}
+
+GRB_TRY (GrB_transpose (AT, NULL, NULL, A, NULL)) ;
+G->AT = AT ;
+
+GRB_TRY (GrB_free (&(G->AT))) ;
+G->is_symmetric_structure =
+    (G->kind == LAGraph_ADJACENCY_UNDIRECTED) ? LAGraph_TRUE : LAGRAPH_UNKNOWN ;
+```
+- Why it matters: Expensive graph derivatives such as transpose and degree vectors are computed lazily, reused by algorithms, and reset through a single invalidation function.
+- When to use: Use when algorithms repeatedly need derived graph state that is expensive but deterministic from the base graph.
+- When not to use: Avoid when base graph mutation is frequent and invalidation is hard to prove.
+- Transferable principle: Cache graph-derived artifacts on the graph object, but provide an explicit invalidator that restores unknown states.
+- Related patterns: Versioned Sharded Parse Cache With Lazy Payloads; Cached Arena IR For Repeated Planning.
+- Risks/caveats: Stale cache bugs are severe because algorithms may silently read wrong structural facts.
+- Agentic coding guidance: Any mutation of `G->A` or graph kind must call the cache invalidator or reset affected fields in the same patch.
+
+### Shape Builder Captures Order And Strides
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ndarray-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ndarray-src/src/shape_builder.rs`
+- Language/framework/stack: Rust, ndarray multidimensional array constructors
+- Code shape/snippet:
+```rust
+pub struct Shape<D> {
+    pub(crate) dim: D,
+    pub(crate) strides: Strides<Contiguous>,
+}
+
+pub struct StrideShape<D> {
+    pub(crate) dim: D,
+    pub(crate) strides: Strides<D>,
+}
+
+pub trait ShapeBuilder {
+    type Dim: Dimension;
+    type Strides;
+    fn into_shape_with_order(self) -> Shape<Self::Dim>;
+    fn f(self) -> Shape<Self::Dim>;
+    fn set_f(self, is_f: bool) -> Shape<Self::Dim>;
+    fn strides(self, strides: Self::Strides) -> StrideShape<Self::Dim>;
+}
+```
+- Why it matters: Shape, memory order, and custom strides are represented as typed constructor arguments instead of ambiguous tuples or booleans.
+- When to use: Use for numerical APIs where layout semantics affect correctness, performance, or FFI compatibility.
+- When not to use: Avoid for ordinary domain structs where adding a builder type would obscure simple field initialization.
+- Transferable principle: Turn overloaded constructor arguments into a small typed builder that carries semantic choices.
+- Related patterns: Logical To FFI Physical Builder; Sentinel Enum For Unspecified Defaults.
+- Risks/caveats: More types improve correctness but increase API surface and trait bound complexity.
+- Agentic coding guidance: When adding constructors, accept `ShapeBuilder` or `ShapeArg` where layout matters, and test C-order, F-order, and custom stride behavior separately.
+
+### Lazy Zip Producer With Layout Hints
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ndarray-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ndarray-src/src/zip/mod.rs`
+- Language/framework/stack: Rust, ndarray elementwise iteration and producers
+- Code shape/snippet:
+```rust
+#[derive(Debug, Clone)]
+#[must_use = "zipping producers is lazy and does nothing unless consumed"]
+pub struct Zip<Parts, D> {
+    parts: Parts,
+    dimension: D,
+    layout: Layout,
+    layout_tendency: i32,
+}
+
+impl<P, D> Zip<(P,), D>
+where
+    D: Dimension,
+    P: NdProducer<Dim = D>,
+{
+    pub fn from<IP>(p: IP) -> Self
+    where IP: IntoNdProducer<Dim = D, Output = P, Item = P::Item>
+    {
+        let array = p.into_producer();
+        let dim = array.raw_dim();
+        let layout = array.layout();
+        Zip { dimension: dim, layout, parts: (array,), layout_tendency: layout.tendency() }
+    }
+}
+```
+- Why it matters: Elementwise multi-array operations stay lazy until consumed and carry layout information that can guide efficient traversal.
+- When to use: Use for lock-step traversal across arrays, windows, lanes, or indexed producers with matching dimensions.
+- When not to use: Avoid when inputs are tiny or have mismatched shapes that need semantic alignment rather than strict dimensional equality.
+- Transferable principle: Represent a traversal plan as a lazy value with enough metadata to choose a good execution order.
+- Related patterns: Model-Specific Pooling With Length-Sorted Embedding Batches; Physical Representation Dispatch.
+- Risks/caveats: Laziness can surprise callers, so `#[must_use]` is essential to catch forgotten consumers.
+- Agentic coding guidance: When generating array loops, prefer `Zip` for same-shape elementwise work and assert dimension compatibility before adding unsafe indexed access.
+
+### Python Visitor Exceptions As Traversal Control
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src/rustworkx/visit.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src/src/traversal/bfs_visit.rs`
+- Language/framework/stack: Rust, PyO3, petgraph traversal, Python visitor callbacks
+- Code shape/snippet:
+```python
+class StopSearch(Exception):
+    """Stop graph traversal"""
+
+class PruneSearch(Exception):
+    """Prune part of the search tree while traversing a graph."""
+
+class BFSVisitor(Generic[_T]):
+    def discover_vertex(self, v):
+        return
+```
+```rust
+match res {
+    Err(e) => {
+        if e.is_instance_of::<PruneSearch>(py) {
+            Ok(Control::Prune)
+        } else if e.is_instance_of::<StopSearch>(py) {
+            Ok(Control::Break(()))
+        } else {
+            Err(e)
+        }
+    }
+    Ok(_) => Ok(Control::Continue),
+}
+```
+- Why it matters: Python users get an idiomatic callback object, while Rust converts domain exceptions into petgraph traversal control without treating every exception as fatal.
+- When to use: Use when exposing a low-level traversal engine to a dynamic-language API with user-defined callbacks.
+- When not to use: Avoid when callback control can be represented more simply as explicit return values.
+- Transferable principle: Map host-language control idioms into core engine control types at one boundary function.
+- Related patterns: Host-Language Error Bridge; Extension Protocol Hooks.
+- Risks/caveats: Only documented control exceptions should be swallowed; all other Python errors must propagate.
+- Agentic coding guidance: When adding traversal events, update the Python visitor base class and the Rust handler match together, preserving `StopSearch` and `PruneSearch` semantics.
+
+### Precomputed Python Edge Weights Before Parallel Algorithms
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src/src/lib.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src/src/shortest_path/all_pairs_dijkstra.rs`
+- Language/framework/stack: Rust, PyO3, rayon, petgraph/rustworkx shortest paths
+- Code shape/snippet:
+```rust
+pub enum CostFn {
+    Default(f64),
+    PyFunction(Py<PyAny>),
+}
+
+impl CostFn {
+    fn call(&self, py: Python, arg: &Py<PyAny>) -> PyResult<f64> {
+        match self {
+            CostFn::Default(val) => Ok(*val),
+            CostFn::PyFunction(obj) => {
+                let raw = obj.call1(py, (arg,))?;
+                let val: f64 = raw.extract(py)?;
+                is_valid_weight(val)
+            }
+        }
+    }
+}
+
+let mut edge_weights: Vec<Option<f64>> = Vec::with_capacity(graph.edge_bound());
+for index in 0..=graph.edge_bound() {
+    match graph.edge_weight(EdgeIndex::new(index)) {
+        Some(weight) => edge_weights.push(Some(edge_cost_callable.call(py, weight)?)),
+        None => edge_weights.push(None),
+    };
+}
+```
+- Why it matters: Python callbacks and validation happen before rayon parallelism, leaving the inner shortest-path work with indexed numeric weights.
+- When to use: Use when a fast parallel Rust algorithm needs values derived from Python objects or callbacks.
+- When not to use: Avoid when callback results depend on mutable traversal state or need lazy per-edge side effects.
+- Transferable principle: Cross the dynamic-language boundary once, validate data, then run the parallel core over plain native values.
+- Related patterns: Host-Language Error Bridge; Model-Specific Pooling With Length-Sorted Embedding Batches.
+- Risks/caveats: Precomputing weights costs memory proportional to edge bound, including holes in stable graph indices.
+- Agentic coding guidance: Keep Python calls outside parallel iterators, validate NaN and negative weights before dispatch, and test graphs with removed edges because the cache uses edge indices.
+
+## Worker 2 Batch 7
+
+Source pass counts:
+- Repositories requested: 7.
+- Repositories with useful source evidence: 7.
+- Repositories skipped: 0.
+- Pattern entries added: 14.
+
+### Version Negotiated Binary Handshake With Manifest Escape
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-docs-bolt-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-docs-bolt-src/modules/ROOT/pages/bolt/handshake.adoc`
+- Language/framework/stack: AsciiDoc protocol specification, Neo4j Bolt binary protocol
+- Code shape/snippet:
+```adoc
+C: 60 60 B0 17
+C: 00 00 00 03 00 00 00 02 00 00 00 01 00 00 00 00
+S: 00 00 00 02
+
+The client can substitute one of the 4 32-bit version requests with the
+special version `00 00 01 FF`.
+```
+- Why it matters: The protocol keeps old four-slot negotiation simple while reserving one slot for a richer manifest handshake that can advertise versions and capabilities.
+- When to use: Use when a wire protocol needs deterministic startup, old-client compatibility, and a path to add capability negotiation later.
+- When not to use: Avoid when peers can rely on an existing standard negotiator such as TLS ALPN or HTTP content negotiation.
+- Transferable principle: Put a fixed-size legacy negotiation frame in front of an extensible manifest escape hatch.
+- Related patterns: Chunked Message Framing With Zero Chunk Terminator; Capability Derived Parser Settings.
+- Risks/caveats: Every implementation must treat the manifest marker as a protocol value, not as an ordinary version number.
+- Agentic coding guidance: When implementing handshake parsing, test all-zero rejection, highest-supported selection, and manifest acceptance before adding message pipelining.
+
+### Chunked Message Framing With Zero Chunk Terminator
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-docs-bolt-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-docs-bolt-src/modules/ROOT/pages/bolt/message.adoc`
+- Language/framework/stack: AsciiDoc protocol specification, Neo4j Bolt PackStream transport
+- Code shape/snippet:
+```adoc
+Each chunk consists of a *two-byte header*, detailing the chunk size in bytes
+followed by the chunk data itself.
+
+Each encoded message must be terminated with a chunk of zero size, i.e.
+----
+00 00
+----
+```
+- Why it matters: Receivers can recover exact message boundaries without parsing PackStream immediately, and large messages do not need their full size known up front.
+- When to use: Use for binary request/response protocols that stream variable-size messages over a long-lived socket.
+- When not to use: Avoid when a transport already supplies record boundaries or when the whole payload size is cheaply known and bounded.
+- Transferable principle: Separate transport framing from payload parsing so unknown message types can still be skipped or quarantined safely.
+- Related patterns: Version Negotiated Binary Handshake With Manifest Escape; Callback Framed Wire Protocol IO.
+- Risks/caveats: Empty chunks have protocol meaning, so keep-alive `NOOP` handling must not be confused with end-of-message handling.
+- Agentic coding guidance: Write decoder tests for single-chunk, multi-chunk, two-message, and zero-length marker cases before optimizing buffer reuse.
+
+### Lazy Mutable Adjacency With Batch Update
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graph-csr-openmp-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graph-csr-openmp-src/inc/Graph.hxx`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graph-csr-openmp-src/inc/_bitset.hxx`
+- Language/framework/stack: C++ templates, sparse graph adjacency, lazy sorted vectors
+- Code shape/snippet:
+```cpp
+template <class K=uint32_t, class V=NONE>
+class LazyBitset {
+  vector<pair<K, V>> pairs;
+  ssize_t unprocessed;
+
+  inline void updateRemove() {
+    sort(im, ie, fl);
+    auto it = set_difference_inplace(ib, im, im, ie, fl, fe);
+    pairs.resize(it - ib);
+    unprocessed = 0;
+  }
+};
+
+inline void update() {
+  vector<pair<K, E>> buf;
+  N = 0; M = 0;
+  forEachVertexKey([&](K u) {
+    edges[u].update(&buf);
+    M += degree(u); ++N;
+  });
+}
+```
+- Why it matters: Mutations stay cheap and local until an explicit update pass restores sorted adjacency and recomputes graph totals.
+- When to use: Use for graph construction or edit-heavy phases that later switch into read-heavy traversal.
+- When not to use: Avoid for online queries that require every mutation to be visible immediately.
+- Transferable principle: Make pending mutation state explicit and provide a named consolidation boundary before read-optimized algorithms run.
+- Related patterns: Cached Graph Derivatives With Explicit Invalidator; Incremental Database Inputs With Durability.
+- Risks/caveats: Reads before `update()` can observe stale degree/count semantics, so callers need a clear lifecycle contract.
+- Agentic coding guidance: When adding graph mutation APIs, preserve the lazy/update distinction and add tests that fail if counts are trusted before consolidation.
+
+### CSR Graph With Offset Degree Edge Arrays
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graph-csr-openmp-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graph-csr-openmp-src/inc/Graph.hxx`
+- Language/framework/stack: C++ templates, compressed sparse row graph layout
+- Code shape/snippet:
+```cpp
+class DiGraphCsr {
+  vector<O> offsets;
+  vector<K> degrees;
+  vector<V> values;
+  vector<K> edgeKeys;
+  vector<E> edgeValues;
+
+  template <class FP>
+  inline void forEachEdge(K u, FP fp) const noexcept {
+    size_t i = offsets[u];
+    size_t d = degrees[u];
+    for (size_t I=i+d; i<I; ++i)
+      fp(edgeKeys[i], edgeValues[i]);
+  }
+};
+```
+- Why it matters: CSR turns pointer-heavy adjacency into compact contiguous arrays, which improves cache behavior and makes OpenMP partitioning straightforward.
+- When to use: Use for static or mostly static graphs where traversal dominates update cost.
+- When not to use: Avoid for workloads with frequent insertions/deletions unless there is a separate rebuild phase.
+- Transferable principle: Store graph topology as offsets plus packed edge arrays when the hot path is scanning neighbors.
+- Related patterns: Lazy Mutable Adjacency With Batch Update; Shape Builder Captures Order And Strides.
+- Risks/caveats: `offsets`, `degrees`, `edgeKeys`, and `edgeValues` must be resized and filled consistently or traversal silently reads the wrong edge range.
+- Agentic coding guidance: When generating CSR code, assert `offsets.len() == vertices + 1` and that every `offsets[u] + degrees[u]` stays within the edge arrays.
+
+### Operation Handler Array From Registered Types
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_driver-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_driver-src/src/main/java/org/ldbcouncil/snb/driver/Db.java`
+- Language/framework/stack: Java, benchmark driver framework, operation handlers
+- Code shape/snippet:
+```java
+public final <A extends Operation, H extends OperationHandler<A,?>> void registerOperationHandler(
+        Class<A> operationType, Class<H> operationHandlerType ) throws DbException
+{
+    OperationHandler operationHandler = ClassLoaderHelper.loadOperationHandler(operationHandlerType);
+    operationHandlers.put(operationType, operationHandler);
+}
+
+public final OperationHandlerRunnableContext getOperationHandlerRunnableContext(Operation operation)
+        throws DbException
+{
+    OperationHandler operationHandler = operationHandlersArray[operation.type()];
+    operationHandlerRunnableContext.setOperationHandler(operationHandler);
+    operationHandlerRunnableContext.setDbConnectionState(dbConnectionState);
+    return operationHandlerRunnableContext;
+}
+```
+- Why it matters: Registration stays type-oriented, while execution dispatch becomes an O(1) lookup by stable operation type code.
+- When to use: Use in benchmark or protocol drivers with a closed set of numbered operations and pluggable handlers.
+- When not to use: Avoid if operation types are sparse, untrusted, or loaded dynamically after initialization.
+- Transferable principle: Compile a flexible registration map into a compact runtime dispatch table once the system is initialized.
+- Related patterns: Schema Declared Tool Registry With Handler Dispatch; Binary Request Object With Executor Visitor.
+- Risks/caveats: Operation type codes must be validated, because array indexing makes missing or negative codes dangerous.
+- Agentic coding guidance: When adding an operation, update the type mapping, register the handler, and add a missing-handler test for the new numeric type.
+
+### Time Remapping Generator As Workload Adapter
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_driver-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_driver-src/src/main/java/org/ldbcouncil/snb/driver/generator/TimeMappingOperationGenerator.java`
+- Language/framework/stack: Java, iterator-backed workload generator, benchmark scheduling
+- Code shape/snippet:
+```java
+protected Operation doNext() throws GeneratorException {
+    if (false == operations.hasNext()) { return null; }
+    Operation nextOperation = operations.next();
+    if (null == timeOffsetAsMilliFun) {
+        long firstStartTimeAsMilli = nextOperation.scheduledStartTimeAsMilli();
+        timeOffsetAsMilliFun = new TimeFutureOffsetFun(offsetAsMilli);
+        startTimeAsMilliCompressionFun = new TimeCompressionFun(
+                timeCompressionRatio,
+                timeOffsetAsMilliFun.apply(nextOperation.scheduledStartTimeAsMilli()));
+    }
+    long offsetStartTimeAsMilli = timeOffsetAsMilliFun.apply(nextOperation.scheduledStartTimeAsMilli());
+    nextOperation.setScheduledStartTimeAsMilli(
+            startTimeAsMilliCompressionFun.apply(offsetStartTimeAsMilli));
+    return nextOperation;
+}
+```
+- Why it matters: A workload trace can be replayed at a new start time or compressed timescale without changing the underlying operation stream.
+- When to use: Use when benchmark event streams need deterministic replay under different wall-clock schedules.
+- When not to use: Avoid when event timing is semantically tied to external data generation or real-time feedback.
+- Transferable principle: Wrap immutable event streams in small adapter generators that transform schedule metadata at the edge.
+- Related patterns: Merging Generator With Pairwise Function; Deterministic Plan Runner With Typed Progress Events.
+- Risks/caveats: The first item initializes all timing math, so empty streams and first-event anomalies need explicit tests.
+- Agentic coding guidance: When editing workload generators, preserve lazy initialization from the first operation and test future offset, past offset, no compression, and compression together.
+
+### Frontier Kernel Functor With Atomic Alternative
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ligra-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ligra-src/apps/BFS.C`
+- Language/framework/stack: C++, Ligra shared-memory graph processing
+- Code shape/snippet:
+```cpp
+struct BFS_F {
+  uintE* Parents;
+  BFS_F(uintE* _Parents) : Parents(_Parents) {}
+  inline bool update(uintE s, uintE d) {
+    if(Parents[d] == UINT_E_MAX) { Parents[d] = s; return 1; }
+    else return 0;
+  }
+  inline bool updateAtomic(uintE s, uintE d) {
+    return CAS(&Parents[d], UINT_E_MAX, s);
+  }
+  inline bool cond(uintE d) { return (Parents[d] == UINT_E_MAX); }
+};
+
+vertexSubset output = edgeMap(GA, Frontier, BFS_F(Parents));
+```
+- Why it matters: Algorithm-specific behavior is a tiny functor, while the framework owns parallel traversal, filtering, and frontier creation.
+- When to use: Use in graph frameworks where many algorithms share the same edge traversal skeleton.
+- When not to use: Avoid when the update needs broad mutable state that cannot be guarded atomically or partitioned safely.
+- Transferable principle: Split traversal mechanics from per-edge semantics with a small object that exposes sequential, atomic, and predicate hooks.
+- Related patterns: Sparse Dense Frontier Switch By Out-Degree Threshold; Strategy Trait With Ordering Tradeoff.
+- Risks/caveats: `update` and `updateAtomic` must be semantically equivalent or dense/sparse execution modes can diverge.
+- Agentic coding guidance: When writing new Ligra kernels, implement `cond`, `update`, and `updateAtomic` together and test with parallel races enabled.
+
+### Sparse Dense Frontier Switch By Out-Degree Threshold
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ligra-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ligra-src/ligra/ligra.h`
+- Language/framework/stack: C++, Ligra frontier representation, parallel graph traversal
+- Code shape/snippet:
+```cpp
+if (threshold == -1) threshold = numEdges/20;
+if ((fl & no_dense) || threshold > 0) {
+  vs.toSparse();
+  degrees = newA(uintT, m);
+  outDegrees = sequence::plusReduce(degrees, m);
+}
+if (!(fl & no_dense) && m + outDegrees > threshold) {
+  vs.toDense();
+  return edgeMapDense<data, vertex, VS, F>(GA, vs, f, fl);
+} else {
+  return edgeMapSparse<data, vertex, VS, F>(
+      GA, frontierVertices, vs, degrees, vs.numNonzeros(), f, fl);
+}
+```
+- Why it matters: The traversal engine chooses dense or sparse frontier execution from active vertex count and outgoing edge volume, keeping algorithms compact.
+- When to use: Use when frontier size swings dramatically across iterations, such as BFS, PageRank-like propagation, or connected components.
+- When not to use: Avoid if graph degree distribution or memory constraints make representation conversion more expensive than traversal.
+- Transferable principle: Let the shared runtime choose data representation based on cheap workload estimates, not per-algorithm branching.
+- Related patterns: Frontier Kernel Functor With Atomic Alternative; Physical Representation Dispatch.
+- Risks/caveats: Bad thresholds can force dense scans too early or keep sparse work too long, hurting performance without changing correctness.
+- Agentic coding guidance: Preserve `no_dense`, `dense_forward`, and output flags when altering `edgeMapData`; add tests that exercise both branches.
+
+### Thread Local Parser And Extractor Cache
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/crates/pt01-folder-to-cozodb-streamer/src/isgl1_generator.rs`
+- Language/framework/stack: Rust, tree-sitter, Rayon-friendly parsing, thread-local caches
+- Code shape/snippet:
+```rust
+fn get_thread_local_parser_instance(&self, language: Language) -> Result<(), StreamerError> {
+    THREAD_PARSERS.with(|parsers| {
+        let mut parsers = parsers.borrow_mut();
+        if parsers.contains_key(&language) {
+            return Ok(());
+        }
+        let mut parser = Parser::new();
+        parser.set_language(&ts_lang)?;
+        parsers.insert(language, parser);
+        Ok(())
+    })
+}
+
+fn get_thread_extractor_instance_safely(&self) -> Result<(), StreamerError> {
+    THREAD_EXTRACTOR.with(|extractor_cell| {
+        let mut extractor_opt = extractor_cell.borrow_mut();
+        if extractor_opt.is_none() {
+            *extractor_opt = Some(QueryBasedExtractor::new()?);
+        }
+        Ok(())
+    })
+}
+```
+- Why it matters: Non-`Send` parser state and reusable query extractors stay per worker thread, avoiding a shared mutex on the parse hot path.
+- When to use: Use when parser instances are expensive, mutable, or not safely shareable across threads.
+- When not to use: Avoid for tiny single-threaded tools where thread-local state makes lifecycle and tests harder.
+- Transferable principle: Cache parser-like state at the narrowest concurrency boundary that matches the underlying library's safety model.
+- Related patterns: Precomputed Python Edge Weights Before Parallel Algorithms; Thread-Local Panic Context Guard.
+- Risks/caveats: Thread-local caches can retain memory for the lifetime of the worker thread and can hide initialization failures until first use.
+- Agentic coding guidance: When adding a language grammar, update the parser language match, query files, and thread-local extractor tests in the same patch.
+
+### Trait Backed LSP Metadata With Mock Degradation
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/crates/pt01-folder-to-cozodb-streamer/src/lsp_client.rs`
+- Language/framework/stack: Rust, async trait, rust-analyzer LSP integration, test mock
+- Code shape/snippet:
+```rust
+#[async_trait]
+pub trait RustAnalyzerClient: Send + Sync {
+    async fn hover(
+        &self,
+        file_path: &Path,
+        line: u32,
+        character: u32,
+    ) -> Result<Option<HoverResponse>>;
+
+    async fn is_available(&self) -> bool;
+}
+
+#[cfg(test)]
+impl MockRustAnalyzerClient {
+    pub fn add_response(&mut self, key: String, response: HoverResponse) {
+        self.responses.insert(key, response);
+    }
+}
+```
+- Why it matters: LSP enrichment is optional and testable; indexing can continue when rust-analyzer is absent while tests still inject deterministic hover metadata.
+- When to use: Use when an external semantic service improves output quality but should not be required for baseline indexing.
+- When not to use: Avoid when missing metadata would produce incorrect results rather than merely less enriched results.
+- Transferable principle: Model optional external tooling as a trait returning `Option` inside `Result`, then provide a mock with exact key-based responses.
+- Related patterns: Host-Language Error Bridge; Read/Write Retry Backend Decorators.
+- Risks/caveats: Graceful degradation can mask a broken LSP setup unless availability metrics or warnings are surfaced.
+- Agentic coding guidance: When adding LSP calls, keep failures non-fatal, inject the trait in tests, and assert both enriched and unavailable paths.
+
+### Recursive Chat History Summarizer With Tail Preservation
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aider-AI__aider`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aider-AI__aider/aider/history.py`
+- Language/framework/stack: Python, LLM chat history management, model token counters
+- Code shape/snippet:
+```python
+def summarize_real(self, messages, depth=0):
+    sized = self.tokenize(messages)
+    total = sum(tokens for tokens, _msg in sized)
+    if total <= self.max_tokens and depth == 0:
+        return messages
+
+    tail_tokens = 0
+    split_index = len(messages)
+    half_max_tokens = self.max_tokens // 2
+    for i in range(len(sized) - 1, -1, -1):
+        tokens, _msg = sized[i]
+        if tail_tokens + tokens < half_max_tokens:
+            tail_tokens += tokens
+            split_index = i
+
+    summary = self.summarize_all(keep)
+    if summary_tokens + tail_tokens < self.max_tokens:
+        return summary + tail
+    return self.summarize_real(summary + tail, depth + 1)
+```
+- Why it matters: It compresses older conversation while preserving a recent tail, and recurses only when the summary plus tail is still too large.
+- When to use: Use for agent conversations where recent details matter more than verbatim old turns.
+- When not to use: Avoid when exact prior wording, code blocks, or legal/audit content must remain verbatim.
+- Transferable principle: Summarize the head, preserve the tail, and make recursive compression explicit with a depth guard.
+- Related patterns: MCP Cold Start Envelope Guard; Offload Context To Filesystem Plan Files.
+- Risks/caveats: Summaries can erase subtle constraints, and fallback across multiple models may introduce style or detail variance.
+- Agentic coding guidance: Before compacting task context, preserve file paths, decisions, commands, and unresolved constraints in the summary prefix.
+
+### Lint Diagnostics Wrapped With Source Context
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aider-AI__aider`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aider-AI__aider/aider/linter.py`
+- Language/framework/stack: Python, tree-sitter, flake8, compile diagnostics, edit-agent feedback
+- Code shape/snippet:
+```python
+@dataclass
+class LintResult:
+    text: str
+    lines: list
+
+def lint(self, fname, cmd=None):
+    ...
+    res = "# Fix any errors below, if possible.\n\n"
+    res += lintres.text
+    res += "\n"
+    res += tree_context(rel_fname, code, lintres.lines)
+    return res
+
+def basic_lint(fname, code):
+    tree = parser.parse(bytes(code, "utf-8"))
+    errors = traverse_tree(tree.root_node)
+    return LintResult(text="", lines=errors)
+```
+- Why it matters: Raw diagnostics are transformed into an agent-consumable repair prompt with nearby source context and lines of interest.
+- When to use: Use when an automated code editor needs actionable failure context rather than a log dump.
+- When not to use: Avoid when diagnostics are already structured with precise spans and the consumer can fetch source context itself.
+- Transferable principle: Convert tool failures into a small typed result, then attach enough code context for the next repair attempt.
+- Related patterns: Command Run-Validate Boundary; GDS Result Budget With Warning Metadata.
+- Risks/caveats: Too much context can dilute the repair target, while too little context can make syntax errors ambiguous.
+- Agentic coding guidance: When wiring a new linter, return `LintResult(text, lines)` and let the common wrapper own prompt wording and source-window generation.
+
+### Typed Query Trait Over Unsafe Tree-Sitter Matches
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakobeha__type-sitter`; files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakobeha__type-sitter/type-sitter-lib/src/query/mod.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakobeha__type-sitter/type-sitter-lib/src/query/cursor.rs`
+- Language/framework/stack: Rust, tree-sitter, typed query wrapper library
+- Code shape/snippet:
+```rust
+pub trait Query {
+    type Match<'query, 'tree: 'query>: QueryMatch<'query, 'tree>;
+    type Capture<'query, 'tree: 'query>: QueryCapture<'query, 'tree>;
+
+    fn as_str(&self) -> &'static str;
+    fn raw(&self) -> &'static raw::Query;
+
+    unsafe fn wrap_match<'query, 'tree>(
+        &self,
+        r#match: raw::QueryMatch<'query, 'tree>,
+    ) -> Self::Match<'query, 'tree>;
+}
+
+pub fn matches<'query, 'cursor: 'query, 'tree, Query: crate::Query + 'tree>(
+    &'cursor mut self,
+    query: &'query Query,
+    node: impl Node<'tree>,
+) -> QueryMatches<'query, 'tree, Query> {
+    unsafe { QueryMatches::from_raw(query, self.0.matches(query.raw(), node.into_raw())) }
+}
+```
+- Why it matters: Unsafe raw tree-sitter matches are wrapped once, then exposed as typed matches and captures with query-specific associated types.
+- When to use: Use when generated code can prove capture shapes better than runtime stringly typed query consumers can.
+- When not to use: Avoid for ad hoc exploratory queries where generation overhead is heavier than direct tree-sitter APIs.
+- Transferable principle: Move unsafe FFI or parser invariants behind generated typed boundaries and keep the public iterator API safe.
+- Related patterns: Declarative Grammar With External Scanner Escape Hatch; Trait-Erased Record Variant Deserializer.
+- Risks/caveats: The safety contract depends on every wrapped raw match actually coming from the same query instance.
+- Agentic coding guidance: When adding query generation, keep `raw()`, `wrap_match`, `wrap_capture`, and cursor adapters synchronized and test invalid capture indexes.
+
+### Streaming JSON Array Iterator With Element Indexed Errors
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakobeha__type-sitter`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakobeha__type-sitter/type-sitter-gen/src/node_types/deserialize_json_array_as_stream.rs`
+- Language/framework/stack: Rust, serde_json, streaming node-types deserialization
+- Code shape/snippet:
+```rust
+fn yield_next_obj<T: DeserializeOwned, R: Read>(
+    mut reader: R,
+    at_start: &mut bool,
+) -> io::Result<Option<T>> {
+    if !*at_start {
+        *at_start = true;
+        if read_skipping_ws(&mut reader)? == b'[' {
+            let peek = read_skipping_ws(&mut reader)?;
+            deserialize_single(io::Cursor::new([peek]).chain(reader)).map(Some)
+        } else {
+            Err(invalid_data("`[` not found"))
+        }
+    } else {
+        match read_skipping_ws(&mut reader)? {
+            b',' => deserialize_single(reader).map(Some),
+            b']' => Ok(None),
+            _ => Err(invalid_data("`,` or `]` not found")),
+        }
+    }
+}
+
+pub(crate) fn iter_json_array<T: DeserializeOwned, R: Read>(
+    mut reader: R,
+) -> impl Iterator<Item = Result<T, io::Error>> {
+    let mut at_start = false;
+    (0..).map_while(move |i| {
+        yield_next_obj(&mut reader, &mut at_start)
+            .map_err(|e| io::Error::new(e.kind(), format!("element #{}: {}", i, e)))
+            .transpose()
+    })
+}
+```
+- Why it matters: Large `node-types.json` arrays can be consumed item by item, while parse errors still name the element index that failed.
+- When to use: Use for code generators that process large JSON arrays sequentially and do not need the entire document resident at once.
+- When not to use: Avoid when later validation needs cross-element context before producing any output.
+- Transferable principle: Stream bulky generator inputs through an iterator, but enrich errors with stable item indexes for reproducibility.
+- Related patterns: Versioned Sharded Parse Cache With Lazy Payloads; Generated Tokens Accumulator By Module.
+- Risks/caveats: The parser is specialized to a top-level JSON array and intentionally rejects other valid JSON document shapes.
+- Agentic coding guidance: When replacing bulk deserialization, preserve element-numbered error messages and add tests for empty arrays, malformed separators, and premature EOF.
+
+## Worker 2 Batch 8
+
+### Minimal AST S-Expression Probe CLI
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CNCSMonster__show-tree-sitter-ast`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CNCSMonster__show-tree-sitter-ast/src/main.rs`
+- Language / framework / stack: Rust, clap, tree-sitter, `tree-sitter-cpp`, `tree-sitter-rust`
+- Code shape / snippet:
+```rust
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Language {
+    Cpp,
+    Rust,
+}
+
+let lang: tree_sitter::Language = match cli.language {
+    Language::Cpp => tree_sitter_cpp::LANGUAGE.into(),
+    Language::Rust => tree_sitter_rust::LANGUAGE.into(),
+};
+parser.set_language(&lang)?;
+println!("{}", &tree.root_node().to_sexp());
+```
+- Why this matters: A tiny CLI that prints the tree-sitter S-expression makes parser behavior visible before any higher-level extraction logic is written.
+- When to use: Use when developing queries, grammar support, AST walkers, or extractor heuristics and you need a fast local truth source.
+- When not to use: Avoid treating raw S-expressions as a stable product API; they are a diagnostic surface, not a domain model.
+- Transferable principle: Add a one-command AST inspection tool beside every parser-backed feature so query authors can verify node shapes directly.
+- Related patterns: Progressive AST Name Extraction Strategies; Tree-Sitter Language Metadata Registry.
+- Risks / caveats: The sample uses `expect` and `unwrap`, which is fine for a probe but too abrupt for user-facing batch tools.
+- Agentic coding guidance: Before generating tree-sitter queries, run or emulate this probe on representative source snippets and ground every capture in observed node types.
+
+### Tree-Sitter Handles Wrapped As RAII Pointers
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram/src/chunker/treesitter_chunker.cpp`
+- Language / framework / stack: C++17, tree-sitter C API, `std::unique_ptr`
+- Code shape / snippet:
+```cpp
+struct ParserDeleter {
+    void operator()(TSParser* p) const { if (p) ts_parser_delete(p); }
+};
+struct TreeDeleter {
+    void operator()(TSTree* t) const { if (t) ts_tree_delete(t); }
+};
+struct QueryCursorDeleter {
+    void operator()(TSQueryCursor* c) const { if (c) ts_query_cursor_delete(c); }
+};
+
+using ParserPtr      = std::unique_ptr<TSParser, ParserDeleter>;
+using TreePtr        = std::unique_ptr<TSTree, TreeDeleter>;
+using QueryCursorPtr = std::unique_ptr<TSQueryCursor, QueryCursorDeleter>;
+```
+- Why this matters: C library lifetimes become exception-safe and early-return-safe without sprinkling manual delete calls through parser code.
+- When to use: Use when integrating C parsers, database handles, model runtimes, compression streams, or any resource with explicit create/delete functions.
+- When not to use: Avoid wrapping borrowed handles that are not owned by the caller; a deleter around a borrowed pointer can double-free.
+- Transferable principle: Convert raw handle ownership into a local RAII type at the module boundary, then pass the wrapper inward.
+- Related patterns: Model Runtime Hidden Behind Pimpl; Format-Probing Loader With Conversion Boundary.
+- Risks / caveats: RAII wrappers solve lifetime cleanup, not thread safety; shared parser handles still need synchronization or per-thread instances.
+- Agentic coding guidance: When binding C APIs, generate the deleter and alias before writing business logic, and document which APIs return owned versus borrowed pointers.
+
+### Tree-Sitter Language Metadata Registry
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram/src/chunker/treesitter_chunker.cpp`; repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeEditApp__CodeEditLanguages`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeEditApp__CodeEditLanguages/Sources/CodeEditLanguages/CodeLanguage.swift`
+- Language / framework / stack: C++ tree-sitter registry; Swift package metadata around TreeSitter grammars
+- Code shape / snippet:
+```cpp
+static const std::unordered_map<std::string, LangFactory> table = {
+    {"typescript", {tree_sitter_typescript, "typescript"}},
+    {"tsx",        {tree_sitter_tsx,        "typescript"}},
+    {"rust",       {tree_sitter_rust,       "rust"}},
+};
+```
+```swift
+public let id: TreeSitterLanguage
+public let tsName: String
+public let extensions: Set<String>
+public let parentQueryURL: URL?
+
+internal func queryURL(for highlights: String = "highlights") -> URL? {
+    resourceURL?.appendingPathComponent("Resources/tree-sitter-\(tsName)/\(highlights).scm")
+}
+```
+- Why this matters: Grammar function, query resource path, extensions, and normalized metadata live in one registry instead of being rediscovered by every caller.
+- When to use: Use when a product supports many languages with uneven grammar names, extension aliases, inherited queries, or dialects like TSX.
+- When not to use: Avoid hard-coded registries for plugin ecosystems where third parties must register languages dynamically at runtime.
+- Transferable principle: Keep language identity, parser construction, resource lookup, and output normalization in one table-backed boundary.
+- Related patterns: Detection Cascade From URL Shebang And Modelines; Parser Registry Using Shared Trait Objects Per Extension.
+- Risks / caveats: Registry drift is easy: adding a grammar must also update tests, query resources, and detection aliases.
+- Agentic coding guidance: When adding a language, patch the registry, detection map, resource files, and test fixtures together; do not scatter one-off extension checks.
+
+### Progressive AST Name Extraction Strategies
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram/src/chunker/treesitter_chunker.cpp`
+- Language / framework / stack: C++17, tree-sitter AST traversal
+- Code shape / snippet:
+```cpp
+TSNode name_node = ts_node_child_by_field_name(node, "name", 4);
+if (!ts_node_is_null(name_node)) {
+    std::string name = node_text(name_node, source);
+    auto pos = name.rfind("::");
+    if (pos != std::string::npos) name = name.substr(pos + 2);
+    return name;
+}
+
+TSNode decl = ts_node_child_by_field_name(node, "declarator", 10);
+while (!ts_node_is_null(decl)) {
+    const char* dt = ts_node_type(decl);
+    if (std::strcmp(dt, "pointer_declarator") != 0 &&
+        std::strcmp(dt, "reference_declarator") != 0) break;
+    decl = ts_node_child_by_field_name(decl, "declarator", 10);
+}
+```
+- Why this matters: Cross-language AST extraction gets reliable by layering common field-name lookup, declarator unwrapping, and language-specific fallbacks.
+- When to use: Use when parser node shapes vary across grammars but the product needs a single symbol model.
+- When not to use: Avoid if the grammar provides a generated typed binding that already captures names soundly.
+- Transferable principle: Prefer an ordered extraction cascade over a single brittle node assumption; each fallback should encode a known grammar shape.
+- Related patterns: Minimal AST S-Expression Probe CLI; AST Metrics Walk That Stops At Nested Functions.
+- Risks / caveats: Silent empty names can hide grammar regressions unless extraction coverage is measured on fixtures.
+- Agentic coding guidance: Generate extraction code with comments naming the grammar shape being handled, and add fixture tests for every fallback branch.
+
+### Model Runtime Hidden Behind Pimpl
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram/src/embedder/ort_embedder.cpp`
+- Language / framework / stack: C++17, ONNX Runtime, tokenizer and embedding pipeline
+- Code shape / snippet:
+```cpp
+struct OrtEmbedder::OrtState {
+    Ort::Env env;
+    Ort::Session session{nullptr};
+    Ort::MemoryInfo memory_info{nullptr};
+
+    OrtState()
+        : env(ORT_LOGGING_LEVEL_WARNING, "engram")
+        , memory_info(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault))
+    {}
+};
+
+try {
+    ort_ = std::make_unique<OrtState>();
+    Ort::SessionOptions session_options;
+    session_options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    session_options.AppendExecutionProvider_CUDA(cuda_options);
+} catch (const Ort::Exception& e) {
+    spdlog::warn("CUDA EP not available: {}", e.what());
+}
+```
+- Why this matters: Heavy runtime headers, provider setup, and platform path differences stay out of the public header while construction can probe and degrade cleanly.
+- When to use: Use for ML runtimes, database engines, compiler APIs, browser engines, or SDKs with large transitive headers and unstable ABI details.
+- When not to use: Avoid pimpl for small value types where indirection obscures simple ownership and harms performance.
+- Transferable principle: Hide volatile runtime state behind a private implementation object and make readiness explicit with a validity flag or result.
+- Related patterns: Tree-Sitter Handles Wrapped As RAII Pointers; Normalized Vector Index With Bounded Search Buffers.
+- Risks / caveats: Constructors that log and set `valid_` instead of returning `Result` can let callers forget to check readiness.
+- Agentic coding guidance: If generating pimpl-backed runtime code, expose `is_valid` or return a construction error, then test CPU fallback, missing model, and bad tokenizer paths.
+
+### Normalized Vector Index With Bounded Search Buffers
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram/src/index/hnsw_index.cpp`
+- Language / framework / stack: C++17, hnswlib, vector similarity search, `std::shared_mutex`
+- Code shape / snippet:
+```cpp
+bool HnswIndex::normalize(float* vec, size_t dim) {
+    float norm_sq = 0.0f;
+    for (size_t i = 0; i < dim; ++i) norm_sq += vec[i] * vec[i];
+    if (norm_sq < 1e-12f) return false;
+    const float inv_norm = 1.0f / std::sqrt(norm_sq);
+    for (size_t i = 0; i < dim; ++i) vec[i] *= inv_norm;
+    return true;
+}
+
+constexpr size_t kStackLimit = 1024;
+float stack_buf[kStackLimit];
+std::vector<float> heap_buf;
+float* normed = dim_ <= kStackLimit ? stack_buf : heap_buf.data();
+std::shared_lock<std::shared_mutex> lock(mutex_);
+```
+- Why this matters: The index enforces cosine-compatible normalized vectors, avoids heap work for common dimensions, and allows concurrent readers under a shared lock.
+- When to use: Use for read-heavy approximate-nearest-neighbor indexes where vector dimension is known and query latency matters.
+- When not to use: Avoid stack buffers for unbounded dimensions or recursive paths where stack pressure is already high.
+- Transferable principle: Normalize both indexed and query vectors at the boundary, then bound hot-path allocations with an explicit small-buffer threshold.
+- Related patterns: Query Once Fan Out To Project Indexes; Retrieval Fusion With Evidence Signals And Test Demotion.
+- Risks / caveats: The snippet depends on initializing `heap_buf` before using its data pointer in the large-dimension branch.
+- Agentic coding guidance: When adding vector search, test dimension mismatch, zero vectors, duplicate IDs, empty indexes, and concurrent search while writes are blocked.
+
+### Query Once Fan Out To Project Indexes
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Artemarius__Engram/src/mcp/tools.cpp`
+- Language / framework / stack: C++17, MCP server handlers, vector index, nlohmann JSON
+- Code shape / snippet:
+```cpp
+auto embedding = ctx.embedder->embed(query);
+if (embedding.empty()) {
+    return {{"error", "failed to embed query"}, {"results", nlohmann::json::array()}};
+}
+
+for (const auto& proj : *ctx.projects) {
+    auto hits = proj->vector_index.search(embedding.data(), embedding.size(), limit);
+    OptionalLock lock(&proj->index_mutex);
+    for (const auto& hit : hits) {
+        all_results.push_back({chunk_to_json(it->second, proj->project_root, hit.score), hit.score});
+    }
+}
+
+std::sort(all_results.begin(), all_results.end(),
+          [](const ScoredResult& a, const ScoredResult& b) { return a.score > b.score; });
+```
+- Why this matters: Expensive query embedding is computed once, then reused across project indexes before a global merge creates one ranked answer set.
+- When to use: Use when a tool searches many tenant, workspace, shard, or project indexes with the same query representation.
+- When not to use: Avoid if each shard needs a different embedding model, tokenizer, or access-control policy.
+- Transferable principle: Lift shared query preparation above the shard loop, attach shard identity only when needed, and merge by a comparable score.
+- Related patterns: Normalized Vector Index With Bounded Search Buffers; Agent Tool Guardrails With Readiness Checks Hints And Caps.
+- Risks / caveats: Scores from heterogeneous indexes may not be comparable unless the same embedding model and normalization are used.
+- Agentic coding guidance: Generate multi-index search with explicit empty-backend errors, per-shard metadata lookup failures, and a final limit after global sort.
+
+### Canonical Hashing For Stable Context Identity
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Bpolat0__atlasmemory`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Bpolat0__atlasmemory/packages/core/src/hash.ts`; repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Regsorm__code-index-mcp`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Regsorm__code-index-mcp/crates/code-index-core/src/indexer/hasher.rs`
+- Language / framework / stack: TypeScript Node crypto; Rust SHA-256 indexing utilities
+- Code shape / snippet:
+```ts
+export function canonicalJson(obj: unknown, whitelistFields?: string[]): string {
+    const normalized = normalize(obj as JsonValue, whitelistFields ? new Set(whitelistFields) : undefined, true, 0);
+    return JSON.stringify(normalized);
+}
+
+const entries = Object.entries(value)
+    .filter(([key]) => (depth === 0 && whitelist ? whitelist.has(key) : true))
+    .map(([key, val]) => [key, normalize(val as JsonValue, undefined, sortedKeys, depth + 1)] as const);
+```
+```rust
+pub fn content_hash(content: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(content);
+    hex::encode(hasher.finalize())
+}
+```
+- Why this matters: Stable hashes make context snapshots, file indexes, and proof artifacts comparable across runs even when object key order or irrelevant fields change.
+- When to use: Use for cache keys, context contracts, file freshness, deduplication, reproducible prompts, and agent memory IDs.
+- When not to use: Avoid sorting arrays when order is semantically meaningful, such as traces, patches, or ranked search results.
+- Transferable principle: Hash canonical domain input, not incidental serialization details; whitelist only the fields that define identity.
+- Related patterns: Task Pack Builder With Reserved Snippet Budget; Format-Probing Loader With Conversion Boundary.
+- Risks / caveats: Over-normalization can collapse distinct inputs; under-normalization produces noisy cache misses.
+- Agentic coding guidance: Before adding a hash, write down which fields are identity-bearing, then test same-content/different-order and different-content/same-shape cases.
+
+### Retrieval Fusion With Evidence Signals And Test Demotion
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/FaizaanAlFaisal__code-search`; files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/FaizaanAlFaisal__code-search/codesearch/retrieval/search.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/FaizaanAlFaisal__code-search/codesearch/retrieval/rank.py`; repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Bpolat0__atlasmemory`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Bpolat0__atlasmemory/packages/retrieval/src/search.ts`
+- Language / framework / stack: Python SQLite FTS plus vector search; TypeScript graph-enhanced retrieval
+- Code shape / snippet:
+```python
+for position, row in enumerate(_fts(conn, slug, query, 30)):
+    row["fts_rank"] = position
+    row["vector_rank"] = None
+    by_key[(row["record_type"], int(row["target_id"]))] = row
+
+signals["lexical"] = 1.0 / (k + c["fts_rank"] + 1)
+signals["semantic"] = 1.0 / (k + c["vector_rank"] + 1)
+signals["evidence"] = 1.0 / (k + evidence_rank[id(c)] + 1)
+if _is_test_target(c.get("path"), c.get("symbol")):
+    signals["test_penalty"] = -TEST_PENALTY * (1.0 / (k + 1))
+```
+```ts
+// Graph boost: only boost existing results, don't add new neighbors
+if (finalResults.has(id)) item.score += (boost * 5);
+```
+- Why this matters: Lexical, semantic, path, evidence, and graph signals are fused explicitly while tests and fixtures are demoted instead of banned.
+- When to use: Use when code search must balance exact terms, semantic aliases, symbol evidence, and dependency proximity.
+- When not to use: Avoid opaque fusion when users need auditable rankings but the tool does not expose component signals.
+- Transferable principle: Keep retrieval signals decomposed in the result so rank behavior can be debugged and adjusted without guesswork.
+- Related patterns: Query Once Fan Out To Project Indexes; Identifier Token Expansion For Search Indexes.
+- Risks / caveats: Hand-tuned weights can overfit one repository shape and bury valuable tests during test-focused tasks.
+- Agentic coding guidance: Return `rank_signals` or equivalent debug metadata, and make test demotion conditional or reversible for test-writing workflows.
+
+### Task Pack Builder With Reserved Snippet Budget
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Bpolat0__atlasmemory`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Bpolat0__atlasmemory/packages/taskpack/src/builder.ts`
+- Language / framework / stack: TypeScript, agent context packing, SQLite-backed code memory
+- Code shape / snippet:
+```ts
+const FILE_CARDS_BUDGET_CAP = Math.floor(tokenBudget * 0.45);
+...
+const SNIPPET_MIN_BUDGET = Math.floor(tokenBudget * 0.15);
+const remainingAfterCards = tokenBudget - usedTokens;
+const snippetBudget = Math.max(SNIPPET_MIN_BUDGET, Math.floor(remainingAfterCards * 0.30));
+const snippetCeiling = usedTokens + snippetBudget;
+
+const currentHash = this.hashRange(content, anchor.startLine, anchor.endLine);
+if (currentHash !== anchor.snippetHash) continue;
+```
+- Why this matters: The packer prevents high-level summaries from starving code evidence, and it skips stale anchors whose source hash no longer matches.
+- When to use: Use for agent context builders, review packs, support bundles, RAG prompts, and bug reports where code snippets must remain present.
+- When not to use: Avoid fixed budget ratios when the objective sometimes needs all tests, all docs, or all API schemas; expose policy knobs.
+- Transferable principle: Reserve budget for primary evidence before filling secondary summaries, then verify evidence freshness at emission time.
+- Related patterns: Canonical Hashing For Stable Context Identity; Retrieval Fusion With Evidence Signals And Test Demotion.
+- Risks / caveats: Token estimates are approximate; a renderer with different tokenization may still exceed budget.
+- Agentic coding guidance: Generate context packs in priority bands, reserve explicit evidence space, and record omitted sections so the agent knows what it did not see.
+
+### Detection Cascade From URL Shebang And Modelines
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeEditApp__CodeEditLanguages`; files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeEditApp__CodeEditLanguages/Sources/CodeEditLanguages/CodeLanguage+DetectLanguage.swift`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeEditApp__CodeEditLanguages/Tests/CodeEditLanguagesTests/LanguageDetectionTests.swift`
+- Language / framework / stack: Swift, RegexBuilder, XCTest, editor language detection
+- Code shape / snippet:
+```swift
+static func detectLanguageFrom(url: URL, prefixBuffer: String? = nil, suffixBuffer: String? = nil) -> CodeLanguage {
+    if let urlLanguage = detectLanguageUsingURL(url: url) {
+        return urlLanguage
+    } else if let prefixBuffer,
+              let shebangLanguage = detectLanguageUsingShebang(contents: prefixBuffer.lowercased()) {
+        return shebangLanguage
+    } else if let prefixBuffer,
+              let modelineLanguage = detecLanguageUsingModeline(
+                prefixBuffer: prefixBuffer.lowercased(),
+                suffixBuffer: suffixBuffer?.lowercased()
+              ) {
+        return modelineLanguage
+    } else {
+        return .default
+    }
+}
+```
+- Why this matters: Language detection handles extensionless files, env-based shebangs, and editor modelines before falling back to plain text.
+- When to use: Use in editors, code indexers, syntax highlighters, notebook tools, and CLIs that read arbitrary user files.
+- When not to use: Avoid reading full files only to detect language; this pattern works best with small prefix and suffix buffers.
+- Transferable principle: Detect from cheapest and most explicit signal first, then fall through to increasingly contextual signals.
+- Related patterns: Tree-Sitter Language Metadata Registry; Identifier Token Expansion For Search Indexes.
+- Risks / caveats: Modeline parsing can false-positive if regexes accept ordinary comments too broadly; tests need both valid and invalid cases.
+- Agentic coding guidance: When adding a language detector, generate a cascade and table-driven tests for extension, filename, shebang, vim modeline, emacs modeline, and default fallback.
+
+### AST Metrics Walk That Stops At Nested Functions
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EdgarOrtegaRamirez__codemetrics`; files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EdgarOrtegaRamirez__codemetrics/internal/analyzer/complexity.go`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/EdgarOrtegaRamirez__codemetrics/internal/analyzer/functions.go`
+- Language / framework / stack: Go, go-tree-sitter, multi-language code metrics
+- Code shape / snippet:
+```go
+if !isTopLevel && isNestedFunction(n) {
+    return
+}
+
+switch typeName {
+case "if_statement", "elif_clause", "for_statement", "while_statement",
+    "switch_statement", "case_statement", "match_statement", "match_arm":
+    cc++
+}
+
+func isNestedFunction(node *sitter.Node) bool {
+    typeName := node.Type()
+    return typeName == "function_definition" ||
+        typeName == "function_declaration" ||
+        typeName == "arrow_function" ||
+        typeName == "function_item"
+}
+```
+- Why this matters: Per-function metrics stay attributable to the current function rather than double-counting nested closures, methods, or lambdas.
+- When to use: Use for cyclomatic/cognitive complexity, symbol summaries, lint scoring, and per-function analysis on ASTs.
+- When not to use: Avoid stopping at nested functions for whole-file metrics where nested definitions should contribute to the file total.
+- Transferable principle: Define traversal boundaries explicitly before computing metrics; otherwise nested scopes contaminate parent scores.
+- Related patterns: Progressive AST Name Extraction Strategies; Minimal AST S-Expression Probe CLI.
+- Risks / caveats: `else_clause` as a cyclomatic decision is a policy choice and may differ from other complexity definitions.
+- Agentic coding guidance: When generating AST metric walkers, include fixture cases with nested functions and document which node types count as decisions.
+
+### Parser Registry Using Shared Trait Objects Per Extension
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Regsorm__code-index-mcp`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Regsorm__code-index-mcp/crates/code-index-core/src/parser/mod.rs`
+- Language / framework / stack: Rust, trait objects, `Arc`, multi-language parser registry
+- Code shape / snippet:
+```rust
+pub trait LanguageParser: Send + Sync {
+    fn language_name(&self) -> &str;
+    fn file_extensions(&self) -> &[&str];
+    fn parse(&self, source: &str, file_path: &str) -> Result<ParseResult>;
+}
+
+pub struct ParserRegistry {
+    parsers: HashMap<String, Arc<dyn LanguageParser>>,
+}
+
+fn register(&mut self, parser: Arc<dyn LanguageParser>) {
+    for ext in parser.file_extensions() {
+        self.parsers.insert(ext.to_string(), Arc::clone(&parser));
+    }
+}
+```
+- Why this matters: One parser instance can serve multiple extensions, while callers look up by extension through a simple runtime registry.
+- When to use: Use for indexers, importers, serializers, validators, or protocol handlers where many aliases map to one implementation.
+- When not to use: Avoid if parser construction is stateful per file or if per-extension behavior differs enough to need separate implementations.
+- Transferable principle: Register capabilities by every lookup key, but share the underlying implementation object when semantics are identical.
+- Related patterns: Tree-Sitter Language Metadata Registry; Detection Cascade From URL Shebang And Modelines.
+- Risks / caveats: Unknown languages are silently skipped in `from_languages`, which is ergonomic but can hide misconfiguration.
+- Agentic coding guidance: Add tests for alias extensions, unknown languages, and always-on fallback parsers; keep compatibility functions thin wrappers around the registry.
+
+### Agent Tool Guardrails With Readiness Checks Hints And Caps
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Regsorm__code-index-mcp`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Regsorm__code-index-mcp/crates/code-index-core/src/mcp/tools.rs`
+- Language / framework / stack: Rust, MCP server, async daemon status checks, SQLite storage pool
+- Code shape / snippet:
+```rust
+pub(crate) const READ_FILE_SOFT_CAP_LINES: usize = 5_000;
+pub(crate) const READ_FILE_SOFT_CAP_BYTES: usize = 500 * 1024;
+pub(crate) const READ_FILE_HARD_CAP_BYTES: usize = 2 * 1024 * 1024;
+pub(crate) const CALL_GRAPH_DEFAULT_LIMIT: usize = 200;
+
+pub(crate) fn search_empty_hint(language: Option<&str>) -> &'static str {
+    if language == Some("bsl") { HINT_SEARCH_EMPTY_BSL } else { HINT_SEARCH_EMPTY }
+}
+
+macro_rules! bail_if_not_ready {
+    ($entry:expr) => {{
+        if let Some(json) = crate::mcp::tools::check_path_status($entry).await {
+            return json;
+        }
+    }};
+}
+```
+- Why this matters: The tool surface protects the model from stale indexes, runaway responses, and unhelpful empty results by returning status, caps, and next-step hints.
+- When to use: Use for agent-facing tools where the caller may otherwise retry the wrong operation or flood the context window.
+- When not to use: Avoid burying hard caps in constants only; administrative users may need configurable limits for large investigations.
+- Transferable principle: Agent tools should shape failure as guidance, not just absence: include readiness, truncation, totals, and a suggested next tool.
+- Related patterns: Query Once Fan Out To Project Indexes; Retrieval Fusion With Evidence Signals And Test Demotion.
+- Risks / caveats: Over-prescriptive hints can bias agents away from unusual but valid investigation paths.
+- Agentic coding guidance: When creating MCP tools, design empty-result payloads as first-class API responses and test them as carefully as successful results.
+
+### Format-Probing Loader With Conversion Boundary
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ShiftLeftSecurity__codepropertygraph`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ShiftLeftSecurity__codepropertygraph/codepropertygraph/src/main/scala/io/shiftleft/codepropertygraph/cpgloading/CpgLoader.scala`
+- Language / framework / stack: Scala, FlatGraph, OverflowDB, protobuf ZIP CPG loading
+- Code shape / snippet:
+```scala
+def load(path: Path): Cpg = {
+  val absolutePath = path.toAbsolutePath
+  if (!Files.exists(absolutePath)) {
+    throw new FileNotFoundException(s"given input file $absolutePath does not exist")
+  } else if (isProtoFormat(absolutePath)) {
+    load(path, persistTo = absolutePath.resolveSibling(s"${path.getFileName}.fg"))
+  } else if (isOverflowDbFormat(absolutePath)) {
+    load(absolutePath, persistTo = path.resolveSibling(s"${path.getFileName}.fg"))
+  } else {
+    Cpg.withStorage(absolutePath)
+  }
+}
+
+private def probeFirstBytes(path: Path, probeFor: String): Boolean = {
+  Using(Files.newInputStream(path)) { is =>
+    val buffer = new Array[Byte](probeFor.size)
+    is.read(buffer)
+    new String(buffer, StandardCharsets.UTF_8) == probeFor
+  }.getOrElse(false)
+}
+```
+- Why this matters: Legacy and current graph formats are accepted through one loader, but conversion to the current storage format happens at a clear boundary.
+- When to use: Use when products need backward-compatible file loading across binary formats or storage engines.
+- When not to use: Avoid byte-probe-only detection if multiple formats share magic bytes or require version negotiation.
+- Transferable principle: Detect format at the edge, convert once into the internal representation, and keep downstream code format-agnostic.
+- Related patterns: Canonical Hashing For Stable Context Identity; Scoped Daemon Lock With Stale PID Recovery.
+- Risks / caveats: Auto-generating `.fg` siblings may surprise callers if they expect read-only loading.
+- Agentic coding guidance: When adding a new persisted format, update probe tests, conversion tests, and the ownership rules around `persistTo`.
+
+### Fork Join DiffGraph Pass With Thread Local Accumulators
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ShiftLeftSecurity__codepropertygraph`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ShiftLeftSecurity__codepropertygraph/codepropertygraph/src/main/scala/io/shiftleft/passes/CpgPass.scala`
+- Language / framework / stack: Scala, Java parallel streams, FlatGraph diff application, code property graph passes
+- Code shape / snippet:
+```scala
+val (diff, acc) = stream.collect(
+  new Supplier[(DiffGraphBuilder, Accumulator)] {
+    override def get(): (DiffGraphBuilder, Accumulator) =
+      (Cpg.newDiffGraphBuilder, createAccumulator())
+  },
+  new BiConsumer[(DiffGraphBuilder, Accumulator), AnyRef] {
+    override def accept(consumedArg: (DiffGraphBuilder, Accumulator), part: AnyRef): Unit = {
+      val (diff, acc) = consumedArg
+      runOnPart(diff, part.asInstanceOf[T], acc)
+    }
+  },
+  new BiConsumer[(DiffGraphBuilder, Accumulator), (DiffGraphBuilder, Accumulator)] {
+    override def accept(left: (DiffGraphBuilder, Accumulator), right: (DiffGraphBuilder, Accumulator)): Unit = {
+      left._1.absorb(right._1)
+      mergeAccumulator(left._2, right._2)
+    }
+  }
+)
+onAccumulatorComplete(diff, acc)
+externalBuilder.absorb(diff)
+```
+- Why this matters: Parallel graph passes read from a stable initial graph, collect thread-local diffs, merge them, and apply one deterministic mutation batch.
+- When to use: Use for graph enrichment, static analysis overlays, batch migrations, and transformations where writes must not interleave with reads.
+- When not to use: Avoid when the pass needs streaming mutations visible to later parts or when materializing all parts exceeds memory.
+- Transferable principle: Separate parallel read/compute from serialized mutation by accumulating diffs and side results per worker.
+- Related patterns: Format-Probing Loader With Conversion Boundary; Scoped String Interning With Length Cap.
+- Risks / caveats: Peak memory rises with all generated parts plus all diff builders before the single apply step.
+- Agentic coding guidance: When generating parallel graph passes, make `generateParts`, `runOnPart`, accumulator merge, and final apply separate methods with lifecycle tests.

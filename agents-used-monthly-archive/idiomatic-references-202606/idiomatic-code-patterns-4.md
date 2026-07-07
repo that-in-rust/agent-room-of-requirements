@@ -2590,3 +2590,1692 @@ public Mono<Void> append(List<InstanceEvent> events) {
 - Related patterns: Optional Optimistic Locking Contract, Keepalive Server-Sent Event Merge.
 - Risks / caveats: The retry loop is unbounded under heavy contention; high-write systems need capped retries or transactional storage.
 - Agentic coding guidance: When adding event types, test append ordering, optimistic version rejection, compaction behavior, and subscriber publication.
+
+## Worker 4 Batch 5
+
+### Two-Stage Embedding Tool Matcher
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/MCP-Zero` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/MCP-Zero/MCP-zero/matcher.py`
+- Language / framework / stack: Python, OpenAI/Azure OpenAI embeddings, NumPy similarity scoring
+- Code shape / snippet:
+```python
+server_desc, tool_desc = self.extract_tool_assistant(input_text)
+if not server_desc or not tool_desc:
+    return {"success": False, "matched_servers": [], "matched_tools": []}
+
+matched_servers = self.match_servers(server_desc)
+matched_tools = self.match_tools(matched_servers, tool_desc)
+
+final_score = (server_score * tool_similarity) * max(server_score, tool_similarity)
+tool_scores.sort(key=lambda x: x["final_score"], reverse=True)
+```
+- Why it matters: Retrieval is narrowed at the server layer before ranking tools, so large MCP catalogs do not force a flat all-tools comparison for every request.
+- When to use: Use when tool catalogs have natural groupings and a request includes both coarse domain intent and fine-grained operation intent.
+- When not to use: Avoid when the catalog is tiny, when grouping metadata is unreliable, or when cross-server tools need global ranking without server priors.
+- Transferable principle: Split retrieval into coarse candidate pruning and fine candidate ranking, then combine scores so both layers must agree.
+- Related patterns: Budgeted Context Build Pipeline, History-Aware Tool Re-Routing.
+- Risks / caveats: The score formula can over-penalize useful tools from a slightly lower-ranked server; evaluate recall as well as precision.
+- Agentic coding guidance: Preserve the structured intent extraction and add fixtures for malformed tags, missing embeddings, zero vectors, and close server/tool score ties.
+
+### Message-Indexed Snapshot Sandbox
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolSandbox` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolSandbox/tool_sandbox/common/execution_context.py`
+- Language / framework / stack: Python, Polars dataframes, sandboxed agent/tool simulation
+- Code shape / snippet:
+```python
+self._dbs: dict[str, pl.DataFrame] = {
+    namespace: pl.DataFrame(
+        {k: None if k != "sandbox_message_index" else 0 for k in self.dbs_schemas[namespace]},
+        schema=self.dbs_schemas[namespace],
+    )
+    for namespace in self.dbs_schemas
+}
+
+snapshot_indices = self._dbs[namespace].get_column("sandbox_message_index").unique().sort()
+idx = snapshot_indices[max((bisect.bisect(a=snapshot_indices, x=query_index) - 1), 0)]
+```
+- Why it matters: Every tool-facing database is versioned by the sandbox message that caused it, which makes rollouts inspectable and reproducible after multi-turn execution.
+- When to use: Use for evaluation harnesses, user simulators, and deterministic agent sandboxes where world state must be reconstructed at any turn.
+- When not to use: Avoid for high-throughput production databases where full snapshot rows would be too expensive or where concurrent mutation is required.
+- Transferable principle: Attach state snapshots to event/message indexes, and include a headguard/null row so empty state still has a representable snapshot.
+- Related patterns: Scenario Extension With Persisted Trajectories, Cypher TCK Executable Contract.
+- Risks / caveats: The source explicitly warns the global context is not thread safe; parallel tests need process isolation or a stronger invocation context.
+- Agentic coding guidance: When adding a namespace, update the schema, default snapshot creation, similarity measures, serialization round-trips, and tests that inspect historical state.
+
+### Scenario Extension With Persisted Trajectories
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolSandbox` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolSandbox/tool_sandbox/common/scenario.py`
+- Language / framework / stack: Python, attrs, Polars, agent evaluation harness
+- Code shape / snippet:
+```python
+scenario: Scenario = copy.deepcopy(self.base_scenario)
+scenario.starting_context.add_to_database(namespace=DatabaseNamespace.SANDBOX, rows=self.messages)
+scenario.evaluation = Evaluation(
+    milestone_matcher=MilestoneMatcher(milestones=self.milestones, edge_list=self.milestone_edge_list),
+    minefield_matcher=MilestoneMatcher(milestones=self.minefields, edge_list=self.minefield_edge_list),
+)
+
+scenario_output_directory = output_directory / "trajectories" / scenario_name
+scenario_output_directory.mkdir(exist_ok=True, parents=True)
+```
+- Why it matters: Scenarios are built by extending a reusable base with messages, tool allow/deny lists, milestones, minefields, and categories, then every rollout writes artifacts for debugging.
+- When to use: Use for benchmark suites where many cases share common initial state but differ in prompt, tool availability, or success criteria.
+- When not to use: Avoid when each test has completely unrelated setup, or when persisting full trajectories would leak sensitive data.
+- Transferable principle: Separate base scenario state from extensions, and persist both the final context and readable conversation after every run.
+- Related patterns: Message-Indexed Snapshot Sandbox, Observable Side-Effect Specifications.
+- Risks / caveats: Deep-copying interactive execution context works through `dill`; this is convenient but can hide non-serializable or unsafe runtime state.
+- Agentic coding guidance: Add new scenario variants as data-bearing extensions first, then verify artifact output includes pretty transcript, serialized context, and evaluation result.
+
+### Budgeted Context Build Pipeline
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/contextweaver` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/contextweaver/src/contextweaver/context/build.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/contextweaver/src/contextweaver/context/selection.py`
+- Language / framework / stack: Python, dataclasses, context selection pipeline
+- Code shape / snippet:
+```python
+candidates = generate_candidates(manager._event_log, phase, manager._policy)
+candidates, closures = resolve_dependency_closure(candidates, manager._event_log)
+candidates, sensitivity_drops = apply_sensitivity_filter(candidates, manager._policy, manager._estimator)
+candidates, envelopes = apply_firewall_to_batch(candidates, manager._artifact_store, manager._hook)
+scored = score_candidates(candidates, query, _tags, effective_scoring)
+scored, dedup_removed = deduplicate_candidates(scored, similarity_threshold=manager._scoring.dedup_threshold)
+selection = select_and_pack(scored, phase, adjusted, manager._policy, manager._estimator)
+```
+- Why it matters: The build is an ordered pipeline with dependency closure, sensitivity filtering, firewalling, scoring, deduplication, budgeted selection, stats, and invariant checks.
+- When to use: Use when building prompts from heterogeneous memory/tool artifacts where budget, safety, and explainability all matter.
+- When not to use: Avoid for simple single-document prompts where pipeline overhead exceeds the value of staged accounting.
+- Transferable principle: Make context assembly a staged compiler pipeline, and keep per-stage drops, budget use, and invariants explicit.
+- Related patterns: Context Firewall Artifact Envelope, Two-Stage Embedding Tool Matcher.
+- Risks / caveats: Stage ordering is semantically important; moving firewalling, sensitivity, or dedup can change both safety and token accounting.
+- Agentic coding guidance: When editing the pipeline, add stage-specific tests plus an accounting test that `included + dropped == total_candidates`.
+
+### Context Firewall Artifact Envelope
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/contextweaver` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/contextweaver/src/contextweaver/context/firewall.py`
+- Language / framework / stack: Python, artifact stores, prompt safety/context compression
+- Code shape / snippet:
+```python
+if item.kind != ItemKind.tool_result:
+    return item, None
+if item.metadata.get("ingest") == "envelope":
+    return item, None
+if item.artifact_ref is not None and item.artifact_ref.content_hash:
+    return item, None
+
+ref = artifact_store.put(handle=handle, content=raw_bytes, media_type=media, label=f"raw tool result for {item.id}")
+if deterministic and (summarized_by_llm or extracted_by_llm):
+    raise DeterminismError(...)
+processed = ContextItem(id=item.id, kind=item.kind, text=summary, artifact_ref=ref)
+```
+- Why it matters: Raw tool output is stored out of band while a summary, facts, views, provenance, and stats enter the prompt boundary.
+- When to use: Use for long or sensitive tool results where agents need a concise summary but humans/systems may need later drilldown.
+- When not to use: Avoid when the raw payload must be fully visible to the model, or when artifact storage cannot be secured and audited.
+- Transferable principle: Keep prompt-bound surfaces small and scrubbed, while retaining raw evidence in content-addressed artifacts.
+- Related patterns: Budgeted Context Build Pipeline, SQLite Tool Result Cache.
+- Risks / caveats: A faulty summary or projection can omit necessary facts; deterministic mode also requires summarizers/extractors to honestly declare whether they are LLM-backed.
+- Agentic coding guidance: Treat firewall idempotency as sacred: test envelope ingest, content-hash short-circuiting, malformed JSON projection, secret redaction, and deterministic fail-closed behavior.
+
+### SQLite Tool Result Cache
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcp-bench` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcp-bench/mcp_modules/tool_cache.py`
+- Language / framework / stack: Python, SQLite WAL, MCP benchmark tool caching
+- Code shape / snippet:
+```python
+self.local = threading.local()
+self.local.conn = sqlite3.connect(str(self.db_path), timeout=30.0)
+self.local.conn.execute("PRAGMA journal_mode=WAL")
+
+normalized_params = json.dumps(params, sort_keys=True)
+cache_key = hashlib.md5(f"{server_name}:{tool_name}:{normalized_params}".encode()).hexdigest()
+
+if isinstance(result, dict) and "error" in result:
+    return False
+if any(keyword in result_str for keyword in error_keywords):
+    return False
+```
+- Why it matters: Multi-process benchmark runs can safely reuse successful deterministic tool results while avoiding cached rate-limit pages, empty responses, and explicit errors.
+- When to use: Use for expensive or rate-limited tool calls in repeatable benchmark/evaluation loops.
+- When not to use: Avoid for non-idempotent tools, rapidly changing data, personalized responses, or calls where stale outputs invalidate the benchmark.
+- Transferable principle: Cache only normalized, successful, policy-allowed calls, and make concurrency a first-class design concern.
+- Related patterns: Async MCP Connection Lifecycle, Context Firewall Artifact Envelope.
+- Risks / caveats: The cache key uses MD5 for identity rather than security; collisions are unlikely for this use but not cryptographic proof.
+- Agentic coding guidance: When adding cached tools, classify freshness requirements first and test whitelist, TTL expiry, empty-result rejection, and error-keyword rejection.
+
+### Async MCP Connection Lifecycle
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcp-bench` - `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcp-bench/benchmark/runner.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcp-bench/mcp_modules/server_manager.py`
+- Language / framework / stack: Python, asyncio, MCP stdio/http transports
+- Code shape / snippet:
+```python
+async def __aenter__(self) -> "ConnectionManager":
+    self.server_manager = self._injected_server_manager or PersistentMultiServerManager(
+        self.server_configs, self.filter_problematic_tools
+    )
+    self.all_tools = await self.server_manager.connect_all_servers()
+    return self
+
+async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
+    try:
+        await self.server_manager.close_all_connections()
+    except asyncio.CancelledError:
+        logger.debug("Ignoring CancelledError during connection cleanup")
+    return False
+```
+- Why it matters: Server startup, tool discovery, and cleanup are tied to an async context boundary, so failures do not leave HTTP servers or subprocess sessions dangling.
+- When to use: Use when tests or agents need to connect to many external tool servers and still clean up predictably after exceptions.
+- When not to use: Avoid for always-on production servers where connection management belongs to a service supervisor.
+- Transferable principle: Wrap external tool lifecycles in context managers and make cleanup best-effort but exception-transparent.
+- Related patterns: SQLite Tool Result Cache, Two-Stage Embedding Tool Matcher.
+- Risks / caveats: Cleanup errors are logged but not raised; this is right for benchmarks but can hide infrastructure leaks in long-running hosts.
+- Agentic coding guidance: When adding a transport, cover connect, tool discovery, call, failure, and cleanup paths; always verify `__aexit__` does not suppress task failures.
+
+### Dynamic Procedure Namespace Builder
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-gds-client-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-gds-client-src/src/graphdatascience/call_builder.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-gds-client-src/src/graphdatascience/call_parameters.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-gds-client-src/src/graphdatascience/caller_base.py`
+- Language / framework / stack: Python, Neo4j Graph Data Science client, dynamic API surface
+- Code shape / snippet:
+```python
+class IndirectCallBuilder(AlgoEndpoints, UncallableNamespace):
+    def __getattr__(self, attr: str) -> "IndirectCallBuilder":
+        namespace = f"{self._namespace}.{attr}"
+        return IndirectCallBuilder(self._query_runner, namespace, self._server_version)
+
+class CallParameters(OrderedDict[str, Any]):
+    def placeholder_str(self) -> str:
+        return ", ".join([f"${k}" for k in self.keys()])
+```
+- Why it matters: A fluent client can represent many procedure namespaces without generating a method for every server-side endpoint, while preserving ordered parameter placeholders.
+- When to use: Use for large, versioned API surfaces where endpoint names are hierarchical and not all variants are known at client release time.
+- When not to use: Avoid when typos must fail statically, when discoverability matters more than flexibility, or when API names are not hierarchical.
+- Transferable principle: Use dynamic namespace builders at the edge, but keep actual execution behind a small query-runner abstraction.
+- Related patterns: Ordered Contract Grammar, Two-Stage Embedding Tool Matcher.
+- Risks / caveats: `__getattr__` can make misspellings look valid until execution; the source mitigates with suggestive errors from `gds.list`.
+- Agentic coding guidance: When adding explicit endpoints, keep dynamic fallback behavior intact and test typo suggestions, ordered parameter rendering, and job ID preservation.
+
+### Cypher TCK Executable Contract
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/opencypher-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/opencypher-src/tck/README.adoc`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/opencypher-src/tck/features/expressions/existentialSubqueries/ExistentialSubquery2.feature`
+- Language / framework / stack: Gherkin/Cucumber, Cypher query compatibility tests
+- Code shape / snippet:
+```gherkin
+Scenario: [1] Full existential subquery
+  Given an empty graph
+  And having executed:
+    """
+    CREATE (a:A {prop: 1})-[:R]->(b:B {prop: 1})
+    """
+  When executing query:
+    """
+    MATCH (n) WHERE exists { MATCH (n)-->() RETURN true }
+    RETURN n
+    """
+  Then the result should be, in any order:
+    | n             |
+    | (:A {prop:1}) |
+  And no side effects
+```
+- Why it matters: Language behavior is specified with initial graph state, query, expected results or errors, and expected side effects.
+- When to use: Use for query languages, protocol implementations, or cross-runtime compatibility where conformance must outlive one implementation.
+- When not to use: Avoid for tiny libraries where ordinary unit tests are clearer, or for behavior too nondeterministic to express as stable scenarios.
+- Transferable principle: Put executable examples at the specification boundary, not only in implementation tests.
+- Related patterns: Message-Indexed Snapshot Sandbox, Ordered Contract Grammar.
+- Risks / caveats: Scenario suites can lag implementation reality; maintainers need a clear process for accepted, testable, and draft behavior.
+- Agentic coding guidance: When changing query semantics, update grammar/spec text and TCK scenarios together; include negative tests for compile-time/runtime errors and side-effect observability.
+
+### Cost-Based Dual-Mode Graph Iterator
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cayley-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cayley-src/graph/iterator/iterator.go`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cayley-src/graph/iterator/and.go`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cayley-src/graph/iterator/and_optimize.go`
+- Language / framework / stack: Go, graph query engine iterators
+- Code shape / snippet:
+```go
+type Shape interface {
+    Iterate() Scanner
+    Lookup() Index
+    Stats(ctx context.Context) (Costs, error)
+    Optimize(ctx context.Context) (Shape, bool)
+}
+
+func (it *andNext) Next(ctx context.Context) bool {
+    for it.primary.Next(ctx) {
+        cur := it.primary.Result()
+        if it.secondary.Contains(ctx, cur) {
+            it.result = cur
+            return true
+        }
+    }
+    return false
+}
+```
+- Why it matters: Query plans can either scan candidates or check membership, and `And` chooses a primary iterator based on estimated Next/Contains cost.
+- When to use: Use in graph/search engines where intersections dominate and indexes can cheaply answer membership for candidate values.
+- When not to use: Avoid when data sources cannot provide meaningful costs or when query semantics depend on traversal order.
+- Transferable principle: Separate plan shape from execution mode, then optimize by choosing the cheapest producer and cheapest check order.
+- Related patterns: Dynamic Procedure Namespace Builder, Cypher TCK Executable Contract.
+- Risks / caveats: The source comments warn optimizer bugs can change query meaning; optimization must preserve semantics before chasing speed.
+- Agentic coding guidance: For iterator changes, run both semantic tests and long-query integration cases; add tests where optimization is disabled to confirm the unoptimized meaning.
+
+### Watermark-Gated Journal Eviction
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src/src/journal/manager.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src/src/journal/recovery.rs`
+- Language / framework / stack: Rust, LSM-tree key-value storage, write-ahead journals
+- Code shape / snippet:
+```rust
+for item in &item.watermarks {
+    if !item.keyspace.is_deleted.load(std::sync::atomic::Ordering::Acquire) {
+        let Some(keyspace_seqno) = item.keyspace.tree.get_highest_persisted_seqno() else {
+            return Ok(());
+        };
+        if keyspace_seqno < item.lsn {
+            return Ok(());
+        }
+    }
+}
+
+std::fs::remove_file(&item.path)?;
+self.items.remove(0);
+```
+- Why it matters: A sealed journal is deleted only after every keyspace represented in that journal has persisted tables beyond the journal's recorded sequence number.
+- When to use: Use in WAL/LSM systems where one log segment may contain writes for multiple partitions or keyspaces.
+- When not to use: Avoid when each partition has an independent log segment and deletion can be decided locally.
+- Transferable principle: Evict durability artifacts only after all dependent storage components pass their persisted watermarks.
+- Related patterns: MVCC Snapshot Refcount Watermark, SQLite Tool Result Cache.
+- Risks / caveats: Recovery and flushing must preserve oldest-to-newest ordering; otherwise watermark checks can delete data still needed for replay.
+- Agentic coding guidance: When touching journal rotation or flush queues, add crash-recovery tests covering mixed keyspaces, deleted keyspaces, and oldest-journal eviction.
+
+### MVCC Snapshot Refcount Watermark
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src/src/snapshot_tracker.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src/src/tx/write_tx.rs`
+- Language / framework / stack: Rust, concurrent MVCC snapshots, LSM-tree transactions
+- Code shape / snippet:
+```rust
+pub fn open(&self) -> SnapshotNonce {
+    let _lock = self.gc_lock.read().expect("lock is poisoned");
+    let seqno = self.seqno.get();
+    self.data.entry(seqno).and_modify(|x| *x += 1).or_insert(1);
+    SnapshotNonce::new(seqno, self.clone())
+}
+
+pub fn publish(&self, batch_seqno: SeqNo) {
+    self.seqno.fetch_max(batch_seqno + 1);
+}
+```
+- Why it matters: Open snapshots are reference-counted by sequence number, while write publication advances the global visible sequence and GC only frees versions below the safe watermark.
+- When to use: Use in storage engines that need repeatable reads while writers continue appending newer versions.
+- When not to use: Avoid in simple single-version stores or when strict serial execution makes snapshots unnecessary.
+- Transferable principle: Treat snapshots as leased read instants and compute garbage-collection safety from retained read references.
+- Related patterns: Watermark-Gated Journal Eviction, Message-Indexed Snapshot Sandbox.
+- Risks / caveats: A leaked snapshot blocks GC; close/drop paths need tests, metrics, and leak detection.
+- Agentic coding guidance: When modifying transaction reads or snapshot cloning, verify old snapshots still read old values after writes, memtable rotation, and explicit GC.
+
+## Worker 4 Batch 6
+
+### Numbered Optional Schema Evolution
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-parquet-format-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-parquet-format-src/src/main/thrift/parquet.thrift`
+- Language / framework / stack: Apache Thrift IDL, Parquet file format metadata
+- Code shape / snippet:
+```thrift
+struct SchemaElement {
+  1: optional Type type;
+  3: optional FieldRepetitionType repetition_type;
+  4: required string name;
+  5: optional i32 num_children;
+  9: optional i32 field_id;
+  10: optional LogicalType logicalType
+}
+```
+- Why it matters: Parquet keeps file metadata evolvable by assigning stable field numbers and making new information optional unless it is fundamental to decoding.
+- When to use: Use for durable file formats, wire protocols, and cross-language metadata where old readers must survive new writers.
+- When not to use: Avoid when all producers and consumers deploy atomically and a simpler in-memory struct or JSON shape is enough.
+- Transferable principle: Give serialized fields permanent identities and add capabilities as optional facts before making them required contracts.
+- Related patterns: Union Logical Type Overlay, Callsite Interest Cache, Const-Generic Heapless Graph Storage.
+- Risks / caveats: Optional fields force readers to distinguish absent from zero or false; defaults need explicit semantics in both spec and code.
+- Agentic coding guidance: When extending a schema, add a new field number, keep old fields readable, and write tests for absent, present, and unknown-field cases.
+
+### Union Logical Type Overlay
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-parquet-format-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-parquet-format-src/src/main/thrift/parquet.thrift`
+- Language / framework / stack: Apache Thrift IDL, Parquet logical type system
+- Code shape / snippet:
+```thrift
+struct DecimalType {
+  1: required i32 scale
+  2: required i32 precision
+}
+
+union LogicalType {
+  1: StringType STRING
+  5: DecimalType DECIMAL
+  8: TimestampType TIMESTAMP
+  18: GeographyType GEOGRAPHY
+}
+```
+- Why it matters: Physical storage types stay small and stable while logical annotations carry higher-level meaning such as decimal scale, timestamp units, and geography semantics.
+- When to use: Use when one storage representation can support many semantic interpretations.
+- When not to use: Avoid if logical meaning changes byte layout so much that a separate physical type is clearer.
+- Transferable principle: Separate representation from interpretation, and model interpretation as a tagged, extensible union.
+- Related patterns: Numbered Optional Schema Evolution, Axis Index Resolver Boundary, Typed Graph Attribute Map.
+- Risks / caveats: Writers may need to set compatibility fields in parallel with the newer logical union, so validators must check both.
+- Agentic coding guidance: When adding a logical type, update compatibility mapping, reader validation, and round-trip tests rather than only adding an enum arm.
+
+### Problem-Enactor GPU Algorithm Split
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gunrock-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gunrock-src/include/gunrock/algorithms/bfs.hxx`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gunrock-src/include/gunrock/framework/problem.hxx`
+- Language / framework / stack: C++20, CUDA/HIP graph analytics, Gunrock
+- Code shape / snippet:
+```cpp
+template <typename graph_t, typename param_type, typename result_type>
+struct problem_t : gunrock::problem_t<graph_t> {
+  param_type param;
+  result_type result;
+
+  void init() override { visited.resize(this->get_graph().get_number_of_vertices()); }
+  void reset() override { thrust::fill(policy, d_distances, d_distances + n_vertices, max); }
+};
+
+template <typename problem_t>
+struct enactor_t : gunrock::enactor_t<problem_t> {
+  void prepare_frontier(frontier_t* f, gcuda::multi_context_t&) override;
+  void loop(gcuda::multi_context_t& context) override;
+};
+```
+- Why it matters: Persistent algorithm data, user parameters, output buffers, and iterative execution live in separate types, which makes GPU lifecycle and benchmarking easier to reason about.
+- When to use: Use for iterative GPU algorithms where state initialization, reset, frontier preparation, and convergence are distinct phases.
+- When not to use: Avoid for one-shot kernels where a single function with explicit inputs is easier and has less template noise.
+- Transferable principle: Split algorithm state from algorithm driving logic when execution has a lifecycle.
+- Related patterns: Frontier Lambda Operator Pipeline, Run-State Algorithm Lifecycle Gate, Nonblocking Writer With Drop Guard.
+- Risks / caveats: Template inheritance can obscure ownership and runtime assumptions; stale state must be reset before each enactment.
+- Agentic coding guidance: When adding a new Gunrock-style algorithm, scaffold `param_t`, `result_t`, `problem_t`, and `enactor_t` first, then write tests that call `run` more than once.
+
+### Frontier Lambda Operator Pipeline
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gunrock-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gunrock-src/include/gunrock/algorithms/bfs.hxx`
+- Language / framework / stack: C++20, CUDA/HIP graph traversal operators, Gunrock
+- Code shape / snippet:
+```cpp
+auto search = [distances, iteration] __host__ __device__(
+    vertex_t const& source, vertex_t const& neighbor,
+    edge_t const& edge, weight_t const& weight) -> bool {
+  auto old_distance = math::atomic::min(&distances[neighbor], iteration + 1);
+  return (iteration + 1 < old_distance);
+};
+
+operators::advance::execute_runtime(G, E, search, advance_load_balance, context);
+if (P->param.options.enable_filter) {
+  operators::filter::execute_runtime(G, E, remove_invalids, filter_algorithm, context);
+}
+```
+- Why it matters: The traversal policy is reusable while algorithm-specific behavior is supplied as small host/device lambdas.
+- When to use: Use when many algorithms share the same graph traversal mechanics but differ in per-edge or per-vertex update logic.
+- When not to use: Avoid when custom memory access, synchronization, or kernel fusion is the main performance requirement.
+- Transferable principle: Put the reusable data-parallel skeleton in operators and pass domain updates as constrained callbacks.
+- Related patterns: Problem-Enactor GPU Algorithm Split, Lazy Infix Expression With Precedence Guards, Executable Property Contract Matrix.
+- Risks / caveats: Captures must be device-safe, atomic semantics must match convergence logic, and filter options can silently change frontier contents.
+- Agentic coding guidance: For generated GPU lambdas, explicitly list captures, keep them trivially copyable, and test with filter enabled and disabled.
+
+### Typed Intrusive List Facade
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/jemalloc-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/jemalloc-src/include/jemalloc/internal/typed_list.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/jemalloc-src/include/jemalloc/internal/ql.h`
+- Language / framework / stack: C, allocator internals, intrusive containers
+- Code shape / snippet:
+```c
+#define TYPED_LIST(list_type, el_type, linkage)                                \
+    typedef struct { ql_head(el_type) head; } list_type##_t;                   \
+    static inline void list_type##_init(list_type##_t *list) {                 \
+        ql_new(&list->head);                                                   \
+    }                                                                          \
+    static inline void list_type##_append(list_type##_t *list, el_type *item) {\
+        ql_elm_new(item, linkage);                                             \
+        ql_tail_insert(&list->head, item, linkage);                            \
+    }
+```
+- Why it matters: jemalloc keeps intrusive list performance while generating typed wrappers that prevent call sites from repeatedly spelling raw macro arguments.
+- When to use: Use in C systems code where elements must carry their own linkage and allocation overhead must be minimal.
+- When not to use: Avoid in application code where normal containers, ownership-aware collections, or debuggable generic libraries are available.
+- Transferable principle: Wrap unsafe macro machinery in narrow typed operations and make the raw form an implementation detail.
+- Related patterns: Ranked Lock Witness Graph, Typed Graph Attribute Map, Const-Generic Heapless Graph Storage.
+- Risks / caveats: Macro-generated APIs still depend on correct linkage fields and initialization order; misuse can corrupt container invariants.
+- Agentic coding guidance: When adding a new intrusive list, define the linkage field next to the element type and prefer generated wrapper functions over direct `ql_*` calls.
+
+### Ranked Lock Witness Graph
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/jemalloc-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/jemalloc-src/include/jemalloc/internal/witness.h`
+- Language / framework / stack: C, allocator concurrency diagnostics, debug-only lock order checking
+- Code shape / snippet:
+```c
+enum witness_rank_e {
+    WITNESS_RANK_OMIT,
+    WITNESS_RANK_MIN,
+    WITNESS_RANK_CTL,
+    WITNESS_RANK_ARENAS,
+    WITNESS_RANK_RTREE,
+    WITNESS_RANK_LEAF = 0x1000,
+};
+
+struct witness_s {
+    const char *name;
+    witness_rank_t rank;
+    witness_comp_t *comp;
+    ql_elm(witness_t) link;
+};
+```
+- Why it matters: The allocator encodes legal lock acquisition order as ranks and tracks currently owned locks per thread, catching lock-order reversals in debug builds.
+- When to use: Use in concurrent C or C++ runtimes with many internal locks and strict ordering rules.
+- When not to use: Avoid when a simpler ownership design or a small number of locks makes ranked diagnostics unnecessary.
+- Transferable principle: Make concurrency ordering a checked data model, not an oral tradition.
+- Related patterns: Typed Intrusive List Facade, Nonblocking Writer With Drop Guard, Problem-Enactor GPU Algorithm Split.
+- Risks / caveats: Debug-only machinery can drift from production behavior if new locks omit ranks or bypass witness calls.
+- Agentic coding guidance: When introducing a lock, assign its rank before using it, add assertions around owner and not-owner expectations, and include nested-lock tests.
+
+### Run-State Algorithm Lifecycle Gate
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src/include/networkit/base/Algorithm.hpp`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src/networkit/base.pyx`
+- Language / framework / stack: C++ graph algorithms with Cython Python bindings, NetworKit
+- Code shape / snippet:
+```cpp
+class Algorithm {
+protected:
+    bool hasRun = false;
+public:
+    virtual void run() = 0;
+    bool hasFinished() const noexcept { return hasRun; }
+    void assureFinished() const {
+        if (!hasRun)
+            throw std::runtime_error("Error, run must be called first");
+    }
+};
+```
+```cython
+def run(self):
+    if self._this == NULL:
+        raise RuntimeError("Error, object not properly initialized")
+    with nogil:
+        self._this.run()
+    return self
+```
+- Why it matters: Expensive graph algorithms expose a clear lifecycle: construct, run, query. Python users get fluent chaining while C++ result access can reject premature reads.
+- When to use: Use for algorithm objects that cache results and have getters which are invalid until computation completes.
+- When not to use: Avoid for pure functions or cheap stateless computations where lifecycle state adds ceremony.
+- Transferable principle: Represent computation completion explicitly and make invalid result access fail early.
+- Related patterns: Problem-Enactor GPU Algorithm Split, Executable Property Contract Matrix, Nonblocking Writer With Drop Guard.
+- Risks / caveats: Every implementation must set `hasRun` consistently, including error paths and reruns.
+- Agentic coding guidance: When generating a new NetworKit algorithm, set `hasRun = false` at the start, `hasRun = true` only after complete results exist, and call `assureFinished()` in every result getter.
+
+### Typed Graph Attribute Map
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src/include/networkit/graph/Attributes.hpp`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src/include/networkit/graph/Graph.hpp`
+- Language / framework / stack: C++20, NetworKit graph data model
+- Code shape / snippet:
+```cpp
+template <typename T>
+auto attach(const std::string &name) {
+    auto ownedPtr =
+        std::make_shared<AttributeStorage<NodeOrEdge, GraphType, ASB, T>>(name);
+    auto insertResult = attrMap.emplace(ownedPtr->getName(), ownedPtr);
+    if (!insertResult.second) {
+        throw std::runtime_error("Attribute with same name already exists");
+    }
+    return Attribute<NodeOrEdge, GraphType, T, false>{ownedPtr, theGraph};
+}
+
+template <typename T>
+auto get(const std::string &name) {
+    auto it = find(name);
+    if (it->second.get()->getType() != typeid(T))
+        throw std::runtime_error("Type mismatch in Attributes().get()");
+    return Attribute<NodeOrEdge, GraphType, T, false>{/* typed storage */};
+}
+```
+- Why it matters: Graph extensions can attach per-node or per-edge data dynamically while preserving runtime type checks and invalidation semantics.
+- When to use: Use in graph libraries where algorithms and users need named side data without changing the core graph layout.
+- When not to use: Avoid when the attribute set is fixed and direct fields would be simpler and faster.
+- Transferable principle: Combine a dynamic name registry with typed handles at the boundary where users read and write values.
+- Related patterns: Union Logical Type Overlay, Typed Intrusive List Facade, TypeId Span Extension Map.
+- Risks / caveats: Attribute handles can become invalid after detach, and edge attributes require indexed edges.
+- Agentic coding guidance: When adding attribute-backed features, check node or edge validity on access and include tests for detach, type mismatch, and missing edge IDs.
+
+### Axis Index Resolver Boundary
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/python-graphblas-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/python-graphblas-src/graphblas/core/expr.py`
+- Language / framework / stack: Python, NumPy, GraphBLAS C FFI adapter
+- Code shape / snippet:
+```python
+class AxisIndex:
+    __slots__ = "size", "index", "cscalar", "dimsize"
+
+    @property
+    def _carg(self):
+        return self.index._carg
+
+class IndexerResolver:
+    def parse_indices(self, indices, shape):
+        if len(shape) == 1:
+            indices = (indices,)
+        elif type(indices) is not tuple or len(indices) != 2:
+            raise TypeError(f"Index for {type(self.obj).__name__} must be a 2-tuple")
+        return [self.parse_index(idx, output_type(idx), shape[i])
+                for i, idx in enumerate(indices)]
+```
+- Why it matters: Python indexing forms are normalized once into axis descriptors that carry both Python display meaning and C-call arguments.
+- When to use: Use when a friendly Python API fronts a lower-level library with strict shape, dtype, and pointer conventions.
+- When not to use: Avoid when indexes are only used locally and direct Python slicing is sufficient.
+- Transferable principle: Put messy user syntax behind a resolver object that returns a small, typed intermediate representation.
+- Related patterns: Union Logical Type Overlay, Lazy Infix Expression With Precedence Guards, Numbered Optional Schema Evolution.
+- Risks / caveats: Resolver behavior becomes part of the public API; negative indices, masks, slices, and backend-specific ranges all need compatibility tests.
+- Agentic coding guidance: When changing indexing, add tests for each accepted input type and for the error message that guides mask users toward the right API.
+
+### Lazy Infix Expression With Precedence Guards
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/python-graphblas-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/python-graphblas-src/graphblas/core/infix.py`
+- Language / framework / stack: Python, GraphBLAS expression DSL
+- Code shape / snippet:
+```python
+def _ewise_add_to_expr(self):
+    if self._expr is not None:
+        return self._expr
+    if self.left.dtype == BOOL and self.right.dtype == BOOL:
+        self._expr = self.left.ewise_add(self.right, lor)
+        return self._expr
+    raise TypeError("Bad dtypes for `x | y`!")
+
+class ScalarEwiseAddExpr(ScalarInfixExpr):
+    method_name = "ewise_add"
+    _infix = "|"
+    _to_expr = _ewise_add_to_expr
+
+    def __and__(self, other):
+        raise TypeError("Cannot mix `&` ... into an `|` ... infix chain")
+```
+- Why it matters: Operator sugar remains lazy and composable, but ambiguous dtype and precedence cases are rejected with domain-specific guidance.
+- When to use: Use for mathematical DSLs where Python operators are attractive but not always semantically obvious.
+- When not to use: Avoid when the overloaded operator would surprise most users or when explicit method calls are already concise.
+- Transferable principle: Make fluent syntax a thin expression builder, and guard every ambiguity at construction time.
+- Related patterns: Axis Index Resolver Boundary, Frontier Lambda Operator Pipeline, Recorder-Backed C Call Explainability.
+- Risks / caveats: Python operator precedence cannot be changed, so mixed expressions must either be forbidden or documented very clearly.
+- Agentic coding guidance: When generating operator overloads, include dtype checks, cached expression conversion, and tests for forbidden mixed-precedence chains.
+
+### Callsite Interest Cache
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src/tracing-core/src/callsite.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src/tracing-core/src/metadata.rs`
+- Language / framework / stack: Rust, `tracing-core`, lock-aware instrumentation registry
+- Code shape / snippet:
+```rust
+pub trait Callsite: Sync {
+    fn set_interest(&self, interest: Interest);
+    fn metadata(&self) -> &Metadata<'_>;
+}
+
+#[derive(Debug)]
+pub struct DefaultCallsite {
+    interest: AtomicU8,
+    registration: AtomicU8,
+    meta: &'static Metadata<'static>,
+    next: AtomicPtr<Self>,
+}
+
+pub fn rebuild_interest_cache() {
+    CALLSITES.rebuild_interest(DISPATCHERS.rebuilder());
+}
+```
+- Why it matters: Static trace locations cache whether subscribers care, so hot events can skip repeated expensive filter checks.
+- When to use: Use when instrumentation sites are mostly static and dynamic filtering changes far less often than events are emitted.
+- When not to use: Avoid if every event depends on volatile per-record state and static filtering cannot reject much work.
+- Transferable principle: Cache stable eligibility decisions at the declaration site and rebuild deliberately when configuration changes.
+- Related patterns: Numbered Optional Schema Evolution, Nonblocking Writer With Drop Guard, Run-State Algorithm Lifecycle Gate.
+- Risks / caveats: Runtime reconfiguration must call cache rebuild paths or spans above the new level may remain incorrectly enabled or disabled.
+- Agentic coding guidance: When adding filters or subscribers, reason about both `register_callsite` and per-event `enabled`; add tests for reconfiguration after spans already exist.
+
+### Nonblocking Writer With Drop Guard
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src/tracing-appender/src/non_blocking.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src/tracing-appender/src/worker.rs`
+- Language / framework / stack: Rust, `tracing-appender`, crossbeam channels, background IO
+- Code shape / snippet:
+```rust
+#[must_use]
+pub struct WorkerGuard {
+    _guard: Option<JoinHandle<()>>,
+    sender: Sender<Msg>,
+    shutdown: Sender<()>,
+}
+
+impl std::io::Write for NonBlocking {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        if self.is_lossy {
+            if self.channel.try_send(Msg::Line(buf.to_vec())).is_err() {
+                self.error_counter.incr_saturating();
+            }
+        } else {
+            self.channel.send(Msg::Line(buf.to_vec()))?;
+        }
+        Ok(buf.len())
+    }
+}
+```
+- Why it matters: Logging leaves the hot path through a bounded channel, while a must-use guard preserves flush-on-drop semantics during normal shutdown and unwinding.
+- When to use: Use for observability sinks where synchronous IO would harm request latency.
+- When not to use: Avoid for audit logs or transactional records that must be durably written before continuing.
+- Transferable principle: Move slow side effects off the hot path, but return an explicit lifecycle guard for shutdown guarantees.
+- Related patterns: Callsite Interest Cache, Ranked Lock Witness Graph, Run-State Algorithm Lifecycle Gate.
+- Risks / caveats: Lossy mode can drop logs under sustained pressure; non-lossy mode can block producers and change latency profiles.
+- Agentic coding guidance: When wiring non-blocking logging, keep the guard binding alive, expose dropped-line metrics, and test both lossy and backpressure modes.
+
+### Const-Generic Heapless Graph Storage
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm` - `/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm/src/lib.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm/src/error.rs`
+- Language / framework / stack: Rust 2021, `#![no_std]`, `heapless`, const generics
+- Code shape / snippet:
+```rust
+#![no_std]
+
+pub struct TopoSort<const N: usize> {
+    adjacency: [Vec<usize, N>; N],
+    in_degree: [usize; N],
+    num_nodes: usize,
+}
+
+pub fn add_edge_to_graph(&mut self, from: usize, to: usize) -> Result<(), TopoSortError> {
+    if from >= N {
+        return Err(TopoSortError::IndexOutOfBounds { index: from, capacity: N });
+    }
+    self.adjacency[from].push(to)
+        .map_err(|_| TopoSortError::CapacityExceeded { current: self.adjacency[from].len(), max: N })?;
+    self.in_degree[to] += 1;
+    Ok(())
+}
+```
+- Why it matters: Capacity is a type-level choice, storage is stack/static friendly, and allocation failure is represented as a domain error instead of a panic.
+- When to use: Use in embedded, no-std, deterministic, or sandboxed contexts where heap allocation is unavailable or undesirable.
+- When not to use: Avoid for unbounded graphs or workloads where fixed `N x N` potential storage is too expensive.
+- Transferable principle: Push resource limits into types and return structured errors at every capacity boundary.
+- Related patterns: Typed Intrusive List Facade, Numbered Optional Schema Evolution, Executable Property Contract Matrix.
+- Risks / caveats: The source contains a leftover STUB comment even though code exists; doc and code comments should be cleaned before treating the crate as polished reference material.
+- Agentic coding guidance: For no-std algorithms, prefer `heapless` containers, avoid `unwrap` in library code, and add capacity-exceeded tests for each push site.
+
+### Executable Property Contract Matrix
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm` - `/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm/tests/toposort_correctness_tests.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm/tests/property_based_toposort_tests.rs`
+- Language / framework / stack: Rust integration tests, algorithm correctness and property checks
+- Code shape / snippet:
+```rust
+#[test]
+fn property_valid_ordering_dependencies_first() {
+    let result = graph.sort_all_nodes_topologically().unwrap();
+    let positions: Vec<_> = (0..10)
+        .map(|node| result.iter().position(|&x| x == node).unwrap())
+        .collect();
+
+    for (from, to) in edges {
+        assert!(positions[from] > positions[to]);
+    }
+}
+
+#[test]
+fn property_cycle_detection_consistency() {
+    assert!(matches!(result, Err(TopoSortError::CycleDetected { .. })));
+}
+```
+- Why it matters: The tests encode algorithm invariants instead of only checking one golden ordering, which is important because many DAGs have multiple valid topological sorts.
+- When to use: Use for algorithms where correctness is a property across many equivalent outputs.
+- When not to use: Avoid relying only on hand-written cases when randomized or generated cases are feasible; this repo's tests are property-style but not generated by a property-test framework.
+- Transferable principle: Assert invariants that define valid output, not incidental details of one output.
+- Related patterns: Const-Generic Heapless Graph Storage, Run-State Algorithm Lifecycle Gate, Frontier Lambda Operator Pipeline.
+- Risks / caveats: Property-style tests with fixed fixtures can miss edge classes; generated acyclic and cyclic graph families would broaden coverage.
+- Agentic coding guidance: When changing the sorter, preserve the invariant tests, add minimal failing graphs for regressions, and test both empty, disconnected, cyclic, and multiple-valid-ordering cases.
+
+## Worker 4 Batch 7
+
+### Dense Operation Type Handler Array
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src/src/main/java/org/ldbcouncil/snb/driver/Db.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src/src/main/java/org/ldbcouncil/snb/driver/OperationHandler.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src/src/main/java/org/ldbcouncil/snb/driver/workloads/interactive/LdbcSnbInteractiveWorkloadConfiguration.java`
+- Language / framework / stack: Java, LDBC SNB benchmark driver, typed operation dispatch
+- Code shape / snippet:
+```java
+public interface OperationHandler<OPERATION_TYPE extends Operation,
+        DB_CONNECTION_STATE_TYPE extends DbConnectionState> {
+    void executeOperation(OPERATION_TYPE operation,
+                          DB_CONNECTION_STATE_TYPE dbConnectionState,
+                          ResultReporter resultReporter) throws DbException;
+}
+
+public final <A extends Operation, H extends OperationHandler<A,?>> void registerOperationHandler(
+        Class<A> operationType, Class<H> operationHandlerType ) throws DbException {
+    OperationHandler operationHandler = ClassLoaderHelper.loadOperationHandler(operationHandlerType);
+    operationHandlers.put(operationType, operationHandler);
+}
+
+OperationHandler operationHandler = operationHandlersArray[operation.type()];
+operationTypeToClassMapping.put(LdbcQuery1.TYPE, LdbcQuery1.class);
+operationTypeToClassMapping.put(LdbcInsert8AddFriendship.TYPE, LdbcInsert8AddFriendship.class);
+```
+- Why it matters: The driver keeps the public extension point type-safe by registering handlers against operation classes, then converts the mapping into a dense array keyed by numeric operation type for fast runtime dispatch.
+- When to use: Use when a hot execution loop receives typed command objects that also have stable compact integer type codes.
+- When not to use: Avoid when operation type IDs are sparse, externally untrusted, or change at runtime; a map may be safer and easier to validate.
+- Transferable principle: Separate ergonomic registration from the optimized dispatch representation.
+- Related patterns: Version-Gated Document API Handler, Template-Parameterized Graph Algorithm Kernel, Ordered Multi-Pass Indexing Pipeline.
+- Risks / caveats: A missing handler remains a runtime error, and array indexing assumes operation type codes are non-negative and within the configured range.
+- Agentic coding guidance: When adding operations, update the workload type map and the DB handler registration together; add a validation test that every advertised operation type has a handler before benchmark execution starts.
+
+### Sleep-Bounded Scheduled Start Gate
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src/src/main/java/org/ldbcouncil/snb/driver/runtime/scheduling/Spinner.java`
+- Language / framework / stack: Java, benchmark scheduling, injectable time source
+- Code shape / snippet:
+```java
+public boolean waitForScheduledStartTime(Operation operation, SpinnerCheck check) {
+    return spinFun.apply(operation, check);
+}
+
+while (SpinnerCheck.SpinnerCheckResult.STILL_CHECKING == check.doCheck(operation)) {
+    powerNap(sleepDurationAsMilli);
+}
+
+while (timeSource.nowAsMilli() < operation.scheduledStartTimeAsMilli()) {
+    powerNap(sleepDurationAsMilli);
+}
+
+return SpinnerCheck.SpinnerCheckResult.PASSED == check.doCheck(operation);
+```
+- Why it matters: Scheduling is a small gate with two concerns: wait for dependency checks, then wait for the operation's scheduled start time. The sleep interval explicitly trades CPU load against timing accuracy.
+- When to use: Use in deterministic workload drivers where operations must respect a generated schedule but should not busy-spin at full CPU.
+- When not to use: Avoid for low-latency event loops where sleeps add unacceptable jitter, or for systems that need interruptible/cancellable waits.
+- Transferable principle: Encapsulate timing policy behind a gate that returns "may execute" rather than forcing every caller to duplicate schedule and dependency checks.
+- Related patterns: Dense Operation Type Handler Array, Atomic Parallel-For Worker Pool, Ordered Multi-Pass Indexing Pipeline.
+- Risks / caveats: Longer sleeps reduce CPU use but reduce scheduling precision and peak throughput; the comments also flag hard failure semantics around dependent operations.
+- Agentic coding guidance: When changing scheduler code, preserve both "ignore schedule times" and "respect schedule times" modes, and test check failure, scheduled delay, and zero-sleep behavior with a fake `TimeSource`.
+
+### Template-Parameterized Graph Algorithm Kernel
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src/snap-core/centr.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src/snap-core/cncom.h`
+- Language / framework / stack: C++, SNAP graph analytics, template algorithms over graph pointer types
+- Code shape / snippet:
+```cpp
+template<class PGraph>
+void GetPageRank(const PGraph& Graph, TIntFltH& PRankH,
+                 const double& C, const double& Eps, const int& MaxIter) {
+  const int NNodes = Graph->GetNodes();
+  TVec<typename PGraph::TObj::TNodeI> NV;
+  for (typename PGraph::TObj::TNodeI NI = Graph->BegNI(); NI < Graph->EndNI(); NI++) {
+    NV.Add(NI);
+    PRankH.AddDat(NI.GetId(), 1.0/NNodes);
+  }
+}
+
+template <class PGraph>
+PGraph GetMxWcc(const PGraph& Graph) {
+  TCnComV CnComV;
+  GetWccs(Graph, CnComV);
+  if (CnComV.Empty()) { return PGraph::TObj::New(); }
+  return TSnap::GetSubGraph(Graph, CnComV[CcId]());
+}
+```
+- Why it matters: SNAP writes graph algorithms once against a structural graph API (`GetNodes`, `BegNI`, `EndNI`, `GetInDeg`) and reuses them across directed, undirected, and attributed graph pointer types.
+- When to use: Use in C++ graph libraries where multiple graph containers expose the same traversal shape and performance favors compile-time specialization.
+- When not to use: Avoid when ABI stability, dynamic plugins, or simpler error messages matter more than template specialization.
+- Transferable principle: Define the minimal traversal contract an algorithm needs, then make containers satisfy that contract rather than hard-coding one graph representation.
+- Related patterns: Dense Operation Type Handler Array, Versioned Stream Serialization Constructors, Ordered Multi-Pass Indexing Pipeline.
+- Risks / caveats: Template errors can be opaque, and every graph type must preserve iterator and ID assumptions expected by the algorithm.
+- Agentic coding guidance: When generating a new graph algorithm, identify the required node/edge iterator methods first and add compile tests against at least two graph types.
+
+### Versioned Stream Serialization Constructors
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src/snap-core/network.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src/snap-core/table.cpp`
+- Language / framework / stack: C++, SNAP graph/table persistence, binary stream APIs
+- Code shape / snippet:
+```cpp
+void Save_V1(TSOut& SOut) const {
+  MxNId.Save(SOut); MxEId.Save(SOut);
+  NodeH.Save(SOut); EdgeH.Save(SOut);
+  KeyToIndexTypeN.Save(SOut); KeyToIndexTypeE.Save(SOut);
+  SOut.Flush();
+}
+
+static PNEANet New(const int& Nodes, const int& Edges) {
+  return PNEANet(new TNEANet(Nodes, Edges));
+}
+
+static PNEANet Load(TSIn& SIn) { return PNEANet(new TNEANet(SIn)); }
+static PNEANet Load_V1(TSIn& SIn) { /* load older field set */ }
+```
+- Why it matters: Constructors, binary load helpers, and legacy save/load variants sit beside the graph type, so persisted graph formats can evolve while old artifacts remain readable.
+- When to use: Use for long-lived binary data structures whose serialized field order is part of the compatibility contract.
+- When not to use: Avoid bespoke binary formats when cross-language interoperability, inspectability, or schema evolution tools are more important.
+- Transferable principle: Treat serialization format versions as named API surface, not as incidental implementation detail.
+- Related patterns: Template-Parameterized Graph Algorithm Kernel, API-Specific Error Reply Wrapper, Reusable Bump Arena.
+- Risks / caveats: Manual field ordering can drift between `Save_*` and `Load_*`; missing round-trip tests can corrupt data silently.
+- Agentic coding guidance: When adding fields to persisted structures, create a new versioned load/save path, preserve old readers, and test old fixture files plus new round trips.
+
+### API-Specific Error Reply Wrapper
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src/src/server/routes.pl`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src/src/core/api/api_error.pl`
+- Language / framework / stack: SWI-Prolog, TerminusDB HTTP API, JSON-LD error taxonomy
+- Code shape / snippet:
+```prolog
+:- meta_predicate api_report_errors(?,?,0).
+api_report_errors(API,Request,Goal) :-
+    catch_with_backtrace(
+        Goal,
+        Error,
+        do_or_die(api_error_http_reply(API,Error,Request),
+                  Error)
+    ).
+
+api_error_jsonld(API, Error, JSON) :-
+    (   api_global_error_jsonld(Error, API, JSON)
+    ->  true
+    ;   api_error_jsonld_(API, Error, JSON)
+    ).
+```
+- Why it matters: Every route can wrap its real work in one predicate that catches exceptions, maps them through an API-specific JSON-LD taxonomy, chooses an HTTP status, and preserves backtraces internally.
+- When to use: Use in API layers where each endpoint family has different domain errors but the transport response shape must stay uniform.
+- When not to use: Avoid burying ordinary control flow in exceptions; this is best for genuine API failures and validation errors.
+- Transferable principle: Put transport error conversion at the route boundary and keep domain-specific error encoders centralized.
+- Related patterns: Version-Gated Document API Handler, Streaming-Or-Buffered Query Handler, Read-Only Cypher Firewall.
+- Risks / caveats: A large multifile error taxonomy needs maintenance discipline; unhandled cases fall through to generic sanitized failures.
+- Agentic coding guidance: When adding an endpoint, wrap its body in `api_report_errors/3` and add precise `api_error_jsonld_` clauses for new domain errors before exposing them.
+
+### Version-Gated Document API Handler
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src/src/server/routes.pl`
+- Language / framework / stack: SWI-Prolog, TerminusDB document HTTP API, optimistic data-version headers
+- Code shape / snippet:
+```prolog
+document_handler(get, Path, Request, System_DB, Auth) :-
+    api_report_errors(
+        get_documents,
+        Request,
+        (   http_read_json_semidet(json_dict(JSON), Request),
+            param_value_search_or_json_optional(Search, JSON, graph_type, graph, instance, Graph_Type),
+            param_value_json_optional(JSON, query, object, _, Query),
+            read_data_version_header(Request, Requested_Data_Version),
+            api_read_document_selector(
+                System_DB, Auth, Path, Graph_Type,
+                Id, Ids, Type, Query, Config,
+                Requested_Data_Version, Actual_Data_Version,
+                routes:cors_json_stream_write_headers_(Request, Actual_Data_Version)
+            )
+        )).
+```
+- Why it matters: The document handler normalizes query-string and JSON-body parameters, reads the requested data version, and passes both requested and actual versions through the domain API.
+- When to use: Use when read and write APIs must defend against stale clients while supporting multiple input channels.
+- When not to use: Avoid if the backing store has no snapshot/version semantics or if caching layers cannot honor version headers.
+- Transferable principle: Make data-version negotiation an explicit parameter in the route-to-domain call, not an ambient global.
+- Related patterns: API-Specific Error Reply Wrapper, Dense Operation Type Handler Array, Read-Only Cypher Firewall.
+- Risks / caveats: Parameter precedence across search parameters and JSON bodies must be documented and tested; otherwise clients can get surprising reads.
+- Agentic coding guidance: When extending document options, add the option to both search/JSON parsing and selector tests, and verify `Requested_Data_Version` and `Actual_Data_Version` are still surfaced.
+
+### Streaming-Or-Buffered Query Handler
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src` - `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src/src/server/routes.pl`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src/src/core/api/api_error.pl`
+- Language / framework / stack: SWI-Prolog, TerminusDB WOQL API, JSON and multipart query execution
+- Code shape / snippet:
+```prolog
+woql_handler_helper(Request, System_DB, Auth, Path_Option) :-
+    api_report_errors(
+        woql,
+        Request,
+        (   http_read_woql_json_semidet(json_dict(JSON), Request)
+            ; http_read_multipart_semidet(Request, Form_Data),
+            param_value_json_required(JSON, query, object, Query),
+            param_value_json_optional(JSON, streaming, boolean, false, Streaming),
+            Options = _{files: Files, streaming: Streaming, data_version: Requested_Data_Version},
+            (   Streaming = true
+            ->  format("Transfer-Encoding: chunked~n~n"),
+                woql_query_streaming_json(System_DB, Auth, Path_Option, json_query(Query), Options)
+            ;   woql_query_json(System_DB, Auth, Path_Option, json_query(Query), _Context,
+                                New_Data_Version, Response, Options),
+                reply_json_dict(Response, [width(0)])
+            )
+        )).
+```
+- Why it matters: One handler supports both buffered and streaming query responses after the same validation, auth, file collection, and data-version parsing path.
+- When to use: Use when query APIs may return either small result sets or long-running streams, but both modes share the same request contract.
+- When not to use: Avoid coupling streaming and buffered modes if they have materially different authorization, consistency, or resource-limit rules.
+- Transferable principle: Branch late on output mode after parsing and validation have produced one options object.
+- Related patterns: API-Specific Error Reply Wrapper, Version-Gated Document API Handler, Tool Result Limit Resolution.
+- Risks / caveats: Streaming changes failure timing; errors after headers are sent need tests distinct from buffered response failures.
+- Agentic coding guidance: When adding query options, thread them through the shared `Options` dict and test both `streaming=true` and `streaming=false` paths.
+
+### Tree-Sitter Language Adapter Enum
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper/src/language.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper/src/extractor.rs`
+- Language / framework / stack: Rust, tree-sitter FFI, CLI query extraction
+- Code shape / snippet:
+```rust
+#[derive(Display, FromRepr, EnumIter, VariantNames, PartialEq, Eq, Hash, Debug)]
+#[strum(serialize_all = "lowercase")]
+pub enum Language {
+    C, Cpp, Go, Java, JavaScript, Python, Rust, TypeScript,
+}
+
+pub fn language(&self) -> tree_sitter::Language {
+    unsafe {
+        match self {
+            Language::Go => tree_sitter_go(),
+            Language::Python => tree_sitter_python(),
+            Language::Rust => tree_sitter_rust(),
+            Language::TypeScript => tree_sitter_typescript(),
+            _ => todo!(),
+        }
+    }
+}
+
+pub fn parse_query(&self, raw: &str) -> Result<tree_sitter::Query> {
+    tree_sitter::Query::new(&self.language(), raw).map_err(|err| anyhow!("{}", err))
+}
+```
+- Why it matters: Unsafe FFI calls for each grammar are isolated behind a closed Rust enum that also drives CLI parsing, language listing, file-type names, and query compilation.
+- When to use: Use when a CLI or service supports many parsers but each parser has a small language-specific binding.
+- When not to use: Avoid a closed enum when languages must be loaded as runtime plugins or user-provided shared libraries.
+- Transferable principle: Keep unsafe parser handles behind a typed adapter, and expose safe operations like `parse_query` to the rest of the program.
+- Related patterns: Capture-Ignoring Query Extractor, Ignore-Aware Parallel File Walk, Read-Only Cypher Firewall.
+- Risks / caveats: The adapter must be updated in several places when adding a language: enum variant, FFI binding, display/parse names, file type name, and tests.
+- Agentic coding guidance: When adding grammar support, make the compiler force all match arms, then add CLI tests for language listing, invalid language errors, and a real query.
+
+### Capture-Ignoring Query Extractor
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper/src/extractor.rs`
+- Language / framework / stack: Rust, tree-sitter `QueryCursor`, structured extraction output
+- Code shape / snippet:
+```rust
+let captures: Vec<String> = query.capture_names().iter().map(|s| s.to_string()).collect();
+let mut ignores = HashSet::default();
+captures.iter().enumerate().for_each(|(i, name)| {
+    if name.starts_with('_') {
+        ignores.insert(i);
+    }
+});
+
+let mut matches = cursor.matches(&self.query, tree.root_node(), source);
+while let Some(match_) = matches.next() {
+    for capture in match_.captures {
+        if self.ignores.contains(&(capture.index as usize)) {
+            continue;
+        }
+        extracted_matches.push(ExtractedMatch {
+            kind: node.kind(), name, text, start: node.start_position(), end: node.end_position(),
+        })
+    }
+}
+```
+- Why it matters: Query authors can use underscore-prefixed captures for structural matching while suppressing those captures from final output.
+- When to use: Use in search/extraction tools where tree-sitter queries need helper captures that should not appear in user-visible results.
+- When not to use: Avoid implicit ignore naming if users need every capture preserved for audit or downstream processing.
+- Transferable principle: Let query syntax express helper captures, but filter the output at a single extractor boundary.
+- Related patterns: Tree-Sitter Language Adapter Enum, Ignore-Aware Parallel File Walk, Ordered Multi-Pass Indexing Pipeline.
+- Risks / caveats: If every capture is ignored, the tool warns but produces no results; query authors may misread that as no matches.
+- Agentic coding guidance: When generating queries, reserve `_capture` names for scaffolding captures and add tests that prove visible captures still include text and source positions.
+
+### Ignore-Aware Parallel File Walk
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper/src/main.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper/tests/cli_tests.rs`
+- Language / framework / stack: Rust, `ignore` crate, crossbeam channel, `trycmd`
+- Code shape / snippet:
+```rust
+let (root_sender, receiver) = channel::unbounded();
+
+builder
+    .git_ignore(opts.git_ignore)
+    .git_exclude(opts.git_ignore)
+    .git_global(opts.git_ignore)
+    .build_parallel()
+    .run(|| {
+        let sender = root_sender.clone();
+        Box::new(move |entry_result| match entry_result {
+            Ok(entry) => match sender.send(entry) {
+                Ok(()) => ignore::WalkState::Continue,
+                Err(_) => ignore::WalkState::Quit,
+            },
+            Err(_) => ignore::WalkState::Quit,
+        })
+    });
+
+Ok(receiver.iter().collect())
+```
+- Why it matters: File discovery respects Git ignore rules by default, walks in parallel, and collects entries through a channel before parsing.
+- When to use: Use in source-scanning CLIs where matching the user's Git-visible file set is more important than scanning every byte under a directory.
+- When not to use: Avoid when security/audit tools must inspect ignored files too, or when deterministic traversal order must be preserved exactly.
+- Transferable principle: Treat ignore policy as a first-class option on discovery, and isolate parallel walking from parsing.
+- Related patterns: Tree-Sitter Language Adapter Enum, Capture-Ignoring Query Extractor, Atomic Parallel-For Worker Pool.
+- Risks / caveats: Parallel walk order is not guaranteed; output should be sorted separately if stable ordering is part of the contract.
+- Agentic coding guidance: When adding file filters, test default ignore behavior, `--no-gitignore`, multiple roots, and CLI transcript fixtures through `trycmd`.
+
+### Fail-Fast Singleton Driver Manager
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext/src/codegraphcontext/core/database.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext/src/codegraphcontext/core/database_falkordb.py`
+- Language / framework / stack: Python, Neo4j driver, FalkorDB Lite, thread-safe singleton managers
+- Code shape / snippet:
+```python
+class DatabaseManager:
+    _instance = None
+    _driver: Optional[Driver] = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(DatabaseManager, cls).__new__(cls)
+        return cls._instance
+
+    def get_driver(self) -> Driver:
+        if self._driver is None:
+            with self._lock:
+                if self._driver is None:
+                    is_reachable, reachability_error = self.check_port_reachable(self.neo4j_uri)
+                    if not is_reachable:
+                        raise Neo4jConnectionError("Neo4j service is not reachable",
+                                                   reason=reachability_error,
+                                                   suggestions=self.get_neo4j_suggestions())
+                    self._driver = GraphDatabase.driver(self.neo4j_uri, auth=(...))
+```
+- Why it matters: Connection pool creation is serialized, configuration is validated before use, the server port is checked before driver construction, and actionable suggestions travel with connection failures.
+- When to use: Use for local developer tools that need one shared database connection and should fail with setup guidance instead of deferred stack traces.
+- When not to use: Avoid global singletons in multi-tenant servers where different requests need independent credentials or lifecycle boundaries.
+- Transferable principle: Make expensive infrastructure clients lazy, singleton, thread-safe, and fail-fast with operator guidance.
+- Related patterns: Read-Only Cypher Firewall, Tool Result Limit Resolution, API-Specific Error Reply Wrapper.
+- Risks / caveats: Singleton state can leak between tests or repos; tests need explicit `close_driver` or process isolation.
+- Agentic coding guidance: When adding a backend manager, preserve double-checked locking, immediate health checks, cleanup on failed initialization, and error messages with source plus suggestions.
+
+### Read-Only Cypher Firewall
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext/src/codegraphcontext/utils/cypher_readonly.py`
+- Language / framework / stack: Python, Cypher query validation, CLI/MCP/viz shared utility
+- Code shape / snippet:
+```python
+_FORBIDDEN_KEYWORDS = (
+    "CREATE", "MERGE", "DELETE", "DETACH", "SET", "REMOVE",
+    "DROP", "LOAD", "ALTER", "COPY", "INSERT", "UPDATE",
+)
+_STRING_LITERAL_RE = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
+_LINE_COMMENT_RE = re.compile(r"//[^\n]*")
+_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+
+def is_read_only_cypher(query: str) -> bool:
+    if not query or not query.strip():
+        return False
+    stripped = _strip_comments(strip_string_literals(query))
+    if ";" in stripped:
+        return False
+    return not any(re.search(r"\b" + keyword + r"\b", stripped, re.IGNORECASE)
+                   for keyword in _FORBIDDEN_KEYWORDS)
+```
+- Why it matters: The same safety check can be reused by CLI, MCP, and visualization endpoints, and it ignores keywords hidden inside string literals or comments.
+- When to use: Use when exposing query execution to users or agents but only read operations should be allowed.
+- When not to use: Avoid treating regex keyword checks as a complete database sandbox for adversarial users; database permissions should still enforce read-only access.
+- Transferable principle: Put query safety policy in a shared validator and strip literals/comments before keyword scanning.
+- Related patterns: API-Specific Error Reply Wrapper, Streaming-Or-Buffered Query Handler, Capture-Ignoring Query Extractor.
+- Risks / caveats: Cypher grammar edge cases can outgrow regex validation; semicolon rejection also blocks legitimate multi-statement read batches.
+- Agentic coding guidance: When expanding allowed query forms, add tests for forbidden keywords in comments, strings, procedure calls, and mixed case before loosening the validator.
+
+### Tool Result Limit Resolution
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext/src/codegraphcontext/utils/tool_limits.py`
+- Language / framework / stack: Python, agent tooling configuration, JSON config fallback
+- Code shape / snippet:
+```python
+_BUILTIN_DEFAULTS: dict[str, int] = {
+    "find_code": 20,
+    "analyze_code_relationships": 15,
+    "find_dead_code": 50,
+    "execute_cypher_query": 100,
+}
+
+def get_tool_result_limit(tool_name: str, default: Optional[int] = None) -> Optional[int]:
+    raw = get_config_value("TOOL_RESULT_LIMITS") or "{}"
+    try:
+        limits: dict = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        limits = {}
+    if tool_name in limits:
+        try:
+            return max(1, int(limits[tool_name]))
+        except (TypeError, ValueError):
+            pass
+    return default if default is not None else _BUILTIN_DEFAULTS.get(tool_name)
+```
+- Why it matters: Tool output size is configurable per tool, malformed config fails open to known defaults, and callers can still pass a local fallback.
+- When to use: Use in agent-facing APIs where result volume must be bounded without baking every limit into each tool implementation.
+- When not to use: Avoid silent fallback when misconfiguration must fail deployment; operational services may prefer explicit config errors.
+- Transferable principle: Resolve limits in one shared helper with a clear precedence order: config, caller default, built-in default, unlimited.
+- Related patterns: Streaming-Or-Buffered Query Handler, Read-Only Cypher Firewall, Ordered Multi-Pass Indexing Pipeline.
+- Risks / caveats: Unknown keys are ignored, which preserves compatibility but can hide typos in configuration.
+- Agentic coding guidance: When adding a tool, add its default key here, use the helper at the result boundary, and test malformed JSON plus invalid per-tool values.
+
+### Ordered Multi-Pass Indexing Pipeline
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp/src/pipeline/pipeline.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp/src/pipeline/pipeline.c`
+- Language / framework / stack: C, codebase indexing pipeline, graph buffer and store backends
+- Code shape / snippet:
+```c
+static const struct {
+    seq_pass_fn fn;
+    const char *name;
+    bool ignore_err;
+} seq_passes[] = {
+    {cbm_pipeline_pass_definitions, "definitions", false},
+    {cbm_pipeline_pass_k8s, "k8s", true},
+    {seq_pass_lsp_cross_dispatch, "lsp_cross", true},
+    {cbm_pipeline_pass_calls, "calls", false},
+    {cbm_pipeline_pass_usages, "usages", false},
+    {cbm_pipeline_pass_semantic, "semantic", false},
+};
+
+for (int si = 0; si < PL_SEQ_PASSES && rc == 0; si++) {
+    int pr = seq_passes[si].fn(ctx, files, file_count);
+    if (pr != 0 && !seq_passes[si].ignore_err) { rc = pr; }
+    cbm_log_info("pass.timing", "pass", seq_passes[si].name, ...);
+}
+```
+- Why it matters: The indexer makes pass ordering explicit, names every pass for timing logs, and marks best-effort passes separately from required passes.
+- When to use: Use when building compilers, indexers, or ETL jobs where phases must run in a stable order and partial failure semantics differ by phase.
+- When not to use: Avoid when work is naturally event-driven or each stage can be independently retried by a queue.
+- Transferable principle: Represent a pipeline as data: function pointer, phase name, and failure policy.
+- Related patterns: Atomic Parallel-For Worker Pool, Reusable Bump Arena, Capture-Ignoring Query Extractor.
+- Risks / caveats: Adding a pass in the wrong position changes graph semantics; `ignore_err` can hide important regressions if overused.
+- Agentic coding guidance: When inserting a pass, document its preconditions, add timing logs, decide whether errors are fatal, and test cancellation after that phase.
+
+### Atomic Parallel-For Worker Pool
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp/src/pipeline/worker_pool.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp/src/pipeline/worker_pool.c`
+- Language / framework / stack: C, pthreads, source indexing parallel dispatch
+- Code shape / snippet:
+```c
+typedef void (*cbm_parallel_fn)(int idx, void *ctx);
+
+typedef struct {
+    cbm_parallel_fn fn;
+    void *ctx;
+    _Atomic int *next_idx;
+    int count;
+} pthread_worker_arg_t;
+
+static void *pthread_worker(void *arg) {
+    pthread_worker_arg_t *wa = arg;
+    while (WP_TRUE) {
+        int idx = atomic_fetch_add_explicit(wa->next_idx, WP_STEP, memory_order_relaxed);
+        if (idx >= wa->count) { break; }
+        wa->fn(idx, wa->ctx);
+    }
+    return NULL;
+}
+```
+- Why it matters: A tiny `parallel_for` abstraction gives each index exactly once, balances uneven files naturally through a shared atomic counter, and falls back to serial execution for trivial workloads.
+- When to use: Use for embarrassingly parallel per-file work where item cost varies and a queue would add unnecessary complexity.
+- When not to use: Avoid when jobs have dependencies, need ordered output, or must support cancellation at sub-item granularity.
+- Transferable principle: For heterogeneous batch work, atomic index stealing can be simpler and more balanced than pre-splitting ranges.
+- Related patterns: Ordered Multi-Pass Indexing Pipeline, Ignore-Aware Parallel File Walk, Sleep-Bounded Scheduled Start Gate.
+- Risks / caveats: All workers share the same context pointer, so callback state must be thread-safe or partitioned by index; output order is nondeterministic.
+- Agentic coding guidance: When writing a callback for this pool, keep per-index writes isolated, merge results after the parallel section, and test single-worker fallback.
+
+### Reusable Bump Arena
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp/src/foundation/arena.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp/src/foundation/arena.c`
+- Language / framework / stack: C, foundation memory management, per-file extraction lifetime
+- Code shape / snippet:
+```c
+typedef struct {
+    char *blocks[CBM_ARENA_MAX_BLOCKS];
+    size_t block_sizes[CBM_ARENA_MAX_BLOCKS];
+    int nblocks;
+    size_t block_size;
+    size_t used;
+    size_t total_alloc;
+} CBMArena;
+
+void *cbm_arena_alloc(CBMArena *a, size_t n) {
+    n = (n + ARENA_ALIGN) & ~(size_t)ARENA_ALIGN;
+    if (a->used + n > a->block_size) {
+        if (!arena_grow(a, n)) { return NULL; }
+    }
+    char *ptr = a->blocks[a->nblocks - SKIP_ONE] + a->used;
+    a->used += n;
+    a->total_alloc += n;
+    return ptr;
+}
+```
+- Why it matters: Short-lived extraction data can be allocated quickly and freed all at once, with reset support that keeps the first block for reuse.
+- When to use: Use when many small allocations share the same lifetime, such as parsing one file or building one temporary registry.
+- When not to use: Avoid for objects with independent lifetimes or APIs that need individual frees.
+- Transferable principle: Match allocator lifetime to workload lifetime; freeing a phase at once is simpler than tracking every object.
+- Related patterns: Ordered Multi-Pass Indexing Pipeline, Versioned Stream Serialization Constructors, Atomic Parallel-For Worker Pool.
+- Risks / caveats: Arena memory is retained until reset/destroy, so long-lived arenas can hide leaks or grow to the largest historical workload.
+- Agentic coding guidance: When using the arena, document the owner phase, reset or destroy it at the phase boundary, and never return arena-backed pointers beyond that lifetime.
+
+## Worker 4 Batch 8
+
+### Tree-Sitter Grammar Combinator Layer
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AbstractMachinesLab__tree-sitter-erlang` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AbstractMachinesLab__tree-sitter-erlang/grammar.js`
+- Language / framework / stack: JavaScript, Tree-sitter grammar DSL, Erlang parser generation
+- Code shape / snippet:
+```javascript
+const sepBy = (sep, x) => seq(x, repeat(seq(sep, x)));
+const delim = (open, x, close) => seq(open, x, close);
+
+const tuple = (x) => delim(BRACE_LEFT, opt(sepBy(COMMA, x)), BRACE_RIGHT);
+const list = (x) => delim(BRACKET_LEFT, opt(sepBy(COMMA, x)), BRACKET_RIGHT);
+const args = (x) => field("arguments", parens(opt(sepBy(COMMA, x))));
+
+type_tuple: ($) => tuple($.type_expression),
+expr_list_cons: ($) =>
+  delim(BRACKET_LEFT, seq(field("init", sepBy(COMMA, $.expression)), PIPE, field("tail", $.expression)), BRACKET_RIGHT),
+```
+- Why this matters: The Erlang grammar avoids repeating delimiter and separator mechanics across type, pattern, and expression rules, which keeps the domain grammar visible instead of burying it in punctuation boilerplate.
+- When to use: Use when a DSL or parser has many recurring structural forms such as comma lists, braces, optional argument lists, or field-wrapped captures.
+- When not to use: Avoid when each form has unique recovery, precedence, or error behavior that a generic helper would obscure.
+- Transferable principle: Build a tiny grammar vocabulary before writing the full grammar; repeated syntax shapes deserve names.
+- Related patterns: Dialect-Generated Grammar Factory, Source-Coupled AST Node Wrapper, Snippet Context Parse Matrix.
+- Risks / caveats: Over-generalized helpers can hide Tree-sitter precedence and conflict details; keep combinators shallow and inspect generated parser behavior after changing them.
+- Agentic coding guidance: When adding grammar rules, first search for an existing combinator, then add a corpus fixture that exercises nesting and ambiguity around the helper.
+
+### Atomic Native Peer Close Guard
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__android-tree-sitter` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__android-tree-sitter/android-tree-sitter/src/main/java/com/itsaky/androidide/treesitter/TSNativeObject.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__android-tree-sitter/android-tree-sitter/src/main/cpp/utf16str/JavaUTF16String.cpp`
+- Language / framework / stack: Java, JNI, C++, Android Tree-sitter bindings
+- Code shape / snippet:
+```java
+protected final AtomicLong pointer = new AtomicLong(0);
+
+public boolean canAccess() {
+  return getNativeObject() != 0;
+}
+
+protected void checkAccess() {
+  if (!canAccess()) {
+    throw new IllegalStateException("Cannot access native object");
+  }
+}
+
+@Override
+public void close() {
+  if (getNativeObject() != 0) {
+    closeNativeObj();
+  }
+  setNativeObject(0);
+}
+```
+- Why this matters: Java objects that wrap native pointers can fail after free, double-free, or leak. Centralizing the pointer, access checks, and idempotent close behavior gives every native peer the same safety boundary.
+- When to use: Use for JNI, FFI, WASM handles, database native handles, or GPU resources exposed through managed objects.
+- When not to use: Avoid for pure managed resources where ownership is already represented by normal language lifetimes.
+- Transferable principle: Treat foreign handles as nullable capabilities; every public method crosses a capability check before touching native state.
+- Related patterns: Opaque Handle Status-Code C API, Move-Safe RAII Metrics Guards, Promise-Locked Extension Singleton.
+- Risks / caveats: `AtomicLong` makes pointer reads atomic, not the underlying native object thread-safe; pair this with synchronization when methods mutate shared native state.
+- Agentic coding guidance: When adding a native wrapper method, call `checkAccess()` before JNI calls and make `closeNativeObj()` the only place that frees the native peer.
+
+### Annotation-Generated Synchronization Facade
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__android-tree-sitter` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__android-tree-sitter/annotations/src/main/java/com/itsaky/androidide/treesitter/annotations/Synchronized.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__android-tree-sitter/annotation-processors/src/main/java/com/itsaky/androidide/treesitter/ap/SynchronizedAnnotationProcessor.java`
+- Language / framework / stack: Java 11, annotation processing, JavaPoet, ReentrantLock
+- Code shape / snippet:
+```java
+if (annotation.useReentrantLock()) {
+  typeSpec.addField(FieldSpec.builder(ReentrantLock.class, "lock", Modifier.PRIVATE, Modifier.FINAL)
+    .initializer("new $T()", ReentrantLock.class)
+    .build());
+}
+
+if (annotation.useReentrantLock()) {
+  body.addStatement("lock.lock()").beginControlFlow("try");
+}
+body.addStatement(stmt, method.getSimpleName().toString());
+if (annotation.useReentrantLock()) {
+  body.nextControlFlow("finally").addStatement("lock.unlock()").endControlFlow();
+}
+```
+- Why this matters: The processor generates synchronized subclasses from annotated mutable native wrappers, letting the base class stay direct while offering a lock-protected facade without hand-writing every delegating method.
+- When to use: Use when multiple classes need the same synchronization wrapper and method signatures change often enough that manual wrappers will drift.
+- When not to use: Avoid when locking policy needs per-method invariants, lock ordering, or transactional composition across objects.
+- Transferable principle: Generate mechanical safety facades from source annotations, but leave opt-out annotations for methods that are intentionally lock-free.
+- Related patterns: Public API Signature Gate, Runtime Trait Abstraction, Atomic Native Peer Close Guard.
+- Risks / caveats: Generated synchronization can hide lock contention and deadlocks; processors should reject invalid targets and generated code should be inspected in CI artifacts.
+- Agentic coding guidance: When annotating a class, audit every inherited public method for lock suitability and mark cheap read-only helpers with the explicit opt-out annotation.
+
+### Binary-Search Token Budget Repo Map
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndyInternet__indexer` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndyInternet__indexer/src/indexer/graph/repomap.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndyInternet__indexer/src/indexer/tokens.py`
+- Language / framework / stack: Python, NetworkX/PageRank-fed repo map, tiktoken
+- Code shape / snippet:
+```python
+lo, hi = 1, len(ranked_files)
+best_output = ""
+
+while lo <= hi:
+    mid = (lo + hi) // 2
+    output = _render_files(ranked_files[:mid], file_symbols)
+    tokens = count_tokens(output)
+
+    if tokens <= token_budget:
+        best_output = output
+        lo = mid + 1
+    else:
+        hi = mid - 1
+```
+- Why this matters: The renderer maximizes included ranked files under a real tokenizer count instead of guessing by characters, making context windows predictable for LLM prompts.
+- When to use: Use for repo maps, search result packs, prompt bundles, or generated documentation that must fit a hard token budget.
+- When not to use: Avoid when item sizes are not monotonic in rank order or when later items can be more valuable than earlier items.
+- Transferable principle: If a list is already sorted by relevance and rendered size grows monotonically, binary search the largest prefix that fits.
+- Related patterns: Budgeted Context Build Pipeline, Context Firewall Artifact Envelope, SQLite Tool Result Cache.
+- Risks / caveats: A ranked prefix can exclude a small but highly useful low-ranked item; combine with explicit must-include anchors for user-mentioned files.
+- Agentic coding guidance: When changing prompt rendering, use the same tokenizer used in production and add fixtures where the budget cuts through class/member outlines.
+
+### Rule-Bucketed API Change Classifier
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan0628__diffguardian` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan0628__diffguardian/src/classifier/types.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan0628__diffguardian/src/classifier/engine.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan0628__diffguardian/src/classifier/rules/R03_required_param_added.ts`
+- Language / framework / stack: TypeScript, API diff classifier, rule plug-ins
+- Code shape / snippet:
+```typescript
+const activeRules = allRules.filter(r => r.languages === 'all' || r.languages.includes(language));
+const ruleBuckets = {
+  function: activeRules.filter((r): r is FunctionRule => r.target === 'function'),
+  interface: activeRules.filter((r): r is InterfaceRule => r.target === 'interface'),
+  enum: activeRules.filter((r): r is EnumRule => r.target === 'enum'),
+  type_alias: activeRules.filter((r): r is TypeAliasRule => r.target === 'type_alias'),
+};
+
+for (const rule of rulesToRun) {
+  const triggered = rule.check(oldSig, newSig);
+  if (triggered) results.push(...(Array.isArray(triggered) ? triggered : [triggered]));
+}
+```
+- Why this matters: Every breaking-change rule has a typed contract, but the engine pre-filters by language and target once per file, avoiding repeated routing and blind casts while keeping rules independently testable.
+- When to use: Use for linters, policy engines, validators, migration analyzers, or security scanners with many independently authored rules.
+- When not to use: Avoid when rules depend on global ordering or need shared mutable state across rule execution.
+- Transferable principle: Separate rule eligibility from rule logic; route once, then let small pure checks decide whether they trigger.
+- Related patterns: Bounded Flake Classifier, Fail-Safe Converter Registry, Dynamic Object Store Registry With Lazy Backend Initialization.
+- Risks / caveats: Key-prefix routing must stay aligned with parser output; add contract tests whenever a new symbol type or key format is introduced.
+- Agentic coding guidance: When adding a rule, declare `languages` and `target` narrowly, test both trigger and non-trigger cases, and avoid reaching into unrelated signature shapes.
+
+### WASM Grammar Load Dedupe With Tree Cleanup
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan0628__diffguardian` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan0628__diffguardian/src/parsers/ast-mapper.ts`
+- Language / framework / stack: TypeScript, web-tree-sitter, WASM grammar lifecycle
+- Code shape / snippet:
+```typescript
+if (this.loadingLanguages.has(code)) {
+  return this.loadingLanguages.get(code)!;
+}
+
+const loadPromise = this.loadGrammar(code).finally(() => {
+  this.loadingLanguages.delete(code);
+});
+this.loadingLanguages.set(code, loadPromise);
+return loadPromise;
+
+// Later, after parse + dispatch:
+finally {
+  tree?.delete();
+}
+```
+- Why this matters: Grammar loading is deduplicated with an in-flight promise map, and parse trees are freed in `finally` even when signature extraction throws, preventing both thundering-herd loads and WASM heap leaks.
+- When to use: Use for lazy runtime assets such as WASM grammars, model weights, language servers, or embedded databases that multiple requests may request concurrently.
+- When not to use: Avoid when each caller needs isolated mutable runtime state instead of a shared loaded artifact.
+- Transferable principle: Cache both completed assets and in-flight loads, then release per-request native/WASM allocations in unconditional cleanup paths.
+- Related patterns: Async MCP Connection Lifecycle, Promise-Locked Extension Singleton, Serialized External Scanner Context Stack.
+- Risks / caveats: Failed loads are removed and may retry on every request; add backoff or a cached diagnostic if repeated load failures become noisy.
+- Agentic coding guidance: When adding a language, wire the grammar filename, translator, and cleanup tests together; intentionally throw inside dispatch once to verify `tree.delete()` still runs.
+
+### Crash-Rejecting Worker Resurrection Circuit Breaker
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ChronosTeamx__FuncUndo` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ChronosTeamx__FuncUndo/chronos/src/worker/workerManager.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ChronosTeamx__FuncUndo/chronos/src/worker/parser.worker.ts`
+- Language / framework / stack: TypeScript, Node.js worker_threads, VS Code extension worker parsing
+- Code shape / snippet:
+```typescript
+private consecutiveRestarts = 0;
+private readonly MAX_RESTARTS = 3;
+private jobRegistry = new Map<string, { resolve: (value: any) => void; reject: (reason?: any) => void }>();
+
+this.worker!.on('exit', (code) => {
+  for (const [, job] of this.jobRegistry.entries()) {
+    job.reject(new Error('Worker thread crashed during execution.'));
+  }
+  this.jobRegistry.clear();
+  this.worker = null;
+  this.consecutiveRestarts++;
+  if (this.consecutiveRestarts > this.MAX_RESTARTS) return;
+  this.init().catch((err) => console.error('[WorkerManager] Failed to resurrect:', err));
+});
+```
+- Why this matters: The manager never leaves callers waiting on a dead worker, and it bounds automatic resurrection to avoid infinite crash loops.
+- When to use: Use when background workers own expensive runtimes, parse untrusted input, or can crash independently of the host process.
+- When not to use: Avoid when the worker mutates non-idempotent external state and replaying jobs after restart would corrupt data.
+- Transferable principle: On worker death, reject every in-flight request before restarting; a clean failure beats a hung promise.
+- Related patterns: Head-of-Line Preserving Task Assignment, Poison-Pill Timeboxed Query Stream, Sleep-Bounded Scheduled Start Gate.
+- Risks / caveats: Jobs are rejected rather than replayed, so callers must decide whether retry is safe; restart counters should reset only after a successful ready signal.
+- Agentic coding guidance: When adding a new worker message, include a stable `jobId`, test worker termination during the request, and assert the promise rejects with a useful error.
+
+### Noise-Resistant Structural AST Hash
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ChronosTeamx__FuncUndo` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ChronosTeamx__FuncUndo/chronos/src/worker/semanticHasher.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/ChronosTeamx__FuncUndo/chronos/src/worker/astTraverser.ts`
+- Language / framework / stack: TypeScript, web-tree-sitter, semantic snapshot hashing
+- Code shape / snippet:
+```typescript
+function walkSubtree(node: SyntaxNode) {
+  if (EXCLUDED_NODE_TYPES.has(node.type)) {
+    return;
+  }
+  if (VALUE_SENSITIVE_TYPES.has(node.type)) {
+    nodeTypes.push(`${node.type}:${node.text}`);
+  } else if (SEMANTIC_NODE_TYPES.has(node.type)) {
+    nodeTypes.push(node.type);
+  }
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i);
+    if (child) walkSubtree(child);
+  }
+}
+return crypto.createHash('sha256').update(nodeTypes.join('-')).digest('hex');
+```
+- Why this matters: The hash ignores formatting and comments while preserving operator and literal changes, so snapshots detect meaningful edits instead of churn.
+- When to use: Use for function history, semantic cache invalidation, code-review dedupe, or incremental indexing where whitespace-only changes should not invalidate downstream work.
+- When not to use: Avoid when exact source text, comments, or formatting are part of the behavior or compliance record.
+- Transferable principle: Normalize to the semantic tokens you care about, then hash the normalized stream.
+- Related patterns: Canonical IR Stable Hash, Versioned Stream Serialization Constructors, Rolling Hash Duplication Chunker.
+- Risks / caveats: The selected node-type sets define what "semantic" means; missing a value-sensitive node can create false negatives.
+- Agentic coding guidance: When updating the hash vocabulary, add paired fixtures for ignored noise and preserved semantic edits before changing production hashing.
+
+### Interval-Claim Rule Arbitration
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DNSZLSK__lexluthor` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DNSZLSK__lexluthor/packages/core/src/engine/engine.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DNSZLSK__lexluthor/packages/core/src/engine/types.ts`
+- Language / framework / stack: TypeScript, web-tree-sitter, deterministic code subtitle engine
+- Code shape / snippet:
+```typescript
+candidates.sort((a, b) => {
+  if (b.spec !== a.spec) return b.spec - a.spec;
+  const aw = a.claim.endIndex - a.claim.startIndex;
+  const bw = b.claim.endIndex - b.claim.startIndex;
+  if (bw !== aw) return bw - aw;
+  return a.claim.startIndex - b.claim.startIndex;
+});
+
+const claimed: Interval[] = [];
+for (const cand of candidates) {
+  if (claimed.some((c) => intervalsOverlap(cand.claim, c))) continue;
+  const message = safeRender(cand.rule, cand.ctx);
+  if (message == null) continue;
+  claimed.push(cand.claim);
+}
+```
+- Why this matters: Multiple Tree-sitter rules can match the same code. Claim intervals make overlap resolution explicit: the most specific useful subtitle wins, and nested duplicate subtitles are suppressed.
+- When to use: Use for source annotations, diagnostics, code lenses, semantic highlighting, or explanation overlays where overlapping matches are common.
+- When not to use: Avoid when multiple overlapping annotations are intentionally useful and should be displayed together.
+- Transferable principle: Convert rule matches into claimed source ranges, then arbitrate deterministically before rendering.
+- Related patterns: After-Visit Tree Visitor Pipeline, Capture-Ignoring Query Extractor, Cursor-Scoped Message Bus.
+- Risks / caveats: Greedy interval selection can hide a lower-specificity but more helpful annotation; specificity values need review as the rule set grows.
+- Agentic coding guidance: When adding a rule, state whether it claims `header` or `subtree`, add an overlap test with a nearby broader rule, and verify stable ordering.
+
+### Locale-Independent Message Catalog Rendering
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DNSZLSK__lexluthor` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DNSZLSK__lexluthor/packages/core/src/engine/translator.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DNSZLSK__lexluthor/packages/core/src/read/locale/shared.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DNSZLSK__lexluthor/packages/core/src/lexicon/catalog/index.ts`
+- Language / framework / stack: TypeScript, localization catalogs, deterministic code reading
+- Code shape / snippet:
+```typescript
+function render(m: Message): string {
+  const entry = own(catalog, m.key);
+  if (entry === undefined) {
+    throw new Error(`[lexluthor] missing catalog key: "${m.key}" (${locale})`);
+  }
+  if (typeof entry === 'string') return format(entry, m.params ?? {});
+  return entry(m.params ?? {}, helpers);
+}
+
+export const GLOSSED_HEADS: ReadonlySet<string> = new Set(Object.keys(GLOSSARY_FR));
+export const VERB_META = Object.fromEntries(
+  Object.entries(VERBS_FR).map(([k, v]) => [k, { valence: v.valence, pattern: v.pattern ?? 'plain' }])
+);
+```
+- Why this matters: Rules return locale-independent message keys and params; structural decisions use canonical French-derived sets, while final text rendering happens per locale.
+- When to use: Use when analysis must be deterministic across locales but presentation must vary by language.
+- When not to use: Avoid when locale itself affects the semantic decision, such as locale-specific parsing or legal phrasing rules.
+- Transferable principle: Keep rule decisions in stable keys and data, then defer prose generation to a catalog layer.
+- Related patterns: Static Telemetry Attribute Vocabulary, Ordered Markdown Channel Pipeline, Context Firewall Artifact Envelope.
+- Risks / caveats: One reference locale can bias structural vocabulary; catalog completeness tests are needed to avoid silent omissions.
+- Agentic coding guidance: When adding prose, add the message key to every required catalog and keep rule `render()` free of hard-coded localized sentences.
+
+### Smallest-Span Line Ownership Chunking
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG/coderag/chunking/base.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG/coderag/chunking/python_ast.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG/coderag/chunking/treesitter.py`
+- Language / framework / stack: Python, AST/tree-sitter chunking, code RAG indexing
+- Code shape / snippet:
+```python
+owner: List[Optional[int]] = [None] * (n + 1)
+order = sorted(
+    range(len(spans)),
+    key=lambda i: spans[i].end_line - spans[i].start_line,
+    reverse=True,
+)
+for idx in order:
+    s = spans[idx]
+    for ln in range(max(1, s.start_line), min(n, s.end_line) + 1):
+        owner[ln] = idx
+
+# Later: emit owned symbol runs, window only unowned gaps.
+```
+- Why this matters: Large outer spans are assigned first and smaller nested spans overwrite them, so every line belongs to the most specific symbol or to a fallback window, producing non-overlapping chunks.
+- When to use: Use for RAG chunking, documentation slicing, code navigation, or coverage maps where nested symbols should not duplicate the same source lines.
+- When not to use: Avoid when retrieval benefits from overlap, such as models that need duplicated class context around every method.
+- Transferable principle: Model chunking as ownership of source ranges; gaps can be windowed after precise spans are assigned.
+- Related patterns: Outline-Aware Excerpt Assembly, Map-Driven Parallel Query Worker Fanout, Reusable Bump Arena.
+- Risks / caveats: The quality depends on span extraction; syntax errors and missing grammar support must fall back to windows without failing indexing.
+- Agentic coding guidance: When adding a language extractor, return 1-based inclusive spans and test nested class/method ownership plus syntax-error fallback.
+
+### Hybrid RRF Search With Graph Neighbor Recall
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG/coderag/retrieval/search.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG/coderag/retrieval/fusion.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Neverdecel__CodeRAG/coderag/retrieval/graph.py`
+- Language / framework / stack: Python, vector search, BM25, reciprocal rank fusion, optional graph expansion
+- Code shape / snippet:
+```python
+dense_ranked = [cid for cid, _ in self.store.vector_search(qvec, fetch_k)]
+lexical_ranked = [cid for cid, _ in self.store.lexical_search(query, fetch_k)]
+
+ranked_lists: List[List[int]] = [dense_ranked, lexical_ranked]
+weights: List[float] = [dense_w, lexical_w]
+
+if self.config.graph_expansion:
+    neighbors = self._graph_neighbors(dense_ranked, lexical_ranked, dense_w, lexical_w)
+    if neighbors:
+        ranked_lists.append(neighbors)
+        weights.append(self.config.graph_weight)
+
+fused = reciprocal_rank_fusion(ranked_lists, k=self.config.rrf_k, weights=weights)[:pool]
+```
+- Why this matters: Dense, lexical, and callee-neighbor signals are fused by rank rather than incompatible raw scores, improving recall without letting graph expansion overpower direct search matches.
+- When to use: Use when retrieval has heterogeneous ranking systems, such as vector similarity, BM25, path priors, or dependency graph hints.
+- When not to use: Avoid when one signal already returns calibrated probabilities that should not be rank-normalized.
+- Transferable principle: Fuse rankings, not raw scores, when the scoring scales are not comparable.
+- Related patterns: Two-Stage Embedding Tool Matcher, Poison-Pill Timeboxed Query Stream, Budgeted Context Build Pipeline.
+- Risks / caveats: Graph expansion can add plausible but irrelevant neighbors; keep it opt-in or down-weighted and validate directionality with retrieval evals.
+- Agentic coding guidance: When tuning retrieval, log per-phase timings and inspect each fused list separately before changing weights.
+
+### Fault-Isolated Context Bundle Hydration
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory/aiforge_memory/query/bundle.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory/aiforge_memory/query/translator.py`
+- Language / framework / stack: Python, Neo4j, prompt context bundling, natural-language grounding
+- Code shape / snippet:
+```python
+try:
+    bundle.files = _files_rows(driver, repo=repo, paths=file_paths)
+    bundle.sources_used.append("files")
+except Exception as exc:
+    bundle.errors.append(f"files: {exc}")
+
+try:
+    bundle.runbook_md, bundle.conventions_md = _repo_docs_for(driver, repo=repo)
+except Exception as exc:
+    bundle.errors.append(f"repo_docs: {exc}")
+
+_trim_to_budget(bundle, token_budget)
+```
+- Why this matters: Each hydration source degrades independently, so a missing graph index, broken runbook fetch, or failed call-neighbor query still returns a partial context bundle with explicit error provenance.
+- When to use: Use for agent context builders that combine many optional sources such as code, memory, docs, tickets, and graph neighbors.
+- When not to use: Avoid when partial output could cause unsafe execution and all sources must be present transactionally.
+- Transferable principle: Treat prompt context as a bundle of independently fallible sections with `sources_used` and `errors`, not as a single all-or-nothing query.
+- Related patterns: Context Firewall Artifact Envelope, Authenticated Worker Protocol Envelope, Tool Result Limit Resolution.
+- Risks / caveats: Partial bundles can look authoritative if errors are hidden; render or log provenance so the agent knows what was missing.
+- Agentic coding guidance: When adding a bundle source, wrap it independently, append a source name only after data is present, and include a targeted error label on failure.
+
+### Priority-Preserving Context Budget Trim
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory/aiforge_memory/query/bundle.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory/aiforge_memory/query/tests/test_trim_priority.py`
+- Language / framework / stack: Python, prompt rendering, tiktoken, context budget management
+- Code shape / snippet:
+```python
+if _count_tokens(bundle.render()) <= token_budget:
+    return
+bundle.callers = []
+bundle.callees = []
+
+bundle.chunks = bundle.chunks[:2]
+if _count_tokens(bundle.render()) <= token_budget:
+    return
+
+bundle.chunks = []
+if _count_tokens(bundle.render()) <= token_budget:
+    return
+
+bundle.cross_repo = []
+bundle.decisions = []
+bundle.observations = []
+bundle.notes = []
+bundle.docs = []
+```
+- Why this matters: The trimmer drops re-readable call neighbors and raw code chunks before scarce memory facts, preserving decisions and observations longer than source snippets the agent can fetch again.
+- When to use: Use when prompt sections have different replacement costs: code can be re-opened, but human decisions or trajectory memories are expensive to recover.
+- When not to use: Avoid when raw source is the legal or safety authority and memory facts are only advisory.
+- Transferable principle: Trim by regeneration cost and decision value, not by section order or byte size alone.
+- Related patterns: Binary-Search Token Budget Repo Map, Budgeted Context Build Pipeline, Context Firewall Artifact Envelope.
+- Risks / caveats: The priority order is product-specific; encode it in tests so future edits do not accidentally drop the wrong section first.
+- Agentic coding guidance: When introducing a new bundle section, decide where it sits in the trim ladder and add a budget test that proves it survives or drops at the intended stage.
+
+### Zombie-Safe Scheduler Timeout Lock
+
+- Where found: `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory` - `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Manikanta-Reddy-Pasala__AiForgeMemory/aiforge_memory/features/scheduler/runner.py`
+- Language / framework / stack: Python, scheduler daemon, git polling, threaded ingest, lockfiles
+- Code shape / snippet:
+```python
+prior = _LIVE_WORKERS.get(rs.name)
+if prior is not None:
+    if prior.is_alive():
+        status.last_status = "still_running"
+        return status
+    _LIVE_WORKERS.pop(rs.name, None)
+    _release_lock(rs.name)
+
+worker.start()
+worker.join(timeout=eff_timeout)
+if worker.is_alive():
+    status.last_status = "timeout"
+    return status
+
+finally:
+    if worker is not None and worker.is_alive():
+        _LIVE_WORKERS[rs.name] = worker
+    else:
+        _LIVE_WORKERS.pop(rs.name, None)
+        _release_lock(rs.name)
+```
+- Why this matters: A timed-out ingest thread keeps the per-repo lock until it is observed dead, preventing the next scheduler tick from starting a second ingest over the same repository.
+- When to use: Use for periodic jobs where cancellation is cooperative or impossible and duplicate work can corrupt state.
+- When not to use: Avoid when the worker can be safely killed and all resources are transactionally rolled back on timeout.
+- Transferable principle: Timeout does not mean stopped; track live workers separately from scheduling state and release locks only after observed termination.
+- Related patterns: Sleep-Bounded Scheduled Start Gate, Locked Temp-Backup JSON Commit, Crash-Rejecting Worker Resurrection Circuit Breaker.
+- Risks / caveats: Daemon threads can continue until process exit; long-lived timeouts need observability and a manual recovery path.
+- Agentic coding guidance: When adding scheduler work, make it idempotent, write status transitions for `timeout` and `still_running`, and never release a lock merely because `join(timeout)` returned.

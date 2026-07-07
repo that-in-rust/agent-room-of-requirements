@@ -11,6 +11,9 @@ Purpose: record CodeGraphContext graph evidence used during the `idiomatic-code-
 | `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker` | `/tmp/codex-code-intel/codegraphcontext/knight-bus-graph-walker-20260706-225736` | 259 files, 560 functions, 3 classes, 6 traits, 66 structs, 25 enums, 80 modules |
 | `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/bytecodealliance__tree-sitter-wit` | `/tmp/codex-code-intel/codegraphcontext/bytecodealliance__tree-sitter-wit-20260706-230156` | 50 files, 36 functions, 15 classes, 14 structs, 1 enum, 40 modules |
 | `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/casey__tree-sitter-just` | `/tmp/codex-code-intel/codegraphcontext/casey__tree-sitter-just-20260706-230234` | 44 files, 47 functions, 16 classes, 14 structs, 1 enum, 46 modules |
+| `/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm` | `/tmp/codex-code-intel/codegraphcontext/nostd-toposort-kahns-algorithm-20260707-065736` | 11 files, 35 functions, 1 struct, 1 enum, 6 modules |
+| `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper` | `/tmp/codex-code-intel/codegraphcontext/BrianHicks__tree-grepper-20260707-070919` | 16 files, 54 functions, 7 structs, 3 enums, 26 modules |
+| `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AB498__code-context-provider-mcp` | `/tmp/codex-code-intel/codegraphcontext/AB498__code-context-provider-mcp-20260707-072447` | 8 files, 16 functions, 8 modules |
 
 ## Timed-Out Smoke Runs
 
@@ -22,6 +25,7 @@ These CGC attempts did not produce usable graph evidence. The corresponding patt
 | `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/apple__tree-sitter-pkl` | `/tmp/codex-code-intel/codegraphcontext/apple__tree-sitter-pkl-20260706-230857` | timed out; no graph claims used |
 | `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/tree-sitter__tree-sitter` | `/tmp/codex-code-intel/codegraphcontext/tree-sitter__tree-sitter-20260706-230210` | timed out; no graph claims used |
 | `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/tree-sitter-grammars__tree-sitter-hcl` | `/tmp/codex-code-intel/codegraphcontext/tree-sitter-grammars__tree-sitter-hcl-20260706-230223` | timed out; no graph claims used |
+| `/Users/amuldotexe/Desktop/reference-repos-yard/GitNexus` | `/tmp/codex-code-intel/codegraphcontext/GitNexus-20260707-063836` | interrupted after bounded wait; no graph claims used |
 
 ## Query Evidence
 
@@ -72,6 +76,58 @@ run_query_now
 ```
 
 Interpretation: the graph confirms repeated measurement, report-bundle, parser, process-resolution, latency, and parity-verification function families. These are candidates for idiomatic benchmarking and verification patterns, subject to direct source reads before inclusion in the encyclopedia files.
+
+### nostd-toposort-kahns-algorithm
+
+CodeGraphContext function discovery returned representative functions:
+
+```text
+add_edge_to_graph
+create_graph_with_valid_capacity
+cycle_detection_returns_error
+property_completeness_all_nodes
+property_cycle_detection_consistency
+property_edge_insertion_order_independence
+benchmark_small_dag_sort
+benchmark_graph_structures
+```
+
+Interpretation: the graph confirms this repo is organized around a small no-std graph type, correctness/property tests, and benchmark functions for Kahn-style topological sorting. Batch 6 Worker 4 verified pattern claims against direct source reads before adding entries.
+
+### BrianHicks__tree-grepper
+
+CodeGraphContext function discovery returned representative functions:
+
+```text
+do_query
+find_files
+extract_from_file
+extract_from_text
+extractor_for
+from_extractors
+language_list_should_be_sorted
+parse_tree
+```
+
+Interpretation: the graph confirms this repo is organized around a CLI query path, file discovery, language-aware extractors, parser/tree handling, and tests for sorted language metadata. Batch 7 Worker 4 verified pattern claims against direct source reads before adding entries.
+
+### AB498__code-context-provider-mcp
+
+CodeGraphContext function discovery returned representative functions:
+
+```text
+initializeTreeSitter
+extractCodeSymbols
+getLanguageFromExtension
+parseGitignore
+shouldIgnore
+isSupportedFile
+getDirectoryTree
+setupParsers
+downloadFile
+```
+
+Interpretation: the graph confirms this MCP server is organized around lazy Tree-sitter WASM initialization, symbol extraction, gitignore-aware traversal, supported-file filtering, and setup-time parser downloads. Batch 8 evidence was checked against direct source reads in `index.js`, `setup.js`, and `package.json` before adding the run to the shared evidence records.
 
 ## Use In Final Corpus
 

@@ -1,44 +1,44 @@
 {
-  "generated_at_utc": "2026-07-06T18:10:01+00:00",
+  "generated_at_utc": "2026-07-07T01:51:17+00:00",
   "total_repos": 911,
   "pattern_heading_counts": {
-    "1": 59,
-    "2": 79,
-    "3": 58,
-    "4": 60,
-    "5": 70
+    "1": 121,
+    "2": 137,
+    "3": 117,
+    "4": 119,
+    "5": 131
   },
   "file_counts": {
     "1": {
-      "lines": 1622,
-      "code_fences": 136
+      "lines": 3830,
+      "code_fences": 282
     },
     "2": {
-      "lines": 2418,
-      "code_fences": 166
+      "lines": 4429,
+      "code_fences": 284
     },
     "3": {
-      "lines": 1763,
-      "code_fences": 132
+      "lines": 3469,
+      "code_fences": 262
     },
     "4": {
-      "lines": 2060,
-      "code_fences": 120
+      "lines": 3841,
+      "code_fences": 240
     },
     "5": {
-      "lines": 2549,
-      "code_fences": 242
+      "lines": 4573,
+      "code_fences": 416
     }
   },
-  "total_pattern_headings": 326,
+  "total_pattern_headings": 625,
   "status_counts": {
-    "graph_backed_seed": 9,
-    "pending": 783,
-    "source_inspected": 119
+    "graph_backed_seed": 15,
+    "pending": 635,
+    "source_inspected": 261
   },
-  "codebase_memory_pass_count": 5,
-  "codegraphcontext_pass_count": 5,
-  "codegraphcontext_attempt_count": 9,
+  "codebase_memory_pass_count": 11,
+  "codegraphcontext_pass_count": 7,
+  "codegraphcontext_attempt_count": 12,
   "records": [
     {
       "index": 1,
@@ -46,7 +46,7 @@
       "desktop_relative_path": "TauriAppsOSS",
       "assigned_part": 1,
       "status": "source_inspected",
-      "pattern_count": 2,
+      "pattern_count": 1,
       "source_mentions": 2,
       "parts": [
         1
@@ -125,11 +125,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/alien",
       "desktop_relative_path": "oss-read-only/alien",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 8,
@@ -153,12 +157,11 @@
       "assigned_part": 4,
       "status": "source_inspected",
       "pattern_count": 4,
-      "source_mentions": 5,
+      "source_mentions": 4,
       "parts": [
         4
       ],
       "reasons": [
-        "batch_or_graph_note",
         "where_found_source_path"
       ]
     },
@@ -169,12 +172,11 @@
       "assigned_part": 5,
       "status": "source_inspected",
       "pattern_count": 5,
-      "source_mentions": 6,
+      "source_mentions": 5,
       "parts": [
         5
       ],
       "reasons": [
-        "batch_or_graph_note",
         "where_found_source_path"
       ]
     },
@@ -184,7 +186,7 @@
       "desktop_relative_path": "oss-read-only/alienplatform/quickwit",
       "assigned_part": 1,
       "status": "source_inspected",
-      "pattern_count": 6,
+      "pattern_count": 5,
       "source_mentions": 6,
       "parts": [
         1
@@ -200,12 +202,11 @@
       "assigned_part": 2,
       "status": "source_inspected",
       "pattern_count": 4,
-      "source_mentions": 5,
+      "source_mentions": 4,
       "parts": [
         2
       ],
       "reasons": [
-        "batch_or_graph_note",
         "where_found_source_path"
       ]
     },
@@ -246,12 +247,11 @@
       "assigned_part": 5,
       "status": "source_inspected",
       "pattern_count": 5,
-      "source_mentions": 6,
+      "source_mentions": 5,
       "parts": [
         5
       ],
       "reasons": [
-        "batch_or_graph_note",
         "where_found_source_path"
       ]
     },
@@ -411,7 +411,7 @@
       "desktop_relative_path": "oss-read-only/iggy",
       "assigned_part": 1,
       "status": "source_inspected",
-      "pattern_count": 3,
+      "pattern_count": 2,
       "source_mentions": 3,
       "parts": [
         1
@@ -425,11 +425,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/korrela-deployiq",
       "desktop_relative_path": "oss-read-only/korrela-deployiq",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 28,
@@ -453,12 +457,11 @@
       "assigned_part": 4,
       "status": "source_inspected",
       "pattern_count": 3,
-      "source_mentions": 4,
+      "source_mentions": 3,
       "parts": [
         4
       ],
       "reasons": [
-        "batch_or_graph_note",
         "where_found_source_path"
       ]
     },
@@ -634,7 +637,7 @@
       "desktop_relative_path": "oss-read-only/streamlit",
       "assigned_part": 1,
       "status": "graph_backed_seed",
-      "pattern_count": 4,
+      "pattern_count": 3,
       "source_mentions": 4,
       "parts": [
         1
@@ -709,11 +712,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/warp",
       "desktop_relative_path": "oss-read-only/warp",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 4,
+      "source_mentions": 10,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 47,
@@ -722,12 +729,11 @@
       "assigned_part": 2,
       "status": "source_inspected",
       "pattern_count": 3,
-      "source_mentions": 4,
+      "source_mentions": 3,
       "parts": [
         2
       ],
       "reasons": [
-        "batch_or_graph_note",
         "where_found_source_path"
       ]
     },
@@ -847,88 +853,121 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ElBruno.ModelContextProtocol",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ElBruno.ModelContextProtocol",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 58,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/LiveMCPBench",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/LiveMCPBench",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 59,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/MCP-Zero",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/MCP-Zero",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "graph_backed_seed",
+      "pattern_count": 1,
+      "source_mentions": 2,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "codebase_memory_smoke_passed",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 60,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/RAG-MCP-example",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/RAG-MCP-example",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 61,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/StableToolBench",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/StableToolBench",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 62,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolBench",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolBench",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 63,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolRoute",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolRoute",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 64,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolSandbox",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/ToolSandbox",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 65,
@@ -950,22 +989,30 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/appworld",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 67,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/benchmarking-tool-retrieval",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/benchmarking-tool-retrieval",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 68,
@@ -983,11 +1030,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/contextweaver",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/contextweaver",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 70,
@@ -1020,11 +1071,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/graph-tool-call",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 6,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 73,
@@ -1046,55 +1101,75 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcp-bench",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcp-bench",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 75,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcpproxy-go",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/mcpproxy-go",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 76,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/n2-QLN",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 6,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 77,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/semantic-router",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/semantic-router",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 78,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/tau2-bench",
       "desktop_relative_path": "personal-repos-lane/accio-tools/ignore-references/git-ref-repo/tau2-bench",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 79,
@@ -1112,11 +1187,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/amuldotexe.github.io",
       "desktop_relative_path": "personal-repos-lane/amuldotexe.github.io",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 81,
@@ -1184,11 +1263,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/confido-exploration-01",
       "desktop_relative_path": "personal-repos-lane/confido-exploration-01",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 87,
@@ -1206,11 +1289,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/dima-20241129",
       "desktop_relative_path": "personal-repos-lane/dima-20241129",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 3,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 89,
@@ -1404,88 +1491,121 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-dsl-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-dsl-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "graph_backed_seed",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "codebase_memory_smoke_passed",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 106,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-shell-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/cypher-shell-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 107,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/gds-agent-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 7,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 108,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/graph-data-science-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/graph-data-science-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 4,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 109,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-procedures-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-procedures-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 110,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 111,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-browser-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-browser-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 112,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-docs-bolt-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-docs-bolt-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 113,
@@ -1507,11 +1627,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-gds-client-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-gds-client-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 4,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 115,
@@ -1533,11 +1657,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-go-driver-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 117,
@@ -1559,121 +1687,166 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-javascript-driver-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-javascript-driver-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 119,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-ogm-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-ogm-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 120,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-python-driver-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-python-driver-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 121,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 122,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-testkit-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-testkit-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 123,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4rs-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4rs-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 124,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/opencypher-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/opencypher-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 3,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 125,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/age-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/age-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 126,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/antlr-grammars-v4-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/antlr-grammars-v4-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 127,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-ballista-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-ballista-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 128,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-rs-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-arrow-rs-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "graph_backed_seed",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "codebase_memory_smoke_passed",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 129,
@@ -1710,11 +1883,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-hugegraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-hugegraph-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 132,
@@ -1751,11 +1928,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-parquet-format-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/apache-parquet-format-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 135,
@@ -1807,22 +1988,30 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/blazegraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/blazegraph-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 139,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cayley-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cayley-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 4,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 140,
@@ -1844,55 +2033,75 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cugraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/cugraph-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 142,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/datafusion-comet-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/datafusion-comet-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 143,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/datafusion-python-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/datafusion-python-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 144,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/dgraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/dgraph-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 145,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/differential-dataflow-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/differential-dataflow-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 146,
@@ -1944,44 +2153,60 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/fjall-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 150,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 151,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gapbs-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 8,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 152,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graph-csr-openmp-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graph-csr-openmp-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 153,
@@ -1999,33 +2224,45 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 155,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 156,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphchi-cpp-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 157,
@@ -2047,121 +2284,165 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gridgraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gridgraph-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 159,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gunrock-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/gunrock-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 160,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 161,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/igraph-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 162,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/indradb-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/indradb-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 163,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/janusgraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/janusgraph-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 164,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/jemalloc-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/jemalloc-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 165,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/kuzu-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/kuzu-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 166,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ladybug-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 6,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 167,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/lagraph-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 7,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 168,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 169,
@@ -2179,88 +2460,120 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_arcadedb-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_arcadedb-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 171,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_graphblas-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_graphblas-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 172,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_driver-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_driver-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 173,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_impls-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v1_impls-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 174,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_driver-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 175,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_impls-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_impls-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 176,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/libcypher-parser-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/libcypher-parser-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 177,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ligra-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ligra-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 178,
@@ -2297,55 +2610,75 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/minigraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/minigraph-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 181,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nalgebra-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nalgebra-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 182,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ndarray-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ndarray-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 183,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nebula-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/nebula-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 184,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/networkit-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 185,
@@ -2367,11 +2700,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ongdb-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ongdb-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 187,
@@ -2393,44 +2730,61 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/petgraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/petgraph-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 189,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/python-graphblas-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/python-graphblas-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 190,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/qdrant-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/qdrant-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 3,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 191,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/raphtory-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/raphtory-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "graph_backed_seed",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "codebase_memory_smoke_passed",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 192,
@@ -2452,11 +2806,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/redisgraph-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/redisgraph-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 3,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 194,
@@ -2478,77 +2836,105 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rocksdb-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rocksdb-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 196,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rust-rocksdb-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rust-rocksdb-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 197,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/rustworkx-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 198,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sled-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sled-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 199,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/snap-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 200,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 201,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sprs-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sprs-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 202,
@@ -2570,88 +2956,120 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tantivy-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tantivy-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 204,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/terminusdb-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 8,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 205,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/thunderrw-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/thunderrw-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 3,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 206,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tigergraph-ecosys-src",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 207,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tikv-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tikv-src",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 3,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 208,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/timely-dataflow-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/timely-dataflow-src",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 209,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/tracing-src",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 210,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/typedb-src",
       "desktop_relative_path": "personal-repos-lane/knight-bus-graph-walker/gitrefrepo/typedb-src",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 211,
@@ -2702,11 +3120,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp",
       "desktop_relative_path": "personal-repos-lane/mordor-mcp",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 8,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 216,
@@ -2755,11 +3177,17 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/nostd-toposort-kahns-algorithm",
       "desktop_relative_path": "personal-repos-lane/nostd-toposort-kahns-algorithm",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "graph_backed_seed",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "codebase_memory_smoke_passed",
+        "codegraphcontext_smoke_passed",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 220,
@@ -2792,22 +3220,30 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 223,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/0sec-labs__foxguard",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/0sec-labs__foxguard",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 224,
@@ -2825,11 +3261,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/71__vscode-tree-sitter-api",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/71__vscode-tree-sitter-api",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 226,
@@ -2902,11 +3342,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aider-AI__aider",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aider-AI__aider",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 233,
@@ -3045,11 +3489,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan1643__swe-agent",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan1643__swe-agent",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 246,
@@ -3078,11 +3526,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Ataraxy-Labs__weave",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Ataraxy-Labs__weave",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 8,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 249,
@@ -3100,11 +3552,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BloopAI__bloop",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BloopAI__bloop",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 251,
@@ -3133,33 +3589,47 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrendanJamesLynskey__CodingAgents_01_Repo_Understanding",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrendanJamesLynskey__CodingAgents_01_Repo_Understanding",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 3,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 254,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BrianHicks__tree-grepper",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "graph_backed_seed",
+      "pattern_count": 3,
+      "source_mentions": 8,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "codebase_memory_smoke_passed",
+        "codegraphcontext_smoke_passed",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 255,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BurntSushi__ripgrep",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BurntSushi__ripgrep",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 256,
@@ -3188,11 +3658,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Christoph__treesitter-mcp",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Christoph__treesitter-mcp",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 259,
@@ -3210,11 +3684,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CoatiSoftware__Sourcetrail",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CoatiSoftware__Sourcetrail",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 261,
@@ -3243,22 +3721,31 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeEditApp__CodeEditSourceEditor",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeEditApp__CodeEditSourceEditor",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 264,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/CodeGraphContext__CodeGraphContext",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "batch_or_graph_note",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 265,
@@ -3287,11 +3774,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Cranot__roam-code",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Cranot__roam-code",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 268,
@@ -3364,22 +3855,31 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/DeusData__codebase-memory-mcp",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 9,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "batch_or_graph_note",
+        "where_found_source_path"
+      ]
     },
     {
       "index": 275,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Durafen__Claude-code-memory",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Durafen__Claude-code-memory",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 4,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 276,
@@ -3408,11 +3908,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Egonex-AI__Understand-Anything",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Egonex-AI__Understand-Anything",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 6,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 279,
@@ -3496,11 +4000,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/FosterG4__tree-sitter-mcpsaver",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/FosterG4__tree-sitter-mcpsaver",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 287,
@@ -3540,11 +4048,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/GlitterKill__sdl-mcp",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/GlitterKill__sdl-mcp",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 291,
@@ -3727,22 +4239,30 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakobeha__type-sitter",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Jakobeha__type-sitter",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 5,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 308,
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/JavierPrior845__clean-ast-linter",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/JavierPrior845__clean-ast-linter",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 2,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 309,
@@ -3870,11 +4390,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/LegacyCodeHQ__clarity-cli",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/LegacyCodeHQ__clarity-cli",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 321,
@@ -3980,11 +4504,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 7,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 331,
@@ -4248,11 +4776,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/RooCodeInc__Roo-Code",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/RooCodeInc__Roo-Code",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 3,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 355,
@@ -4568,11 +5100,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/abhigyanpatwari__GitNexus",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/abhigyanpatwari__GitNexus",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 383,
@@ -4755,11 +5291,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/albfan__rust-tree-sitter-ast-viewer",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/albfan__rust-tree-sitter-ast-viewer",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 400,
@@ -4845,12 +5385,11 @@
       "assigned_part": 2,
       "status": "source_inspected",
       "pattern_count": 2,
-      "source_mentions": 3,
+      "source_mentions": 2,
       "parts": [
         2
       ],
       "reasons": [
-        "batch_or_graph_note",
         "codegraphcontext_attempted_no_graph_claims",
         "where_found_source_path"
       ]
@@ -5181,13 +5720,12 @@
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/bytecodealliance__tree-sitter-wit",
       "assigned_part": 1,
       "status": "graph_backed_seed",
-      "pattern_count": 5,
-      "source_mentions": 6,
+      "pattern_count": 4,
+      "source_mentions": 5,
       "parts": [
         1
       ],
       "reasons": [
-        "batch_or_graph_note",
         "codegraphcontext_smoke_passed",
         "where_found_source_path"
       ]
@@ -5232,12 +5770,11 @@
       "assigned_part": 5,
       "status": "graph_backed_seed",
       "pattern_count": 3,
-      "source_mentions": 4,
+      "source_mentions": 3,
       "parts": [
         5
       ],
       "reasons": [
-        "batch_or_graph_note",
         "codegraphcontext_smoke_passed",
         "where_found_source_path"
       ]
@@ -5574,11 +6111,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/dgraph-io__dgraph",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/dgraph-io__dgraph",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 471,
@@ -5860,11 +6401,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/facebook__rocksdb",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/facebook__rocksdb",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 3,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 497,
@@ -6070,11 +6615,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/github__stack-graphs",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/github__stack-graphs",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 515,
@@ -6393,11 +6942,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/intersystems__tree-sitter-objectscript",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/intersystems__tree-sitter-objectscript",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 544,
@@ -7230,11 +7783,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/nendotools__tree-sitter-mcp",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/nendotools__tree-sitter-mcp",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 619,
@@ -7443,11 +8000,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/odvcencio__gotreesitter",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/odvcencio__gotreesitter",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 638,
@@ -7736,7 +8297,7 @@
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/r-lib__tree-sitter-r",
       "assigned_part": 1,
       "status": "source_inspected",
-      "pattern_count": 6,
+      "pattern_count": 4,
       "source_mentions": 6,
       "parts": [
         1
@@ -7941,11 +8502,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/sairam0424__ag-bash",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/sairam0424__ag-bash",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 3,
+      "source_mentions": 3,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 680,
@@ -8084,11 +8649,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/semgrep__ocaml-tree-sitter-semgrep",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/semgrep__ocaml-tree-sitter-semgrep",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 693,
@@ -8290,11 +8859,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/sourcegraph__scip-ruby",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/sourcegraph__scip-ruby",
       "assigned_part": 5,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        5
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 711,
@@ -8880,12 +9453,11 @@
       "assigned_part": 3,
       "status": "source_inspected",
       "pattern_count": 3,
-      "source_mentions": 4,
+      "source_mentions": 3,
       "parts": [
         3
       ],
       "reasons": [
-        "batch_or_graph_note",
         "codegraphcontext_attempted_no_graph_claims",
         "where_found_source_path"
       ]
@@ -9358,7 +9930,7 @@
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/vitali87__code-graph-rag",
       "assigned_part": 1,
       "status": "source_inspected",
-      "pattern_count": 5,
+      "pattern_count": 4,
       "source_mentions": 5,
       "parts": [
         1
@@ -9440,7 +10012,7 @@
       "assigned_part": 3,
       "status": "source_inspected",
       "pattern_count": 3,
-      "source_mentions": 6,
+      "source_mentions": 3,
       "parts": [
         3
       ],
@@ -9590,11 +10162,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/zed-industries__zed",
       "desktop_relative_path": "personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/zed-industries__zed",
       "assigned_part": 1,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        1
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 827,
@@ -9733,11 +10309,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/room-of-requirement/.research-corpus/springboot-java/repos/codecentric__spring-boot-admin",
       "desktop_relative_path": "personal-repos-lane/room-of-requirement/.research-corpus/springboot-java/repos/codecentric__spring-boot-admin",
       "assigned_part": 4,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        4
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 840,
@@ -9756,7 +10336,7 @@
       "desktop_relative_path": "personal-repos-lane/room-of-requirement/.research-corpus/springboot-java/repos/eugenp__tutorials",
       "assigned_part": 1,
       "status": "source_inspected",
-      "pattern_count": 5,
+      "pattern_count": 3,
       "source_mentions": 5,
       "parts": [
         1
@@ -9770,11 +10350,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/room-of-requirement/.research-corpus/springboot-java/repos/ityouknow__spring-boot-examples",
       "desktop_relative_path": "personal-repos-lane/room-of-requirement/.research-corpus/springboot-java/repos/ityouknow__spring-boot-examples",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 1,
+      "source_mentions": 1,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 843,
@@ -9870,7 +10454,7 @@
       "desktop_relative_path": "personal-repos-lane/room-of-requirement/.research-corpus/springboot-java/repos/spring-projects__spring-boot",
       "assigned_part": 1,
       "status": "source_inspected",
-      "pattern_count": 11,
+      "pattern_count": 5,
       "source_mentions": 11,
       "parts": [
         1
@@ -10156,6 +10740,7 @@
         5
       ],
       "reasons": [
+        "codegraphcontext_attempted_no_graph_claims",
         "where_found_source_path"
       ]
     },
@@ -10354,12 +10939,11 @@
       "assigned_part": 2,
       "status": "source_inspected",
       "pattern_count": 3,
-      "source_mentions": 4,
+      "source_mentions": 3,
       "parts": [
         2
       ],
       "reasons": [
-        "batch_or_graph_note",
         "codegraphcontext_attempted_no_graph_claims",
         "where_found_source_path"
       ]
@@ -10369,11 +10953,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/reference-repos-yard/iggy",
       "desktop_relative_path": "reference-repos-yard/iggy",
       "assigned_part": 3,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        3
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 894,
@@ -10472,11 +11060,15 @@
       "repo_path": "/Users/amuldotexe/Desktop/reference-repos-yard/prusti-dev",
       "desktop_relative_path": "reference-repos-yard/prusti-dev",
       "assigned_part": 2,
-      "status": "pending",
-      "pattern_count": 0,
-      "source_mentions": 0,
-      "parts": [],
-      "reasons": []
+      "status": "source_inspected",
+      "pattern_count": 2,
+      "source_mentions": 2,
+      "parts": [
+        2
+      ],
+      "reasons": [
+        "where_found_source_path"
+      ]
     },
     {
       "index": 903,
@@ -10587,6 +11179,5 @@
         "where_found_source_path"
       ]
     }
-  ],
-  "external_evidence_paths_top_25": []
+  ]
 }

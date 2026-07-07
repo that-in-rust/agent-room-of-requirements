@@ -3064,3 +3064,1952 @@ let sufficient_commit_indices_count = if !one_peer {
 - Related patterns: Throttled termination flag with hot-loop checkpoints, bounded snapshot broker for SSE.
 - Risks / caveats: The source notes that partial peer failures can produce false positives; readiness semantics must be documented for operators.
 - Agentic coding guidance: When adding readiness criteria, decide whether it belongs before `set_ready()` or in a separate non-monotonic health endpoint.
+
+## Worker 5 Batch 5
+
+Batch note: Worker 5 sampled 8 assigned repositories with `rg --files`, `find`, `sort`, and direct `sed` reads. Patterns below are backed by source files from 7 repos. `/Users/amuldotexe/Desktop/personal-repos-lane/felix-felicis` was skipped because `find -maxdepth 2 -type f` showed Markdown and text research notes only, with no executable source files suitable for idiomatic code-pattern evidence. Counts: 13 patterns appended; 7 repos represented; 1 repo skipped.
+
+### Semantic Tool Registry Context Injection
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/RAG-MCP-example`; file `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/RAG-MCP-example/src/main.py`
+- Language / framework / stack: Python, `httpx`, `sentence_transformers`, MCP JSON-RPC
+- Code shape/snippet:
+```python
+tool_texts = [f"{tool['name']}: {tool['description']}" for tool in self.tools]
+self.tool_embeddings = self.embedding_model.encode(tool_texts)
+
+query_embedding = self.embedding_model.encode([query])
+similarities = util.cos_sim(query_embedding, self.tool_embeddings)[0]
+top_indices = similarities.argsort(descending=True)[:top_k]
+
+context = textwrap.dedent(f"""Available tools:
+    {chr(10).join(tool_descriptions)}
+
+    Query: {query}
+""")
+```
+- Why it matters: The code treats a large tool registry as a retrieval problem, then injects only the highest-similarity tool descriptions into the prompt. This keeps model context focused while still allowing discovery across a larger MCP surface.
+- When to use: Use for MCP servers, plugin catalogs, agent skills, or API registries where the full tool list is too large or distracting.
+- When not to use: Avoid when the tool set is tiny, when correctness requires exhaustive tool availability, or when embeddings are stale relative to the registry.
+- Transferable principle: Rank tool affordances before prompt injection; the prompt should contain the tools most relevant to the next action, not every possible action.
+- Related patterns: Progressive disclosure, smart context selection, protocol DTO parsing.
+- Risks / caveats: Embedding similarity can select plausible but wrong tools; pair it with schema validation and a fallback text search path.
+- Agentic coding guidance: Generate retrieval gates as explicit `initialize -> retrieve -> inject -> handle` flows, and include scores in debug output so future agents can audit why a tool was selected.
+
+### Protocol Response DTO Extraction
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/RAG-MCP-example`; file `/Users/amuldotexe/Desktop/personal-repos-lane/accio-tools/ignore-references/git-ref-repo/RAG-MCP-example/src/utils.py`
+- Language / framework / stack: Python, JSON, SSE-style MCP responses
+- Code shape/snippet:
+```python
+def parse_mcp_response(response) -> List[Dict[str, Any]]:
+    content = response.text
+    data_match = re.search(r'data: ({.*})', content, re.DOTALL)
+    if data_match:
+        try:
+            data = json.loads(data_match.group(1))
+            return extract_tools_from_data(data)
+        except json.JSONDecodeError:
+            pass
+    return []
+
+def extract_tools_from_data(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if "result" in data and "tools" in data["result"]:
+        return [{"name": tool.get("name", "unknown"),
+                 "description": tool.get("description", "No description available"),
+                 "inputSchema": tool.get("inputSchema", {})}
+                for tool in data["result"]["tools"]]
+    return []
+```
+- Why it matters: External protocol payloads are normalized into a narrow internal shape before ranking or prompting touches them. This creates a seam for defensive defaults and keeps the rest of the RAG logic independent of response transport quirks.
+- When to use: Use when ingesting JSON-RPC, SSE, webhooks, or third-party API responses before feeding them into search, planning, or prompt assembly.
+- When not to use: Avoid regex parsing if a real SSE/event parser is available and message framing matters.
+- Transferable principle: Convert wire payloads into minimal internal DTOs at the boundary, then operate on those DTOs everywhere else.
+- Related patterns: Semantic tool registry context injection, cache miss as value, hardened SQL wrapper.
+- Risks / caveats: The regex assumes a single `data: { ... }` block and silently returns `[]` on malformed JSON; production code should log or surface parse failures.
+- Agentic coding guidance: When agents generate protocol clients, separate transport parsing from domain extraction and make empty results an explicit, documented outcome.
+
+### Precomputed Visual State Timeline
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/amuldotexe.github.io`; file `/Users/amuldotexe/Desktop/personal-repos-lane/amuldotexe.github.io/js/binary-search.js`
+- Language / framework / stack: Browser JavaScript, static HTML/CSS
+- Code shape/snippet:
+```javascript
+function precomputeSteps(arr, tgt) {
+    var result = [];
+    var left = 0;
+    var right = arr.length - 1;
+    var eliminated = {};
+
+    result.push({ left: left, right: right, mid: null,
+        eliminated: copySet(eliminated), found: false });
+
+    while (left <= right) {
+        var mid = Math.floor((left + right) / 2);
+        ...
+        result.push({ left: left, right: right, mid: mid,
+            eliminated: copySet(eliminated), found: true });
+    }
+    return result;
+}
+
+steps = precomputeSteps(ARRAY, target);
+renderStep(currentStep);
+```
+- Why it matters: The algorithm is converted into immutable-ish timeline snapshots before rendering. UI controls only move an index through prepared states, which makes previous/next/reset behavior deterministic and easy to reason about.
+- When to use: Use for algorithm explainers, replayable simulations, onboarding walkthroughs, and debugger-like visualizations.
+- When not to use: Avoid for unbounded streams, live systems, or very large simulations where precomputing every state is too expensive.
+- Transferable principle: Separate simulation state generation from rendering, then make navigation a pure selection over snapshots.
+- Related patterns: Source-backed tutorial apps, event-sourced UI state, deterministic replay.
+- Risks / caveats: Snapshot copies can grow memory quickly; large visualizers need windowing or lazy generation.
+- Agentic coding guidance: When building educational UIs, make a `precomputeSteps`-style function first, then write renderers that consume one step without mutating the algorithm.
+
+### Debug Non-Concurrent Method Guard
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-python-driver-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-python-driver-src/src/neo4j/_sync/_debug/_concurrency_check.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-python-driver-src/src/neo4j/_sync/work/result.py`
+- Language / framework / stack: Python driver internals, sync and async debug wrappers
+- Code shape/snippet:
+```python
+def inner(*args, **kwargs):
+    self = args[0]
+    with self.__tracebacks_lock:
+        acquired = self.__lock.acquire(blocking=False)
+        if acquired:
+            self.__tracebacks.append(Util.extract_stack())
+        else:
+            tbs = deepcopy(self.__tracebacks)
+    if acquired:
+        try:
+            return f(*args, **kwargs)
+        finally:
+            with self.__tracebacks_lock:
+                self.__tracebacks.pop()
+                self.__lock.release()
+    else:
+        raise self.__make_error(tbs)
+```
+```python
+class Result(NonConcurrentMethodChecker):
+    @NonConcurrentMethodChecker._non_concurrent_iter
+    def __iter__(self):
+        ...
+```
+- Why it matters: Objects that are not concurrency-safe fail loudly in debug mode, including the other invocation site. This catches incorrect shared-session/result usage before it becomes an intermittent protocol bug.
+- When to use: Use for client objects, cursors, streams, transactions, and iterators with hidden mutable protocol state.
+- When not to use: Avoid as a substitute for real synchronization when concurrent use is an intended feature.
+- Transferable principle: For non-thread-safe APIs, encode the concurrency contract in executable guards close to the object methods.
+- Related patterns: Managed transaction retry loop, monotonic readiness task, lending iterator safety comments.
+- Risks / caveats: Debug-only checks can mask production misuse if not paired with clear public docs and tests.
+- Agentic coding guidance: When an agent adds mutable session-like APIs, either make the type truly concurrent or add explicit non-concurrency guards and error messages with call-site evidence.
+
+### Managed Transaction Retry Loop
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-python-driver-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-python-driver-src/src/neo4j/_sync/work/session.py`
+- Language / framework / stack: Python, Neo4j driver, managed transactions
+- Code shape/snippet:
+```python
+retry_delay = retry_delay_generator(
+    self._config.initial_retry_delay,
+    self._config.retry_delay_multiplier,
+    self._config.retry_delay_jitter_factor,
+)
+...
+while True:
+    try:
+        self._open_transaction(tx_cls=ManagedTransaction,
+                               api=None if telemetry_sent else api,
+                               access_mode=access_mode)
+        result = transaction_function(tx, *args, **kwargs)
+        tx._commit()
+    except (DriverError, Neo4jError) as error:
+        self._disconnect()
+        if not error.is_retryable():
+            raise
+        errors.append(error)
+    else:
+        return result
+    if monotonic() - t0 > self._config.max_transaction_retry_time:
+        break
+    sleep(next(retry_delay))
+```
+- Why it matters: Retryability, backoff, telemetry, transaction open/commit/close, and timeout enforcement are centralized. User callbacks stay focused on business work while the driver owns the resilience policy.
+- When to use: Use around idempotent or retryable transactional callbacks where the infrastructure can classify transient errors.
+- When not to use: Avoid for callbacks with non-idempotent external side effects unless the API clearly warns that the callback may run more than once.
+- Transferable principle: Put retry policy around a narrow callback boundary and make retryable error classification explicit.
+- Related patterns: Debug non-concurrent method guard, transaction context mode gate, demand-driven readiness.
+- Risks / caveats: Retrying user code can duplicate side effects; callback docs and examples must emphasize idempotency.
+- Agentic coding guidance: When adding managed operations, avoid scattering retry loops through callers; generate one wrapper that owns timing, jitter, cancellation, and final error selection.
+
+### Hardened Embedded Query Wrapper
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/age-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/age-src/drivers/nodejs/src/index.ts`
+- Language / framework / stack: TypeScript, PostgreSQL `pg`, Apache AGE Cypher wrapper
+- Code shape/snippet:
+```typescript
+const VALID_GRAPH_NAME = /^[A-Za-z_][A-Za-z0-9_.\-]*[A-Za-z0-9_]$/;
+const VALID_SQL_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+function cypherDollarQuote(cypher: string): { delimiter: string; quoted: string } {
+  if (!cypher.includes('$$')) return { delimiter: '$$', quoted: `$$${cypher}$$` };
+  let tag = 'cypher';
+  let counter = 0;
+  while (cypher.includes(`$${tag}$`)) tag = `cypher${counter++}`;
+  return { delimiter: `$${tag}$`, quoted: `$${tag}$${cypher}$${tag}$` };
+}
+
+async function queryCypher(client: Client, graphName: string, cypher: string,
+  columns: CypherColumn[] = [{ name: 'result' }]) {
+  validateGraphName(graphName);
+  const columnList = columns.map(col => `${col.name} ${col.type ?? 'agtype'}`).join(', ');
+  const { quoted } = cypherDollarQuote(cypher);
+  return client.query(`SELECT * FROM cypher('${graphName}', ${quoted}) AS (${columnList});`);
+}
+```
+- Why it matters: The driver validates identifiers and separately dollar-quotes the embedded Cypher body. This is the right shape when an API must embed one query language inside another and cannot parameterize every syntactic position.
+- When to use: Use for SQL wrappers around DSLs, generated query entrypoints, or database extensions with dynamic graph/table/column identifiers.
+- When not to use: Avoid when native prepared-statement parameters can express the whole query safely.
+- Transferable principle: Validate identifiers with whitelists and quote free-form embedded language bodies with collision-resistant delimiters.
+- Related patterns: Protocol response DTO extraction, parser-backed graph object hydration, repository-bounded path resolver.
+- Risks / caveats: ASCII-only validation is intentionally stricter than AGE server validation; this can reject valid Unicode names.
+- Agentic coding guidance: When generating dynamic SQL, never interpolate identifiers without a validator and never assume one quoting delimiter is always absent.
+
+### Parser-Backed Graph Object Hydration
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/age-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/age-src/drivers/golang/age/builder.go`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/age-src/drivers/golang/age/mapper.go`
+- Language / framework / stack: Go, ANTLR parser, Apache AGE graph value mapping
+- Code shape/snippet:
+```go
+func NewAGUnmarshaler() *AGUnmarshaler {
+    vcache := make(map[int64]interface{})
+    m := &AGUnmarshaler{
+        ageParser: parser.NewAgeParser(nil),
+        visitor: &UnmarshalVisitor{vcache: vcache},
+        errListener: NewAGErrorListener(),
+        vcache: vcache,
+    }
+    m.ageParser.AddErrorListener(m.errListener)
+    return m
+}
+
+func (v *UnmarshalVisitor) VisitVertex(ctx *parser.VertexContext) interface{} {
+    props := ctx.Properties().Accept(v).(map[string]interface{})
+    vid := int64(props["id"].(int64))
+    vertex, ok := v.vcache[vid]
+    if !ok {
+        vertex = NewVertex(vid, props["label"].(string),
+            props["properties"].(map[string]interface{}))
+        v.vcache[vid] = vertex
+    }
+    return vertex
+}
+```
+- Why it matters: The parser owns syntax interpretation, while the visitor owns semantic hydration and identity caching. Repeated vertices in paths resolve to the same in-memory object for a parse session.
+- When to use: Use for graph/path/result formats where the same entity can appear multiple times and identity matters to callers.
+- When not to use: Avoid reflection-based mapping for high-throughput hot paths unless profiling shows it is acceptable.
+- Transferable principle: Parse first, hydrate second, and keep an identity cache for graph-shaped result values.
+- Related patterns: Hardened embedded query wrapper, structural JSON safe integer handling, DTO extraction.
+- Risks / caveats: The visitor uses panics on some mapping errors; production-facing drivers should convert parser and mapper failures into typed errors.
+- Agentic coding guidance: When agents implement result parsing, do not parse graph values with ad hoc string splitting; use the grammar, then hydrate through a visitor with explicit caches.
+
+### Explicit Consolidation In Fixed-Point Loops
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/differential-dataflow-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/differential-dataflow-src/differential-dataflow/src/operators/iterate.rs`
+- Language / framework / stack: Rust, timely dataflow, differential dataflow
+- Code shape/snippet:
+```rust
+pub trait Iterate<'scope, T: Timestamp + Lattice, D: Data, R: Semigroup> {
+    fn iterate<F>(self, logic: F) -> VecCollection<'scope, T, D, R>
+    where
+        for<'inner> F: FnOnce(
+            Iterative<'inner, T, u64>,
+            VecCollection<'inner, Product<T, u64>, D, R>,
+        ) -> VecCollection<'inner, Product<T, u64>, D, R>;
+}
+
+let (variable, collection) =
+    Variable::new_from(self.enter(subgraph), Product::new(Default::default(), 1));
+let result = logic(subgraph, collection);
+variable.set(result.clone());
+result.leave(outer)
+```
+- Why it matters: The source documentation warns that `iterate` does not insert `consolidate` automatically, so canceling differences may circulate indefinitely. That is a precise API contract for fixed-point dataflow loops.
+- When to use: Use for recursive graph algorithms, transitive closure, reachability, and iterative normalization where changes circulate until convergence.
+- When not to use: Avoid if the loop body cannot consolidate, reduce, distinct, or otherwise guarantee that logically empty differences disappear.
+- Transferable principle: Recursive dataflow APIs should make convergence mechanics explicit and document what the framework does not do for the caller.
+- Related patterns: In-place update consolidation, frontier interval description, managed retry loops.
+- Risks / caveats: Missing consolidation can cause non-termination or unbounded work even when logical results cancel out.
+- Agentic coding guidance: When generating differential-dataflow loops, end the loop body with `consolidate()`, `distinct()`, `count()`, or another consolidating operator unless there is a written reason not to.
+
+### In-Place Update Consolidation Builder
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/differential-dataflow-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/differential-dataflow-src/differential-dataflow/src/consolidation.rs`
+- Language / framework / stack: Rust, differential dataflow containers
+- Code shape/snippet:
+```rust
+fn consolidate_updates_slice_slow<D: Ord, T: Ord, R: Semigroup>(
+    slice: &mut [(D, T, R)]
+) -> usize {
+    slice.sort_unstable_by(|x, y| (&x.0, &x.1).cmp(&(&y.0, &y.1)));
+    let mut offset = 0;
+    let mut accum = slice[offset].2.clone();
+    for index in 1 .. slice.len() {
+        if (slice[index].0 == slice[index-1].0) && (slice[index].1 == slice[index-1].1) {
+            accum.plus_equals(&slice[index].2);
+        } else {
+            if !accum.is_zero() {
+                slice.swap(offset, index-1);
+                slice[offset].2.clone_from(&accum);
+                offset += 1;
+            }
+            accum.clone_from(&slice[index].2);
+        }
+    }
+    offset
+}
+```
+- Why it matters: Differential updates are canonicalized by sorting, accumulating equal `(data, time)` pairs, and dropping zero weights. The builder variant flushes consolidated fixed-size containers for downstream operators.
+- When to use: Use for multiset deltas, event compaction, incremental indexes, and any pipeline where positive and negative weights cancel.
+- When not to use: Avoid when caller-visible ordering is semantically meaningful; this pattern explicitly does not preserve FIFO order.
+- Transferable principle: Canonicalize update batches at buffer boundaries so later operators see fewer, denser records.
+- Related patterns: Explicit consolidation in fixed-point loops, cache miss as value, bounded snapshot broker.
+- Risks / caveats: The function is tuned for differential dataflow semantics; copying it into another domain without matching weight algebra can be wrong.
+- Agentic coding guidance: When agents add weighted delta pipelines, provide a single consolidation utility and write tests for duplicate accumulation and zero-diff deletion.
+
+### Immutable Read-Write Batch DSL
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src/sdks/typescript/src/dsl.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src/sdks/rust/src/dsl.rs`
+- Language / framework / stack: TypeScript SDK, Rust SDK documentation, graph query DSL
+- Code shape/snippet:
+```typescript
+export class ReadBatch implements Encodable {
+  constructor(readonly queries: BatchEntry[] = [], readonly returns: string[] = []) {}
+
+  varAs<S extends TraversalState>(name: string, traversal: Traversal<S, "read">): ReadBatch {
+    if (traversal.mode !== "read") {
+      throw new TypeError("ReadBatch.varAs only accepts read-only traversals");
+    }
+    return new ReadBatch(
+      [...this.queries, BatchEntry.query(new NamedQuery(name, traversal.intoSteps(), null))],
+      this.returns,
+    );
+  }
+
+  returning(vars: Iterable<string>): ReadBatch {
+    return new ReadBatch(this.queries, Array.from(vars));
+  }
+}
+```
+- Why it matters: The builder returns new batch values instead of mutating in place, and read batches reject write traversals. This keeps fluent API ergonomics without losing mode separation.
+- When to use: Use for query builders, workflow builders, policy builders, and generated SDKs where users chain steps into a serializable request.
+- When not to use: Avoid for extremely hot builders where allocation dominates and the API is internal enough to justify mutation.
+- Transferable principle: Fluent builders can be immutable values, and mode guards should live at the boundary where a step enters a restricted batch.
+- Related patterns: Dynamic query metadata registration, hardened embedded query wrapper, precomputed visual timeline.
+- Risks / caveats: Runtime mode checks in TypeScript complement but do not replace compile-time type design; tests must cover mixed read/write chains.
+- Agentic coding guidance: When generating SDK DSLs, keep read and write entrypoints separate and make each chain method return a fresh object unless mutation is an explicit performance choice.
+
+### Structural JSON With Unsafe Integer Preservation
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src/sdks/typescript/src/dsl.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/helix-db-src/sdks/tests/register_metadata_tests.rs`
+- Language / framework / stack: TypeScript SDK serialization plus Rust SDK parity tests
+- Code shape/snippet:
+```typescript
+export function structuralJsonEqual(left: string, right: string): boolean {
+  return JSON.stringify(canonicalizeJson(parseJsonStructural(left))) ===
+    JSON.stringify(canonicalizeJson(parseJsonStructural(right)));
+}
+
+function quoteUnsafeIntegerTokens(json: string): string {
+  ...
+  if (/^-?\d+$/.test(token)) {
+    const numeric = BigInt(token);
+    if (numeric > BigInt(Number.MAX_SAFE_INTEGER) ||
+        numeric < BigInt(Number.MIN_SAFE_INTEGER)) {
+      out += `{${JSON.stringify("\u0000helixUnsafeInteger")}:${JSON.stringify(token)}}`;
+    } else {
+      out += token;
+    }
+  }
+}
+```
+```rust
+let bytes = serialize_query_bundle(&bundle).expect("serialize query bundle");
+let decoded = deserialize_query_bundle(&bytes).expect("deserialize query bundle");
+assert_eq!(
+    decoded.write_parameters.get("register_metadata_write"),
+    bundle.write_parameters.get("register_metadata_write")
+);
+```
+- Why it matters: Cross-SDK parity needs structural equality that ignores object key order while preserving integers too large for JavaScript's safe numeric range.
+- When to use: Use for fixture comparison across languages, generated-client parity tests, and wire formats shared by Rust, Go, TypeScript, and Python.
+- When not to use: Avoid if exact byte-for-byte JSON output is the compatibility contract.
+- Transferable principle: Normalize JSON by structure for semantic parity, but preserve type-sensitive values before `JSON.parse` can corrupt them.
+- Related patterns: Immutable read-write batch DSL, parser-backed graph object hydration, executable acceptance tests.
+- Risks / caveats: Rewriting numeric tokens is subtle; the scanner must respect strings and number syntax.
+- Agentic coding guidance: When agents add cross-language fixtures, compare canonicalized structures and add explicit tests for unsafe integers, dates, bytes, and nested arrays.
+
+### Borrowed-Or-Owned Deref Wrapper
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/typedb-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/typedb-src/common/primitive/maybe_owns.rs`
+- Language / framework / stack: Rust, common primitive utility
+- Code shape/snippet:
+```rust
+#[derive(Debug)]
+pub enum MaybeOwns<'a, T> {
+    Owned(T),
+    Borrowed(&'a T),
+}
+
+impl<T> Deref for MaybeOwns<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        match self {
+            MaybeOwns::Owned(owned) => owned,
+            MaybeOwns::Borrowed(borrowed) => borrowed,
+        }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a MaybeOwns<'_, T>
+where
+    &'a T: IntoIterator,
+{
+    type Item = <&'a T as IntoIterator>::Item;
+    type IntoIter = <&'a T as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter { (&**self).into_iter() }
+}
+```
+- Why it matters: Callers can pass either owned values or borrowed references while consumers use ordinary deref and iteration behavior. This avoids cloning in APIs that sometimes need ownership and sometimes only need a view.
+- When to use: Use for configuration, query fragments, labels, or collections that may be borrowed from a larger structure or synthesized on demand.
+- When not to use: Avoid if mutation or ownership transfer is central to the API; then `Cow`, `Arc`, or explicit owned types may be clearer.
+- Transferable principle: Model ownership flexibility as a small enum with standard trait implementations, not as duplicated APIs.
+- Related patterns: Lending iterator adapters, non-exhaustive domain error enum, cache miss as value.
+- Risks / caveats: `Deref` can hide ownership costs and make lifetimes less obvious to readers.
+- Agentic coding guidance: When agents see paired borrowed/owned helper functions, consider a wrapper like `MaybeOwns` or `Cow`, but keep variant names explicit.
+
+### Lending Iterator Adapter Surface
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/typedb-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/typedb-src/common/lending_iterator/lending_iterator.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/typedb-src/common/lending_iterator/adaptors.rs`
+- Language / framework / stack: Rust, generic associated types, iterator adapters
+- Code shape/snippet:
+```rust
+pub trait LendingIterator: 'static {
+    type Item<'a>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>>;
+
+    fn map<B, F>(self, mapper: F) -> Map<Self, F, B>
+    where
+        Self: Sized,
+        B: Hkt + 'static,
+        F: for<'a> FnMutHktHelper<Self::Item<'a>, B::HktSelf<'a>>,
+    {
+        Map::new(self, mapper)
+    }
+}
+
+impl<I, F, B> LendingIterator for Map<I, F, B>
+where
+    B: Hkt,
+    I: LendingIterator,
+    F: for<'a> FnMutHktHelper<I::Item<'a>, B::HktSelf<'a>>,
+{
+    type Item<'a> = B::HktSelf<'a>;
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        self.iter.next().map(&mut self.mapper)
+    }
+}
+```
+- Why it matters: The iterator can yield items borrowing from itself, yet still offers familiar adapters like `map`, `filter`, `zip`, and `flat_map`. This enables allocation-conscious traversal over storage-backed or decoded data.
+- When to use: Use for database cursors, storage page scans, decoded buffers, and index iterators where yielded values borrow from internal buffers.
+- When not to use: Avoid for ordinary owned sequences; standard `Iterator` is simpler and safer.
+- Transferable principle: If iteration needs to lend references tied to the iterator's mutable borrow, encode that in the item lifetime and rebuild only the adapters you actually need.
+- Related patterns: Borrowed-or-owned deref wrapper, in-place update consolidation, debug non-concurrent method guard.
+- Risks / caveats: The implementation uses carefully justified `unsafe transmute` in places; extending it requires strong lifetime discipline and tests.
+- Agentic coding guidance: Do not improvise lending iterators casually. Reuse an existing implementation where possible, and keep every unsafe lifetime extension next to a concrete safety comment.
+
+## Worker 5 Batch 6
+
+### Resource Closing Iterator Wrapper
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-src/common/src/main/java/apoc/util/collection/ResourceClosingIterator.java`
+- Language / framework / stack: Java, Neo4j APOC, `ResourceIterator`
+- Code shape/snippet:
+```java
+public static <R> ResourceIterator<R> fromResourceIterable(ResourceIterable<R> iterable) {
+    ResourceIterator<R> iterator = iterable.iterator();
+    return newResourceIterator(iterator, iterator, iterable);
+}
+
+@Override
+public void close() {
+    if (resources != null) {
+        ResourceUtils.closeAll(resources);
+        resources = null;
+    }
+}
+
+@Override
+public boolean hasNext() {
+    boolean hasNext = iterator.hasNext();
+    if (!hasNext) {
+        close();
+    }
+    return hasNext;
+}
+```
+- Why it matters: Iterator consumers often forget that graph cursors are also resources. This wrapper makes exhaustion and explicit close converge on the same cleanup path.
+- When to use: Use when an API returns an iterator over database, file, network, or cursor-backed state and the caller may never see the underlying resource owner.
+- When not to use: Avoid for plain in-memory collections where close semantics would surprise readers.
+- Transferable principle: Attach lifecycle cleanup to the smallest abstraction that crosses the API boundary.
+- Related patterns: Bounded periodic batch execution, typestate edit transaction, push sink search callback.
+- Risks / caveats: Auto-closing on `hasNext() == false` does not protect callers who abandon the iterator before exhaustion unless they also call `close()`.
+- Agentic coding guidance: When agents add iterator adapters around resource-backed data, require a cleanup path for exhaustion, explicit close, and exceptional `next()` paths.
+
+### Bounded Periodic Batch Execution
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-src/common/src/main/java/apoc/periodic/PeriodicUtils.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/Neo4j family/neo4j-apoc-src/common/src/main/java/apoc/periodic/BatchAndTotalCollector.java`
+- Language / framework / stack: Java, Neo4j APOC, executor service, transactional batching
+- Code shape/snippet:
+```java
+ExecutorService pool = parallel ? pools.getDefaultExecutorService() : pools.getSingleExecutorService();
+List<Future<Long>> futures = new ArrayList<>(concurrency);
+BatchAndTotalCollector collector = new BatchAndTotalCollector(terminationGuard, failedParams);
+AtomicInteger activeFutures = new AtomicInteger(0);
+
+if (activeFutures.get() < concurrency || !parallel) {
+    activeFutures.incrementAndGet();
+    List<Map<String, Object>> batch = Util.take(iterator, batchsize);
+    ExecuteBatch executeBatch = iterateList
+            ? new ListExecuteBatch(terminationGuard, collector, batch, consumer)
+            : new OneByOneExecuteBatch(terminationGuard, collector, batch, consumer);
+    futures.add(Util.inTxFuture(log, pool, db, executeBatch, retries,
+            retryCount -> collector.incrementRetried(),
+            onComplete -> {
+                collector.incrementBatches();
+                executeBatch.release();
+                activeFutures.decrementAndGet();
+            }));
+} else {
+    LockSupport.parkNanos(1000);
+}
+```
+- Why it matters: The batch loop keeps throughput high without letting futures grow without bound. The collector centralizes progress, retries, failures, and Neo4j update statistics.
+- When to use: Use for bulk writes, migrations, and maintenance jobs where each batch needs its own transaction and bounded concurrency.
+- When not to use: Avoid for single-shot queries or latency-sensitive operations where queueing behind a batch executor is worse than direct execution.
+- Transferable principle: Couple concurrency admission, transaction scope, and result accounting in one loop.
+- Related patterns: Resource closing iterator wrapper, operation update fragment list, cascading verification pipeline.
+- Risks / caveats: Polling with `parkNanos` is simple but can waste CPU under high contention; a blocking queue or semaphore may be clearer in new code.
+- Agentic coding guidance: When agents generate batch processors, insist on a concurrency cap, a termination check, retry counters, and explicit release of per-batch references.
+
+### Per Thread Reducible Accumulator
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src/libgalois/include/galois/Reduction.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src/libgalois/include/galois/substrate/PerThreadStorage.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src/libgalois/test/reduction.cpp`
+- Language / framework / stack: C++ templates, Galois shared-memory parallel runtime
+- Code shape/snippet:
+```cpp
+template <typename T, typename MergeFunc, typename IdFunc>
+class Reducible : public MergeFunc, public IdFunc {
+  galois::substrate::PerThreadStorage<T> data_;
+
+public:
+  void update(T&& rhs) { merge(*data_.getLocal(), std::move(rhs)); }
+  void update(const T& rhs) { merge(*data_.getLocal(), rhs); }
+
+  T& reduce() {
+    T& lhs = *data_.getLocal();
+    for (unsigned int i = 1; i < data_.size(); ++i) {
+      T& rhs = *data_.getRemote(i);
+      merge(lhs, std::move(rhs));
+      rhs = IdFunc::operator()();
+    }
+    return lhs;
+  }
+};
+```
+- Why it matters: Parallel loops can update local accumulators without a lock on every iteration, then merge once outside the hot path.
+- When to use: Use for sums, max/min, maps, histograms, and other associative reductions in CPU-parallel graph algorithms.
+- When not to use: Avoid when updates must be globally ordered or when the merge operation is not associative enough for parallel reduction.
+- Transferable principle: Move contention from the inner loop to an explicit reduction boundary.
+- Related patterns: Parallel loop facade adapter, bounded periodic batch execution, ring staged prefetch sampling.
+- Risks / caveats: Incorrect identity functions or non-associative merge functions can produce subtle nondeterministic results.
+- Agentic coding guidance: When agents parallelize a loop, ask whether shared counters can become per-thread reducers, and add tests for identity, merge, and move-only values.
+
+### Parallel Loop Facade Adapter
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/galois-src/libgalois/include/galois/Loops.h`
+- Language / framework / stack: C++ templates, Galois runtime loop APIs
+- Code shape/snippet:
+```cpp
+template <typename RangeFunc, typename FunctionTy, typename... Args>
+void do_all(const RangeFunc& rangeMaker, FunctionTy&& fn, const Args&... args) {
+  auto tpl = std::make_tuple(args...);
+  runtime::do_all_gen(rangeMaker(tpl), std::forward<FunctionTy>(fn), tpl);
+}
+
+struct StdForEach {
+  template <typename RangeFunc, typename F, typename... Args>
+  void operator()(const RangeFunc& rangeMaker, const F& f, Args&&... args) const {
+    auto range = rangeMaker(std::make_tuple(args...));
+    std::for_each(range.begin(), range.end(), f);
+  }
+};
+```
+- Why it matters: Algorithms can be written against a small loop facade and then swap between runtime-parallel and standard sequential execution.
+- When to use: Use when kernels need deterministic tests, sequential fallbacks, or multiple execution policies without rewriting algorithm bodies.
+- When not to use: Avoid when the algorithm depends on one runtime's exact scheduling behavior.
+- Transferable principle: Abstract the execution policy, not the algorithm's data model.
+- Related patterns: Per thread reducible accumulator, ring staged prefetch sampling, search strategy builder gate.
+- Risks / caveats: Facades can hide scheduling costs and thread-safety assumptions from call sites.
+- Agentic coding guidance: When agents add a parallel backend, first preserve a sequential adapter so tests can isolate algorithm correctness from runtime behavior.
+
+### Graphblas Status Gateway
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src/graphblas_sparse_linear_algebra/src/context/context.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src/graphblas_sparse_linear_algebra/src/error/graphblas_error.rs`
+- Language / framework / stack: Rust, SuiteSparse GraphBLAS FFI
+- Code shape/snippet:
+```rust
+fn graphblas_result<F>(
+    grb_info: GrB_Info,
+    get_detailed_error_information: F,
+) -> Result<Status, SparseLinearAlgebraError>
+where
+    F: Fn() -> String,
+{
+    let status = Status::from(grb_info);
+    match status {
+        Status::Success => Ok(Status::Success),
+        _ => Err(status.into_sparse_linear_algebra_error(get_detailed_error_information())),
+    }
+}
+
+impl From<GrB_Info> for Status {
+    fn from(status: GrB_Info) -> Self {
+        match status {
+            GrB_Info_GrB_SUCCESS => Self::Success,
+            GrB_Info_GrB_NO_VALUE => Self::NoValue,
+            GrB_Info_GrB_DIMENSION_MISMATCH => Self::DimensionMismatch,
+            _ => Self::UnknownStatusType,
+        }
+    }
+}
+```
+- Why it matters: Every FFI call enters Rust through a single status-normalization path that preserves detailed GraphBLAS diagnostics.
+- When to use: Use when wrapping C libraries that return integer status codes and expose separate error-detail functions.
+- When not to use: Avoid if the foreign API already returns structured errors or if every function has materially different error semantics.
+- Transferable principle: Convert raw status codes to domain errors immediately at the FFI boundary.
+- Related patterns: Typed FFI handle wrapper, nullable mask sentinel object, typestate edit transaction.
+- Risks / caveats: The mapping must track upstream GraphBLAS status additions, or unknown statuses become vague system errors.
+- Agentic coding guidance: When agents wrap FFI, ban ad hoc status checks at call sites and route all errors through a single typed gateway.
+
+### Typed FFI Handle Wrapper
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src/graphblas_sparse_linear_algebra/src/collections/sparse_matrix/sparse_matrix.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/graphblas_sparse_linear_algebra-src/graphblas_sparse_linear_algebra/src/collections/sparse_matrix/handle.rs`
+- Language / framework / stack: Rust, SuiteSparse GraphBLAS FFI, RAII
+- Code shape/snippet:
+```rust
+#[derive(Debug)]
+pub struct SparseMatrix<T: ValueType> {
+    context: Arc<Context>,
+    matrix: GrB_Matrix,
+    value_type: PhantomData<T>,
+}
+
+impl<T: ValueType> IntoGraphblasSparseMatrix for SparseMatrix<T> {
+    unsafe fn into_graphblas_matrix(mut self) -> (GrB_Matrix, Arc<Context>) {
+        let raw_pointer = self.matrix;
+        self.matrix = null_mut();
+        (raw_pointer, self.context.clone())
+    }
+}
+
+impl<T: ValueType> Drop for SparseMatrix<T> {
+    fn drop(&mut self) -> () {
+        unsafe { drop_graphblas_matrix(&self.context, &mut self.matrix) };
+    }
+}
+```
+- Why it matters: The raw GraphBLAS pointer is tied to a Rust value type and context, and `Drop` owns cleanup unless ownership is explicitly transferred.
+- When to use: Use for FFI handles that require matching create/free calls and have type-level meaning in the safe API.
+- When not to use: Avoid when the pointer is only borrowed from another owner; use a borrowed handle with a lifetime marker instead.
+- Transferable principle: Make ownership transfer explicit by nulling the old owner after extracting the raw handle.
+- Related patterns: Graphblas status gateway, nullable mask sentinel object, resource closing iterator wrapper.
+- Risks / caveats: The `unsafe impl Send/Sync` in nearby wrappers depends on external synchronization guarantees that reviewers must re-check.
+- Agentic coding guidance: When agents see `PhantomData` plus raw pointers, verify the drop path, clone path, ownership extraction path, and context lifetime together.
+
+### Operation Update Fragment List
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_impls-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_impls-src/mssql/src/main/java/org/ldbcouncil/snb/impls/workloads/mssql/SQLServerQueryStore.java`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_impls-src/mssql/src/main/java/org/ldbcouncil/snb/impls/workloads/mssql/operationhandlers/SQLServerMultipleUpdateOperationHandler.java`
+- Language / framework / stack: Java, LDBC SNB driver implementation, SQL Server
+- Code shape/snippet:
+```java
+public List<String> getInsert1Multiple(LdbcInsert1AddPerson operation) {
+    List<String> list = new ArrayList<>();
+    list.add(prepare(QueryType.InteractiveInsert1AddPerson,
+            new ImmutableMap.Builder<String, Object>()
+                    .put(LdbcInsert1AddPerson.PERSON_ID,
+                            getConverter().convertIdForInsertion(operation.getPersonId()))
+                    .put(LdbcInsert1AddPerson.EMAILS,
+                            getConverter().convertStringList(operation.getEmails()))
+                    .build()));
+    for (long tagId : operation.getTagIds()) {
+        list.add(prepare(QueryType.InteractiveInsert1AddPersonTags,
+                ImmutableMap.of("tagId", getConverter().convertId(tagId))));
+    }
+    return list;
+}
+
+for (String queryString : queryStrings) {
+    Statement stmt = conn.createStatement();
+    stmt.execute(queryString);
+    stmt.close();
+}
+```
+- Why it matters: One logical benchmark update can expand into a deterministic sequence of physical SQL statements while preserving converter-based parameter handling.
+- When to use: Use when a domain operation spans multiple tables or denormalized projections and must be replayed in a known order.
+- When not to use: Avoid when the database supports a cleaner stored procedure, prepared batch, or transactional command object.
+- Transferable principle: Separate operation decomposition from execution so the executor only handles ordered statement application.
+- Related patterns: Bounded periodic batch execution, recursive SQL path search, cascading verification pipeline.
+- Risks / caveats: String-prepared SQL raises quoting and injection risks; the converter layer must be comprehensive and tested.
+- Agentic coding guidance: When agents split a logical update, require one source of truth for parameter conversion and tests for optional child collections.
+
+### Recursive SQL Path Search
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_impls-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_snb_interactive_v2_impls-src/postgres/queries/interactive-complex-14.sql`
+- Language / framework / stack: PostgreSQL SQL, recursive CTE, LDBC SNB interactive workload
+- Code shape/snippet:
+```sql
+with recursive
+pathb(a, b, w) AS (
+    SELECT least(c.creatorpersonid, p.creatorpersonid) AS a,
+           greatest(c.creatorpersonid, p.creatorpersonid) AS b,
+           greatest(round(40 - sqrt(count(*)))::bigint, 1) AS w
+    FROM message c, message p
+    WHERE c.parentmessageid = p.id
+    group by a, b
+),
+path(src, dst, w) AS (
+    SELECT a, b, w FROM pathb
+    union all
+    SELECT b, a, w FROM pathb
+),
+shorts(dir, gsrc, dst, prev, w, dead, iter) AS (
+    SELECT sdir, sgsrc, sdst, sdst, sw, sdead, siter
+    FROM (VALUES (false, :person1Id::bigint, :person1Id::bigint, 0::bigint, false, 0)) t(...)
+    union all
+    (...)
+)
+SELECT sp2.arr AS personIdsInPath, result.w AS pathWeight
+FROM result, sp2
+WHERE sp2.cur = result.t;
+```
+- Why it matters: The query keeps graph traversal close to the database, including edge derivation, bidirectional expansion, pruning, and path reconstruction.
+- When to use: Use for benchmark queries or operational reports where moving the graph out of the database would dominate cost.
+- When not to use: Avoid for reusable graph services with complex path policies; a graph engine or application-level algorithm may be easier to test.
+- Transferable principle: Recursive CTEs can encode graph algorithms when the graph is relational and the result must join back to relational data.
+- Related patterns: Operation update fragment list, declarative graph state machine, search strategy builder gate.
+- Risks / caveats: Recursive SQL can be hard to tune and can explode in intermediate rows if pruning is weak.
+- Agentic coding guidance: When agents modify recursive SQL, preserve the base case, recursive case, termination condition, and final path reconstruction as separate review units.
+
+### Declarative Graph State Machine
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/minigraph-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/minigraph-src/minigraph/utility/state_machine.h`
+- Language / framework / stack: C++, Boost.SML, graph processing runtime
+- Code shape/snippet:
+```cpp
+struct GraphStateMachine {
+  auto operator()() const {
+    using namespace sml;
+    return make_transition_table(
+        *"Idle"_s + event_load = "Active"_s,
+        "Active"_s + event_nothing_changed = "RT"_s,
+        "Active"_s + event_changed = "RC"_s,
+        "RC"_s + event_aggregate = "Idle"_s,
+        "RT"_s + event_fix_point = X);
+  }
+};
+
+case CHANGED:
+  assert(iter->second->is("Active"_s));
+  iter->second->process_event(Changed{});
+  assert(iter->second->is("RC"_s));
+  break;
+```
+- Why it matters: Graph lifecycle states are explicit, finite, and asserted after transitions, which keeps distributed superstep logic from becoming flag soup.
+- When to use: Use for runtimes where many entities move through the same small set of lifecycle states.
+- When not to use: Avoid for simple linear flows where an enum and a match statement would be clearer.
+- Transferable principle: Encode allowed transitions as data, then assert event handlers against that transition table.
+- Related patterns: Recursive SQL path search, throttle owned task runners, typestate edit transaction.
+- Risks / caveats: Compile-time state-machine libraries can make errors harder to read and may obscure state names behind literals.
+- Agentic coding guidance: When agents add states or events, update the transition table first, then update each event dispatch and termination predicate.
+
+### Ring Staged Prefetch Sampling
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/thunderrw-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/thunderrw-src/random_walk/alias_sampling.h`, `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/thunderrw-src/random_walk/rejection_sampling.h`
+- Language / framework / stack: C++, OpenMP-era graph random walks, SIMD prefetching, SFMT RNG
+- Code shape/snippet:
+```cpp
+// Stage 1: generate the first random number & prefetch the degree.
+for (int i = 0; i < RING_SIZE; ++i) {
+    BufferSlot& slot = ring[i];
+    slot.r_ = sfmt_genrand_uint32(sfmt);
+    _mm_prefetch((void*)(graph->offset_pair_ + slot.w_.current_), PREFETCH_HINT);
+}
+
+// Stage 2: generate the position & prefetch the alias slot.
+for (int i = 0; i < RING_SIZE; ++i) {
+    BufferSlot& slot = ring[i];
+    auto& offset = graph->offset_pair_[slot.w_.current_];
+    slot.r_ = offset.first + (slot.r_ % (offset.second - offset.first));
+    slot.dr_ = sfmt_genrand_real2(sfmt);
+    _mm_prefetch((void*)(graph->edge_weight_alias_table_ + slot.r_), PREFETCH_HINT);
+}
+
+// Stage 3: update the walker.
+slot.w_.current_ = slot.dr_ <= alias_slot.alias_value_
+        ? alias_slot.first_ : alias_slot.second_;
+```
+- Why it matters: Random walks are pointer-chasing heavy. Splitting work into stages lets prefetches overlap memory latency across many walkers.
+- When to use: Use in high-throughput graph kernels with predictable batches of independent walkers and irregular memory access.
+- When not to use: Avoid in small graphs, latency-first code, or portability-sensitive libraries where prefetch hints and manual staging add more complexity than value.
+- Transferable principle: For memory-bound irregular workloads, batch independent operations into pipeline stages instead of completing each operation serially.
+- Related patterns: Per thread reducible accumulator, parallel loop facade adapter, search strategy builder gate.
+- Risks / caveats: Manual prefetch can regress performance on different CPUs and requires careful benchmarking.
+- Agentic coding guidance: When agents optimize graph kernels, preserve the simple scalar path and add benchmark evidence before committing staged prefetch logic.
+
+### Typestate Edit Transaction
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp`; files `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp/crates/fe-batch/src/transaction.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp/crates/fe-batch/src/staging.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp/crates/fe-batch/src/file_ops.rs`
+- Language / framework / stack: Rust, file-edit batching, typestate, tempdir staging
+- Code shape/snippet:
+```rust
+pub struct Pending;
+pub struct Staged;
+pub struct Applied;
+pub struct Committed;
+pub struct RolledBack;
+
+pub struct Transaction<State = Pending> {
+    project_root: PathBuf,
+    edits: Vec<ValidatedEdit>,
+    creates: Vec<ValidatedCreate>,
+    staging: Option<StagingArea>,
+    backups: Option<FileBackupSet>,
+    _state: PhantomData<State>,
+}
+
+impl Transaction<Pending> {
+    pub fn stage(self) -> Result<Transaction<Staged>, BatchError> { ... }
+}
+
+impl Transaction<Staged> {
+    pub fn apply(self) -> Result<Transaction<Applied>, BatchError> { ... }
+}
+```
+- Why it matters: Invalid edit lifecycle calls become type errors. Code cannot commit before apply or rollback before backups exist.
+- When to use: Use for multi-file changes, migrations, generated edits, and agent-authored patches where rollback must be reliable.
+- When not to use: Avoid for single-file edits where a simple temp-write path is enough.
+- Transferable principle: Model irreversible workflow phases in the type system when the wrong call order can corrupt user files.
+- Related patterns: Atomic write backup set, cascading verification pipeline, resource closing iterator wrapper.
+- Risks / caveats: Typestate can increase boilerplate and make dynamic workflows harder unless result builders keep the public API simple.
+- Agentic coding guidance: When agents design edit tools, make `preview`, `apply`, `verify`, `commit`, and `rollback` distinct states rather than booleans on one mutable object.
+
+### Atomic Write Backup Set
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp`; file `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp/crates/fe-batch/src/file_ops.rs`
+- Language / framework / stack: Rust, filesystem operations, temp files, rollback
+- Code shape/snippet:
+```rust
+pub fn atomic_write(target: &Path, content: &[u8]) -> Result<(), BatchError> {
+    let parent = target.parent().ok_or_else(|| BatchError::WriteError { ... })?;
+    let mut temp_file = NamedTempFile::new_in(parent)
+        .map_err(|e| BatchError::WriteError { path: target.to_path_buf(), source: e })?;
+    temp_file.write_all(content)
+        .map_err(|e| BatchError::WriteError { path: target.to_path_buf(), source: e })?;
+    temp_file.as_file().sync_all()
+        .map_err(|e| BatchError::WriteError { path: target.to_path_buf(), source: e })?;
+    temp_file.persist(target)
+        .map_err(|e| BatchError::RenameError { path: target.to_path_buf(), source: e.error })?;
+    Ok(())
+}
+
+pub fn restore_all(&self) -> Result<(), BatchError> {
+    for created_path in self.created_files.iter().rev() { ... }
+    for backup in self.backups.iter().rev() { ... }
+    Ok(())
+}
+```
+- Why it matters: Same-directory temp files preserve atomic rename behavior, while reverse-order rollback cleans up creates before restoring edited files.
+- When to use: Use for agent tools, code mods, config writers, and generators that must avoid half-written files.
+- When not to use: Avoid for append-only logs or streaming outputs where rename semantics are not the right durability model.
+- Transferable principle: Treat writes as a transaction: temp, fsync, rename, and keep enough backup metadata to undo.
+- Related patterns: Typestate edit transaction, resource closing iterator wrapper, bounded periodic batch execution.
+- Risks / caveats: `sync_all` and rename semantics vary by filesystem; directory fsync may be required for stronger crash guarantees.
+- Agentic coding guidance: When agents create write tools, require same-filesystem temp files and rollback tests for edits, creates, nested directories, and failures.
+
+### Cascading Verification Pipeline
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp`; file `/Users/amuldotexe/Desktop/personal-repos-lane/mordor-mcp/crates/fe-verify/src/pipeline.rs`
+- Language / framework / stack: Rust, async verification runners, ESLint/Biome/TypeScript/Jest/Vitest
+- Code shape/snippet:
+```rust
+if let Some(linter) = &self.linter {
+    let output = linter.run(project_root, affected_files).await?;
+    let step = match self.active_linter {
+        Some(ActiveLinter::ESLint) => parsers::eslint::parse_eslint_output(&output.stdout),
+        Some(ActiveLinter::Biome) => parsers::eslint::parse_eslint_output(&output.stdout),
+        None => StepResult::pass(),
+    };
+    let failed = step.status == "fail";
+    summary.lint = step;
+
+    if failed {
+        summary.types = StepResult::skipped("Skipped due to lint errors");
+        summary.tests = TestStepResult::skipped("Skipped due to lint errors");
+        summary.finalize();
+        return Ok(summary);
+    }
+}
+```
+- Why it matters: The pipeline avoids noisy downstream errors by short-circuiting after lint or type failures and records skipped steps explicitly.
+- When to use: Use for edit verification, CI preflight, and agent self-checks where later tools depend on earlier correctness.
+- When not to use: Avoid if independent checks should all run to provide a complete failure inventory.
+- Transferable principle: Verification order should encode dependency order, and skipped checks should be first-class results.
+- Related patterns: Typestate edit transaction, operation update fragment list, search strategy builder gate.
+- Risks / caveats: Early termination can hide unrelated test failures until lint/types are fixed.
+- Agentic coding guidance: When agents verify generated code, run cheap structural checks first and report skipped downstream checks as intentional, not missing.
+
+### Push Sink Search Callback
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BurntSushi__ripgrep`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BurntSushi__ripgrep/crates/searcher/src/sink.rs`
+- Language / framework / stack: Rust, ripgrep searcher crate, callback sink trait
+- Code shape/snippet:
+```rust
+pub trait Sink {
+    type Error: SinkError;
+
+    fn matched(
+        &mut self,
+        _searcher: &Searcher,
+        _mat: &SinkMatch<'_>,
+    ) -> Result<bool, Self::Error>;
+
+    fn context(
+        &mut self,
+        _searcher: &Searcher,
+        _context: &SinkContext<'_>,
+    ) -> Result<bool, Self::Error> {
+        Ok(true)
+    }
+
+    fn finish(&mut self, _searcher: &Searcher, _: &SinkFinish) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+```
+- Why it matters: Searching drives iteration and pushes matches, context, binary notices, and finish summaries to a caller-defined sink that can stop early.
+- When to use: Use when traversal is complex and callers need flexible output handling without owning traversal control.
+- When not to use: Avoid for simple collections where a returned iterator or vector is easier to compose.
+- Transferable principle: Keep traversal strategy internal and expose behavior through a callback surface with explicit continue/stop semantics.
+- Related patterns: Search strategy builder gate, resource closing iterator wrapper, cascading verification pipeline.
+- Risks / caveats: Push APIs are less ergonomic than iterators and require care around callback error propagation.
+- Agentic coding guidance: When agents add search-like APIs, separate matching from rendering, and let sinks request early stop without treating it as an error.
+
+### Search Strategy Builder Gate
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BurntSushi__ripgrep`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BurntSushi__ripgrep/crates/searcher/src/searcher/mod.rs`
+- Language / framework / stack: Rust, ripgrep searcher crate, builder pattern, mmap/read strategy selection
+- Code shape/snippet:
+```rust
+pub fn search_file_maybe_path<M, S>(
+    &mut self,
+    matcher: M,
+    path: Option<&Path>,
+    file: &File,
+    write_to: S,
+) -> Result<(), S::Error>
+where
+    M: Matcher,
+    S: Sink,
+{
+    if let Some(mmap) = self.config.mmap.open(file, path) {
+        return self.search_slice(matcher, &mmap, write_to);
+    }
+    if self.multi_line_with_matcher(&matcher) {
+        self.fill_multi_line_buffer_from_file::<S>(file)?;
+        MultiLine::new(self, matcher, &*self.multi_line_buffer.borrow(), write_to).run()
+    } else {
+        self.search_reader(matcher, file, write_to)
+    }
+}
+
+fn check_config<M: Matcher>(&self, matcher: M) -> Result<(), ConfigError> {
+    if self.config.heap_limit == Some(0) && !self.config.mmap.is_enabled() {
+        return Err(ConfigError::SearchUnavailable);
+    }
+    Ok(())
+}
+```
+- Why it matters: The public searcher can choose mmap, whole-buffer multiline, or incremental reader paths behind one API while validating impossible configurations up front.
+- When to use: Use when one operation has multiple backend strategies selected by input size, platform, feature flags, or safety constraints.
+- When not to use: Avoid when strategy selection would make behavior unpredictable for callers who require one exact algorithm.
+- Transferable principle: Put strategy choice behind a builder-owned config and fail early when no safe strategy exists.
+- Related patterns: Push sink search callback, parallel loop facade adapter, ring staged prefetch sampling.
+- Risks / caveats: Strategy gates need strong tests because the rarely used path is where configuration bugs hide.
+- Agentic coding guidance: When agents add optional fast paths, leave the slow path intact and add explicit config validation for impossible combinations.
+
+## Worker 5 Batch 7
+
+### Timeout-Normalized Benchmark Harness
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_arcadedb-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_arcadedb-src/shared/bench_common.py`
+- Language/framework/stack: Python CLI benchmark harness, POSIX signals, subprocess cleanup
+- Code shape/snippet:
+```python
+def run_timed(name, func, timeout=QUERY_TIMEOUT):
+    old = signal.signal(signal.SIGALRM, _alarm_handler)
+    signal.alarm(timeout)
+    start = time.perf_counter()
+    try:
+        result = func()
+        elapsed = time.perf_counter() - start
+        signal.alarm(0)
+        return elapsed, result
+    except QueryTimeout:
+        return "timeout", None
+    except Exception as e:
+        signal.alarm(0)
+        print(f"  {name} failed: {e}")
+        return "N/A", None
+    finally:
+        signal.signal(signal.SIGALRM, old)
+        signal.alarm(0)
+```
+- Why it matters: Every vendor query gets the same wall-clock budget and the same result vocabulary: elapsed seconds, timeout, or not-available. That makes summary tables comparable even when individual engines fail.
+- When to use: Use for benchmark suites, migration smoke tests, or multi-backend probes where one slow backend must not block the whole matrix.
+- When not to use: Avoid `SIGALRM` when code runs on Windows, in non-main Python threads, or inside frameworks that already own process-wide signal handlers.
+- Transferable principle: Normalize failure and timeout states at the harness boundary instead of forcing every backend adapter to invent its own reporting contract.
+- Related patterns: Two-phase embedded load then service benchmark, cascading verification pipeline, timeout-bound git command runner.
+- Risks/caveats: `signal.alarm` is process-global; nested timers and threaded code can interfere. The harness returns strings and numbers in one column, so downstream consumers should treat metric values as tagged states.
+- Agentic coding guidance: When generating benchmark code, wrap each backend operation in a common timer and return structured status values before adding pretty output.
+
+### Two-Phase Embedded Load Then Service Benchmark
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_arcadedb-src`; file `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/ldbc_graphalytics_platforms_arcadedb-src/ldbc-native/systems/arcadedb.py`
+- Language/framework/stack: Python benchmark adapter, Java loader compilation, Dockerized ArcadeDB HTTP API
+- Code shape/snippet:
+```python
+db_path = "/tmp/arcadedb-docker-data/bench"
+needs_load = not os.path.isdir(db_path) or bench_common.RESET
+
+if needs_load:
+    _sp.run(["javac", "--add-modules", "jdk.incubator.vector",
+             "-cp", ldbc_jar, loader_src], cwd=bench_dir, check=True)
+    proc = _sp.run(["java", "--add-modules", "jdk.incubator.vector",
+                    "-Xms12g", "-Xmx12g", "-cp", f".:{ldbc_jar}",
+                    "ArcadeDBEmbeddedLoader", db_path, VERTEX_FILE, EDGE_FILE],
+                   cwd=bench_dir, capture_output=True, text=True)
+
+_sp.run(["docker", "run", "-d", "--name", "arcadedb",
+         "-p", "2480:2480", "-p", "2424:2424",
+         "-v", "/tmp/arcadedb-docker-data:/home/arcadedb/databases",
+         "arcadedata/arcadedb:26.4.1-SNAPSHOT"], check=True)
+```
+- Why it matters: Load performance and query performance are separated. The database is built by a fast embedded loader, then served through Docker and HTTP so algorithm timing matches the networked comparison mode.
+- When to use: Use when a system has a superior bulk-loader path but production queries run through a different service boundary.
+- When not to use: Avoid when load and query must be measured as one user-visible workflow, or when generated wrapper source files would make runs non-reproducible.
+- Transferable principle: Benchmark phases should model the thing being compared; split setup acceleration from runtime measurement when that preserves fairness.
+- Related patterns: Timeout-normalized benchmark harness, deterministic artifact cache, transaction-scoped docs index job.
+- Risks/caveats: Writing Java source during a benchmark couples the harness to local filesystem permissions and JDK availability. Docker cleanup and port reuse need defensive handling.
+- Agentic coding guidance: Make phase boundaries explicit in generated benchmarks: load, start service, readiness probe, query loop, cleanup. Record which phase each metric represents.
+
+### Canonical Sparse Matrix Conversion Boundary
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src/src/coo/coo.rs` and `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src/src/csr/csr.rs`
+- Language/framework/stack: Rust sparse matrix library, COO/CSR/CSC formats, `anyhow` errors
+- Code shape/snippet:
+```rust
+pub fn to_csr(&self) -> CSR<I, T> {
+    let nnz = self.nnz();
+    let mut rowptr = vec![I::zero(); self.rows + 1];
+    let mut colidx = vec![I::zero(); nnz];
+    let mut values = vec![T::zero(); nnz];
+
+    coo_tocsr(self.rows, self.cols, self.nnz(),
+        &self.rowidx, &self.colidx, &self.values,
+        &mut rowptr, &mut colidx, &mut values);
+
+    let mut a_mat = CSR::new(self.rows, self.cols, rowptr, colidx, values).unwrap();
+    a_mat.sum_duplicates().unwrap();
+    a_mat
+}
+
+pub fn select(&self, rowidx: Option<&[I]>, colidx: Option<&[I]>) -> Result<CSR<I, T>> {
+    if !self.has_canonical_format() {
+        return Err(format_err!("must have canonical form, sum_duplicates"));
+    }
+    /* selection continues only after the invariant is true */
+}
+```
+- Why it matters: Duplicate coordinates are normalized exactly when converting into compressed format, and operations that require canonical order reject non-canonical inputs early.
+- When to use: Use when moving from permissive ingest formats into compact compute formats that have stronger invariants.
+- When not to use: Avoid silent canonicalization in hot paths where sorting/dedup cost is surprising or where duplicate entries must remain semantically distinct.
+- Transferable principle: Let flexible boundary formats accept messy input, then make compute formats enforce canonical invariants before expensive operations.
+- Related patterns: Trait-layered scalar formatting surface, graph patch upsert-wins reconciliation, content-hash diff sketch.
+- Risks/caveats: The conversion uses `unwrap()` after internal construction, so shape assumptions must remain true. Canonicalization can change `nnz`, which callers must not cache before conversion.
+- Agentic coding guidance: When agents add operations over indexed data structures, document the representation invariant and either normalize at conversion or return a typed error at operation entry.
+
+### Trait-Layered Scalar Formatting Surface
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src`; files `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src/src/traits.rs` and `/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/gitrefrepo/sparsetools-src/src/csr/table.rs`
+- Language/framework/stack: Rust generic numeric traits, complex numbers, table rendering
+- Code shape/snippet:
+```rust
+pub trait Scalar<Output = Self>:
+    PartialEq + Copy + Clone
+    + ops::Add<Output = Self> + ops::Sub<Output = Self>
+    + ops::Mul<Output = Self> + ops::Div<Output = Self>
+    + num_traits::Zero + num_traits::One<Output = Self>
+    + fmt::Display + Nonzero
+{
+    fn pretty_string(&self, _config: Option<FmtFloatConfig>) -> String {
+        format!("{}", self)
+    }
+}
+
+pub fn csr_table<I: Integer, S: Scalar, W: Write>(
+    n_row: usize, n_col: usize, a_p: &[I], a_j: &[I], a_x: &[S],
+    label: bool, w: W, fmt_float_config: Option<FmtFloatConfig>,
+) -> W {
+    let s = a_x[ii].pretty_string(fmt_float_config);
+    tw.write(s.as_bytes()).unwrap();
+}
+```
+- Why it matters: Arithmetic requirements and display requirements are bundled once, letting dense/sparse operations work over integers, floats, and complex values while preserving type-specific formatting.
+- When to use: Use for numeric libraries where algorithms are generic but presentation needs specialized formatting.
+- When not to use: Avoid broad trait bundles in public APIs when consumers need to implement only a tiny subset; split traits if implementors become strained.
+- Transferable principle: Put domain capabilities into small named traits, then use those traits at rendering and algorithm boundaries instead of repeating long bound lists.
+- Related patterns: Canonical sparse matrix conversion boundary, strict discriminated graph contract, typed FFI handle wrapper.
+- Risks/caveats: Large supertrait lists can make compiler errors noisy. Default formatting is fine for integers but floats often need explicit precision controls.
+- Agentic coding guidance: When generating generic Rust APIs, create domain traits only after seeing repeated bounds, and include the behavior the algorithm actually calls.
+
+### RAII-Style Native Tree Query Lifetimes
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/71__vscode-tree-sitter-api`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/71__vscode-tree-sitter-api/src/extension.ts`
+- Language/framework/stack: TypeScript VS Code extension, `web-tree-sitter`, manual native-resource disposal
+- Code shape/snippet:
+```typescript
+export const withDocumentTree = makeWith(documentTree) as {
+  <T>(document: vscode.TextDocument, k: (tree: Tree) => T | PromiseLike<T>): Promise<T>;
+};
+
+export function using<T, Args extends { delete(): void }[]>(
+  ...args: [...Args, (...args: Args) => T]
+): T {
+  const f = args.pop() as (...args: Args) => T;
+  let result: T;
+  try {
+    result = f(...args as unknown as Args);
+  } catch (e) {
+    for (const arg of args as unknown as Args) arg.delete();
+    throw e;
+  }
+  if (result == null || typeof (result as PromiseLike<unknown>).then !== "function") {
+    for (const arg of args as unknown as Args) arg.delete();
+    return result;
+  }
+  return (async () => {
+    try { return await result; }
+    finally { for (const arg of args as unknown as Args) arg.delete(); }
+  })() as T;
+}
+```
+- Why it matters: Tree-sitter objects require explicit `delete()`. Wrapping them in callback helpers gives TypeScript callers RAII-like safety for both sync and async code.
+- When to use: Use around WASM/native handles, temporary parser objects, file descriptors, locks, or any resource with manual release semantics.
+- When not to use: Avoid callback wrappers when the resource must escape the callback by design; then return an owned object with explicit disposal documented.
+- Transferable principle: If a caller must remember cleanup, provide a scoped helper that makes the safe lifetime the default.
+- Related patterns: Native handle ownership mirrored by JS close guard, resource closing iterator wrapper, promise-as-cache loader singleflight.
+- Risks/caveats: Scoped helpers can hide lifecycle from debuggers, and returning a resource from the callback after it has been deleted creates a use-after-free convention bug.
+- Agentic coding guidance: When agents expose native resources in JS/TS, add `withX` helpers alongside raw constructors and test both throwing and resolving callback paths.
+
+### Promise-As-Cache Loader Singleflight
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/71__vscode-tree-sitter-api`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/71__vscode-tree-sitter-api/src/extension.ts`
+- Language/framework/stack: TypeScript VS Code extension, WASM language loaders, query memoization
+- Code shape/snippet:
+```typescript
+const loadedLanguages: {
+  [language in Language]?: TreeSitter.Language | Promise<TreeSitter.Language>;
+} = {};
+
+if (loadedLanguages[validLanguage] === undefined) {
+  const wasmFileBytes = await vscode.workspace.fs.readFile(
+    resolveAssetFilePath(`tree-sitter-${validLanguage}.wasm`),
+  );
+  const languagePromise = TreeSitter.Language.load(wasmFileBytes)
+    .then((l) => loadedLanguages[validLanguage] = l);
+  loadedLanguages[validLanguage] = languagePromise;
+}
+
+await loadedLanguages[validLanguage];
+```
+- Why it matters: The cache stores the in-flight promise before the load completes, so concurrent callers share one WASM load rather than racing duplicate work.
+- When to use: Use for lazy initialization of expensive resources: parsers, model clients, database pools, schema compilers, or per-language adapters.
+- When not to use: Avoid when initialization is user-specific, short-lived, or must retry immediately after every failure with fresh parameters.
+- Transferable principle: Cache the promise, not just the resolved value, when the expensive operation may be requested concurrently.
+- Related patterns: RAII-style native tree query lifetimes, demand-driven monotonic readiness task, lazy single-dispatch capability map.
+- Risks/caveats: Failed promises can poison the cache if not cleared intentionally. Negative cache entries such as `undefined` should be documented so callers know not to delete shared results.
+- Agentic coding guidance: When agents add lazy loaders, write the cache state as a union of `Promise<T> | T | absent`, and decide explicitly whether failures are cached or retried.
+
+### Typed LangGraph Retry State With Append History
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan1643__swe-agent`; files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan1643__swe-agent/src/graph/state.py` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan1643__swe-agent/src/graph/workflow.py`
+- Language/framework/stack: Python, LangGraph, typed state machine for autonomous patch validation
+- Code shape/snippet:
+```python
+class AgentState(TypedDict):
+    patch: str
+    test_output: str
+    tests_passed: bool
+    attempt: int
+    max_retries: int
+    error_history: Annotated[list, operator.add]
+
+builder.add_conditional_edges(
+    "validate",
+    should_retry,
+    {
+        "generate": "increment",
+        "__end__": END,
+    },
+)
+builder.add_edge("increment", "generate")
+```
+- Why it matters: The graph carries all stage outputs in typed state, while error history accumulates across retries instead of being overwritten by the latest failed attempt.
+- When to use: Use for agent loops where validation output should condition future generation and where retry count is part of the protocol.
+- When not to use: Avoid if each attempt must be isolated for safety, or if accumulated logs can leak secrets back into prompts.
+- Transferable principle: Model retry memory as explicit state with merge semantics, not as hidden conversation context.
+- Related patterns: Budgeted AST context ranker, patch extraction with retry prompt, Ralph loop pattern.
+- Risks/caveats: Append-only histories grow quickly and can cause repeated failure anchoring if not summarized. TypedDicts do not enforce runtime validation unless paired with checks.
+- Agentic coding guidance: When agents build self-repair loops, keep attempt count, validation result, and summarized prior errors as first-class state fields.
+
+### Budgeted AST Context Ranker
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan1643__swe-agent`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Aryan1643__swe-agent/src/localization/file_ranker.py`
+- Language/framework/stack: Python, tree-sitter-derived file analysis, LLM context construction
+- Code shape/snippet:
+```python
+ranked.sort(key=lambda r: r.score, reverse=True)
+ranked = ranked[:self.max_files]
+
+for ranked in ranked_files[:max_files]:
+    analysis = analyses.get(ranked.path)
+    section = f"\n{'='*60}\n"
+    section += f"File: {ranked.path} (relevance: {ranked.score:.1f})\n"
+    if len(analysis.raw_source) < 3000:
+        section += analysis.raw_source
+    else:
+        for sym in analysis.symbols:
+            if sym.name in ranked.symbol_hits:
+                section += f"\n# Lines {sym.start_line}-{sym.end_line}\n"
+                section += sym.body + "\n"
+    if total_chars + len(section) > max_chars:
+        section = section[:max_chars - total_chars] + "\n# ... (truncated)\n"
+```
+- Why it matters: File relevance, symbol hits, and a hard character budget combine into a deterministic context pack for patch generation.
+- When to use: Use when an agent needs to feed code to an LLM from a repository larger than the prompt budget.
+- When not to use: Avoid keyword-only ranking for security fixes or deep dataflow bugs where the relevant file may not share surface terms with the issue.
+- Transferable principle: Context selection should be scored, capped, and annotated with why each file was included.
+- Related patterns: Typed LangGraph retry state with append history, graph context pack with weighted refs, smart context algorithm.
+- Risks/caveats: Text truncation can cut syntax in the middle of a function. Source extraction should be paired with tests or graph traversal for bugs crossing module boundaries.
+- Agentic coding guidance: When agents construct LLM context, include path, score, line spans, and truncation markers so downstream generation can reason about evidence quality.
+
+### Agent Exchange Updates With Redacted Compression
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BloopAI__bloop`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BloopAI__bloop/server/bleep/src/agent/exchange.rs`
+- Language/framework/stack: Rust backend, serde tagged enums, conversational agent trace model
+- Code shape/snippet:
+```rust
+pub fn apply_update(&mut self, update: Update) {
+    match update {
+        Update::StartStep(search_step) => self.search_steps.push(search_step),
+        Update::ReplaceStep(search_step) => match (self.search_steps.last_mut(), search_step) {
+            (Some(l @ SearchStep::Path { .. }), r @ SearchStep::Path { .. }) => *l = r,
+            (Some(l @ SearchStep::Code { .. }), r @ SearchStep::Code { .. }) => *l = r,
+            (Some(l @ SearchStep::Proc { .. }), r @ SearchStep::Proc { .. }) => *l = r,
+            _ => panic!("Tried to replace a step that was not found"),
+        },
+        Update::Article(full_text) => *self.answer.get_or_insert_with(String::new) = full_text,
+        Update::Focus(chunk) => self.focused_chunk = Some(chunk),
+        Update::SetTimestamp => self.response_timestamp = Some(Utc::now()),
+    }
+}
+
+pub fn compressed(mut self) -> Self {
+    self.code_chunks.clear();
+    self.paths.clear();
+    self.search_steps = self.search_steps.into_iter().map(|step| step.compressed()).collect();
+    self
+}
+```
+- Why it matters: The trace model supports live step creation and replacement during tool execution, then redacts bulky responses for transport or storage.
+- When to use: Use for agent UIs that need progressive status updates while preserving a compact durable conversation record.
+- When not to use: Avoid `panic!`-based protocol enforcement in untrusted API handlers; return a typed error if bad update ordering can come from clients.
+- Transferable principle: Separate full internal trace data from compressed outward-facing trace data, and make update operations explicit.
+- Related patterns: HyDE low-recall semantic fallback, typed message queue with coalescing filters, lossy priority rollup batcher.
+- Risks/caveats: Replacing only the last step assumes single-threaded ordered updates. Compression loses forensic detail unless full traces are retained elsewhere.
+- Agentic coding guidance: When agents stream tool progress, model trace mutations as typed updates and include a redaction path before sending traces to clients.
+
+### HyDE Low-Recall Semantic Fallback
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BloopAI__bloop`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/BloopAI__bloop/server/bleep/src/agent/tools/code.rs`
+- Language/framework/stack: Rust async agent tool, semantic search, LLM-generated hypothetical documents
+- Code shape/snippet:
+```rust
+const CODE_SEARCH_LIMIT: u64 = 10;
+const MINIMUM_RESULTS: usize = CODE_SEARCH_LIMIT as usize / 2;
+
+let mut results = self.semantic_search(AgentSemanticSearchParams {
+    query: Literal::from(&query.to_string()),
+    paths: vec![],
+    repos: relevant_repos.clone(),
+    semantic_params: SemanticSearchParams {
+        limit: CODE_SEARCH_LIMIT,
+        offset: 0,
+        threshold: 0.3,
+        exact_match: false,
+    },
+}).await?;
+
+if results.len() < MINIMUM_RESULTS {
+    let hyde_docs = self.hyde(query).await?;
+    if !hyde_docs.is_empty() {
+        let hyde_results = self.semantic_search(/* first synthetic doc */).await?;
+        results.extend(hyde_results);
+    }
+}
+```
+- Why it matters: The agent pays for HyDE only when initial retrieval is weak, improving recall without making every search slower or more expensive.
+- When to use: Use in semantic search systems where sparse user queries often under-describe the target code.
+- When not to use: Avoid for exact symbol lookup, security-sensitive search, or domains where generated hypothetical content can bias retrieval toward false positives.
+- Transferable principle: Make expensive recall-expansion strategies conditional on measurable retrieval weakness.
+- Related patterns: Agent exchange updates with redacted compression, adaptive top-k by confidence gap, reciprocal rank fusion hybrid retriever.
+- Risks/caveats: Generated documents can drift from the user query. Extended results should be deduplicated and sorted deterministically before presentation.
+- Agentic coding guidance: When agents add semantic fallback, gate it on result count or score gaps and log when synthetic queries influenced retrieval.
+
+### Stable Debounced File Change Batches
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Durafen__Claude-code-memory`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Durafen__Claude-code-memory/claude_indexer/watcher/debounce.py`
+- Language/framework/stack: Python asyncio watcher utility, file event coalescing
+- Code shape/snippet:
+```python
+async def _handle_event(self, event: dict[str, Any]) -> None:
+    file_path = event["file_path"]
+    event_type = event["event_type"]
+    timestamp = event["timestamp"]
+
+    if event_type == "deleted":
+        self._deleted_files.add(file_path)
+        self._pending_files.pop(file_path, None)
+    else:
+        self._pending_files[file_path] = timestamp
+        self._deleted_files.discard(file_path)
+
+async def _flush_pending(self) -> None:
+    stable_files = {
+        path: timestamp
+        for path, timestamp in self._pending_files.items()
+        if current_time - timestamp >= self.delay
+    }
+    batch_event = {
+        "modified_files": list(stable_files.keys()),
+        "deleted_files": list(self._deleted_files),
+        "timestamp": current_time,
+    }
+```
+- Why it matters: Rapid save storms collapse into one stable batch, and delete events override pending modifications for the same path.
+- When to use: Use for filesystem watchers that trigger indexing, linting, previews, or cache updates.
+- When not to use: Avoid when every intermediate event is semantically important, such as audit trails or collaborative editing logs.
+- Transferable principle: Coalesce noisy edge events into stable domain events before invoking expensive downstream work.
+- Related patterns: Hybrid dense sparse embedding point creation, transaction-scoped docs index job, typed message queue with coalescing filters.
+- Risks/caveats: Debounce delays trade latency for correctness. Callback failures are printed rather than retried, so production systems need structured error handling.
+- Agentic coding guidance: When agents build watchers, track modified and deleted paths separately and flush stable batches on shutdown before cancelling the processing task.
+
+### Hybrid Dense Sparse Embedding Point Creation
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Durafen__Claude-code-memory`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Durafen__Claude-code-memory/claude_indexer/processing/content_processor.py`
+- Language/framework/stack: Python indexing pipeline, dense embedder, BM25 sparse embedder, vector-store abstraction
+- Code shape/snippet:
+```python
+def _get_bm25_embedder(self):
+    if self._bm25_embedder is None:
+        try:
+            self._bm25_embedder = create_bm25_embedder()
+        except Exception:
+            self._bm25_embedder = False
+    return self._bm25_embedder if self._bm25_embedder is not False else None
+
+if any(should_apply_bm25):
+    bm25_embedder = self._get_bm25_embedder()
+    if bm25_embedder:
+        bm25_results = bm25_embedder.embed_batch(bm25_texts)
+        for dense_result, sparse_result, should_have_bm25 in zip(
+            embedding_results, bm25_results, should_apply_bm25, strict=False
+        ):
+            if should_have_bm25 and dense_result.success and sparse_result.success:
+                dense_result.sparse_embedding = sparse_result.embedding
+```
+- Why it matters: Dense vectors remain the primary path, while sparse BM25 vectors are added opportunistically for metadata chunks and skipped cleanly when unavailable.
+- When to use: Use for code search, documentation search, and knowledge stores that benefit from both semantic similarity and exact-term retrieval.
+- When not to use: Avoid when the vector backend cannot represent hybrid vectors or when sparse vector generation cost dominates indexing.
+- Transferable principle: Layer optional retrieval enhancements behind capability checks and preserve a dense-only fallback.
+- Related patterns: Stable debounced file change batches, reciprocal rank fusion hybrid retriever, content-hash diff sketch.
+- Risks/caveats: Silent sparse fallback can make relevance shift across deployments. Log capability state and expose it in index metadata.
+- Agentic coding guidance: When agents add hybrid search, generate sparse vectors only for content types that benefit from lexical matching and preserve a backend-neutral point-creation path.
+
+### Stable Hashed Worktree Tab IDs
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/LegacyCodeHQ__clarity-cli`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/LegacyCodeHQ__clarity-cli/cmd/watch/repo_id.go`
+- Language/framework/stack: Go CLI watch server, Git worktree UI protocol
+- Code shape/snippet:
+```go
+const primaryRepoID = "primary"
+
+func repoIDFor(absPath string, isPrimary bool) string {
+	if isPrimary {
+		return primaryRepoID
+	}
+	sum := sha256.Sum256([]byte(absPath))
+	return "wt-" + hex.EncodeToString(sum[:])[:8]
+}
+
+func primaryRepoLabel(absPath, branch string) string {
+	short := strings.TrimPrefix(branch, "refs/heads/")
+	if short != "" {
+		return short
+	}
+	return linkedRepoLabel(absPath)
+}
+```
+- Why it matters: The current checkout always gets a memorable `primary` ID, while linked worktrees get stable compact IDs derived from absolute paths.
+- When to use: Use in dashboards, watch servers, or broker protocols that need stable identifiers for dynamic local resources.
+- When not to use: Avoid short hashes when collisions would be catastrophic or when paths contain sensitive information and IDs are publicly exposed.
+- Transferable principle: Prefer deterministic IDs over process-local counters for resources that survive reconnects or UI refreshes.
+- Related patterns: Multi-worktree supervisor meta-watcher, bounded snapshot broker for SSE, repo-commit index cache.
+- Risks/caveats: Eight hex characters are enough for local UI keys but not for global identity. Path moves intentionally change the ID.
+- Agentic coding guidance: When agents add multi-resource views, define a stable ID policy before wiring UI state or snapshot caches.
+
+### Strict Discriminated Graph Contract
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer/packages/code-graph-core/src/node.schema.ts`
+- Language/framework/stack: TypeScript, Zod runtime schemas, graph model shared by engine/server/UI
+- Code shape/snippet:
+```typescript
+export const NodeType = z.enum([
+  'repo', 'app', 'package', 'folder', 'file',
+  'component', 'function', 'external',
+]);
+
+export const RepoNode = z.object({
+  ...baseFields,
+  type: z.literal('repo'),
+  parentId: z.null(),
+}).strict();
+
+const SymbolNode = (type: 'component' | 'function') =>
+  z.object({
+    ...hashableFields,
+    type: z.literal(type),
+    path: z.string(),
+    span: SourceSpan,
+    metrics: NodeMetrics,
+    bundleBytes: z.number().int().nonnegative().nullable(),
+    signature: z.string().nullable().default(null),
+  }).strict();
+
+export const GraphNode = z.discriminatedUnion('type', [
+  RepoNode, AppNode, PackageNode, FolderNode, FileNode,
+  ComponentNode, FunctionNode, ExternalNode,
+]);
+```
+- Why it matters: Each node kind carries only fields that make sense for that kind, and `.strict()` rejects illegal mixed states instead of silently stripping them.
+- When to use: Use for graph snapshots, protocol DTOs, and persisted JSON that crosses process or package boundaries.
+- When not to use: Avoid strict schemas during exploratory ingestion where unknown fields must be preserved for forward compatibility.
+- Transferable principle: Encode domain variants as discriminated unions with runtime validation, not as one bag of optional fields.
+- Related patterns: Graph patch upsert-wins reconciliation, graph context pack with weighted refs, shared graph schema literal unions.
+- Risks/caveats: Strict schemas require migrations when fields are added. Defaults like `signature: null` are useful compatibility valves but should be intentional.
+- Agentic coding guidance: When agents introduce shared JSON contracts, add discriminants, strict validation, and type guards before adding consumers.
+
+### Graph Context Pack With Weighted Refs
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer`; file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer/packages/code-graph-core/src/context.ts`
+- Language/framework/stack: TypeScript graph analysis core, dependency indexes, context packing
+- Code shape/snippet:
+```typescript
+const refsFrom = (
+  edges: GraphEdge[],
+  byId: Map<string, GraphNode>,
+  endpoint: (e: GraphEdge) => string,
+  max: number,
+): { refs: ContextRef[]; truncated: boolean } => {
+  const refs: ContextRef[] = [];
+  for (const edge of edges) {
+    const node = byId.get(endpoint(edge));
+    if (!node) continue;
+    refs.push({
+      id: node.id,
+      name: node.name,
+      type: node.type,
+      path: nodePath(node),
+      signature: nodeSignature(node),
+      edgeType: edge.type,
+      weight: edge.weight,
+    });
+  }
+  refs.sort((a, b) => b.weight - a.weight || a.name.localeCompare(b.name));
+  return { refs: refs.slice(0, max), truncated: refs.length > max };
+};
+```
+- Why it matters: The context pack includes target facts, dependency refs, dependent refs, and truncation flags without touching disk, making it usable by CLI, server, and UI layers.
+- When to use: Use when an agent needs structural context around a symbol before reading source bodies.
+- When not to use: Avoid as the only context for behavioral debugging; first-hop graph refs do not replace tests, runtime traces, or full source review.
+- Transferable principle: Context packs should be deterministic projections with capped lists and explicit truncation metadata.
+- Related patterns: Budgeted AST context ranker, strict discriminated graph contract, smart context algorithm.
+- Risks/caveats: Edge weights control ordering quality. Dangling endpoints are skipped, so upstream index integrity should still be monitored.
+- Agentic coding guidance: When agents generate graph context APIs, return why-context fields like edge type, weight, signature, and truncation rather than only node IDs.
+
+### Graph Patch Upsert-Wins Reconciliation
+- Where found with absolute repo and file path: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer`; files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer/packages/code-graph-core/src/snapshot.schema.ts` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Nishant-Chaudhary5338__mcp-code-indexer/tools/code-indexer/src/engine/session.ts`
+- Language/framework/stack: TypeScript incremental graph engine, Zod snapshot schema, `ts-morph`
+- Code shape/snippet:
+```typescript
+export const applyPatch = (
+  snapshot: GraphSnapshot,
+  patch: GraphPatch,
+): GraphSnapshot => {
+  const removeNodes = new Set(patch.removeNodeIds);
+  const removeEdges = new Set(patch.removeEdgeIds);
+  const upsertNodeIds = new Set(patch.upsertNodes.map((n) => n.id));
+  const upsertEdgeIds = new Set(patch.upsertEdges.map((e) => e.id));
+  const nodes = snapshot.nodes
+    .filter((n) => !removeNodes.has(n.id) && !upsertNodeIds.has(n.id))
+    .concat(patch.upsertNodes);
+  const edges = snapshot.edges
+    .filter((e) => !removeEdges.has(e.id) && !upsertEdgeIds.has(e.id))
+    .concat(patch.upsertEdges);
+  return {
+    meta: { ...snapshot.meta, ...patch.meta, nodeCount: nodes.length, edgeCount: edges.length },
+    nodes,
+    edges,
+  };
+};
+
+const upsertedNodeIds = new Set(patch.upsertNodes.map((n) => n.id));
+patch.removeNodeIds = patch.removeNodeIds.filter((id) => !upsertedNodeIds.has(id));
+```
+- Why it matters: Incremental reparsing can remove and recreate the same node ID in one pass. The engine nets those deltas so clients applying patches do not accidentally delete a freshly upserted node.
+- When to use: Use for live graph updates, incremental indexes, and websocket patch protocols where remove/upsert ordering can differ across clients.
+- When not to use: Avoid if deletion must always win, such as tombstone-based replication or audit logs.
+- Transferable principle: Define conflict resolution semantics for patch application and enforce them before publishing deltas.
+- Related patterns: Strict discriminated graph contract, canonical sparse matrix conversion boundary, content-hash index diff planner.
+- Risks/caveats: The snippet also updates edge counts in the full source; patches must keep node and edge reconciliation symmetrical. Tests should cover remove-then-recreate ordering.
+- Agentic coding guidance: When agents build incremental update protocols, add an explicit reconcile phase and document whether upsert or remove wins on same-ID conflicts.
+
+## Worker 5 Batch 8
+
+### Tiny Grammar Combinators
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AbstractMachinesLab__tree-sitter-sexp`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AbstractMachinesLab__tree-sitter-sexp/grammar.js`. Also seen in repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__tree-sitter-aidl`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__tree-sitter-aidl/grammar.js`.
+- Language / framework / stack: JavaScript tree-sitter grammar DSL.
+- Code shape / snippet:
+```javascript
+const delim = (open, x, close) => seq(open, x, close);
+
+module.exports = grammar({
+  name: "sexp",
+  rules: {
+    _sexp: ($) => choice($.atom, $.list),
+    atom: ($) => /[_@a-zA-Z0-9\xC0-\xD6\xD8-\xFF:-]+/,
+    list: ($) => delim(PARENS_LEFT, repeat($._sexp), PARENS_RIGHT),
+  },
+});
+
+function sep1(rule, separator) {
+    return seq(rule, repeat(seq(separator, rule)));
+}
+```
+- Why this matters: A tiny grammar stays readable when repeated structure is hidden behind named helpers such as `delim` or `sep1`, instead of repeated `seq` nests.
+- When to use: Use when a grammar has recurring delimiters, comma lists, argument lists, bracketed forms, or separated token runs.
+- When not to use: Avoid helpers that hide important precedence, associativity, or field labels; those should remain explicit in rules.
+- Transferable principle: Compress only the syntax mechanics that repeat, not the domain meaning of the grammar rule.
+- Related patterns: Table-driven operator grammar, documented ambiguity ledger, unified suffix primary rule.
+- Risks / caveats: Over-generalized helpers can make parser conflicts harder to debug because generated rule shapes become less obvious.
+- Agentic coding guidance: When an agent adds grammar rules, first extract only the two or three list/delimiter helpers already present in the grammar, then express new language forms using those helpers.
+
+### Table-Driven Operator Grammar
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__tree-sitter-aidl`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/AndroidIDEOfficial__tree-sitter-aidl/grammar.js`. Also seen in repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua/grammar.js`.
+- Language / framework / stack: JavaScript tree-sitter grammar DSL for AIDL and Lua.
+- Code shape / snippet:
+```javascript
+binary_expression: $ => choice(
+    ...[
+        ['>', PREC.REL],
+        ['==', PREC.EQUALITY],
+        ['&&', PREC.AND],
+        ['+', PREC.ADD],
+        ['>>>', PREC.SHIFT],
+    ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+            field('left', $.expression),
+            field('operator', operator),
+            field('right', $.expression)
+        ))
+    )),
+```
+- Why this matters: Operators become data. Adding an operator is a table edit, not a new hand-written grammar branch with a fresh chance to forget fields or associativity.
+- When to use: Use for expression grammars with many binary or unary operators sharing the same AST shape.
+- When not to use: Avoid when individual operators have special parse structure, contextual keyword behavior, or different child field names.
+- Transferable principle: Represent repetitive language families as declarative tables and map them into uniform parser nodes.
+- Related patterns: Tiny grammar combinators, unified suffix primary rule, source-backed parser fields.
+- Risks / caveats: A wrong precedence value affects every parse that crosses that operator family, so table entries need corpus tests.
+- Agentic coding guidance: When adding parser operators, update the precedence table and the corpus case together; do not copy-paste a one-off branch unless the AST shape truly differs.
+
+### Scanner-Only Context Tokens
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Julian__tree-sitter-lean`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Julian__tree-sitter-lean/src/scanner.c`. Also seen in repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua/src/scanner.c`.
+- Language / framework / stack: C external scanners for tree-sitter.
+- Code shape / snippet:
+```c
+struct Scanner {
+  Array(uint16_t) indents;
+};
+
+if (indent > top) {
+  if (valid_symbols[INDENT]) {
+    array_push(&scanner->indents, (uint16_t)indent);
+    lexer->result_symbol = INDENT;
+    return true;
+  }
+  return false;
+}
+if (indent < top && valid_symbols[DEDENT]) {
+  array_pop(&scanner->indents);
+  lexer->result_symbol = DEDENT;
+  return true;
+}
+```
+- Why this matters: Lean indentation, nested comments, raw strings, and Lua long brackets are lexical problems with memory. Moving them to scanners keeps grammar rules declarative.
+- When to use: Use for indentation stacks, nested delimiters, matched delimiter counts, or token families that need lexer state.
+- When not to use: Avoid external scanners for ordinary keywords, simple regex tokens, or cases tree-sitter precedence can express cleanly.
+- Transferable principle: Keep the parser declarative and isolate stateful lexical edge cases behind a narrow scanner ABI.
+- Related patterns: Documented ambiguity ledger, unified suffix primary rule, multi-runtime grammar binding.
+- Risks / caveats: Scanner state must serialize and deserialize correctly for incremental parsing; otherwise edits can corrupt later parses.
+- Agentic coding guidance: When an agent adds scanner state, add serialization paths and edit-oriented tests, not only full-file parse tests.
+
+### Unified Suffix Primary Rule
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua/grammar.js`.
+- Language / framework / stack: JavaScript tree-sitter grammar DSL for Lua.
+- Code shape / snippet:
+```javascript
+primary: ($) =>
+  choice(
+    field("base", $.Name),
+    seq("(", field("value", $.exp), ")"),
+    prec.left(PRECEDENCE.INDEX,
+      seq(field("object", $.primary), "[", field("index", $.exp), "]")),
+    prec.left(PRECEDENCE.FIELD,
+      seq(field("object", $.primary), ".", field("field", $.Name))),
+    prec.left(PRECEDENCE.CALL,
+      seq(field("function", $.primary), field("args", $.args))),
+  ),
+```
+- Why this matters: Lua prefix expressions, variables, calls, field accesses, and method calls are one suffix chain. A single left-recursive primary rule avoids mutual recursion and reduces conflict pressure.
+- When to use: Use for languages where calls, indexing, field access, and method syntax can chain indefinitely on the same base expression.
+- When not to use: Avoid if suffix forms have different precedence levels or if some suffixes are only legal in narrow syntactic contexts.
+- Transferable principle: Model repeated suffix syntax as one recursive chain with stable field names.
+- Related patterns: Table-driven operator grammar, scanner-only context tokens, source-backed parser fields.
+- Risks / caveats: Unified rules can accept syntactically broad forms; corpus tests must verify invalid combinations still fail or are rejected later.
+- Agentic coding guidance: When agents face expression grammar conflicts, check whether the language has a suffix-chain abstraction before adding separate `call`, `var`, and `access` recursion.
+
+### Multi-Runtime Grammar Binding
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Julian__tree-sitter-lean`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Julian__tree-sitter-lean/bindings/rust/lib.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Julian__tree-sitter-lean/bindings/node/binding_test.js`, and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Julian__tree-sitter-lean/bindings/python/tree_sitter_lean/tests/test_binding.py`. Also seen in repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua/bindings/go/binding.go` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Zaenalos__tree-sitter-lua/bindings/go/binding_test.go`.
+- Language / framework / stack: Rust, Node.js, Python, Go bindings around generated tree-sitter C parsers.
+- Code shape / snippet:
+```rust
+extern "C" {
+    fn tree_sitter_lean() -> *const ();
+}
+
+pub const LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_lean) };
+pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
+
+#[test]
+fn test_can_load_grammar() {
+    let mut parser = tree_sitter::Parser::new();
+    parser.set_language(&super::LANGUAGE.into()).expect("Error loading Lean parser");
+}
+```
+- Why this matters: Every runtime binding exposes the same parser artifact and includes a smoke test that proves the host runtime can load it.
+- When to use: Use for generated parsers, native libraries, or WASM modules that must be consumed from several ecosystems.
+- When not to use: Avoid hand-maintaining runtime-specific behavior in each binding; the binding should stay a thin loader unless the host API requires more.
+- Transferable principle: Treat native/generated artifacts as one core product with thin, tested adapters per runtime.
+- Related patterns: Scanner-only context tokens, fixture-generated snapshot matrix, parser driver maps.
+- Risks / caveats: Load tests catch linkage errors but not grammar correctness. Keep corpus tests in the parser repo too.
+- Agentic coding guidance: When agents add a generated parser binding, add the smallest possible "can load grammar" test in that runtime before adding richer API wrappers.
+
+### Typed AST Staging
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/ast.rs` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/parser.rs`.
+- Language / framework / stack: Rust, tree-sitter C++ parser, typed AST conversion.
+- Code shape / snippet:
+```rust
+pub enum AstNode {
+    Dummy,
+    Compound(Vec<Rc<RefCell<Ast>>>),
+    Stat(String),
+    Continue(String),
+    Break(String),
+    Return(String),
+    If {
+        cond: String,
+        body: Rc<RefCell<Ast>>,
+        otherwise: Option<Rc<RefCell<Ast>>>,
+    },
+    For { init: String, cond: String, upd: String, body: Rc<RefCell<Ast>> },
+}
+```
+- Why this matters: The project does not build a graph directly from raw tree-sitter nodes. It first reduces C/C++ syntax into a domain AST of flow-relevant constructs.
+- When to use: Use when source syntax is noisy but downstream logic needs a smaller semantic vocabulary.
+- When not to use: Avoid when downstream tools need exact CST fidelity, comments, trivia, or all syntactic forms.
+- Transferable principle: Put a typed staging layer between generic parser output and domain algorithms.
+- Related patterns: Scoped control-flow context, fixture-generated snapshot matrix, shared graph view currency.
+- Risks / caveats: The staging AST can erase information. Keep byte ranges or source spans, as this repo does, for diagnostics.
+- Agentic coding guidance: When agents implement source analysis, define the smallest typed intermediate representation first, then write conversion tests before graph or UI logic.
+
+### Scoped Control-Flow Context
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/graph.rs`.
+- Language / framework / stack: Rust, `petgraph`, control-flow graph construction.
+- Code shape / snippet:
+```rust
+struct GraphContext {
+    pub graph: Graph,
+    pub break_target: Option<NodeIndex>,
+    pub continue_target: Option<NodeIndex>,
+    pub goto_target: ChainMap<String, NodeIndex>,
+    pub global_begin: NodeIndex,
+    pub global_end: NodeIndex,
+    pub local_source: NodeIndex,
+    pub local_sink: NodeIndex,
+}
+
+context.continue_target = Some(upd);
+context.break_target = Some(local_sink);
+context.local_source = sub_source;
+context.local_sink = sub_sink;
+build_graph(&body.borrow(), context, source, file_name)?;
+```
+- Why this matters: Loop, switch, break, continue, goto, and return all need scoped destinations. The context object carries those destinations through recursive graph construction.
+- When to use: Use for CFG builders, workflow compilers, state-machine lowering, or any recursive lowering pass where local exits depend on nesting.
+- When not to use: Avoid a mutable context if the lowering is embarrassingly parallel or if persistent immutable contexts would make rollback simpler.
+- Transferable principle: Represent control targets explicitly in the traversal context rather than rediscovering them from ancestor nodes.
+- Related patterns: Typed AST staging, graph cleanup with dummy nodes, trait-dispatched render backends.
+- Risks / caveats: Mutating context requires disciplined restore points after recursive calls. Missing restoration creates cross-branch graph bugs.
+- Agentic coding guidance: When agents add a new control construct, snapshot the relevant context fields before recursion and restore them immediately after the nested body is built.
+
+### Graph Cleanup With Dummy Nodes
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/graph.rs` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/display/dot.rs`.
+- Language / framework / stack: Rust, `petgraph`, graph normalization before rendering.
+- Code shape / snippet:
+```rust
+pub fn from_ast(ast: Rc<RefCell<Ast>>, source: &str, file_name: &str) -> Result<Graph> {
+    let mut ctx = GraphContext::new();
+    build_graph(&ast.borrow(), &mut ctx, source, file_name)?;
+    while remove_zero_in_degree_nodes(&mut ctx.graph, source) {}
+    while remove_single_node(&mut ctx.graph, source, |_, t| *t == GraphNodeType::Dummy)? {}
+    let remove_empty_nodes: fn(NodeIndex, &GraphNodeType) -> bool = |_, t| match t {
+        GraphNodeType::Node(t) => t.is_empty() || t.trim() == ";",
+        _ => false,
+    };
+    while remove_single_node(&mut ctx.graph, source, remove_empty_nodes)? {}
+    Ok(ctx.graph)
+}
+```
+- Why this matters: Dummy nodes simplify construction but are illegal in final output. Cleanup turns a builder-friendly graph into a renderer-safe graph.
+- When to use: Use when intermediate placeholders simplify graph assembly, SSA construction, UI layout, or pipeline planning.
+- When not to use: Avoid dummy placeholders if they can leak into public APIs or if cleanup failures are not treated as hard errors.
+- Transferable principle: Permit internal scaffolding only when a normalization pass proves it has been removed.
+- Related patterns: Scoped control-flow context, trait-dispatched render backends, fixture-generated snapshot matrix.
+- Risks / caveats: Cleanup loops must be bounded by graph changes. If removal rewrites edges incorrectly, branch labels can be lost.
+- Agentic coding guidance: When agents introduce placeholder nodes, add an invariant at the boundary that rejects placeholders before serialization or rendering.
+
+### Trait-Dispatched Render Backends
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/display/mod.rs`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/display/dot.rs`, and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/src/lib.rs`.
+- Language / framework / stack: Rust, `enum_dispatch`, graph rendering to DOT/TikZ/D2.
+- Code shape / snippet:
+```rust
+#[enum_dispatch]
+pub enum GraphDisplayBackend {
+    Dot,
+    Tikz,
+    D2,
+}
+
+#[enum_dispatch(GraphDisplayBackend)]
+pub trait GraphDisplay {
+    fn generate_from_graph(&self, graph: &Graph) -> Result<String>;
+}
+
+pub fn generate(content: &[u8], file_name: &str, function_name: Option<String>, backend: GraphDisplayBackend) -> Result<String> {
+    let ast = parser::parse(content, file_name, function_name)?;
+    let graph = graph::from_ast(ast, &String::from_utf8(content.to_vec())?, file_name)?;
+    backend.generate_from_graph(&graph)
+}
+```
+- Why this matters: Parsing and graph construction are backend-agnostic. Rendering differences stay in small backend implementations.
+- When to use: Use when one semantic model needs multiple output formats, transport formats, or UI renderers.
+- When not to use: Avoid if backends require different semantic models; a shared trait may force lossy lowest-common-denominator output.
+- Transferable principle: Separate model construction from presentation and make the presentation boundary explicit.
+- Related patterns: Typed AST staging, graph cleanup with dummy nodes, fixture-generated snapshot matrix.
+- Risks / caveats: Every backend must handle new node and edge variants. Snapshot coverage should include all supported backends.
+- Agentic coding guidance: When agents add a new output format, implement the existing renderer trait and add matrix tests rather than branching inside core generation.
+
+### Fixture-Generated Snapshot Matrix
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow`; source file `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Enter-tainer__cxx2flow/tests/snapshot_integration.rs`.
+- Language / framework / stack: Rust, `libtest_mimic`, `insta` snapshots, C/C++ fixtures.
+- Code shape / snippet:
+```rust
+fn build_trials() -> Vec<Trial> {
+    let cases = collect_snapshot_cases();
+    let mut trials = Vec::new();
+
+    for case in &cases {
+        if should_skip_case(&case.name) {
+            continue;
+        }
+        let case = case.clone();
+        let name = format!("dot_polyline::{}", case.name);
+        trials.push(Trial::test(name, move || {
+            run_snapshot_case(case, BackendKind::DotPolyline)
+        }));
+    }
+    trials
+}
+```
+- Why this matters: The test suite derives many test cases from fixtures, then runs them across renderer variants and expected error cases.
+- When to use: Use for compilers, formatters, renderers, parsers, and migrations where output shape matters more than single scalar assertions.
+- When not to use: Avoid snapshots as the only test for security-sensitive or numeric logic where precise properties should be asserted directly.
+- Transferable principle: Generate test cases from fixture directories and multiply them across output backends.
+- Related patterns: Trait-dispatched render backends, graph cleanup with dummy nodes, multi-runtime grammar binding.
+- Risks / caveats: Snapshots can bless regressions if reviewed casually. Keep fixture names specific and review diffs carefully.
+- Agentic coding guidance: When agents add syntax support, add a named fixture and let the matrix run it across all relevant output modes.
+
+### Shared Graph View Currency
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/IBM__tree-sitter-codeviews`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/IBM__tree-sitter-codeviews/src/comex/codeviews/AST/AST.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/IBM__tree-sitter-codeviews/src/comex/codeviews/CFG/CFG.py`, and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/IBM__tree-sitter-codeviews/src/comex/codeviews/combined_graph/combined_driver.py`.
+- Language / framework / stack: Python, `networkx.MultiDiGraph`, AST/CFG/DFG code views.
+- Code shape / snippet:
+```python
+def to_networkx(self, CFG_node_list, CFG_edge_list):
+    G = nx.MultiDiGraph()
+    for node in CFG_node_list:
+        label = str(node[1]+1) + "_ " + node[2]
+        G.add_node(node[0], label=label, type_label=node[3])
+    for edge in CFG_edge_list:
+        G.add_edge(
+            edge[0], edge[1],
+            controlflow_type=edge[2],
+            edge_type="CFG_edge",
+            label=normal_label,
+            color="red",
+        )
+    return G
+```
+- Why this matters: AST, CFG, DFG, and combined views all share the same graph type and distinguish semantics with node and edge attributes.
+- When to use: Use when multiple analyses need to be overlaid, serialized, visualized, or composed by downstream tools.
+- When not to use: Avoid a single graph currency if analyses require incompatible invariants or if edge semantics cannot be safely separated by attributes.
+- Transferable principle: Pick one interchange graph model and encode view-specific meaning as typed attributes.
+- Related patterns: Parser driver maps, typed AST staging, graph cleanup with dummy nodes.
+- Risks / caveats: Attribute names become the contract. Without validation, misspelled edge types silently degrade consumers.
+- Agentic coding guidance: When agents combine analysis graphs, standardize `edge_type`, labels, and colors or schema-check them before export.
+
+### Parser Driver Maps
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/IBM__tree-sitter-codeviews`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/IBM__tree-sitter-codeviews/src/comex/tree_parser/parser_driver.py` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/IBM__tree-sitter-codeviews/src/comex/codeviews/CFG/CFG_driver.py`.
+- Language / framework / stack: Python, tree-sitter parser drivers, language-specific graph builders.
+- Code shape / snippet:
+```python
+self.parser_map = {
+    "java": JavaParser,
+    "cs": CSParser,
+}
+self.parser = self.parser_map[self.src_language](self.src_language, self.src_code)
+self.root_node, self.tree = self.parser.parse()
+
+self.CFG_map = {
+    "java": CFGGraph_java,
+    "cs": CFGGraph_csharp,
+}
+self.CFG = self.CFG_map[self.src_language](
+    self.src_language, self.src_code, self.properties, self.root_node, self.parser,
+)
+```
+- Why this matters: The language selection point is explicit and small. Shared orchestration stays generic while Java/C# specifics live in their own parser and CFG classes.
+- When to use: Use for multi-language analyzers, multi-provider clients, or any plugin family with shared orchestration and language-specific implementations.
+- When not to use: Avoid raw maps when plugins must be discovered dynamically, versioned, isolated, or loaded from third parties.
+- Transferable principle: Put variant dispatch at the boundary and keep the rest of the pipeline typed against common driver behavior.
+- Related patterns: Shared graph view currency, multi-runtime grammar binding, hardened command config boundary.
+- Risks / caveats: A missing key becomes a runtime error. Validate requested language and report supported values.
+- Agentic coding guidance: When agents add a new language, add it to the parser map and every analysis map together, then add a smoke fixture proving the complete path works.
+
+### Incremental Editor Parse Adapter
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Menci__monaco-tree-sitter`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Menci__monaco-tree-sitter/src/index.ts` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Menci__monaco-tree-sitter/src/highlighter.ts`.
+- Language / framework / stack: TypeScript, Monaco Editor, `web-tree-sitter`, debounced highlighting.
+- Code shape / snippet:
+```typescript
+for (const change of e.changes) {
+  const startIndex = change.rangeOffset;
+  const oldEndIndex = change.rangeOffset + change.rangeLength;
+  const newEndIndex = change.rangeOffset + change.text.length;
+  const startPosition = monacoPositionToParserPoint(this.editor.getModel().getPositionAt(startIndex));
+  const oldEndPosition = monacoPositionToParserPoint(this.editor.getModel().getPositionAt(oldEndIndex));
+  const newEndPosition = monacoPositionToParserPoint(this.editor.getModel().getPositionAt(newEndIndex));
+  this.tree.edit({ startIndex, oldEndIndex, newEndIndex, startPosition, oldEndPosition, newEndPosition });
+}
+this.tree = this.language.parser.parse(this.editor.getValue(), this.tree);
+this.buildHighlightDebounced();
+```
+- Why this matters: Editor text changes are translated into tree-sitter edit coordinates before reparsing, preserving incremental parser state and keeping highlighting responsive.
+- When to use: Use for editor integrations, live analysis, syntax-aware linting, semantic tokens, or playgrounds built around incremental parsers.
+- When not to use: Avoid if files are tiny and reparsing from scratch is simpler, or if coordinate conversion cannot be trusted.
+- Transferable principle: Adapt UI change events into the parser's native incremental edit protocol before recomputing derived views.
+- Related patterns: Semantic scope highlighter, scanner-only context tokens, multi-runtime grammar binding.
+- Risks / caveats: Monaco positions and parser points use different coordinate conventions in many APIs; off-by-one mistakes cause stale or shifted highlights.
+- Agentic coding guidance: When agents wire live parsing into an editor, test insertion, deletion, and multiline edits, not just initial parse.
+
+### Semantic Scope Highlighter
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Menci__monaco-tree-sitter`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Menci__monaco-tree-sitter/src/highlighter.ts`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Menci__monaco-tree-sitter/src/language.ts`, and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/Menci__monaco-tree-sitter/src/highlight.ts`.
+- Language / framework / stack: TypeScript, tree-sitter syntax nodes, Monaco decorations, standalone HTML highlighter.
+- Code shape / snippet:
+```typescript
+let desc = type;
+let scopes = [desc];
+let parent = node.parent;
+for (let i = 0; i < language.complexDepth && parent; i++) {
+  let parentType = parent.type;
+  if (!((parent.isNamed as unknown) as () => boolean)()) parentType = '"' + parentType + '"';
+  desc = parentType + " > " + desc;
+  scopes.push(desc);
+  parent = parent.parent;
+}
+for (const d of scopes) if (d in language.complexScopes) term = language.complexScopes[d];
+```
+- Why this matters: The highlighter supports both simple node-type mappings and complex ancestor-sensitive scopes without hard-coding language-specific logic in the renderer.
+- When to use: Use when syntax coloring depends on parent context, sibling order, or grammar-specific scope descriptors.
+- When not to use: Avoid for full semantic analysis that requires symbol resolution, type checking, imports, or cross-file facts.
+- Transferable principle: Split language-specific classification data from renderer mechanics.
+- Related patterns: Incremental editor parse adapter, parser driver maps, table-driven operator grammar.
+- Risks / caveats: Scope strings are brittle if grammar node names change. Regenerate or validate language JSON when grammar versions move.
+- Agentic coding guidance: When agents add highlighting support, put classification in data and keep Monaco/HTML rendering generic.
+
+### Token-Budgeted Diff Pruning
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/The-PR-Agent__pr-agent`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/The-PR-Agent__pr-agent/pr_agent/algo/pr_processing.py` and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/The-PR-Agent__pr-agent/pr_agent/algo/token_handler.py`.
+- Language / framework / stack: Python, PR review agent, LLM token budgeting, `tiktoken`.
+- Code shape / snippet:
+```python
+if total_tokens + OUTPUT_BUFFER_TOKENS_SOFT_THRESHOLD < get_max_tokens(model):
+    get_logger().info(f"Tokens: {total_tokens}, total tokens under limit: {get_max_tokens(model)}, "
+                      f"returning full diff.")
+    return "\n".join(patches_extended)
+
+patches_compressed_list, total_tokens_list, deleted_files_list, remaining_files_list, file_dict, files_in_patches_list = \
+    pr_generate_compressed_diff(pr_languages, token_handler, model, add_line_numbers_to_hunks, large_pr_handling)
+```
+- Why this matters: The agent first tries the richest diff, then degrades to compressed patches, remaining-file lists, and multi-call handling when the model budget is too small.
+- When to use: Use for LLM agents that must process arbitrary user content under model-specific context limits.
+- When not to use: Avoid silent pruning for compliance, legal, or safety workflows where omitted files must halt the operation.
+- Transferable principle: Make context selection an explicit budgeted pipeline with logged degradation modes.
+- Related patterns: Hardened command config boundary, semantic scope highlighter, shared graph view currency.
+- Risks / caveats: Skipped files can hide the most important change. The final prompt should disclose omitted files when possible.
+- Agentic coding guidance: When agents summarize or review large inputs, implement full, compressed, and omitted-file paths instead of truncating raw text blindly.
+
+### Hardened Command Config Boundary
+- Where found: repo `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/The-PR-Agent__pr-agent`; source files `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/The-PR-Agent__pr-agent/pr_agent/agent/pr_agent.py`, `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/The-PR-Agent__pr-agent/pr_agent/git_providers/utils.py`, and `/Users/amuldotexe/Desktop/personal-repos-lane/parseltongue-rust-LLM-companion/git-ref-repo/ignore-this-folder-repos/The-PR-Agent__pr-agent/pr_agent/custom_merge_loader.py`.
+- Language / framework / stack: Python, async PR agent, Dynaconf, provider-backed repo settings.
+- Code shape / snippet:
+```python
+command2class = {
+    "auto_review": PRReviewer,
+    "answer": PRReviewer,
+    "review": PRReviewer,
+    "describe": PRDescription,
+    "improve": PRCodeSuggestions,
+    "ask": PRQuestions,
+    "config": PRConfig,
+}
+
+is_valid, arg = CliArgs.validate_user_args(args)
+if not is_valid:
+    get_logger().error(
+        f"CLI argument for param '{arg}' is forbidden. Use instead a configuration file."
+    )
+    return False
+```
+- Why this matters: External requests enter through a fixed command map, validated CLI args, repo settings security checks, host-only key allowlists, and env-var precedence restoration.
+- When to use: Use for bots, webhooks, CLI bridges, and agents where untrusted repo or user input can affect host behavior.
+- When not to use: Avoid dynamic command loading from untrusted repos unless it is sandboxed and separately authorized.
+- Transferable principle: Keep actions discoverable in a static dispatch table and treat configuration as untrusted input until validated.
+- Related patterns: Parser driver maps, token-budgeted diff pruning, text-only skill context.
+- Risks / caveats: Allowlist boundaries need maintenance as new settings are added. Missing an unsafe key can expose host filesystem or secrets.
+- Agentic coding guidance: When agents add a new command or setting, update the dispatch map, validation tests, and repo-config allowlist rules in the same change.
