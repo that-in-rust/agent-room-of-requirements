@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clarity202606"
+  short_description: "Run Clarity structural design checks"
+  default_prompt: "Use $clarity202606 to inspect design impact with Clarity before committing."
