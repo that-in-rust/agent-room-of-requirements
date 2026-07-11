@@ -959,99 +959,1202 @@ Promote stable adaptations into conformance fixtures for parsers, graph validato
 
 ## Outcome Metrics and Feedback Loops
 
-Leading indicator: every shipped claim has a requirement ID and fresh verification evidence.
-Failure signal: the reference describes TDD or specs without showing failing and passing evidence.
-Review cadence: Re-run the verifier after every generated-reference edit and refresh external sources when public APIs, docs, or tooling releases change.
+Measure whether traceability improves decisions, not how many identifiers were created. Structural links are prerequisites; semantic fit, assertion sensitivity, current evidence, authorized disposition, and recoverability determine whether those links deserve trust.
+
+Every metric needs a contract:
+
+```text
+Metric name and decision it informs
+Population and observation boundary
+Numerator, denominator, and missing-state rule
+Event-time or version-time definition
+Raw sources and join identities
+Deduplication and exclusion rules
+Accountable owner and permitted response
+Countermetric and known blind spot
+Target objective, if locally accepted
+Definition version and refresh trigger
+```
+
+Do not assign a target merely because a metric can be calculated. Establish a baseline, inspect failures, estimate collection and response cost, then let the accountable target owner choose an objective. Sparse repositories should review counts and cases; percentages over a tiny denominator look precise without being stable.
+
+### Balanced metric portfolio
+
+| Measure | Reproducible definition | Decision use | Blind spot or countermetric |
+|---|---|---|---|
+| Claim population closure | Shippable claim revisions with an explicit accepted, rejected, conditional, or superseded disposition divided by all claim revisions in the candidate boundary | Detect unreviewed behavior before release | A disposition can be wrong; pair with semantic audit findings |
+| Required-edge completeness | Claim revisions whose required typed links exist divided by claims for which those link types are required | Detect missing cases, implementation, evidence, or release paths | Presence says nothing about fit; sample link meaning |
+| Semantic audit yield | Sampled links judged incorrect, irrelevant, bundled, or misleading divided by sampled links reviewed | Estimate structural false confidence and target review | Reviewer variation; calibrate questions and retain rationales |
+| Negative-probe sensitivity | Required sampled probes that make the intended evidence fail for the expected reason divided by probes executed | Detect assertions that cannot observe prohibited behavior | Samples may miss other weak assertions; rotate mutations and use incidents |
+| Current-evidence coverage | Claim revisions with all required evidence valid for the exact candidate and current invalidation state divided by claim revisions requiring executable or review evidence | Decide which claims can enter release reconciliation | Freshness policy can be wrong; inspect invalidation rules and artifact joins |
+| Evidence retrieval success | Referenced evidence artifacts retrievable with identity and integrity intact divided by retrieval attempts in the sample | Detect links that work only in the author's workspace | Retrieval does not prove semantics; pair with evidence-fit audit |
+| Exception health | Active exceptions with owner, scope, compensating control, enforced boundary, expiry, and current review divided by all active exceptions | Find invisible or permanent waivers | Complete metadata may hide weak compensation; review consequence and enforcement |
+| Release reconciliation closure | Candidate releases for which every in-scope claim, evidence set, exception, and decision matches the released artifact divided by releases inspected | Detect approval of the wrong build or revision | Release correctness beyond traced claims needs its own controls |
+| Decision reconstruction success | Sampled historical release decisions that an independent reviewer can reconstruct from retained identities and evidence divided by attempts | Test whether the record survives handoff and time | Reviewer familiarity and retention policy affect results |
+| Traceability-caused rework | Changes requiring claim, link, evidence, or disposition repair after review, classified by root cause | Find authoring ambiguity and workflow friction | Classification is judgment; do not infer total engineering quality |
+| Escaped traceability defect | Incidents where a missing, wrong, stale, or ignored traceability relationship materially contributed to release or recovery failure | Prioritize schema, gate, fixture, and ownership improvements | Rare events and multiple causes prevent simple rate attribution |
+| False-block burden | Release blocks or review escalations caused by incorrect traceability data or a faulty gate | Balance strictness against delivery reliability | A reversed block is not always waste; inspect avoided risk and repair cause |
+
+Count `unknown`, `missing`, `inaccessible`, `not-applicable`, `excepted`, `stale`, and `superseded` separately. Never remove unjoinable records from a denominator silently. Deduplicate retries by the decision unit being measured: ten reruns of one claim revision do not create ten independently evidenced claims.
+
+Evidence freshness is primarily event-bound:
+
+- A claim revision invalidates evidence for an older semantic revision unless compatibility is proved.
+- A rebuilt or reconfigured candidate invalidates run binding when the relevant artifact identity changes.
+- A runner, dependency, environment, schema, or protocol change may invalidate only affected evidence classes.
+- An expired exception invalidates conditional acceptance even if tests remain green.
+- Evidence loss changes a retrievable result to inaccessible; a remembered pass is not a retained observation.
+- Calendar age matters only when target policy or the failure mechanism makes time itself relevant.
+
+A one-minute-old run against the wrong build is stale. An older immutable proof may remain current when its claim, artifact, environment assumptions, and retention integrity are unchanged.
+
+### Interpretation examples
+
+**Good metric card:** current-evidence coverage names the release candidate population, counts stale and inaccessible evidence as non-current, identifies the graph and run store as sources, and routes failures to rerun, repair, exception, or release-block actions. Its countermetric samples evidence fit so authors cannot improve the rate with irrelevant passing jobs.
+
+**Bad metric card:** "traceability is complete because every test name contains an ID." It has no claim denominator, permits duplicate and stale IDs, excludes non-test evidence, and cannot show whether any assertion notices prohibited behavior.
+
+**Borderline metric card:** median review time decreases after a generator rollout. This may indicate lower friction, but it could also reflect smaller changes, skipped review, or reviewer adaptation. Segment by consequence and change size, then inspect rework, semantic audit yield, and escaped defects before attributing improvement to the generator.
+
+No portfolio score should average these measures into release authority. A high structural rate must not cancel an expired security exception or a failed behavior probe. Inspect disagreements directly: high edge completeness with poor negative-probe sensitivity suggests decorative links; high evidence coverage with low retrieval success suggests transient storage; low review time with increased rework suggests rushed decisions.
+
+### Verification of the measurement system
+
+1. Unit-test each numerator, denominator, state classification, deduplication rule, and definition version.
+2. Feed synthetic records containing missing links, duplicate runs, stale revisions, inaccessible evidence, skipped checks, expired exceptions, and mismatched release digests.
+3. Recompute sampled metrics independently from raw graph, run, exception, and release records.
+4. Audit a stratified sample of links and decisions for semantic fit rather than checking presence alone.
+5. Trace an unfavorable metric to the action taken, owner, result, and follow-up observation.
+6. Compare dashboard totals with release candidates and incident records to detect silently absent populations.
+7. Preserve the old definition when a metric changes so trend breaks are explicit rather than rewritten.
+
+These checks verify computation and workflow response. They do not prove that traceability alone caused a change in defect rate, lead time, or incident severity. Report observed association, plausible mechanism, confounders, and remaining uncertainty.
+
+### Feedback loops and cadence
+
+| Trigger | Review action | Durable output |
+|---|---|---|
+| Claim or implementation revision | Recompute affected links and invalidate dependent evidence | Updated impact set and evidence state |
+| New release candidate | Reconcile claims, artifacts, runs, exceptions, authority, and release scope | Candidate decision record |
+| Every generated-reference edit | Run the focused verifier and inspect changed guidance semantically | Verifier evidence plus review note |
+| Exception creation or approaching expiry | Confirm necessity, compensation, enforcement, owner, and next decision | Renewed, narrowed, resolved, or blocked disposition |
+| Tool, schema, runner, or storage migration | Run compatibility fixtures and evidence retrieval checks | Migration result and affected-version boundary |
+| Public source or API refresh | Compare current source, applicability, and local adaptation without overwriting local evidence | Source-delta record and accepted or rejected changes |
+| Incident or escaped misunderstanding | Reconstruct the decision chain and identify the weakest causal edge | Root-cause class, new fixture, and bounded process change |
+| Periodic sampled review | Inspect semantics, evidence sensitivity, retrieval, and reviewer comprehension | Calibrated findings and prioritized repair |
+
+Close the loop as: observe, diagnose, choose the smallest causal intervention, update a schema, gate, example, owner, or workflow, add a regression fixture, roll out by version, and measure again. Removal is a valid intervention. A field or gate that costs authors time but never changes a decision, catches a failure, supports recovery, or satisfies accepted governance should be simplified or retired rather than preserved as ceremony.
 
 ## Completeness Checklist
 
-- The role scenario names the user, starting state, decision, and trigger for Executable Traceability Template Patterns.
-- The decision guide includes Adopt when, Adapt when, Avoid when, and Cost of being wrong.
-- The local corpus hierarchy identifies canonical and supporting sources or gives a confidence warning.
-- The theme specific artifact is concrete enough to review without reading every mapped source.
-- The examples cover good, bad, and borderline usage.
-- The metrics section names one leading indicator and one failure signal.
-- The adjacent routing section points to a better reference when this one is not the right fit.
+Completeness is relative to lifecycle state. A proposed claim needs authority, atomic semantics, and planned evidence; a release candidate additionally needs current observed evidence, an accountable disposition, enforced exceptions, and artifact reconciliation. Do not mark an item complete merely because text exists.
+
+Use these states:
+
+| State | Meaning | Permitted effect |
+|---|---|---|
+| `passed` | Required observation exists and satisfies the gate for the evaluated revision | May support the scoped decision |
+| `failed` | The observation contradicts the required condition | Blocks acceptance unless an authorized bounded exception applies |
+| `missing` | Required evidence or relationship was not supplied | Blocks the dependent decision and routes to an owner |
+| `unknown` | The system cannot determine the state reliably | Never silently treated as passed |
+| `conditional` | A scoped exception with compensation, authority, and expiry applies | Supports only the recorded boundary |
+| `not-applicable` | The gate does not fit this claim, with a recorded semantic reason | Excluded explicitly, never by omission |
+| `superseded` | A newer claim, artifact, run, decision, or gate definition replaced it | Preserved as history without current authority |
+
+### Gate A: source, need, and claim
+
+- [ ] The user or operational need is concrete enough to identify affected behavior and decision consequence.
+- [ ] The authority that accepted the behavior is named; an example or historical source is not mistaken for authority.
+- [ ] Every claim has a stable identity and exact revision or digest.
+- [ ] Each claim states one independently decidable obligation, or its coupling is an intentional interaction contract.
+- [ ] Preconditions, trigger, observable outcome, boundary, failure behavior, and defaults are explicit where relevant.
+- [ ] Qualitative properties use accepted units, workload, environment, statistic, and objective rather than copied sample values.
+- [ ] Assumptions, exclusions, unresolved conflicts, and source currentness are visible.
+- [ ] A changed claim supersedes rather than silently mutates prior meaning.
+
+**Completion decision:** the change may enter evidence design when semantics are reviewable. Product acceptance is not manufactured by this checklist.
+
+### Gate B: traceability graph
+
+- [ ] Claims link to required positive, negative, boundary, and interaction cases by typed relationships.
+- [ ] Claims link to the implementation, configuration, schema, policy, or operational mechanism that realizes them.
+- [ ] Evidence requirements name what must be observed and why the evidence class can observe that failure.
+- [ ] Many-to-many relationships are represented directly; names and file proximity are not the sole link mechanism.
+- [ ] Duplicate identities, dangling links, forbidden cycles, conflicting active revisions, and ambiguous supersession fail validation.
+- [ ] Optional and not-applicable edges include a semantic reason rather than disappearing from the graph.
+- [ ] Generated projections identify their authoritative input and can be reproduced.
+
+**Completion decision:** the graph is structurally closed for the selected profile, but structural closure is not yet semantic or runtime proof.
+
+### Gate C: evidence design and expected failure
+
+- [ ] Each test or review case states which claim behavior it can distinguish.
+- [ ] Assertion depth matches the claim: output shape, side effect, error type, interaction, quality measure, or deployment state as required.
+- [ ] A negative probe, mutation, controlled fault, or counterexample is selected for consequential assertions.
+- [ ] The expected initial failure is named, including why it demonstrates a missing behavior rather than broken setup.
+- [ ] Unit, integration, system, quality, policy, and human-review evidence are used only within their observation boundaries.
+- [ ] Test data and environments expose relevant boundaries instead of making the desired result inevitable.
+- [ ] Non-determinism, retries, isolation, and cleanup behavior are planned where they can alter interpretation.
+
+**Completion decision:** implementation may proceed when the expected evidence can fail for a relevant reason. If the change existed before the evidence, create a controlled counterexample rather than inventing an earlier history.
+
+### Gate D: observed execution and retained evidence
+
+- [ ] The expected negative observation occurred and its cause was inspected.
+- [ ] The minimum implementation changed relevant evidence to passing without masking unrelated failures.
+- [ ] Broader regression evidence appropriate to the impact set was run.
+- [ ] Each result binds claim revision, source revision, built artifact, environment, command or review question, and observed time.
+- [ ] Skips, cancellations, retries, flakes, missing results, and infrastructure failures retain their own states.
+- [ ] Repeated runs do not inflate independently evidenced claim counts.
+- [ ] Required artifacts are durably retrievable by identity with integrity checks.
+- [ ] Performance or reliability claims retain raw measurements and method metadata, not only a summarized green label.
+
+**Completion decision:** evidence is reviewable only for the artifact and boundary it actually observed.
+
+### Gate E: review, exceptions, and disposition
+
+- [ ] A reviewer checks semantic fit between need, claims, cases, implementation, assertions, and evidence.
+- [ ] The reviewer role has authority for the decision being recorded.
+- [ ] Counterarguments, known limitations, rejected alternatives, and residual risk are visible.
+- [ ] Every exception identifies affected claims, missing or failed evidence, rationale, compensating control, enforcement, owner, scope, expiry, and review trigger.
+- [ ] Expired, ownerless, unenforced, or overbroad exceptions fail closed for their dependent decision.
+- [ ] The disposition is explicit: accepted, rejected, conditional, or superseded.
+- [ ] The rationale cites the evidence and uncertainty that actually changed the decision.
+
+**Completion decision:** a visible failure with an authorized rejection is more complete than an unexplained all-green record.
+
+### Gate F: release reconciliation
+
+- [ ] The exact release candidate digest matches the artifacts exercised by required evidence.
+- [ ] Every in-scope active claim has a current disposition for this candidate.
+- [ ] Accepted claims have all required evidence; rejected claims are absent or blocked.
+- [ ] Conditional claims remain inside enforced exception scope.
+- [ ] Superseded claims and evidence grant no authority to the candidate.
+- [ ] Generated documentation and matrices reflect the authoritative graph version.
+- [ ] Release logs retain the candidate, claim set, evidence set, exceptions, owner, and final decision.
+- [ ] Rollback, migration, or compatibility obligations are linked where the change requires them.
+
+**Completion decision:** the candidate may ship only within the reconciled decision boundary. A previous release's green evidence cannot authorize a rebuilt artifact by label similarity.
+
+### Gate G: maintenance and recovery
+
+- [ ] Invalidation triggers cover claim, implementation, dependency, runner, schema, environment, authority, and retention changes that matter.
+- [ ] Evidence and decisions can be reconstructed after the author's workspace and short-lived CI logs are gone.
+- [ ] Tool, schema, and checklist versions needed to interpret historical results are retained.
+- [ ] Public or ecosystem claims have a refresh trigger and do not overwrite local observed evidence automatically.
+- [ ] Incidents and review reversals produce bounded fixture, gate, ownership, or guidance changes.
+- [ ] Duplicate views are generated or reconciled; no unexplained second authority drifts independently.
+- [ ] Retired identifiers, profiles, and mechanisms have migration and consumer disposition.
+- [ ] Costly checks that never inform decisions are reviewed for simplification or removal.
+
+### Profile selection
+
+| Profile | Use when | Required depth beyond core identity and disposition |
+|---|---|---|
+| Compact | Local, reversible, low-consequence behavior with one owner and no release gate | Direct behavior case, relevant assertion, current result, retrieval, and change invalidation |
+| Shared | Behavior crosses modules, owners, generated artifacts, or delayed handoffs | Typed graph, impact review, broader evidence, explicit ownership, and release reconciliation |
+| Consequential | Security, data integrity, external compatibility, operational objective, regulated approval, or expensive reversal is involved | Negative probes, independent review, durable evidence, exceptions, recovery, and stronger retention |
+| Migration | Identity, schema, runner, generator, or evidence store changes | Dual-version compatibility fixtures, consumer inventory, conversion audit, and retirement evidence |
+
+Core identity, revision binding, missing-state semantics, evidence fit, current disposition, and release scope are never waived by choosing a lighter profile. The profile changes depth, not the meaning of a pass.
+
+### Final reconstruction question
+
+An independent reviewer should be able to answer, from retained records:
+
+> Which accepted claim revision does this candidate implement, which evidence could have disproved it, what was actually observed against this artifact, who had authority to decide, which limitations remain, and what event reopens the decision?
+
+If any part cannot be answered, record `missing` or `unknown`, route the gap to its owner, and limit the decision accordingly. Preserve the checklist definition and version that evaluated each historical release so later reviews do not apply new state semantics retroactively.
 
 ## Adjacent Reference Routing
 
-Adjacent reference guidance: Use TDD, traceability, or completion verification references when the work is already scoped.
-Adjacent reference 1: consider the executable adjacent reference when the current task pivots away from executable traceability template patterns.
-Adjacent reference 2: consider the traceability adjacent reference when the current task pivots away from executable traceability template patterns.
-Adjacent reference 3: consider the template adjacent reference when the current task pivots away from executable traceability template patterns.
+Stay in this reference when the unresolved decision is how accepted claim revisions connect to cases, implementation, evidence, exceptions, release artifacts, and an accountable disposition. Route elsewhere when another concern must be resolved before those links can be made honestly.
+
+Relevant filenames below were observed in the July reference directory on 2026-07-11. Their path existence supports navigation only. Their evolved completeness, current authority, and compatibility with a target project were not evaluated here; read a selected reference before consequential adoption.
+
+### Decision-state router
+
+| Unresolved decision | Candidate adjacent reference | Expected return artifact | Reentry condition |
+|---|---|---|---|
+| The request is vague, bundled, or lacks testable semantics | `executable_specification_skill_patterns-20260710.md` | Atomic claim revisions, boundaries, accepted measures, and authority | Return when claims are stable enough to design typed links and evidence |
+| The claims are clear but the test-first development loop is unclear | `tdd_cycle_skill_patterns-20260710.md` | Expected failure, minimum passing change, refactoring evidence, and observed results | Return when runs can be bound to claim and artifact identities |
+| The implementation appears done but completion or release confidence is disputed | `completion_verification_gate_patterns-20260710.md` | Current verification observations and completion disposition | Return for claim-level evidence fit and release reconciliation |
+| Work spans interruptions or ownership handoffs | `tdd_progress_journal_schema-20260710.md`, `tdd_checkpoint_cadence_playbook-20260710.md`, or `tdd_resume_handoff_prompts-20260710.md` | Durable phase, exact evidence state, files in motion, blocker, and next action | Return when handoff records need to join to claim and evidence revisions |
+| A broad executable-practice orientation is needed before choosing a narrow workflow | `executable_metapattern_reference_digest-20260710.md` | A bounded practice choice and reasons rejected alternatives do not fit | Return before creating traceability artifacts; a digest is not release evidence |
+| A Rust-specific executable template is needed after semantics are accepted | `rust_executable_template_patterns-20260710.md` | Target-language artifact that preserves claim identities and evidence meaning | Return to validate cross-language links and release state |
+| The problem is Rust build or convention enforcement rather than behavior traceability | `rust_conventions_quality_gates-20260710.md` or `rust_quality_gate_patterns-20260710.md` | Observed target gate result with artifact identity | Return only if the gate contributes evidence required by a claim |
+| The problem is Kotlin backend test data or integration setup | `kotlin_backend_testing_fixtures-20260710.md` | A fixture strategy and observed target tests | Return when fixtures can be evaluated for semantic fit and isolation |
+| The deliverable is an interactive learning or experimentation surface | `interactive_playground_template_patterns-20260710.md` | A runnable demonstration with stated educational boundary | Return if demonstration behavior becomes a supported product claim |
+
+Do not route by keyword alone. Ask:
+
+1. What exact decision cannot be made with the current artifact?
+2. Which reference appears to own that decision?
+3. What stable identity, evidence, or disposition must come back?
+4. What target version and authority make the returned guidance applicable?
+5. Which original claim-graph state should change if the route succeeds?
+
+If no state changes, the route was orientation rather than resolution. That may still be useful, but it must not be reported as evidence.
+
+### Route contract
+
+Before leaving, record:
+
+```text
+Original claim or change identity
+Current lifecycle state
+Unresolved decision and consequence
+Selected adjacent path and observed version
+Reason this reference does not own the decision
+Expected return artifact and owner
+Compatibility assumptions
+Reentry gate and stop condition
+```
+
+On return, verify that the artifact can join to the original claim revision. A test result without the same build identity, a requirement rewrite without acceptance authority, or a checklist with incompatible state semantics is not a completed handoff.
+
+### Good, bad, and borderline routes
+
+**Good:** a bundled request is routed to executable specification guidance. It returns three atomic claims plus one interaction claim, each accepted by the product owner. This reference then builds cases, implementation links, evidence requirements, and release decisions around those revisions.
+
+**Bad:** missing runtime evidence is routed to a language style guide. The result improves naming but provides no observed behavior, artifact identity, or evidence state. The original release uncertainty remains unchanged.
+
+**Borderline:** an older workflow playbook provides a useful expected-failure responsibility but names obsolete runner syntax. Preserve the responsibility, discover the target command, and verify its observed states; do not copy the stale mechanism or treat the route as current authority.
+
+### Route verification
+
+Use inexpensive checks continuously:
+
+```bash
+test -f idiomatic-ref-202607/executable_specification_skill_patterns-20260710.md
+test -f idiomatic-ref-202607/tdd_cycle_skill_patterns-20260710.md
+test -f idiomatic-ref-202607/completion_verification_gate_patterns-20260710.md
+test -f idiomatic-ref-202607/tdd_progress_journal_schema-20260710.md
+test -f idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
+```
+
+For a selected consequential route, additionally verify:
+
+- The referenced heading and decision boundary exist, not just the file.
+- Its source, target, version, and evidence assumptions fit the current project.
+- Vocabulary and lifecycle states can be translated without losing meaning.
+- Returned identifiers are unique and joinable to the original artifact.
+- Required evidence remains observable after the handoff.
+- Contradictory guidance is recorded and resolved by an accountable owner.
+- The route does not enter a cycle that only adds documents and never changes a decision.
+
+If a path is missing or stale, keep the unresolved state visible and use the smallest inline rule needed to continue safely. Do not invent the absent reference's contents. Broken optional navigation is a documentation defect; a broken route that owns required release evidence is a control failure and should block the dependent decision.
+
+Consequential routes form a dependency graph among schemas, identities, workflow phases, and artifact versions. Track compatibility and retirement for those edges. A renamed file is inexpensive to repair; a changed meaning for `passed`, `conditional`, or `superseded` can reinterpret historical releases and requires migration evidence.
 
 ## Workload Model
 
-`combined_evidence_inference_note`: Treat Executable Traceability Template Patterns as a quality gate operating reference, not as a prose summary.
+Treat executable traceability as a change-and-evidence workload, not a document-size workload. A packet with many independent low-risk claims may be easier than three tightly coupled claims crossing services, owners, environments, and release authorities. No source evidence supports a universal claim-count ceiling.
 
-| workload_dimension_name | workload_boundary_value | verification_pressure_point |
-| --- | --- | --- |
-| primary_usage_surface | specification, test, review, and verification work where the artifact must turn ambiguous intent into executable evidence | verify that the reference changes the next implementation or review action |
-| bounded_capacity_model | one requirement packet, 20 requirement IDs or fewer, one traceability matrix, and one final gate command set | split the task or create a narrower reference when this boundary is exceeded |
-| source_pressure_model | local heading signals include Executable Specs Templates; 1) Requirement Contract Template; REQ-<DOMAIN>-<NNN>.<REV>: <Short title>; 2) Traceability Matrix Template; 3) TDD Plan Te | compare guidance against canonical local sources before following external examples |
-| artifact_pressure_model | required artifact is worked executable traceability template patterns example with user goal, decision point, failure mode, and verification gate | require the artifact before claiming the reference is operationally usable |
+Start with one coherent **change unit**: claims that share a behavior boundary, accountable decision, release fate, and evidence lifecycle. Measure pressure before selecting local limits.
+
+### Workload vector
+
+| Dimension | Observation | Pressure signal | Possible response |
+|---|---|---|---|
+| Active claim revisions | Count of current claim versions in the decision boundary | Reviewers cannot state each obligation or distinguish superseded meaning | Narrow the change, generate concise views, or add domain partitions |
+| Relationship density | Required typed edges among claims, cases, implementation, evidence, decisions, and releases | Missing interactions, graph query growth, or unreadable matrices | Preserve graph authority; project task-specific views and index common traversals |
+| Fan-out and fan-in | Dependents invalidated by one revision and inputs supporting one decision | A small edit triggers broad rerun or one decision depends on opaque evidence volume | Classify impact, cache immutable results, and isolate stable subgraphs |
+| Claim change rate | Revisions and supersessions per observation window | Evidence and reviews become stale before release | Shorten decision windows, automate invalidation, or separate volatile claims |
+| Evidence run volume | Unique artifacts, environments, retries, shards, and review observations | Current state is buried in retry history or storage cost grows unexpectedly | Deduplicate by decision identity and tier historical retention |
+| Evidence size | Logs, reports, samples, screenshots, attestations, and human records retained | Retrieval slows or authors link summaries with no raw support | Store content by digest, retain reproducible summaries, and apply policy-based tiers |
+| Environment cardinality | Supported platforms, deployments, configurations, and dependency combinations | Matrix explosion or untested combinations are hidden | Define support classes, risk-based combinations, and explicit uncovered states |
+| Owner count | Product, engineering, security, operations, compliance, and release roles involved | Approval ambiguity and handoff delay | Separate authority types and record one accountable disposition per decision |
+| Repository or service span | Code and evidence boundaries crossed by a claim | Broken links, version mismatch, and partial candidate identity | Use global stable identities and explicit cross-boundary contracts |
+| Release concurrency | Candidates, branches, versions, and deployments evaluated simultaneously | Evidence for one candidate authorizes another | Bind every result and decision to immutable candidate identities |
+| Access segmentation | Evidence subject to restricted, external, or tenant-specific controls | Reviewers cannot retrieve required artifacts or copied data violates policy | Preserve verifiable authority links and least-privilege projections |
+| Consequence | Security, data, compatibility, availability, financial, or regulatory impact | Lightweight evidence cannot support reversal cost | Increase independent review, probe depth, retention, and release enforcement |
+| Retention horizon | Time decisions must remain reconstructable | Schema and tools change before records expire | Preserve interpretation versions and test migrations with historical fixtures |
+| Generated projection count | Matrices, reports, docs, dashboards, and manifests derived from the graph | Duplicate truth drifts or regeneration dominates authoring | Keep one write model, incremental generation, and projection integrity checks |
+
+Record `current` and `historical` workloads separately. Superseded claims and retry runs belong in retained history but should not inflate the current release denominator or slow its common queries unnecessarily.
+
+### Coherent-unit test
+
+Keep work in one traceability unit when most answers are yes:
+
+- Do the claims serve one accepted user or operational outcome?
+- Can one accountable owner decide the behavior, with named specialist reviews where required?
+- Do the claims share a release candidate or coordinated release boundary?
+- Are their evidence environments and retention rules compatible?
+- Can a reviewer understand the interaction graph without unrelated context?
+- Will a revision invalidate a bounded, predictable evidence set?
+- Can access rules expose enough evidence to every required decision maker?
+
+Partition when semantics, authority, release fate, access policy, or evidence lifecycle diverges. Do not split a transaction merely to satisfy a row count. If decomposition is unavoidable, preserve an explicit parent interaction claim and aggregate release view.
+
+### Partition strategies
+
+| Partition axis | Prefer when | Benefit | Cost to control |
+|---|---|---|---|
+| Bounded behavior | Domain outcomes change independently | High semantic coherence | Cross-domain interactions need explicit contracts |
+| Accountable owner | Decisions have distinct authorities | Clear review and escalation | Organization changes can destabilize partitions |
+| Release unit | Components ship independently | Evidence aligns with immutable artifacts | Coordinated behavior needs aggregate reconciliation |
+| Evidence environment | Test or review systems have distinct lifecycle and access | Isolates operational pressure | One claim may require joins across evidence stores |
+| Repository or service | Tooling and source ownership are naturally separate | Local automation stays practical | Global identity and version joins become essential |
+| Access boundary | Restricted evidence cannot share one store or view | Supports least privilege | Missing visibility can be mistaken for missing evidence |
+| Volatility tier | Rapidly changing claims invalidate evidence frequently | Stable subgraphs remain cacheable | Cross-tier changes need impact analysis |
+
+Choose the axis that best aligns authoritative change with evidence lifecycle. Count the resulting cross-partition edges and sample their review and reconciliation cost. A partition is not successful if local packets shrink while release assembly becomes an undocumented manual process.
+
+### Workload scenarios
+
+**Small and coherent:** one session-revocation change has four claims, two implementation components, integration and concurrency evidence, one product owner, and one release candidate. Keep one unit; the low count and shared lifecycle make the interactions reviewable.
+
+**Small but consequential:** three data-deletion claims cross application storage, backups, and audit retention under separate authorities. Do not select the compact profile because the count is low. Preserve one outcome view while partitioning evidence and approvals by authority and access boundary.
+
+**Large but regular:** many generated API compatibility claims share one schema revision, generator version, consumer inventory, and release. Keep a normalized source graph, generate consumer-specific projections, and test the generator and compatibility model. Hand-editing one large matrix will drift.
+
+**High churn:** a volatile experiment revises claims faster than broad environment suites can finish. Separate non-shippable exploration from accepted behavior, run targeted evidence during discovery, and trigger the full accepted profile only for a stabilized candidate. Never let exploratory passes authorize release.
+
+**Borderline transaction:** one order-cancellation transaction spans order, fulfillment, and payment owners. Partition implementation evidence by service but retain a parent interaction claim, controlled partial-failure probes, and aggregate release reconciliation. Measure whether reviewers can reconstruct the transaction after the split.
+
+### Calibration and verification
+
+Collect target evidence before setting limits:
+
+1. Count current claims, typed edges, revisions, artifacts, runs, retries, environments, owners, exceptions, and release candidates.
+2. Measure degree distributions and identify claims whose revisions invalidate unusually broad evidence sets.
+3. Sample time and error for common queries: claim-to-release, change impact, missing evidence, exception expiry, and decision reconstruction.
+4. Generate representative dense, high-churn, multi-environment, and long-history fixtures; include missing and stale states.
+5. Ask independent reviewers to reconstruct sampled decisions and record ambiguity, omitted interactions, and unavailable evidence.
+6. Replay a release and a schema or store migration using retained identities and historical interpretation versions.
+7. Test partition candidates by comparing cross-unit edge count, duplicated authority, invalidation scope, retrieval, and final reconciliation effort.
+8. Establish provisional objectives only after the accountable owner sees baseline distributions and consequence.
+
+Synthetic scale can expose storage, query, generation, and invalidation behavior. It cannot reproduce every semantic misunderstanding or organizational handoff, so pair it with sampled real decisions, review reversals, and incidents.
+
+### Pressure responses
+
+- If graph reads slow but semantic coherence remains good, index or project before partitioning behavior.
+- If reviewers cannot understand claims despite fast queries, narrow the decision boundary or improve task-specific views.
+- If revisions invalidate excessive unrelated evidence, separate volatile domains and correct overbroad links.
+- If evidence retention dominates cost, tier history while preserving claim, artifact, decision, and integrity lineage.
+- If restricted evidence blocks reviewers, create least-privilege attestations or routed review rather than copying protected content.
+- If generated views drift, stop manual edits and verify generation from one authoritative model.
+- If release reconciliation is the bottleneck, align partitions with release identity or automate the aggregate query.
+
+The relevant capacity boundary is where an accepted decision-quality, release, retrieval, or recovery objective degrades. Calibrate that boundary from observed behavior and revise it when workload shape, tools, support commitments, or consequence changes. Compacting or partitioning must preserve enough causal lineage to explain why a candidate was accepted; deleting that lineage trades visible performance for hidden recovery cost.
 
 ## Reliability Target
 
-| reliability_target_name | measurable_threshold_value | evidence_collection_method |
-| --- | --- | --- |
-| source_boundary_preservation | 100 percent of recommendations keep local, external, and inference boundaries visible | review generated text for the three evidence labels before reuse |
-| decision_accuracy_sample | at least 18 of 20 sampled uses route to the correct adopt, adapt, avoid, or adjacent-reference decision | sample downstream tasks and record reviewer verdicts |
-| unsupported_claim_rate | zero unsupported production, security, latency, or reliability claims in final guidance | reject claims without source row, explicit inference note, or verification method |
-| recovery_path_clarity | every avoid or failure case names the rollback, escalation, or next-reference route | inspect failure-mode and adjacent-routing sections together |
+Reliability has two layers:
+
+1. **Decision-integrity invariants** describe states the traceability process must never treat as valid authority.
+2. **Operational objectives** describe availability, latency, retrieval, recovery, and review behavior whose targets require a measured local baseline and accountable owner.
+
+The historical values in the seed are not measured target results. Do not inherit a perfect percentage or a small sample threshold as policy.
+
+### Decision-integrity invariants
+
+| Invariant | Forbidden state | Detection | Required response |
+|---|---|---|---|
+| Identity uniqueness | Two active artifacts claim the same identity and revision with different meaning | Parser, content digest, and graph uniqueness check | Quarantine conflict; do not select one by timestamp alone |
+| Revision isolation | Evidence for an older claim revision authorizes changed semantics | Claim-to-run revision join and invalidation query | Mark evidence stale and rerun or review the current revision |
+| Artifact binding | A result or decision for one build authorizes another candidate | Immutable source, build, environment, and release digest comparison | Block reconciliation until matching evidence exists |
+| State fidelity | Missing, unknown, skipped, cancelled, inaccessible, failed, or superseded becomes passed | State-machine validation and synthetic transition fixtures | Reject transition and repair affected decisions |
+| Semantic evidence fit | A linked artifact cannot observe the claim's prohibited behavior | Reviewer audit plus negative probe or mutation | Remove false authority and add fitting evidence |
+| Decision authority | A role accepts, waives, or releases behavior outside its authority | Role and policy validation with recorded scope | Escalate to an accountable owner; preserve prior observation without authority |
+| Exception containment | A waiver exceeds scope, lacks enforcement, or survives expiry | Exception query and release-boundary check | Fail closed for affected claim unless emergency policy explicitly applies |
+| Source boundary | Historical text, external guidance, inference, and target evidence are presented as interchangeable | Provenance labels, source retrieval, and semantic review | Correct claim status before reuse or generation |
+| Release closure | A candidate ships with unresolved required claims or unreconciled evidence | Claim-to-candidate release query | Block or narrow release according to authorized policy |
+| Historical integrity | A current schema or checklist silently reinterprets an older decision | Versioned decoder and migration fixtures | Use the historical interpretation or record an explicit migration |
+
+These are safety intentions, not claims that an implementation has achieved perfection. Observe violations, retain incidents, and test recovery. An aggregate success rate must never create an allowed quota for a wrong high-consequence release authorization.
+
+### Operational objective contract
+
+Define each local objective with:
+
+```text
+Decision served and accountable owner
+Population and consequence class
+Service indicator and exact calculation
+Observation window and missing-data rule
+Accepted objective and error-budget response
+Measurement source and independent check
+Known confounders and countermetric
+Degraded-mode behavior
+Recovery objective and reconciliation step
+Review and retirement trigger
+```
+
+Candidate indicators include:
+
+| Operational concern | Indicator candidate | Objective-setting evidence | Countermeasure against false confidence |
+|---|---|---|---|
+| Evidence retrieval | Successful identity-and-integrity retrievals divided by required retrieval attempts | Baseline by store, age, and access class; support commitment | Sample semantic fit and permission-denied classification |
+| Current-state query | Duration and correctness of claim-to-release and missing-evidence queries | Representative graph size, density, and concurrency | Compare query result with independent raw-record reconstruction |
+| Invalidation propagation | Delay from relevant change event to affected evidence becoming non-current | Change replay and observed production events | Audit false invalidations and missed dependents |
+| Projection consistency | Generated views matching the authoritative graph version | Regeneration fixtures and sampled repository checks | Reject manual edits and verify content digest |
+| Decision reconstruction | Independent reviews that recover the original claim, evidence, authority, and release scope | Historical samples across retained versions | Include older schema, restricted evidence, and rejected decisions |
+| Backup recovery | Restored records supporting integrity checks and decision replay | Isolated restore drill | Verify artifact retrieval and historical decoder, not file count alone |
+| Gate false-block burden | Incorrect blocks attributable to traceability data or control faults | Release incident classification | Pair with escaped-invalid-decision review |
+| Degraded operation | Decisions handled according to declared outage policy | Fault injection and emergency drill | Reconcile every bypass after service recovery |
+
+Set no objective until the population, consequence, indicator, and response are understood. Initial launch criteria may be conservative and provisional, but must state owner, expiry, and calibration plan.
+
+### Reliability across failure modes
+
+| Failure condition | Preserve | Do not infer | Degraded action |
+|---|---|---|---|
+| Evidence store unavailable | Known identity, last verified state, and outage observation | That a remembered pass remains current | Hold dependent release or invoke authorized scoped emergency policy |
+| Permission denied | Artifact identity, required reviewer role, and access failure | That evidence is absent or failed | Route least-privilege review or obtain a verifiable attestation |
+| Generator failure | Authoritative source graph and last projection version | That an old projection represents current state | Repair generation or use direct graph review with recorded version |
+| Partial schema migration | Old and new version identities plus conversion status | That migrated and unmigrated records share semantics | Use version-aware readers and block ambiguous joins |
+| Conflicting active revisions | Both records and their provenance | That latest timestamp implies authority | Quarantine and resolve with owner and accepted supersession |
+| Clock skew | Immutable event identities and causal sequence where available | That wall-clock order proves currentness | Prefer revision and artifact causality; flag ambiguous time rules |
+| Retry storm | Each attempt state and one decision unit | That retries are independent evidence | Deduplicate metrics and inspect infrastructure cause |
+| Cache lag | Authoritative version and cache observation | That a fast response is current | Reject stale authority and refresh or bypass cache safely |
+| Corrupted evidence | Identity, expected digest, and corruption observation | That partial readable content is valid | Isolate artifact, restore from verified copy, and re-evaluate decisions |
+
+Availability and truth are orthogonal. A highly available cache can return stale authority; an unavailable store can contain correct evidence that cannot presently support a decision. Preserve those distinctions.
+
+### Control-plane policy
+
+If traceability gates release automatically, choose outage behavior by consequence:
+
+- **Fail closed:** default for missing required high-consequence evidence, expired exceptions, identity conflicts, or mismatched candidates.
+- **Narrow release:** permit only claims and environments with current evidence and enforced separation from blocked scope.
+- **Degraded manual review:** use independently retrievable evidence and an authorized reviewer, retaining the exact outage and decision record.
+- **Emergency bypass:** require explicit break-glass authority, bounded scope, compensating controls, expiry, immutable audit record, and post-recovery reconciliation.
+- **Fail open:** acceptable only where an authorized policy explicitly judges traceability unavailability less harmful than delay; never make this the accidental result of unknown being treated as pass.
+
+An emergency action does not erase missing evidence. After recovery, reconstruct the candidate, rerun or retrieve required observations, review the bypass outcome, resolve exceptions, and add a regression fixture for the failure mechanism.
+
+### Verification program
+
+| Reliability question | Verification method | Expected evidence |
+|---|---|---|
+| Can invalid states grant authority? | State-machine and property tests over all transitions | Rejected transition with preserved original state |
+| Can weak evidence look valid? | Mutation and controlled-fault suites | Relevant evidence fails for the intended reason |
+| Can concurrent revisions split authority? | Concurrency tests around create, supersede, and decide operations | One valid active lineage or explicit quarantined conflict |
+| Can stale caches authorize release? | Delay and partition injection between source and projection | Stale version rejected at reconciliation |
+| Can retained data survive tool change? | Versioned migration fixtures and dual-reader comparison | Equivalent meaning or explicit incompatible record |
+| Can evidence be recovered? | Isolated backup restore plus digest verification | Historical decision reconstructed from restored artifacts |
+| Can least privilege preserve review? | Access-role tests and restricted artifact routing | Authorized reviewer obtains sufficient evidence without data copying |
+| Can outage policy be followed? | Staged service failure and emergency drill | Correct block, narrowing, or authorized bypass plus reconciliation |
+| Can false blocks be diagnosed? | Release-control incident replay | Root cause, corrected state, and regression fixture |
+
+Manual source review and downstream samples remain useful, but they cannot cover corruption, concurrency, state conversion, migration, restore, or outage behavior. Conversely, automated fault tests cannot determine whether a product claim or reviewer judgment is wise. Keep the layers independent enough to disagree.
+
+Report reliability with two evidence classes: **control design** states what should prevent or contain failure; **observed exercise** states what actually happened under representative use or injected faults. Current target values, recovery objectives, and accepted error budgets remain unresolved until a target owner adopts them from measured evidence.
 
 ## Failure Mode Table
 
-| failure_mode_name | likely_trigger_condition | required_mitigation_action |
-| --- | --- | --- |
-| source drift hides truth | external or local guidance changes after the reference was written | refresh public evidence, rerun local corpus gate, and mark stale claims before reuse |
-| generic advice escapes review | agent copies plausible best practices without theme-specific verification | block completion until the verification gate names concrete command, reviewer question, or metric |
-| green check misses requirement | test command passes while a requirement lacks traceability | audit every REQ ID against at least one test or review assertion |
-| metric claim has no method | performance or reliability language appears without measurement | replace claim with threshold, fixture, command, and owner |
+Contain incorrect authority first; diagnose exact cause second. A detector has not contained a failure if stale or unsupported evidence can still authorize the candidate.
+
+| Failure mode | Trigger or detection signal | Unsafe inference to prevent | Immediate containment | Recovery and recurrence control |
+|---|---|---|---|---|
+| Source drift | Local policy, public guidance, tool behavior, or support boundary changes | Historical guidance remains current automatically | Mark affected adaptations unresolved or stale; stop regeneration that grants authority | Retrieve current source, compare applicability, record owner decision, and add a refresh trigger |
+| Unsupported synthesis | Plausible recommendation has no source boundary, accepted target need, or verification path | Fluent prose is production evidence | Remove decision authority from the claim and label it as a hypothesis | Obtain target evidence or narrow the guidance; add a review fixture for unsupported claims |
+| Identity collision | Same active identity and revision resolves to different content | Timestamp or file order selects the correct meaning | Quarantine both lineages and block dependent joins | Resolve ownership, assign unambiguous revisions, migrate consumers, and enforce uniqueness |
+| Bundled claim | One claim contains independently decidable outcomes | One passing case proves every embedded obligation | Prevent acceptance and split obligations while retaining needed interaction semantics | Add atomicity review and fixtures containing conjunction, quality, and failure clauses |
+| Lost interaction | Atomic claims pass independently but transactional or concurrent behavior is absent | Decomposition guarantees combined behavior | Block the combined release decision where coupling is consequential | Add an interaction claim, controlled partial-failure case, and aggregate reconciliation |
+| Wrong or dangling edge | Link target is absent, wrong type, wrong revision, or semantically irrelevant | Graph completeness equals evidence fit | Remove invalid authority and mark dependent claims missing | Repair typed link, rerun graph checks, and sample semantic fit |
+| Insensitive assertion | Test remains green after prohibited behavior is introduced | A linked passing test observes the claim | Downgrade evidence and hold dependent disposition | Add a mutation or controlled fault, deepen assertion, and preserve the negative observation |
+| Unobserved expected failure | Passing evidence exists with no relevant negative baseline or probe | The test could have detected absence of behavior | Treat assertion sensitivity as unknown | Run a safe counterexample or mutation and record expected versus observed failure |
+| Evidence-class mismatch | Unit, review, benchmark, deployment, or attestation evidence is used outside its observation boundary | Any artifact labeled evidence proves any claim | Remove the mismatched link from required evidence | Select a fitting evidence class and retain the weaker artifact only for what it actually shows |
+| Stale claim run | Claim, implementation, dependency, environment, or runner changes after observation | Recent timestamp alone means current | Mark affected run non-current and reopen decision | Execute or review the current revision; test invalidation propagation |
+| Candidate mismatch | Run artifact digest differs from release candidate | Similar branch, version, or job name proves identity | Block release reconciliation | Rebuild or rerun against exact candidate and enforce immutable joins |
+| State collapse | Missing, unknown, skipped, cancelled, denied, failed, or superseded appears as passed | Absence of a red result is success | Reject conversion and identify every decision that consumed it | Repair state model, backfill affected records, and add transition fixtures |
+| Duplicate-run inflation | Retries or shards count as separately evidenced claims | More green rows mean broader coverage | Deduplicate the decision population | Retain attempts for diagnostics while aggregating by claim, artifact, environment, and evidence requirement |
+| Unsupported quality target | Latency, reliability, capacity, security, or accuracy value lacks accepted method and authority | A concrete number copied from a template is an objective | Remove release authority from the value | Define workload, unit, statistic, environment, owner, baseline, and measurement evidence |
+| Exception escape | Waiver is ownerless, unenforced, overbroad, copied, or expired | A prior approval permanently changes policy | Block affected scope or invoke explicit emergency policy | Re-decide, narrow, compensate, enforce, expire, and test release boundaries |
+| Unauthorized disposition | Reviewer role lacks authority for acceptance, rejection, exception, or release | Participation implies decision rights | Preserve observation but remove authoritative status | Route to accountable owner and validate role scope at transition time |
+| Evidence inaccessible | Artifact exists but required reviewer or gate cannot retrieve it | Claimed existence supports the decision | Classify inaccessible separately from missing or failed; hold dependent decision | Restore access, use approved routed review, or reproduce evidence with matching identity |
+| Evidence corruption | Digest mismatch, incomplete object, undecodable record, or lost metadata | Readable fragments are trustworthy | Quarantine artifact and invalidate dependent current state | Restore verified copy or regenerate, then replay affected decisions |
+| Projection drift | Matrix, documentation, dashboard, or manifest differs from authoritative graph version | A polished generated view is current | Stop consuming the projection for authority | Regenerate deterministically, reject manual edits, and verify source-version digest |
+| Partial migration | Old and new schemas, identities, or state meanings coexist without compatibility rules | All records can be joined under one interpretation | Use version-aware readers and quarantine ambiguous conversions | Run dual-version fixtures, audit conversion, migrate consumers, and record retirement |
+| Release open set | Candidate has active claims with no disposition or unexamined evidence dependencies | A green build closes product behavior automatically | Block or narrow release boundary | Run claim-to-candidate closure query and record final accountable reconciliation |
+| Recovery without reconciliation | Tool or evidence is repaired but prior decisions remain based on bad state | Restoring service restores decision validity | Keep affected decisions reopened | Recompute impact, rerun evidence, reaffirm or withdraw decisions, and annotate historical incident |
+
+Not every requirement needs a test. It needs evidence appropriate to its semantics: automated behavior, benchmark, static rule, deployment observation, policy review, human judgment, or a combination. Conversely, one test name containing an ID does not establish a useful relationship.
+
+### Triage sequence
+
+1. Identify the claim revision, candidate, decision, and consequence that may be affected.
+2. Preserve raw states, conflicting records, logs, identities, and access observations before repair.
+3. Prevent new authority from flowing through the suspect artifact or transition.
+4. Classify what is known as missing, stale, failed, denied, corrupt, conflicting, or unknown.
+5. Trace upstream causes and downstream consumers; compound failures rarely stop at the first visible symptom.
+6. Repair the smallest causal mechanism without rewriting historical evidence.
+7. Re-execute relevant probes and verify the detector, containment, and recovery path.
+8. Reconcile every dependent decision: reaffirm with current evidence, narrow, reject, or supersede.
+9. Add a regression fixture and update schema, gate, guidance, ownership, or observability where justified.
+
+### Response examples
+
+**Good:** release reconciliation detects that a passing integration run belongs to an older artifact digest. The gate blocks the candidate, preserves the historical run, executes current evidence, records the new disposition, and adds a mismatch fixture.
+
+**Bad:** a flaky job is rerun until green, the successful attempt replaces all prior states, and the release proceeds. This destroys evidence about instability and does not establish that the final pass observed the intended behavior.
+
+**Borderline:** a graph migration repairs every current link, but old evidence objects cannot be retrieved. Current release may proceed if all required evidence is reproduced and accepted; historical reconstruction remains degraded and needs an explicit retention incident, not a silent green status.
+
+### Verification probes by family
+
+- Introduce conflicting active revisions and confirm the graph quarantines rather than selects one.
+- Remove an interaction edge and confirm the aggregate release query reports a missing obligation.
+- Mutate behavior behind a linked assertion and confirm the expected case fails.
+- Feed skipped, denied, corrupt, cancelled, and superseded states through every projection and confirm none becomes passed.
+- Attach a valid run to a different candidate digest and confirm release reconciliation rejects it.
+- Expire an exception and confirm its dependent scope is blocked or routed through explicit emergency policy.
+- Break evidence retrieval after authoring and confirm the decision state changes to inaccessible.
+- Migrate historical fixtures through versioned readers and compare meaning, not only parse success.
+- Repair an injected fault and confirm all downstream decisions remain reopened until current evidence reconciles them.
+
+The table is a reference hazard catalog, not observed frequency data. Rank target work using local incidents, consequence, propagation breadth, detectability, and recovery cost. No recorded incidents may reflect strong controls, low exposure, or weak detection; it does not prove the failure is absent.
 
 ## Retry Backpressure Guidance
 
-- Retry only after the failed verification signal is classified as transient, stale evidence, missing context, or true contradiction.
-- Use one bounded retry for stale external evidence refresh, then escalate to a human or a narrower source-specific reference.
-- Apply backpressure by stopping new generation or implementation work when source coverage, critique coverage, or verification gates are red.
-- For long-running agent workflows, checkpoint after each batch and re-read the current spec before any broad rewrite, commit, push, or destructive operation.
-- For distributed execution, assign one owner per generated file or theme batch and require merge-time verification of exact path, heading, and evidence-boundary invariants.
+Retry only when another attempt can produce new valid information without hiding prior state, changing the decision unit silently, or repeating unsafe side effects. A semantic contradiction is not an infrastructure transient.
+
+### Retry eligibility
+
+| Failure class | Retry? | Required precondition | Escalation or alternative |
+|---|---|---|---|
+| Network timeout retrieving immutable evidence | Usually bounded | Operation is idempotent, digest is known, deadline remains, and prior timeout is retained | Circuit-break dependency and classify evidence inaccessible |
+| Isolated runner startup failure | Usually bounded | No test behavior executed, candidate identity is unchanged, and infrastructure cause is observable | Move to healthy isolated runner or mark infrastructure failure |
+| Eventually consistent projection lag | Bounded polling or event wait | Authoritative source version is fixed and projection exposes its applied version | Read authority directly or classify projection stale |
+| Rate limit or dependency overload | Delayed and coordinated | Retry guidance is current, global budget exists, jitter or queueing is available, and work remains relevant | Apply backpressure and circuit breaking |
+| Corrupted retrieved object | No blind retry | Expected digest exists and alternate verified replica may be selected | Quarantine object, restore or regenerate, then re-evaluate |
+| Permission denied | No time-based retry | Access policy or reviewer route must change explicitly | Request authorized access or routed attestation |
+| Invalid schema or parse error | No unchanged retry | Input, schema version, or decoder must be corrected | Quarantine record and run compatibility repair |
+| Duplicate or conflicting identity | No | Accountable lineage resolution is required | Block dependent decisions and resolve conflict |
+| Deterministic assertion failure | No retry for authority | Code, claim, test, or fixture must change through a new recorded attempt | Diagnose behavior and preserve failure as evidence |
+| Flaky assertion or non-deterministic result | Diagnostic repetitions only | Attempts are retained, isolation is controlled, and no pass replaces failure history | Quarantine test from release authority until reliability is resolved or excepted |
+| Missing context or source | No repetition without input | New source, artifact, or owner decision must become available | Route to source owner or mark unresolved |
+| Stale claim or candidate | Restart, not retry | New job binds the current claim and candidate identities | Cancel superseded work and recompute impact |
+| Expired exception | No | New authorized decision and current compensation are required | Block affected scope or invoke explicit emergency policy |
+| Policy or reviewer contradiction | No mechanical retry | Authorities and decision boundary must be reconciled | Preserve both positions and escalate |
+
+"Retryable" never means "ignore the earlier attempt." Preserve each state and distinguish final behavior evidence from operability evidence. A test that passes after several infrastructure attempts may still support behavior for the exact artifact, while the attempt history creates a separate runner-reliability signal. A test that alternates pass and fail under unchanged controlled inputs is not made authoritative by choosing the last result.
+
+### Retry contract
+
+Before enabling retries, define:
+
+```text
+Operation and idempotency key
+Decision unit: claim, artifact, environment, evidence requirement
+Retryable error classes
+Non-retryable and quarantine classes
+Attempt-count and elapsed-deadline budgets
+Delay, jitter, queue, and concurrency behavior
+Side-effect deduplication or compensation
+Artifact and source-version stability checks
+Cancellation and supersession conditions
+Attempt retention and metric aggregation
+Escalation owner and degraded-mode decision
+```
+
+Numeric limits, delay curves, and concurrency caps require target measurements: dependency contract, typical and tail duration, cost per attempt, side effects, shared-client load, release deadline, and consequence. A provisional policy should be conservative, visible, and reviewed after representative failures. A dependency library's default is only a candidate; nested clients can multiply attempts and exceed the caller's deadline.
+
+Where delayed retries are appropriate, increase delay between attempts and add jitter so independent workers do not synchronize. Stop on the earliest of success, non-retryable classification, elapsed deadline, attempt budget, candidate supersession, cancellation, or circuit-break condition. Do not sleep inside a scarce worker when durable queueing can release capacity safely.
+
+### Evidence-preserving attempt model
+
+| Attempt state | Meaning | Decision effect |
+|---|---|---|
+| `scheduled` | Work is accepted for a current decision unit | No evidence yet |
+| `running` | One worker owns the attempt lease | No pass implied |
+| `transient-failed` | Retryable operation failed and details were retained | Evidence remains missing; budget may allow another attempt |
+| `semantic-failed` | Relevant behavior contradicted the claim | Blocks dependent acceptance until a new artifact or decision is evaluated |
+| `infrastructure-failed` | Environment prevented a valid observation | Does not prove behavior pass or fail |
+| `cancelled` | Work was intentionally stopped | Remains non-evidence with cause |
+| `superseded` | Claim, artifact, source, or job revision changed | Result cannot authorize the replacement unit |
+| `passed` | Required observation succeeded for the bound unit | Supports only its stated claim and boundary |
+| `quarantined` | Result is unreliable, conflicting, corrupt, or under investigation | Grants no authority until resolved |
+
+Aggregate metrics by the decision unit, not attempt rows. Retain attempts for diagnosis. A hundred retries of one claim do not create broader claim coverage.
+
+### Backpressure controls
+
+Apply backpressure before repeated low-information work consumes all capacity:
+
+| Pressure signal | Local response | Shared-system response | Decision response |
+|---|---|---|---|
+| Dependency timeouts rise | Pause new optional retrieval and honor deadlines | Reduce concurrency, open circuit, and stagger probes | Mark required evidence inaccessible when deadline expires |
+| Runner queue grows | Cancel superseded and duplicate jobs | Prioritize current high-consequence candidates and reserve recovery capacity | Narrow release scope or move decision deadline explicitly |
+| Source or schema conflict appears | Stop generation from ambiguous input | Quarantine version and notify owner | Reopen dependent claims and projections |
+| Verification gate is red | Stop downstream work that assumes acceptance | Continue independent diagnosis and unaffected units | Reject, repair, or authorize a bounded exception |
+| Review backlog grows | Reduce batch size and unrelated context | Allocate owners by decision unit and expose age and consequence | Defer or narrow candidate rather than silently skipping review |
+| Evidence store reaches retention pressure | Avoid duplicate uploads and compact diagnostics safely | Tier immutable history while preserving lineage and integrity | Do not delete artifacts supporting active or retained decisions |
+| Many agents target one file or theme | Respect exclusive ownership and durable checkpoints | Queue ownership transfers and verify exact scope | Prevent competing revisions from becoming parallel authority |
+
+Backpressure protects reviewer attention as well as compute. Repeated generation against unresolved source boundaries creates more prose without increasing evidence.
+
+### Long-running and distributed workflows
+
+- Assign one owner to each mutable reference, packet, graph partition, or evidence decision unit.
+- Save complete atomic work before transferring ownership; never hand off an unrecorded in-memory state.
+- Checkpoint exact paths, revisions, states, tests, blockers, and next action at bounded intervals.
+- Re-read the controlling specification and current artifact before broad edits or phase transitions.
+- Cancel queued work when its claim or source revision is superseded.
+- Use leases or equivalent ownership for shared attempts, with expiry and idempotency protection.
+- Verify headings, paths, evidence boundaries, and current revisions when independent outputs reunite.
+- Preserve rejected and failed work so another worker does not rediscover the same contradiction as new.
+
+### Timelines
+
+**Good retry:** attempt A times out retrieving immutable artifact digest `run-auth-session-042`. The timeout is retained. A delayed attempt uses the same identity, succeeds before the decision deadline, verifies the digest, and supplies retrieval evidence. The timeout remains an operability signal.
+
+**Bad retry:** an integration assertion fails, so the job repeats until one pass occurs. The system reports only green. No source, artifact, environment, or behavior changed, and the discarded failures may indicate a race. Quarantine the result rather than authorizing release.
+
+**Borderline restart:** a generated matrix job fails transiently, but the source graph changes before the retry. The worker must cancel the old decision unit and start a new job bound to the new graph version. Attaching the successful projection to the old job would misstate lineage.
+
+### Verification
+
+1. Inject each retryable and non-retryable error class and assert the intended transition.
+2. Run concurrent duplicate attempts and verify side effects deduplicate by the declared key.
+3. Supersede the claim or artifact while work is queued and confirm cancellation prevents old authority.
+4. Simulate dependency overload and confirm concurrency falls, delay spreads attempts, and the circuit opens before capacity is exhausted.
+5. Exhaust count and elapsed budgets independently and verify escalation retains every attempt.
+6. Alternate pass and fail under unchanged conditions and confirm the result is quarantined rather than last-write-wins.
+7. Restore the dependency and verify recovery does not auto-accept decisions left missing or stale during outage.
+8. Recompute claim coverage and confirm retries do not inflate the denominator or numerator.
+9. Inspect fairness so low-volume high-consequence reconciliation is not starved by bulk optional work.
+
+A growing backlog can indicate insufficient capacity, but it can also reveal overbroad release scope, unstable claims, excessive evidence requirements, or unresolved ownership. Diagnose which decision load should exist before making the queue drain faster.
 
 ## Observability Checklist
 
-- Record which local sources were loaded and which were intentionally skipped.
-- Record the exact verification command, reviewer question, or rendered artifact used as proof.
-- Record p50/p95/p99 latency or reviewer-time measurements when the reference affects runtime or workflow speed.
-- Capture reviewer decision, unresolved uncertainty, and next refresh trigger.
-- Record leading indicator and failure signal from this file in the coverage manifest or journal when the reference drives real work.
-- Keep audit evidence small enough to review: command output summary, changed-file list, and unresolved-risk notes are preferred over raw transcript dumps.
+Observe enough to reconstruct a decision and diagnose a failure without retaining every transcript or sensitive payload. An independent reviewer should be able to answer:
+
+- Which claim revision and accepted need were evaluated?
+- Which source, implementation, built artifact, and environment were in scope?
+- Which evidence was required, attempted, skipped, denied, failed, passed, or superseded?
+- Which exception and compensating control changed the decision boundary?
+- Who made the disposition under which authority?
+- Which release candidate consumed that disposition?
+- Which later event invalidated, renewed, or superseded it?
+
+### Minimal event envelope
+
+| Field | Purpose | Constraint |
+|---|---|---|
+| `event_id` | Deduplicate and retrieve one immutable observation | Globally unique within the retention boundary |
+| `event_type` | Distinguish proposal, execution, decision, exception, release, and invalidation | Versioned controlled vocabulary |
+| `schema_version` | Decode historical meaning | Never infer current semantics for an older event |
+| `recorded_at` | Support operations and retention | Do not use wall-clock order as sole causality |
+| `caused_by` | Connect the event to prior events or state changes | Preserve multiple causes where needed |
+| `claim_id` and `claim_revision` | Bind semantic behavior | Required for claim-dependent authority |
+| `change_id` | Group one proposed change across artifacts | Immutable after creation |
+| `source_revision` | Identify the evaluated source state | Use digest or version, not branch label alone |
+| `artifact_digest` | Identify the executable or review artifact | Required for run and release joins |
+| `environment_id` | Bound the observation context | Version configuration relevant to the claim |
+| `evidence_requirement_id` | State what this observation was intended to show | Separate intent from actual result |
+| `attempt_id` | Preserve retries, shards, and cancellations | Never overwrite earlier attempt state |
+| `state` | Record passed, failed, missing, unknown, denied, inaccessible, cancelled, conditional, or superseded | Validate transitions and projections |
+| `actor_role` and `authority_scope` | Distinguish observation from decision rights | Required for dispositions and exceptions |
+| `evidence_key` | Retrieve detailed retained evidence | Include integrity identity and access classification |
+| `release_candidate_id` | Bind release reconciliation | Immutable candidate identity |
+| `reason_code` | Support consistent routing and metrics | Keep free-form explanation separately |
+| `correlation_id` | Connect distributed work for diagnosis | Must not replace semantic identities |
+
+Human review is evidence too. Record the question asked, artifact revision shown, reviewer role, observed conclusion, limitations, and time boundary. Do not record private reasoning transcripts when the decision and rationale can be captured directly.
+
+### Choose the signal for the question
+
+| Signal | Best use | Required link | Common misuse |
+|---|---|---|---|
+| Lifecycle event | Authoritative state transition and audit reconstruction | Claim, artifact, actor, and prior state | Logging a state without validating authority |
+| Metric | Population health, capacity, and trend | Definition version plus drill-down event or exemplar | Treating an aggregate as claim-level release authority |
+| Trace | Latency and dependency path for one distributed operation | Correlation plus decision-unit identities | Assuming sampled success proves every claim run |
+| Diagnostic log | Error detail and local investigation | Attempt and artifact identity | Using mutable text as the only audit record |
+| Evidence artifact | Full test, benchmark, review, or attestation support | Content digest, schema, access, and retention | Linking a transient workspace path |
+| Generated projection | Reviewer-specific matrix, report, or dashboard | Authoritative source version | Hand-editing the projection into a second truth |
+| Journal checkpoint | Human handoff, phase, blocker, and next action | Exact paths, revisions, and current test evidence | Replacing artifact evidence with progress prose |
+
+Do not duplicate one fact manually across all signals. Emit one authoritative transition, derive metrics and projections, and link detailed diagnostics by immutable identity.
+
+### Illustrative event timeline
+
+```json
+{"event_id":"evt-101","event_type":"claim-revised","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"change_id":"AUTH-CHANGE-042","state":"proposed"}
+{"event_id":"evt-102","event_type":"evidence-required","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"evidence_requirement_id":"auth-session-integration","state":"missing","caused_by":["evt-101"]}
+{"event_id":"evt-103","event_type":"evidence-attempted","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","evidence_requirement_id":"auth-session-integration","attempt_id":"attempt-1","state":"failed","reason_code":"mutation-detected","caused_by":["evt-102"]}
+{"event_id":"evt-104","event_type":"evidence-attempted","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","evidence_requirement_id":"auth-session-integration","attempt_id":"attempt-2","state":"passed","evidence_key":"run-auth-session-042","caused_by":["evt-103"]}
+{"event_id":"evt-105","event_type":"claim-decided","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","actor_role":"identity-service-owner","authority_scope":"authentication-behavior-acceptance","state":"accepted","caused_by":["evt-104"]}
+{"event_id":"evt-106","event_type":"release-reconciled","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","release_candidate_id":"identity-service-candidate-20260711-042","state":"accepted","caused_by":["evt-105"]}
+```
+
+The failed event is not erased by the pass. Here it records that a controlled mutation was detected. A real behavior failure would require a new artifact or explicit disposition before the later pass could grant authority. Event meaning comes from type, reason, identity, and causal relationship, not color alone.
+
+### Capture checklist
+
+**Source and semantics**
+
+- Record archive, local policy, external guidance, and inference roles separately.
+- Record which candidate sources were not retrieved and why.
+- Bind every claim revision to its accepted authority and supersession lineage.
+- Capture unresolved disagreement without choosing a winner by write order.
+
+**Evidence execution**
+
+- Record exact command or reviewer question, tool version, relevant configuration, artifact digest, environment, and attempt state.
+- Preserve expected negative observations and distinguish them from infrastructure failure.
+- Retain skipped, cancelled, denied, inaccessible, flaky, and superseded states.
+- Summarize output for review, but link to durable raw evidence where the decision needs it.
+
+**Decision and release**
+
+- Record accepted, rejected, conditional, and superseded dispositions with actor authority and rationale.
+- Capture exception scope, compensating control, enforcement result, owner, and expiry events.
+- Record the exact candidate and claim population considered by release reconciliation.
+- Emit invalidation events when claim, artifact, environment, runner, dependency, authority, or evidence availability changes.
+
+**Privacy, integrity, and access**
+
+- Avoid secrets, credentials, personal data, source payloads, and restricted evidence in labels or general logs.
+- Use stable opaque identities for high-cardinality claim, run, and artifact values; keep them out of uncontrolled metric labels.
+- Classify evidence access and record denial without exposing protected content.
+- Protect decision and audit events from silent mutation; retain integrity digests and authorized correction events.
+- Define retention by decision consequence and recovery need, then test deletion and legal-hold behavior where applicable.
+- Record telemetry delivery loss, exporter backlog, sampling, and dropped-event counts.
+
+### Measurement conditions
+
+Record latency percentiles only when a real question, comparable population, and method exist. Define start and end events, success and failure inclusion, concurrency, warm-up, sampling, aggregation, and observation window. Reviewer time and runtime latency are different populations. With sparse observations, report cases and ranges rather than implying stable tail behavior.
+
+Metrics should include definition version and link to event exemplars. High-cardinality identities belong in events, traces, or indexed logs rather than unbounded metric dimensions.
+
+### Verification
+
+1. Contract-test every producer and consumer against versioned event fixtures.
+2. Inject duplicate, reordered, delayed, denied, corrupt, stale, missing, and superseded events.
+3. Deliberately drop one required transition and verify closure detects the absence.
+4. Replay a claim from proposal through release and compare the derived state with raw records.
+5. Restore retained events and evidence in an isolated environment and reconstruct an older decision.
+6. Test redaction and access roles with representative sensitive payloads outside production.
+7. Generate load with representative cardinality and verify exporters report loss before buffers overflow.
+8. Recompute dashboard measures independently and compare them with source events.
+9. Sample a green release and prove that claim, artifact, evidence, authority, exception, and candidate identities all join.
+10. Change an event schema and verify old and new readers preserve or explicitly reject meaning.
+
+For a file-only workflow, version control, structured records, CI artifacts, and a progress journal can satisfy these semantics. A distributed platform may use event storage, metrics, traces, and protected evidence services. The architecture differs; the reconstruction questions and state fidelity do not.
+
+Observability itself becomes part of the delivery control plane when missing or distorted telemetry can authorize, block, or reconstruct a release. Trace only the telemetry components whose failure can alter consequential decision state: producer version, exporter delivery, schema interpretation, derived metric, evidence retention, and required review access.
 
 ## Performance Verification Method
 
-Performance method: require 100 percent REQ-to-test mapping and fail closed when any claim lacks a verification command or review assertion.
-Leading indicator to measure: every shipped claim has a requirement ID and fresh verification evidence.
-Failure signal to watch: the reference describes TDD or specs without showing failing and passing evidence.
-Required measurement packet: capture input size, source count, tool-call count, wall-clock time, p50/p95/p99 latency where runtime applies, and reviewer decision time where documentation applies.
-Pass condition: the reference must let a reviewer identify the correct next action, verification gate, and stop condition without reading unrelated files.
-Fail condition: the reference encourages implementation before the workload, reliability target, and failure-mode table are explicit.
+Separate two performance questions:
+
+1. **Domain quality claim:** does the software under test meet an accepted latency, throughput, capacity, resource, or reliability objective for a defined workload?
+2. **Traceability workflow performance:** can authors, reviewers, gates, and release systems build and query the evidence graph within acceptable cost while preserving decision integrity?
+
+A requirement-to-test mapping percentage answers neither question. Claims may require benchmarks, deployment observations, policy review, or human evidence, and a link can exist without semantic fit.
+
+### Domain quality-claim contract
+
+Before measuring a domain claim, record:
+
+| Dimension | Required decision |
+|---|---|
+| Accepted objective | Value, unit, statistic, comparison rule, owner, and consequence |
+| Workload | Population, request or operation mix, data distribution, result sizes, and error cases |
+| Boundary | Exact start and end events plus included setup, queue, retry, and dependency time |
+| Environment | Hardware, operating system, runtime, dependencies, network, configuration, and concurrency |
+| Artifact | Immutable source and build identities |
+| State | Cold, warm, cache policy, initialization, and background load |
+| Method | Harness, timer, profiler, sampling, run order, repetition, and outlier policy |
+| Correctness | Behavior and result-set checks that must remain unchanged during measurement |
+| Evidence | Raw samples, summaries, logs, profiles, environment manifest, and integrity identity |
+| Decision | Baseline, candidate comparison, uncertainty, owner, disposition, and invalidation trigger |
+
+Do not invent a target to complete the form. If no owner has accepted an objective, measure a baseline or remove the quantitative claim.
+
+### Traceability workload fixtures
+
+| Fixture | Shape | Operations to exercise | Failure it reveals |
+|---|---|---|---|
+| Compact change | Few claims, sparse edges, short history, one candidate | Parse, validate, generate review view, reconcile | Fixed startup and authoring overhead |
+| Dense interaction | Many claim-to-case and cross-claim edges | Impact traversal, missing-link query, semantic projection | Relationship-density and fan-out cost |
+| Long history | Many superseded revisions, attempts, decisions, and schema versions | Current-state query, historical replay, retention retrieval | History pollution and decoder cost |
+| High churn | Frequent claim and artifact revisions | Invalidation propagation, cancellation, regeneration | Stale-work amplification |
+| Multi-environment | Evidence across platforms and configurations | Coverage, missing-state, exception, and release queries | Combination growth and hidden unknowns |
+| Concurrent release | Several candidates and workers share dependencies | Identity isolation, queue fairness, reconciliation | Cross-candidate contamination and contention |
+| Restricted evidence | Mixed access classes and routed reviews | Retrieval, authorization, attestation, audit | Permission latency and accidental data copying |
+| Migration | Old and new schemas plus generated projections | Convert, dual-read, compare, regenerate, restore | Compatibility and partial-conversion cost |
+
+Build fixtures from observed target distributions where possible. Synthetic data should preserve degree distribution, version history, state mix, artifact sizes, and access behavior relevant to the claim. State clearly where it differs from production.
+
+### Method selection
+
+| Method | Use for | Strength | Blind spot |
+|---|---|---|---|
+| Microbenchmark | Parser rule, graph operation, serializer, digest, or projection kernel | Isolates mechanism and supports profiling | Omits coordination, storage, network, and reviewer behavior |
+| Component benchmark | Graph service, evidence store, generator, or validator | Includes realistic local dependencies | May not represent end-to-end release flow |
+| End-to-end benchmark | Author-to-decision or change-to-release workflow | Measures coordination and integration | Harder to diagnose and control |
+| Load and saturation test | Concurrent queries, runs, writes, or generation | Reveals queueing, limits, and degraded behavior | Synthetic arrival patterns can mislead |
+| Production replay | Representative recorded workload against isolated candidate | High shape realism | Privacy, drift, and side-effect control require care |
+| Profile | CPU, allocation, I/O, lock, queue, and network cost | Locates optimization opportunity | Does not establish user or decision impact alone |
+| Reviewer study | Navigation, comprehension, decision time, and error | Measures human workflow | Task equivalence, learning, and small samples limit inference |
+
+Choose the least expensive method capable of observing the stated claim. Use profiles to select changes, then verify the outcome at the decision boundary.
+
+### Benchmark protocol
+
+1. **Accept the question.** Name the decision, objective or comparison, owner, and consequence.
+2. **Freeze identities.** Record claim revision, source revision, built artifact, harness, fixture, environment, and configuration digests.
+3. **Validate fixture answers.** Run structural and semantic checks so the benchmark cannot become faster by dropping claims, edges, evidence states, or release obligations.
+4. **Calibrate measurement.** Measure timer and instrumentation overhead, resolution, clock behavior, and resource collector effects.
+5. **Separate states.** Measure cold and warm behavior intentionally; report cache population and startup rather than mixing them silently.
+6. **Control order.** Interleave baseline and candidate where feasible, randomize run order, and monitor background load and thermal or resource drift.
+7. **Exercise failure.** Inject a known delay, graph expansion, evidence loss, or queue pressure and confirm the measured boundary changes as expected.
+8. **Retain raw data.** Store per-operation samples, failures, retries, environment observations, and profiles by integrity identity.
+9. **Compare with uncertainty.** Report distributions and effect size appropriate to the population; avoid a pass from one favorable run.
+10. **Recheck correctness.** Compare result sets, missing states, transition validity, and release decisions before accepting a speedup.
+11. **Review tradeoff.** Include resource use, false blocks, stale results, operational complexity, and recovery cost.
+12. **Bind disposition.** Record which artifact and workload the result supports and what change invalidates it.
+
+### Validity checks
+
+- Include queue and retry time if users or releases experience it; excluding it can create coordinated omission.
+- Count errors, timeouts, cancellations, and unavailable evidence in the population rather than timing only successes.
+- Ensure load generators continue issuing work according to the intended arrival model when the system slows.
+- Report throughput and latency together near saturation; either alone can conceal overload.
+- Track CPU, memory, allocation, storage, network, lock, queue, and evidence-retention cost relevant to the mechanism.
+- Use representative skew. Uniform claims and edges may hide high-fan-out invalidation and hot owners.
+- Keep warm-up explicit and do not compare a warm candidate with a cold baseline.
+- Treat retries as attempts within one decision operation; do not report the fastest successful attempt as end-to-end latency.
+- Investigate multimodal results instead of compressing them into one average.
+- Use tail percentiles only with a defined population and enough observations for the estimate to be meaningful; otherwise report raw cases, ranges, or ordered samples.
+- For reviewer studies, hold task consequence and complexity as comparable as possible, capture decision correctness and rework, and report learning or ordering effects.
+- Distinguish exploratory local timing from release evidence.
+
+### Correctness-under-load gates
+
+Performance evidence is invalid if the optimized system:
+
+- omits active claims, required edges, missing states, or exceptions;
+- serves a projection from the wrong graph version;
+- allows one candidate's evidence to authorize another;
+- collapses denied, inaccessible, failed, or superseded states into success;
+- drops audit events without an observable loss signal;
+- evicts evidence still required for active or retained decisions;
+- changes decision results relative to the validated baseline without an accepted semantic revision;
+- starves high-consequence reconciliation behind optional bulk work;
+- produces output that cannot be reconstructed after restore.
+
+These gates keep caching, compaction, denormalization, sampling, and partitioning from buying speed by weakening traceability meaning.
+
+### Worked benchmark interpretations
+
+**Good:** a candidate index is tested on compact, dense, and long-history graphs. Claim-to-release result sets match the baseline, stale projections are rejected, raw samples and profiles are retained, and the accountable owner accepts the observed improvement for the defined environment.
+
+**Bad:** an empty graph is queried repeatedly after cache warm-up. The fastest result is reported as tail latency, no errors are included, and the optimized query silently excludes superseded-state validation. This does not support a target objective.
+
+**Borderline:** a representative dense fixture shows a large consistent slowdown on shared CI while correctness remains intact. Background noise prevents a narrow threshold decision, but the evidence is sufficient to trigger profiling and a controlled benchmark. Preserve it as diagnostic evidence, not final release authority.
+
+No latency, throughput, memory, capacity, or reviewer-time result is asserted by this reference. Establish local objectives from representative baselines and consequence. The total performance budget includes false blocks, stale authority, retry amplification, evidence retention, reviewer rework, and recovery effort as well as CPU time and query latency.
 
 ## Scale Boundary Statement
 
-Executable Traceability Template Patterns stops being sufficient when the task spans multiple independent systems, more than one ownership boundary, unbounded source discovery, or production traffic without an explicit SLO.
-Under distributed execution, split work by theme file and preserve one verification owner per split; do not let parallel agents rewrite the same reference without a merge checkpoint.
-Under long-running agent workflows, treat context drift as a reliability failure: checkpoint state, summarize open risks, and verify against the spec before continuing.
-Under large-codebase scale, require dependency or source-graph narrowing before applying this reference; a source list without ranked canonical guidance is not enough.
+This reference defines semantics and decision controls; it is not a universal storage, governance, or distributed-systems blueprint. Multiple owners or services do not automatically make it inapplicable. The boundary is crossed when the chosen implementation can no longer preserve identity, state, evidence, authority, access, release closure, or recovery at the required workload and consequence.
+
+### Three applicability zones
+
+| Zone | Conditions | Use of this reference | Additional action |
+|---|---|---|---|
+| Direct | One coherent behavior boundary; reviewable graph; compatible evidence lifecycle; bounded source discovery; one release decision | Apply the artifact, graph, evidence, and decision guidance directly | Use repository-native files, CI, and durable evidence if they satisfy invariants |
+| Coordinated | Several services, repositories, owners, environments, or access classes share a change or release | Keep these semantics, partition authoring and evidence collection, and preserve global identities and typed contracts | Add federation, aggregate release reconciliation, compatibility, access routing, and recovery tests |
+| Specialist | Legal interpretation, safety case, regulated records, enterprise identity, high-scale platform design, or operational objectives exceed this reference's authority | Use this reference as an input vocabulary and traceability responsibility map | Route architecture and policy to accountable domain, security, compliance, reliability, data, or platform owners |
+
+Unaccepted product semantics also stop progress, regardless of scale. Traceability cannot manufacture authority for the behavior it links.
+
+### Direct-use coherence test
+
+Direct use remains suitable when:
+
+- claims serve one accepted user or operational outcome;
+- interactions are comprehensible in one review view;
+- authoritative owners and specialist reviewers are named;
+- the claims share or explicitly coordinate release fate;
+- evidence stores and access rules support required reviewers;
+- invalidation can identify affected evidence and decisions predictably;
+- historical records can be interpreted for the required retention period;
+- verification and recovery fit the current repository or workflow mechanisms.
+
+Physical colocation is neither necessary nor sufficient. A multi-service password-reset transaction can remain one coherent decision model while each service owns local evidence. One monorepo can contain unrelated domains, incompatible authorities, and restricted evidence that should be separated.
+
+### Scale pressure and transition signals
+
+| Signal | Why the current mechanism is insufficient | Next design question |
+|---|---|---|
+| Local identity collisions or ambiguous revisions | Independent producers cannot join artifacts safely | Which global namespace and supersession contract are shared? |
+| Schema versions drift across producers | The same field or state no longer has one meaning | How are compatibility, migration, and historical readers governed? |
+| Cross-unit interactions disappear from review | Partitioning hides transaction or concurrency behavior | Which parent claims and aggregate cases preserve coupling? |
+| Manual release reconciliation becomes error-prone | Local green states do not close one candidate decision | What generated global view and accountable release authority are required? |
+| Evidence access blocks required reviewers | Centralization or copying violates least privilege | Which routed reviews or attestations preserve proof without payload exposure? |
+| Change fan-out causes broad stale evidence | Invalidation and rerun scope exceed delivery window | How should volatile domains, caches, and impact indexing be partitioned? |
+| Current queries are fast but historical recovery fails | Optimization removed interpretation or lineage | Which retention tier and versioned decoder restore reconstruction? |
+| Gate or evidence service outage blocks unrelated work | Shared control-plane dependency is too broad | Which capabilities can degrade, isolate, or fail independently? |
+| Reviewers repeatedly miss obligations | Human comprehension, not storage, is saturated | Which decision boundaries and generated views should narrow scope? |
+| Unbounded source discovery continues during delivery | Authority and currentness cannot close | Which source owner and retrieval budget define a stop condition? |
+| Specialized policy determines acceptance | Engineering guidance lacks decision authority | Which domain owner and formal process must lead? |
+
+No universal system count, owner count, graph size, traffic level, or latency threshold is supported here. Calibrate transitions from observed errors, delay, query and generation behavior, review reconstruction, incident recovery, and accepted objectives.
+
+### Architecture choices beyond direct use
+
+| Model | Strength | Main tradeoff | Required invariant |
+|---|---|---|---|
+| Repository-native records | Low infrastructure and strong code proximity | Cross-repository joins, access, and retention are manual or generated | Immutable global identities and candidate binding |
+| Central graph and evidence index | Simple global traversal and release closure | Shared availability, access, governance, and migration dependency | Domain authority remains explicit; central storage does not imply decision rights |
+| Federated graphs with shared contracts | Local autonomy and evidence ownership | Compatibility, discovery, and partial availability become complex | Versioned identity, state, link, and reconciliation protocol |
+| Append-only event model | Strong transition history and replay | Projection correctness and event migration require discipline | Idempotent events, causal identity, and versioned interpretation |
+| Hybrid index with local evidence | Global metadata and closure without centralizing protected payloads | Retrieval and attestation paths can fail independently | Integrity-bound references and permission-aware state |
+
+The durable default at organizational scale is often **federated evidence with narrowly shared identity, state, and reconciliation contracts**. Centralize only what requires global agreement. Keep domain execution, detailed evidence, and specialist authority with their owners where possible.
+
+### Cross-boundary contract
+
+Every independently owned unit should publish or expose:
+
+```text
+Namespace and claim revision rules
+Supported event and graph schema versions
+Typed outgoing and incoming relationships
+Artifact and evidence integrity identities
+State vocabulary and invalid transition behavior
+Authority and exception boundaries
+Access and attestation behavior
+Invalidation and supersession events
+Release-candidate participation
+Retention and historical interpretation support
+Degraded-mode and recovery contract
+```
+
+One aggregate release owner or explicitly coordinated decision protocol must reconcile cross-unit claims. Local acceptance cannot silently grant global transaction acceptance.
+
+### Multi-agent and long-running execution
+
+- Assign exclusive mutable ownership by exact file, packet, graph partition, or evidence unit.
+- Complete and save atomic work before another owner consumes it.
+- Preserve the governing specification, source identities, exact heading order, tests, blockers, and next action in durable checkpoints.
+- Re-read current artifacts at phase transitions and after interruption; context summaries do not override filesystem state.
+- Prevent parallel agents from creating competing active revisions for the same identity.
+- Merge through semantic and evidence checks, not text concatenation alone.
+- Keep one accountable verifier for each aggregate release or reference, while allowing independent evidence owners.
+- Cancel work when the source or claim revision it serves is superseded.
+
+Exclusive file ownership prevents write collision. It does not prevent semantic split brain: two files can be internally valid while assigning different meaning to one state or requirement. Shared compatibility fixtures must cover those contracts.
+
+### Scale verification
+
+1. Generate independent units with deliberate identity collisions and confirm quarantine.
+2. Run old and new schema producers concurrently and verify compatible joins or explicit rejection.
+3. Change one cross-unit interaction claim and confirm invalidation reaches every dependent evidence and release view.
+4. Partition one service or evidence store and verify the declared block, narrow-release, or degraded-review behavior.
+5. Exercise access denial and routed attestation without copying restricted evidence into a global log.
+6. Reconcile several concurrent candidates and prove no run or exception crosses artifact identity.
+7. Restore historical units under versioned readers and reconstruct an aggregate decision.
+8. Compare direct and partitioned models for graph correctness, reviewer comprehension, reconciliation effort, and recovery.
+9. Sample real cross-owner decisions to expose authority delay and vocabulary mismatch that synthetic load cannot model.
+10. Migrate one unit and retire its old protocol only after consumer and historical-read evidence closes.
+
+### Zone examples
+
+**Direct:** one repository owns a local parser change, its claims, focused tests, current run, and one package release. Repository-native traceability is sufficient if evidence is durable and identities are exact.
+
+**Coordinated:** order cancellation crosses order, fulfillment, and payment services. Each service owns implementation evidence; a shared transaction claim, stable IDs, partial-failure probes, and aggregate release reconciliation preserve the end-to-end decision.
+
+**Bad split:** each repository invents its own claim IDs and reports a local green release. The transaction has no parent interaction claim, shared candidate identity, or accountable aggregate decision. More files reduced local context while removing global meaning.
+
+**Borderline:** stable federated IDs and schemas exist, but aggregate release is assembled manually. Low frequency and consequence may make that acceptable temporarily. Instrument errors and delay, rehearse recovery, and define the trigger for generated reconciliation rather than centralizing automatically.
+
+Scaling the mechanism creates organizational infrastructure. Identity, state, and schema contracts affect team autonomy; a central gate can become a delivery bottleneck and outage dependency. Prefer the smallest shared control surface that preserves global decision integrity, and retain local ownership everywhere global agreement is unnecessary.
 
 ## Future Refresh Search Queries
 
-| search_query_label_name | search_query_text_value |
-| --- | --- |
-| `official_docs_query_phrase` | executable traceability template patterns official documentation best practices |
-| `github_repository_query_phrase` | executable traceability template patterns GitHub repository examples |
-| `release_notes_query_phrase` | executable traceability template patterns changelog release notes migration |
+No web search was performed during this evolution. Every external query and URL below is an **unexecuted retrieval target**, not current evidence or a paraphrase of present external guidance.
+
+Refresh in this order:
+
+1. Inspect target repository policy, schemas, code, tests, workflows, and observed behavior.
+2. Verify frozen local source identity and compare repository history for changed adaptations.
+3. Retrieve a known primary external URL for the exact unresolved mechanism.
+4. Search an official domain when the authoritative path or vocabulary is unknown.
+5. Use issue reports or examples to generate failure hypotheses, then reproduce them locally.
+6. Let an accountable target owner accept, adapt, reject, or defer the external change.
+
+Search ranking, repository popularity, and repeated mirrors do not establish authority.
+
+### Refresh triggers
+
+| Trigger | Question to resolve | Consumer impact to inspect |
+|---|---|---|
+| Local policy or schema revision | Which identity, state, link, exception, or release semantics changed? | Parsers, graphs, generators, historical readers, gates, and decisions |
+| CI or evidence tool release | Did run identity, permissions, status, artifact, retention, cancellation, or cache behavior change? | Evidence collection, retrieval, retry, and release reconciliation |
+| Broken or redirected source URL | Where is current primary authority, and was content superseded? | External claim status and refresh schedule |
+| Contradiction between reference and observed target behavior | Is the reference stale, target misconfigured, or boundary different? | Current guidance, tests, examples, and failure modes |
+| Incident or review reversal | Which assumption or control failed, and is there current official guidance? | Regression fixtures, priorities, exception rules, and recovery |
+| New language, runner, or release surface | Which mechanisms are target-specific while semantics remain stable? | Templates, adapters, commands, and compatibility |
+| Approaching retention or deprecation boundary | What history and consumers still require the mechanism? | Evidence recovery, migration, and retirement |
+| Scheduled high-consequence review | Have quiet upstream changes invalidated a consequential dependency? | Security, compliance, release, and operational controls |
+
+### Targeted query catalog
+
+| Query intent | Future query text | Preferred source | Evidence expected before adoption |
+|---|---|---|---|
+| Codex instruction discovery | `site:developers.openai.com/codex AGENTS.md discovery scope precedence nested instructions` | Current OpenAI Codex documentation | Direct page, retrieval date, applicable product version, bounded paraphrase, and target repository behavior |
+| Codex instruction conflict | `site:developers.openai.com/codex AGENTS.md conflicting instructions precedence repository` | Current OpenAI Codex documentation | Explicit current rule plus a target fixture for nested and conflicting instructions |
+| GitHub Actions run states | `site:docs.github.com/actions workflow run conclusions skipped cancelled failure success permissions` | Current GitHub Actions documentation | Exact state semantics and observed known-pass, known-fail, skip, cancellation, and permission cases |
+| GitHub Actions artifact identity | `site:docs.github.com/actions artifact retention digest attestation workflow run identity` | Current GitHub Actions documentation | Current feature pages, retention and integrity boundary, and target retrieval test |
+| GitHub Actions cache boundary | `site:docs.github.com/actions cache key restore stale workflow evidence` | Current GitHub Actions documentation | Current cache semantics and a target stale-cache rejection probe |
+| Agent instruction format | `site:agents.md specification scope precedence version` | Current primary format site | Versioned format claims and observed compatibility with selected tools |
+| Repository release change | `site:github.com release notes traceability schema migration evidence graph` | Maintainer-owned repository and release records after a product is selected | Tagged release, migration notes, affected target version, and local compatibility result |
+| Assertion sensitivity | `official documentation mutation testing assertion sensitivity test false positive` | Official documentation for the selected target tool | Current mechanism and a local mutation that changes the expected assertion |
+| Evidence retention | `official documentation selected CI evidence artifact retention integrity access` | Product-owned docs for the selected CI and evidence store | Retention, access, integrity, deletion behavior, and target restore evidence |
+| Traceability interoperability | `official specification requirement traceability identity revision evidence schema` | Current standard or product authority selected by the target owner | Version, normative scope, compatibility mapping, and rejected differences |
+
+Replace generic terms such as `selected CI` or `official specification` with an actual adopted product or authority before execution. They mark query intent, not a finished search string.
+
+### Local refresh queries
+
+Use repository evidence before broad external search:
+
+```bash
+shasum -a 256 agents-used-monthly-archive/idiomatic-references-202606/generated-references/executable_traceability_template_patterns.md
+git log -- idiomatic-ref-202607/executable_traceability_template_patterns-20260710.md
+git log -S 'Traceability Change Record' -- idiomatic-ref-202607
+rg -n 'claim_revision|artifact_digest|evidence_requirement|release_candidate' .
+rg -n 'skipped|cancelled|inaccessible|superseded|exception' .github tests docs
+```
+
+Adapt paths to the target repository. A search hit is a candidate observation; inspect context, ownership, current version, and executed behavior before promoting it.
+
+### Refresh evidence record
+
+```text
+Refresh trigger and affected claim
+Query or direct locator used
+Source owner and authority class
+Retrieval date, version, and content digest where permitted
+Exact supported point and bounded paraphrase
+Unsupported or ambiguous point
+Duplicate, mirror, redirect, or deprecation status
+Target policy and behavior inspected
+Compatibility or contradiction result
+Accepted, adapted, rejected, deferred, or no-change disposition
+Accountable owner and rationale
+Affected references, generators, gates, evidence, and decisions
+Next trigger and review boundary
+```
+
+### Result validation and disposition
+
+1. Open the primary page rather than relying on a search snippet.
+2. Confirm owner, publication or version boundary, and whether the page is normative, explanatory, or an example.
+3. Record only the claim the source directly supports; do not extend it to requirement semantics or release authority.
+4. Compare with previous captured source and explain meaningful differences.
+5. Test the selected mechanism in the target repository, including negative, skipped, cancellation, permission, stale, and migration cases as applicable.
+6. Preserve conflicts between external guidance, local policy, and observed behavior.
+7. Have the correct target owner decide applicability.
+8. Invalidate or migrate generated references and decisions that consumed a changed claim.
+9. Record `no-change` when the source and target comparison support retaining current guidance.
+
+**Good:** a CI artifact-retention concern triggers retrieval of the exact current product page, a target expiry and restore fixture, and a local decision about evidence retention. **Bad:** a broad "best practices" result is copied into a release gate because several blogs repeat it. **Borderline:** a maintainer issue reports an integrity failure without a reproducible case; retain it as a test hypothesis and do not claim the failure applies locally until reproduced or confirmed by authority.
+
+Version query intents as concerns and terminology evolve. Monitor known high-consequence locators, but avoid continuous broad searches that generate noise without a decision consumer. Retire a query when its mechanism is removed, its source is superseded, or no maintained local guidance depends on it.
 
 ## Evidence Boundary Notes
 
-- `local_corpus_sourced_fact`: statements tied directly to the local source paths above.
-- `external_research_sourced_fact`: statements tied to the public URLs above.
-- `combined_evidence_inference_note`: synthesis that combines local and public evidence into agent guidance.
+Evidence role determines what a statement may authorize. Provenance alone does not establish current applicability, and repeated generation does not promote a synthesis into target policy.
+
+### Controlled evidence roles
+
+| Role | Assignment test | Permitted use | Required caution |
+|---|---|---|---|
+| Historical local fact | Directly observable in a frozen local source with identity | Describe what the source contains or omitted at capture time | Does not establish current target policy or outcome |
+| Current target fact | Directly observed in the target code, schema, workflow, run, or environment | Describe bounded current behavior | Bind revision, artifact, environment, and observation time |
+| Accepted target policy | Explicitly adopted by an accountable target owner under current authority | Control behavior, evidence, or release inside stated scope | Record version, exceptions, and invalidation trigger |
+| Current external source | Retrieved from a primary owner-controlled source and reviewed for applicable version | Support claims about that external mechanism | Record date, locator, bounded support, and target compatibility |
+| Synthesis | Reasoned guidance combining observations, failure analysis, and engineering judgment | Propose a default, alternative, test, or design question | Label assumptions and verify before consequential adoption |
+| Illustration | Concrete invented example used to teach artifact shape or reasoning | Demonstrate how a record or gate could work | Values, identities, roles, and technologies are not target facts |
+| Hypothesis | Plausible claim awaiting evidence | Drive discovery, experiment, or review | Grants no release or policy authority |
+| Conflict | Sources, target observations, or authorities disagree | Preserve uncertainty and route a decision | Do not select by recency or rank without applicability review |
+| Unknown | Required fact was not retrieved, observed, or interpretable | Keep a decision open or bounded | Never convert to passed or absent silently |
+| Negative evidence | A failure, omission, contradiction, or mutation demonstrates a limitation | Reject an overclaim and create a regression fixture | Omission alone does not prove the proposed replacement is correct |
+
+### Evidence ledger for this evolution
+
+| Claim group | Evidence available | Confidence and boundary |
+|---|---|---|
+| Archive seed identity | The working seed and archive seed were byte-identical at baseline with SHA-256 `2a0876253a67e3317cbcaca095c6fc3d16bc5f52a3700293a2b113add4a74454` | High confidence local fact for the baseline only |
+| Historical template source | Three local 118-line template paths were byte-identical with SHA-256 `c7e44220936452079080a46fb23725ec5b3332fb8b1a8a082eaeed76b2bd2812` | One source with three locators, not three independent authorities |
+| Historical content | The source contains a requirement shape, traceability matrix, development sequence, Rust, TypeScript, and Go skeletons, vague-to-measurable rewrites, and a quality gate | High confidence description of local historical content; no target adoption implied |
+| Source limitations | The local template includes unresolved authoring syntax, illustrative quality values, and a checklist whose test-link language does not cover every evidence class | Direct source observation plus bounded critique; replacement guidance remains synthesis |
+| Public URLs | Codex instruction guidance, the GitHub Actions documentation root, and the agents.md format location were inherited as future source families | Path strings are local facts; present external contents, versions, and recommendations are unknown because no browsing occurred |
+| Local adjacent filenames | Candidate reference paths in the July directory were observed by filename | Path existence supports navigation only; content completeness and compatibility were not reviewed here |
+| Traceability Change Record | Revision, claim, case, implementation, run, exception, release, and invalidation fields are synthesized from identified lifecycle failure modes | Reasoned reference model, not a discovered standard or adopted target schema |
+| State and graph invariants | Identity collision, stale revision, state collapse, evidence mismatch, and candidate mismatch are plausible failure mechanisms with proposed probes | Strong engineering synthesis; target frequency and control effectiveness are unmeasured |
+| Worked records | Session revocation, cancellation, performance, and migration examples use invented identities and values | Illustrations only; replace every domain decision with accepted target facts |
+| Reliability, performance, and scale | The reference defines methods, dimensions, hazards, and objective contracts | No target latency, throughput, availability, capacity, retry, retention, or reviewer-time result was measured |
+| External refresh queries | Query intents and direct source paths are specified for future work | Unexecuted retrieval plans, not external evidence |
+| Evolved artifact checks | Structure, uniqueness, heading, expansion, hygiene, table, fence, and test verifiers can establish properties of these files | They do not prove that the guidance improves an unseen production system |
+
+### Claim-record profile
+
+For consequential guidance, retain:
+
+```text
+Claim identity and exact text
+Evidence role and confidence
+Source owner, locator, revision, and content digest
+Bounded observation or paraphrase
+Target boundary and authority
+Assumptions and counterevidence sought
+Verification performed and observed result
+Accepted, adapted, rejected, unresolved, or superseded disposition
+Consumers: templates, gates, generators, decisions, and releases
+Invalidation, refresh, and retirement trigger
+```
+
+Orientation-only prose can use a compact role label and source map. Increase record depth when a claim is generated, shared, audited, release-blocking, costly to reverse, or retained across tool and schema versions.
+
+### Boundary rules
+
+1. A local source fact supports only what the identified span or paraphrase actually says.
+2. A historical source does not become current policy because several duplicate paths contain it.
+3. A public URL does not support a current claim until its content is retrieved and reviewed.
+4. A primary external source can explain its mechanism but cannot decide a target product requirement.
+5. A test pass supports only the claim, artifact, environment, and assertion boundary it observed.
+6. A release decision requires target authority; documentation and generated matrices do not grant it.
+7. A source omission may expose a risk but does not prove one proposed architecture is the solution.
+8. A concrete sample value remains illustrative until accepted and measured locally.
+9. Mixed-role paragraphs should be split when confidence, consequence, or refresh behavior differs.
+10. Unknown, denied, inaccessible, stale, and conflicting evidence remain explicit states.
+
+### Examples of boundary handling
+
+**Good historical fact:** "The archived template contains a traceability matrix with one sample requirement linked to several evidence levels." This is directly inspectable and does not claim the matrix is sufficient.
+
+**Bad extension:** "Therefore every target project must use that exact matrix and every requirement must map to a test." The source cannot establish target policy, and some claims require other evidence classes.
+
+**Bounded synthesis:** "A typed evidence graph may prevent lifecycle links from disappearing when one matrix becomes dense." This identifies a plausible design response and still requires target workload and verification.
+
+**Promoted target rule:** a target owner adopts stable claim revisions after parser, graph, migration, and release checks. Record the adoption as target policy while preserving that its original inspiration was historical. Later demotion changes target status without rewriting source provenance.
+
+**Conflict:** current target behavior disagrees with retrieved external guidance. Preserve both observations, inspect version and configuration, and let the accountable target owner resolve applicability. Do not hide the conflict by changing the evidence label.
+
+### Verification and lifecycle
+
+- Hash frozen local sources and compare expected identities before reuse.
+- Map consequential claims to bounded source support or explicit synthesis records.
+- Retrieve primary external pages directly, respecting permitted quotation and archival limits.
+- Compare external version and target behavior; do not stop at source retrieval.
+- Search for counterexamples and contradictory policy before promotion.
+- Run target parser, graph, mutation, evidence, exception, and release checks appropriate to the claim.
+- Detect when cited support no longer matches claim text after edits.
+- On source or target change, traverse consumers and reopen only affected decisions.
+- Preserve historical evidence roles and record promotion, demotion, supersession, and retirement as events.
+- Generate reader-friendly provenance tables from one authoritative claim record where tooling exists.
+
+Confidence in this evolved reference comes from explicit assumptions, counterarguments, verification design, and local structural checks. It is not empirical proof that every recommendation improves a target system. The operational value of provenance is its ability to answer both "why is this guidance here" and "which consumers must reopen if its evidence is wrong."

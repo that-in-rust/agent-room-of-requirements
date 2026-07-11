@@ -630,6 +630,24 @@ Under large-codebase scale, require dependency or source-graph narrowing before 
 
 ## Future Refresh Search Queries
 
+**Decision supported.** This section helps decide when and how a future maintainer should search for changed Parseltongue guidance without letting search results silently rewrite pinned 1.7.2 evidence. The seed provides three generic web queries for official documentation, GitHub examples, and releases, but it does not specify refresh triggers, source acceptance criteria, version scoping, or reconciliation with live API truth.
+
+**Recommended default and causal basis.** Refresh only on a documented trigger, begin with verified live API help and authoritative project sources, include the exact version and feature, archive accepted evidence, and reconcile every change claim against the frozen corpus. Search queries discover candidates rather than establish facts; version-aware acceptance and diff review prevent current or unofficial material from contaminating a pinned workflow.
+
+**Operating conditions and assumptions.** The trigger names suspected drift, queries target a concrete route or behavior, primary sources outrank summaries, dates and versions are recorded, and the maintainer labels additions, supersessions, and unresolved conflicts. Use future searches to discover candidate updates for Parseltongue guidance, never as substitutes for live validation, versioned sources, or target-code evidence.
+
+**Failure boundary and alternatives.** Routine browsing is presented as freshness proof, result snippets become citations, latest-version docs overwrite 1.7.2 behavior, absence of results proves feature absence, or query phrasing is mistaken for a test. Bounded alternatives and recoveries: use the running service's API documentation, inspect installed binary help, compare release artifacts, read source at a version tag, or retain the current uncertainty when authoritative evidence is unavailable.
+
+**Counterexample, gotchas, and operational comparison.** SEO summaries, forks and mirrors, unstable `latest` pages, similarly named tools, undocumented redirects, generated API docs from another version, and search personalization. Good: search an exact endpoint plus version after live help diverges, then archive and reconcile the authoritative result. Bad: adopt a blog's newest command. Borderline: retain a community workaround as provisional external evidence pending reproduction.
+
+**Verification, evidence, and uncertainty.** Record refresh trigger, exact queries, retrieval date, source ownership, version, archived location or hash, relevant excerpt summary, conflict analysis, live reproduction, changed claims, reviewer, and next trigger. The seed directly preserves three query categories, and the local skill makes version policy and live configuration central to trustworthy operation. This pass performs no browsing, so the queries are unexecuted maintenance aids and no external freshness conclusion follows from their presence.
+
+**Second-order consequence.** A refresh process should maximize change detection while minimizing authority drift; the right output is a reconciled evidence diff, not a larger link collection.
+
+**Revision decision.** Retain the three exact query rows and add trigger policy, version qualifiers, source ranking, archive and diff requirements, reproduction gates, and rejection examples.
+
+**Retained seed evidence.** The official-docs, GitHub-repository, and release-notes query labels and texts remain unchanged in the original table. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 | search_query_label_name | search_query_text_value |
 | --- | --- |
 | `official_docs_query_phrase` | parseltongue graph workflow patterns official documentation best practices |
@@ -637,6 +655,24 @@ Under large-codebase scale, require dependency or source-graph narrowing before 
 | `release_notes_query_phrase` | parseltongue graph workflow patterns changelog release notes migration |
 
 ## Evidence Boundary Notes
+
+**Decision supported.** This section helps decide how every consequential sentence should be labeled and combined so a reviewer can tell what was read, observed, inferred, tested, or left unresolved. The seed defines local, external, and combined labels, but it does not distinguish archived tool facts from live run observations, target-repository code facts, runtime evidence, or hypotheses generated from graph topology.
+
+**Recommended default and causal basis.** Preserve the three seed labels, add live-run, target-code, runtime, and provisional-hypothesis classes in usage, and require combined conclusions to enumerate their prerequisites and model limits. Parseltongue investigations cross several evidence modalities whose authority differs by claim; explicit boundaries prevent a graph response from inheriting the certainty of source code or a public link.
+
+**Operating conditions and assumptions.** Facts cite exact artifacts or observations, inferences identify inputs and reasoning scope, negative evidence states coverage limits, contradictions remain visible, and the final recommendation names stronger evidence still needed. Apply these labels to this reference and downstream Parseltongue packets while preserving exact frozen seed labels for compatibility.
+
+**Failure boundary and alternatives.** Labels decorate paragraphs without traceability, combined inference hides disagreement, local archive facts are treated as current runtime observations, graph absence proves code absence, or uncertainty is detached from the decision it affects. Bounded alternatives and recoveries: split an overcombined statement into atomic claims, downgrade it to a hypothesis, gather live or source evidence, preserve conflicting interpretations, or decline the conclusion when no adequate modality exists.
+
+**Counterexample, gotchas, and operational comparison.** Source-backed does not mean semantically sufficient, live does not mean version-correct, code presence does not mean execution, runtime occurrence does not prove all paths, and multiple weak sources do not become one strong fact. Good: local docs establish endpoint intent, live output establishes this run's response, code confirms a guard, and synthesis proposes a bounded refactor. Bad: call a blast radius a runtime call tree. Borderline: infer ownership from clusters while marking metadata confirmation pending.
+
+**Verification, evidence, and uncertainty.** Sample every recommendation, trace each clause to evidence class and location, test that combined claims list prerequisites, inspect conflicts and negative evidence, confirm uncertainty changes action, and reject orphan assertions. The local corpus directly supports distinctions among policy, configuration, graph topology, modeling limits, and code-reading confirmation; the seed provides the foundational three labels. Evidence taxonomy cannot eliminate judgment about source quality or semantic sufficiency, and a real repository may require additional operational or organizational classes.
+
+**Second-order consequence.** The most useful confidence statement is compositional: it explains which link in the evidence chain would change the recommendation if falsified.
+
+**Revision decision.** Extend the three-label note with a claim ledger, live and target evidence classes, combination rules, conflict handling, negative-evidence cautions, and compositional confidence.
+
+**Retained seed evidence.** The exact local-corpus, external-research, and combined-evidence definitions remain preserved verbatim at the end of the evolved section. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 - `local_corpus_sourced_fact`: statements tied directly to the local source paths above.
 - `external_research_sourced_fact`: statements tied to the public URLs above.

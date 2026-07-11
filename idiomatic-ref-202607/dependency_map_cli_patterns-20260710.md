@@ -20,7 +20,7 @@ Choose the workflow by consequence:
 
 1. **Frame the question.** Name the repository root, feature/error/symbol, desired decision, consequence of a missed edge, and whether the output is orientation, review scope, edit planning, or architecture explanation.
 2. **Inspect state before writing artifacts.** Record current Git root/status, tracked versus untracked work relevant to the question, current repository instructions, intended output directory, and paths that must remain untouched. The builder creates its output directory and files.
-3. **Confirm coverage and tools.** The current builder requires `rg` and also invokes `python3`. It recognizes only `.rs`, `.py`, `.js`, `.jsx`, `.ts`, `.tsx`, `.go`, `.java`, `.c`, `.cc`, `.cpp`, `.h`, and `.hpp`. In a Git worktree it inventories `git ls-files`, so untracked implementation is absent. Inspect the actual `tooling.tsv`; do not infer the branch from commands merely existing on `PATH`.
+3. **Confirm coverage and tools.** The current builder requires `rg` and also invokes `python3`. It recognizes only `.rs`, `.py`, `.js`, `.jsx`, `.ts`, `.tsx`, `.go`, `.java`, `.c`, `.cc`, `.cpp`, `.h`, and `.hpp`. In a Git worktree it inventories `git ls-files`, so untracked implementation is absent. Inspect `tooling.tsv` for capability flags, then inspect `symbols.tsv` kind values and `ctags.jsonl` state to determine whether Ctags output or fallback rows actually contributed; command presence alone is insufficient.
 4. **Build into an explicit disposable location.** From the target repository root, invoke the selected installed script with an explicit root and output path. Avoid an output location whose files could be mistaken for product source or another agent's artifacts.
 5. **Read metadata before graphs.** Open `tooling.tsv` and `summary.md`, then inspect `files.tsv`, `symbols.tsv`, `internal_file_edges.tsv`, and `external_ref_edges.tsv`. Treat counts and fan-in/fan-out as ranking signals, not importance proofs.
 6. **Relate the query to candidates.** Rank files or symbols using query matches, ownership/configuration clues, internal neighbors, fan counts, tests, and entrypoint evidence. Do not select hubs from graph degree alone.
@@ -68,7 +68,7 @@ The reader also accepts separate file/start/end arguments, which is safer for a 
 | `dependency_graph.mmd` | edge-capped Mermaid representation of ranked edge pairs | labels and cap can omit or misrender unusual paths; graph completeness is not implied |
 | `dependency_graph.dot` | DOT representation of the same capped pairs | remains source text when Graphviz is absent |
 | `dependency_graph.svg` | optional Graphviz rendering | exists only when compatible `dot` execution succeeds |
-| `tooling.tsv` | actual branch availability observed by the builder | availability does not mean `ast-grep` was automatically used; the current builder only records it |
+| `tooling.tsv` | capability flags observed by the builder | availability does not prove actual contribution; Ctags may pass the probe yet yield no usable output, causing fallback, and ast-grep is only recorded |
 
 At this evolution capture, `rg` and `ast-grep` were discoverable, the available system `ctags` did not pass the builder's JSON-capability probe, and `dot` was absent. Therefore an actual run in the same unchanged environment would use regex symbol extraction, produce one-line fallback ranges, record structural-search availability without applying it, and omit SVG. This is environment evidence, not a permanent default; inspect every run's `tooling.tsv`.
 
@@ -125,7 +125,7 @@ This map routes one claim to the evidence capable of supporting it. It is not a 
 | `/Users/amuldotexe/.codex/skills/dependency-map-cli-tools-01/agents/openai.yaml` | installed_agent_metadata | `current_local_explanatory_fact`; SHA-256 `3cca38f60acf2bfa2e5f310301807d35e476ab4bcead18695bf101733ca2ab71` | Current display name, short description, and default invocation prompt. | Trigger metadata does not prove extraction quality or authorize writing map artifacts. |
 | target repository instructions and user request | repository_policy_and_intent | `operation_specific_authority`; not captured by generic skill | Defines allowed root/output paths, ownership, query, ignored/generated/vendor policy, no-write constraints, and consequence of missed edges. | Must be reread for each repository/task and cannot be inferred from script access. |
 | `git rev-parse`, `git ls-files`, and `git status --short` for target root | repository_state_observation | `operation_specific_local_state` | Establishes whether the builder will use tracked-only inventory and which relevant untracked changes need a supplement. | State expires with worktree changes; Git tracked status does not establish architectural ownership. |
-| `tooling.tsv` from one map run | derived_run_metadata | `operation_specific_executable_observation` | Records the builder's `rg`, JSON-Ctags, ast-grep, and `dot` branch for that invocation. | Command availability can change; ast-grep availability does not mean automatic structural extraction occurred. |
+| `tooling.tsv` from one map run | derived_run_metadata | `operation_specific_executable_observation` | Records the builder's `rg`, JSON-Ctags capability-probe result, ast-grep availability, and `dot` availability for that invocation. | Capability does not prove contribution: inspect `symbols.tsv` kinds and `ctags.jsonl`; ast-grep availability never means automatic structural extraction occurred. |
 | `files.tsv`, `symbols.tsv`, `import_edges.tsv`, `internal_file_edges.tsv`, `external_ref_edges.tsv` | derived_run_artifacts | `operation_specific_best_effort_evidence` | Provide inventory, candidate pointers, raw references, heuristic local resolutions, and unresolved references for a captured root/tool branch. | Every artifact inherits inventory, parser, resolver, filesystem, and timing limits; unresolved does not mean third-party. |
 | `summary.md`, `dependency_graph.mmd`, `dependency_graph.dot`, optional `dependency_graph.svg` | derived_summary_and_views | `operation_specific_ranked_view` | Prioritize candidate files and communicate a capped subset of edge pairs. | Summary counts and graph degree are retrieval signals, not semantic centrality, ownership, complete blast radius, or runtime behavior. |
 | exact source spans, tests, manifests/build files, configuration, generated registries, and ownership records | target_repository_primary_evidence | `operation_specific_verification` | Confirm or refute map hypotheses used for a next read, review boundary, or edit plan. | One source read may still miss runtime wiring; choose further evidence by consequence. |
@@ -385,7 +385,7 @@ Generated pointers route into the target repository. Direct source spans establi
 | --- | --- | --- | --- |
 | Historical workflow intent | Dated archive skill. | Same-date precedent note and surrounding archive context. | Current installation cannot rewrite a past snapshot. |
 | Current builder mechanics | Hashed builder script. | Syntax check and focused read of the relevant branch. | Prose can lag executable behavior. |
-| Selected extraction mode | Run-specific `tooling.tsv` and summary. | Capability probe captured in the same environment. | Static code exposes possibilities, not which branch ran. |
+| Actual symbol extraction outcome | Run-specific `symbols.tsv` kind values and `ctags.jsonl` presence, interpreted with `tooling.tsv` capability flags. | Captured capability probe plus sampled pointer rows. | `ctags=yes` means the probe passed, not that the actual Ctags invocation produced usable symbols; empty output triggers fallback. |
 | Repository inventory coverage | `all_files.txt`, `code_files.txt`, and `files.tsv`. | Independent repository-native inventory and explicit exclusion policy. | A successful build does not prove relevant files entered the map. |
 | Candidate symbol location | `symbols.tsv`. | Pointer reader plus direct source. | A row is an index entry, not semantic confirmation. |
 | Dependency relation | Import and internal-edge rows. | Both endpoint sources and a language-aware or repository-native check when consequential. | Lexical resolution is approximate. |
@@ -536,7 +536,7 @@ An anti-pattern entry is a diagnostic hypothesis, not an automatic verdict. Clas
 
 1. Confirm the command and output directory belong to the intended repository and run.
 2. Validate inventory population before diagnosing empty symbol or relation results.
-3. Record the selected extraction branch and test pointer quality.
+3. Record capability flags, determine the actual symbol producer from `symbols.tsv` kinds and `ctags.jsonl`, and test pointer quality.
 4. Reconcile raw imports, internally resolved edges, and unresolved references.
 5. Compare complete tabular rows with summary and visual projections.
 6. Verify selected source relations and classify mismatch mechanisms.
@@ -1204,7 +1204,7 @@ The seed labels are retained exactly as corpus metadata. No local assignment not
 | What the 202602 skill said | The exact 202602 archive bytes and surrounding archive context. | Hash comparison with other snapshots. | Current installation or later prose cannot rewrite the historical record. |
 | What workflow is currently documented locally | Current installed `SKILL.md` at its recorded hash. | Current script and metadata for consistency. | An older archive snapshot cannot establish current text if bytes diverge. |
 | Which extensions enter `code_files.txt` | Current hashed builder script. | Controlled fixture or a generated inventory from that producer. | Skill summary and public tool documentation cannot override implementation literals. |
-| Which extraction branch a run selected | Run-specific `tooling.tsv` plus captured capability probe. | Script branch inspection and binary identity. | Static code alone exposes possibilities, not the selected branch. |
+| Which extractor actually contributed symbol rows | `symbols.tsv` kind values and `ctags.jsonl` state interpreted with `tooling.tsv`. | Script branch inspection, binary identity, and sampled pointers. | `tooling.tsv` exposes capability-probe results, but a failed or empty actual Ctags run can still lead to regex fallback. |
 | Which files were observed | `all_files.txt`, `code_files.txt`, and `files.tsv` from the identified run. | Independent repository-native inventory and exclusion policy. | Guidance prose cannot prove target inclusion. |
 | Which lexical relation row exists | Identified TSV artifact. | Producer version, endpoint source, and configuration. | Summary or graph projection cannot add rows absent from complete artifacts. |
 | What a relation means in the program | Direct source plus suitable semantic, build, configuration, test, or runtime evidence. | Independent mechanism with a different observation model. | A lexical edge or inherited pattern score cannot settle semantics. |
@@ -1811,7 +1811,7 @@ Method-fit failure can be a complete and correct outcome: the claim is routed to
 | `all_files.txt` matches the implemented inventory branch. | Independent sorted comparison. | That tracked-only or `rg --files` policy fits the question. | Critical for interpreting all downstream rows. |
 | `code_files.txt` and `files.tsv` paths reconcile. | Structured TSV comparison and counts. | That supported extensions include every relevant source or configuration file. | Critical structural gate. |
 | Excluded file and language classes are explicit. | Coverage ledger for untracked, ignored, generated, vendored, nested, unsupported, configuration, and data files. | That exclusions are harmless. | Critical when any class can affect the claim. |
-| `tooling.tsv` records the selected capability state. | Header, rows, and captured preflight agreement. | That detected ast-grep was invoked or that Ctags/fallback rows are semantically correct. | Critical for span interpretation and comparisons. |
+| `tooling.tsv` records capability state and symbol artifacts reveal the actual producer. | Header, rows, captured preflight, `symbols.tsv` kind distribution, and `ctags.jsonl` presence. | That detected ast-grep was invoked or that Ctags/fallback rows are semantically correct. | Critical for span interpretation and comparisons. |
 | Required artifacts exist and schemas match. | Structured parser over files, symbols, edges, tooling, summary, Mermaid, and DOT; conditional SVG check. | Accuracy, completeness, or semantic meaning. | Critical production contract. |
 | Summary and graph projections reconcile with full rows and cap. | Full counts, projected counts, `MAX_GRAPH_EDGES`, optional render state. | That full TSV rows represent all program dependencies. | Stop graph-derived claims if inconsistent. |
 
@@ -1881,72 +1881,1132 @@ The checklist is a prerequisite graph. Completion propagates forward only when s
 
 ## Adjacent Reference Routing
 
-Adjacent reference guidance: Use dependency, debugging, timeline, or system design references when the inquiry narrows.
-Adjacent reference 1: consider the dependency adjacent reference when the current task pivots away from dependency map cli patterns.
-Adjacent reference 2: consider the map adjacent reference when the current task pivots away from dependency map cli patterns.
-Adjacent reference 3: consider the cli adjacent reference when the current task pivots away from dependency map cli patterns.
+Use dependency, debugging, timeline, system-design, map, and CLI references when the inquiry narrows, but route by missing observation capability rather than topic resemblance. The destination must be able to falsify the unresolved claim with a materially different evidence source. A second lexical graph does not independently verify a runtime-only absence claim.
+
+This section identifies route classes and candidate local capabilities. Verify current availability, instructions, version, repository fit, and permissions when selecting a route. Later Delta assignments are not used as evidence here and remain unopened until their authorized sequence begins.
+
+**Capability-gap router**
+
+| unresolved question | rough-map boundary | primary route class | candidate local or project capability | evidence expected on return |
+| --- | --- | --- | --- | --- |
+| Where is an exact string, error, file, or named declaration? | A new broad map is unnecessary for a narrow location query. | Direct lexical search and source reading. | `rg`, repository-native search, or existing code index. | Current revision-bound path and source span with duplicate matches resolved. |
+| Which syntax-shaped constructs match a pattern? | Regex or import extraction may be noisy or unable to express nesting. | Structural search or parser-aware query. | Installed ast-grep when selected deliberately, Tree-sitter-based tooling, or a project parser. | Rule identity, positive and negative examples, matches, parse limitations, and direct source review. |
+| Which references or calls resolve to this symbol? | Lexical names and file heuristics do not establish semantic identity. | Language server, compiler, or precise semantic index. | Project IDE/index commands, LSP capability, language-specific analyzer. | Server/tool version, indexing scope, resolved identities, representative source confirmation, and missing variants. |
+| What is the file/module dependency neighborhood or blast radius? | Rough rows are candidate edges with finite inventory and resolver limits. | More precise code graph plus source verification. | `clarity202606`, `run-parseltongue-1-7-2`, `codebase-memory-evidence-reader`, `codegraphcontext-evidence-reader`, or a repository-native graph when available and appropriate. | Producer and repository identity, traversal semantics, depth or budget, selected paths, contradictions with rough artifacts, and source evidence. |
+| Which configured targets, packages, or generated units compose the build? | Lexical imports omit build-system and generation semantics. | Compiler or build graph. | Cargo, Gradle, Bazel, TypeScript project references, package tooling, or project-specific build query. | Target and feature configuration, generated inputs, dependency output, and variant boundary. |
+| Is a component executed or registered at runtime? | Static map cannot observe reflection, data-driven dispatch, dynamic loading, or unexercised configuration. | Runtime tracing, integration probes, and configuration audit. | Project observability, startup diagnostics, test harness, logs, traces, or safely instrumented execution. | Workload and configuration identity, observed path, negative coverage limits, and link back to source. |
+| Why is a failure occurring? | A dependency sketch identifies candidates but does not perform disciplined causal diagnosis. | Systematic debugging. | `systematic-debugging` or `matt-engineering-diagnose` when available and applicable. | Reproduction, minimized case, hypotheses, instrumentation, verified cause, fix, and regression evidence. |
+| When and why did this architecture or relation change? | Current map has no historical intent or conversation context. | Repository history and decision archaeology. | Git history, issue/PR context, `capture-github-repo-context` when repository and access permit. | Commit/PR/issue identities, dated rationale, source changes, and separation of recorded fact from inference. |
+| What should the change guarantee? | A graph does not define acceptance criteria, contracts, or authorization. | Executable specification and test planning. | `executable-specs-01`, repository requirement templates, or domain policy. | Bounded requirements, preconditions, postconditions, failure behavior, verification, and traceability. |
+| How should a language-specific implementation be changed safely? | Generic map guidance does not encode language ownership, concurrency, type, framework, or runtime idioms. | Language- and framework-specific implementation guidance. | Applicable Rust, TypeScript, React, Java/Spring, Kotlin, Tauri, or other project-native references and tests. | Language-aware design, compiler/type checks, behavioral tests, and compatibility boundaries. |
+| Does a security path, permission, or authorization boundary hold? | Rough static edges are not a security proof and omit configuration and runtime paths. | Security-specific threat, static, configuration, test, and runtime analysis with owner review. | Project security tooling and qualified domain guidance. | Threat scope, variants, attack paths, negative tests, residual risk, and authorized acceptance. |
+| Does a performance or scale claim hold? | Edge count and rough workload estimates do not establish latency, memory, throughput, or scaling. | Benchmarking, profiling, load testing, and production telemetry. | Repository benchmark harness and observability stack. | Workload, environment, sample size, variance, baseline, raw results, and applicability limits. |
+| What does a public tool or protocol currently support? | Local retained links are unrefreshed and installed behavior can differ by version. | Authorized primary-source refresh plus local capability reproduction. | Versioned official documentation and installed `--help` or probe. | Retrieval date/version, narrow paraphrase, installed version match, local example, and target applicability. |
+| Who owns the decision or accepts residual risk? | Graph centrality cannot assign organizational authority. | Ownership metadata and human escalation. | CODEOWNERS-like files, service catalog, issue owner, technical lead, security or domain owner. | Named accountable owner, decision scope, accepted risk, and review state. |
+
+Candidate capability names above are route examples, not claims that a particular binary, server, index, connector, or credential is ready in the current repository. Read the selected capability's instructions and probe it only when the route is needed.
+
+**Preserved broad adjacent categories**
+
+| seed category | route when | do not route when |
+| --- | --- | --- |
+| Dependency adjacent reference | The question needs more precise callers, callees, module relationships, cycles, or blast radius than the rough mapper provides. | The user only needs one exact source location. |
+| Map adjacent reference | A different graph representation or persistent index has a materially stronger observation model. | The alternative merely redraws the same lexical rows. |
+| CLI adjacent reference | The question concerns shell safety, command composition, portability, output contracts, or operational packaging of the mapper. | The unresolved issue is target-code semantics rather than command behavior. |
+| Debugging adjacent reference | There is a reproducible failure, mismatch, or regression requiring causal diagnosis. | The task is only first-contact orientation with no observed defect. |
+| Timeline or history reference | Current structure cannot explain why a boundary exists or when a relation changed. | The decision can be settled entirely from present source and tests. |
+| System-design or specification reference | The task pivots from observing current dependencies to choosing desired boundaries and acceptance criteria. | The user has not yet established the current problem shape or decision consequence. |
+
+**Route-entry contract**
+
+Before handing off, record:
+
+| field | required content |
+| --- | --- |
+| Original decision | The user's bounded action or explanation, not only the latest tool error. |
+| Unresolved claim | One falsifiable statement or question and its evidence class. |
+| Consequence | False-positive and false-negative cost, reversibility, and deadline if material. |
+| Evidence already collected | Producer identities, artifact rows, source spans, project results, and current confidence state. |
+| Earliest verified gap | Inventory, extraction, resolution, presentation, retrieval, semantics, build, configuration, runtime, history, policy, or authorization. |
+| Current method boundary | Why the rough map cannot settle the claim or why another method is cheaper and stronger. |
+| Destination requirement | The observation capability needed, not merely a preferred product name. |
+| Expected return | Evidence form that can support, refute, or safely assign the claim. |
+| Stop condition | When to return, proceed, reject, or escalate rather than continuing to collect context. |
+| Sensitive-data boundary | What source, runtime, credential, or customer data may not be transferred. |
+
+This packet prevents the destination from repeating broad orientation or losing the original decision consequence.
+
+**Route-return contract**
+
+The destination should return:
+
+1. Tool or reference identity, version, configuration, repository state, and observation scope.
+2. Exact claim addressed and whether the method has a materially different blind spot.
+3. Reproducible observations with source, artifact, query, trace, test, or history locators.
+4. Agreement and contradiction with prior rough-map evidence.
+5. A bounded result of supported, refuted, unresolved, or escalation required.
+6. Remaining variants, workload limits, and invalidation triggers.
+7. The next state of the original decision record and every dependent claim that must reopen.
+
+**Primary and secondary routes**
+
+Some gaps need complementary routes:
+
+| gap | primary route | secondary route | reason for combination |
+| --- | --- | --- | --- |
+| Alias or re-export miss | Project-aware semantic or build resolution. | Direct configuration and endpoint source. | Semantic result establishes identity; configuration explains why rough resolution failed. |
+| Generated dependency | Build or generation graph. | Generated output inspection and tests. | Producer relationship and emitted behavior need separate evidence. |
+| Dynamic registration | Configuration and runtime probe. | Static source and semantic references. | Runtime proves exercised use; static evidence bounds implementation and migration candidates. |
+| Suspected unused component | Authoritative semantic/build/configuration search. | Runtime workload and owner review. | Static absence and runtime non-observation have different blind spots. |
+| Architecture redesign | Current graph and source analysis. | Executable specification and ownership review. | Descriptive structure does not define the desired contract or approval. |
+| Dependency-caused incident | Systematic diagnosis. | History and graph traversal. | Reproduction and instrumentation establish cause; history and topology explain introduction and scope. |
+
+Do not add secondary routes merely to increase citation count. Add them when their observation models can fail differently in a way that matters to the action.
+
+**Good, bad, and conditional routes**
+
+Good: An unresolved `@core/*` family is handed to the project-aware resolver with the exact rows, target revision, and alias hypothesis. The return shows an internal configured path, direct source corroborates it, and external-dependency counts are revised.
+
+Bad: An empty rough caller query is handed to a second regex search. Both find nothing, and the component is declared unused. Agreement between correlated lexical methods cannot establish absence.
+
+Conditional: A second lexical search can still be valuable if it finds a direct counterexample. Weak tools often refute universal claims cheaply even when they cannot verify them positively.
+
+**Loop detection and terminal routes**
+
+Stop routing and escalate to an owner when:
+
+- the same claim returns twice without new evidence or a narrower boundary;
+- destinations share the same material blind spot and no independent mechanism is available;
+- required access, authorization, credentials, runtime data, or project state is unavailable;
+- evidence conflicts in a way that changes a consequential decision and no qualified resolver is available;
+- policy, risk acceptance, or ownership rather than technical observation is the unresolved question;
+- the cost or deadline requires a deliberate bounded decision under uncertainty.
+
+Terminal escalation is not an empty handoff. Preserve the claim, evidence, contradictions, unavailable capability, consequence, and exact decision the owner must make.
+
+**Route verification**
+
+A route succeeds when the destination:
+
+- consumed the stated capability gap rather than restarting generic discovery;
+- used a method capable of observing something the prior route could not;
+- returned reproducible evidence with identity and scope;
+- reduced, reclassified, refuted, or safely assigned the uncertainty;
+- updated the original decision rather than creating an isolated conclusion;
+- avoided transferring sensitive data outside its policy boundary.
+
+If none of these changed, the route added activity rather than information. Record that outcome and reconsider the problem formulation or terminal owner instead of opening another adjacent reference reflexively.
+
+Adjacent routing is therefore an evidence graph. Its edges mean "this claim lacks this observation capability," and its returns mean "this new evidence changes this decision state." That precision allows specialized references and tools to remain modular without fragmenting the user's reasoning across disconnected workflows.
 
 ## Workload Model
 
-`combined_evidence_inference_note`: Treat Dependency Map Cli Patterns as a repository operation operating reference, not as a prose summary.
+`combined_evidence_inference_note`: Treat Dependency Map Cli Patterns as a repository operation with batch scans, filesystem writes, bounded projections, and evidence side effects, not as a prose summary.
 
-| workload_dimension_name | workload_boundary_value | verification_pressure_point |
+The seed's `up to 500 changed files` boundary is not retained as an operational limit. No local benchmark, workload definition, environment, or failure threshold supports that number, and changed-file count is not the builder's primary input. The script scans the selected repository inventory, which can include many unchanged files. Capacity must be calibrated from actual source population, relation volume, filesystem, environment, query reuse, and evidence requirements.
+
+**Workload variables**
+
+| symbol | workload dimension | why it matters |
 | --- | --- | --- |
-| primary_usage_surface | repository navigation, branch/worktree operation, dependency analysis, or GitHub context capture where stale state can corrupt the next action | verify that the reference changes the next implementation or review action |
-| bounded_capacity_model | one branch or worktree, one dependency slice, up to 500 changed files in discovery mode, and one explicit clean/dirty-state check | split the task or create a narrower reference when this boundary is exceeded |
-| source_pressure_model | local heading signals include Dependency Map CLI Tools 01; Overview; Workflow; Quick Start; Artifacts; Tool Strategy; Internet Precedents: No-DB Codebase Mapping; 1) Pointer-first  | compare guidance against canonical local sources before following external examples |
-| artifact_pressure_model | required artifact is dependency graph probe with ownership map, false-positive rules, and blast-radius examples | require the artifact before claiming the reference is operationally usable |
+| `F` | Paths in `all_files.txt`. | Inventory writing, path filtering, and raw coverage review scale with this population and total path text. |
+| `C` | Supported code paths in `code_files.txt`. | File line counting, symbol extraction, relation scanning, and code-set memory scale with supported files. |
+| `B` | Total bytes or lines across supported readable source. | Multiple stages read source content, so large files and filesystem throughput can dominate even when `C` is modest. |
+| `S` | Rows in `symbols.tsv`. | Pointer storage, query cost, duplicate-name review, and sample size grow with extracted symbols. |
+| `R` | Rows in `import_edges.tsv`. | Resolution work, internal and unresolved row memory, artifact size, and sampling population grow with lexical references. |
+| `E` | Unique source-target pairs selected from resolved or fallback unresolved rows. | Frequency counting and graph candidate population grow with unique pairs. |
+| `G` | `MAX_GRAPH_EDGES`. | Bounds Mermaid and DOT presentation work and optional SVG complexity, but does not bound full TSV extraction. |
+| `Q` | Number and diversity of questions reusing one artifact set. | Determines whether batch production cost is amortized or repeated output becomes waste. |
+| `V` | Number of repository, feature, platform, or configuration variants relevant to the decision. | Rough static output may need separate authoritative checks even if the batch map is produced once. |
+
+Source count alone is insufficient. A repository with few very large generated files can be more expensive than one with many small files. A repository with modest source but dense lexical imports can produce large relation artifacts. A quick SVG cap can hide presentation cost without reducing the source and relation scans that precede it.
+
+**Implemented stage model**
+
+| stage | implementation behavior | primary growth driver | memory and I/O behavior | evidence output |
+| --- | --- | --- | --- | --- |
+| Root and output setup | Resolves absolute root, creates output directory, and reads `MAX_GRAPH_EDGES`. | Path and filesystem state. | Writes into the named directory and does not require it to be empty. | Producer and location context must be captured externally. |
+| Raw inventory | Uses `git ls-files` inside a Git worktree; otherwise uses `rg --files`. | `F`, repository metadata, ignore policy, filesystem. | Streams path list to `all_files.txt`. | Raw selected population, not proof that policy fits the decision. |
+| Code filter | Filters path text to `.rs`, `.py`, `.js`, `.jsx`, `.ts`, `.tsx`, `.go`, `.java`, `.c`, `.cc`, `.cpp`, `.h`, and `.hpp`. | `F` and total path characters. | Reads raw list and writes `code_files.txt`; exits if no supported source remains. | Finite supported code population. |
+| Line counting | Python opens every selected code path and counts lines, replacing read errors with line count zero. | `C` and `B`. | Sequential source reads; stores little beyond one file at a time and writes `files.tsv`. | Path and line-count rows, with zero requiring investigation. |
+| Symbol extraction with Ctags | When the exact JSON probe succeeds, invokes Ctags over the code-file list and converts JSON rows into symbol TSV. | `C`, `B`, language parser behavior, `S`. | External process plus JSONL artifact and conversion; output size grows with symbols. | Richer candidate spans when line and end fields exist, not semantic references. |
+| Symbol extraction fallback | Otherwise reads supported source line by line and applies fixed regex families, writing one-line ranges. | `B` times a small fixed pattern set by extension. | Sequential reads and streaming writes; repeated source scan after line counting. | Candidate declarations with `start_line == end_line` and `kind=regex`. |
+| Lexical relation extraction | Python loads the code path set, rereads every selected source, applies fixed import/include patterns, and accumulates rows. | `C`, `B`, `R`. | Holds `code_set` and the complete relation row list in memory; performs another full source scan. | `import_edges.tsv`. |
+| Local resolution | For each lexical row, tests a small fixed list of path candidates or language-specific transformations against the in-memory code set. | `R` and constant candidate branches. | Holds internal and unresolved row lists; set membership is cheap, but semantics remain heuristic. | `internal_file_edges.tsv` and `external_ref_edges.tsv`. |
+| Graph projection | Counts source-target pair frequency, chooses up to `G` common pairs, and writes Mermaid and DOT. If no internal pairs exist, unresolved pairs supply the projection. | `R`, `E`, and `G`. | Holds pair counts and graph labels; output is capped even when TSVs are not. | `dependency_graph.mmd` and `dependency_graph.dot`. |
+| Optional rendering | Calls Graphviz `dot` when detected and tolerates render failure. | `G`, graph shape, renderer version. | External process and optional SVG write. | `dependency_graph.svg` only when rendering succeeds. |
+| Summary | Reads generated TSVs, counts rows and fan-in/fan-out, records tooling, and writes a Markdown overview. | `C`, `S`, `R`, artifact read throughput. | Re-reads artifacts and holds counters rather than full source. | `summary.md`, a projection of existing artifacts. |
+
+The batch is sequential from the shell's perspective. It has no persistent database, incremental index, stage cache, transaction marker, lock, resume protocol, or built-in per-stage telemetry. Strict shell mode makes many failures loud, but an earlier failure can leave a partially populated output directory, and optional Graphviz failure is intentionally nonfatal. Consumers must verify a fresh complete artifact contract before reuse.
+
+**Repeated-read implications**
+
+Under fallback extraction, source can be opened for at least line counting, symbol scanning, and lexical relation scanning. Under Ctags, line counting and relation scanning still read source, while Ctags performs its own parse. Filesystem cache may make later reads cheaper, but remote mounts, cold caches, very large files, antivirus or indexing overhead, and concurrent repository activity can change the profile.
+
+Do not derive an exact I/O multiplier without measuring the selected branch and environment. The important operational fact is that a fresh map is a multi-pass batch scan, not one streaming traversal.
+
+**Workload modes**
+
+| mode | operation | best fit | stop or switch signal |
+| --- | --- | --- | --- |
+| Reuse query | Validate an existing artifact set, filter TSVs, resolve pointers, and verify selected source. | Matching producer and target state with several focused questions. | Missing provenance, changed revision, incompatible coverage, or a claim outside the old observation contract. |
+| Fresh orientation | Run one full batch map, audit coverage, then serve many compact queries. | Unfamiliar local repository with supported static structure and authorized writes. | Scan or memory cost is unacceptable, relevant sources are excluded, or reuse horizon is too short. |
+| Comparison run | Build with controlled producer, option, or environment change and compare artifacts. | Evaluating extraction branches, resolver changes, or regression fixtures. | Inputs or cohort differ beyond the intended variable, making comparison uninterpretable. |
+| Narrow component run | Select a smaller root or independently prepared scope, then record external boundaries. | A component-local navigation question with well-defined cross-boundary policy. | The decision needs consumers or relationships outside the scoped root. |
+| High-assurance augmentation | Use rough output for candidates, then add semantic, build, configuration, test, and runtime evidence. | Refactor, migration, deletion, or security work where rough breadth is useful but insufficient. | No authoritative mechanism can cover the remaining risk; escalate to an owner. |
+| Persistent-index route | Skip or supplement batch mapping with an incremental semantic or graph system. | High query volume, frequent changes, large source populations, or semantic traversal needs. | Index freshness, lifecycle cost, or unsupported languages outweigh amortization value. |
+
+**Favorable workload signature**
+
+- Source is local, readable text on a stable filesystem.
+- Relevant files mostly use supported extensions and conventional static imports or includes.
+- A full batch completes within the user's acceptable interactive or background window under measured conditions.
+- `S`, `R`, and artifact sizes remain easy to query with structured CLI or Python tools.
+- Several decisions reuse the same producer and repository state.
+- Direct source and native verification are available for consequential claims.
+
+**Unfavorable workload signature**
+
+- Remote or high-latency filesystem makes repeated reads dominant.
+- Very large monorepo or generated source population makes artifacts and memory expensive.
+- Revision churn invalidates pointers before `Q` can amortize production.
+- Unsupported languages, configuration files, macros, generation, reflection, or runtime registration dominate the decisive relationships.
+- Complete semantic or variant analysis is required, making rough mapping only an extra batch before the real tool.
+- Output cannot be written safely, isolated, or bound to a target state.
+
+**Pressure signals and responses**
+
+| observed pressure | do first | avoid | possible route |
+| --- | --- | --- | --- |
+| Inventory time dominates. | Measure Git or `rg --files` branch, nested scope, ignored policy, and filesystem. | Silently excluding directories to hit a desired duration. | Use a justified component scope or repository-native inventory/index. |
+| Source scan time dominates. | Measure `B`, large-file distribution, branch, cache state, and filesystem. | Inferring capacity only from `C`. | Persistent index, structural tool, or focused search for narrow questions. |
+| Symbol rows are noisy or huge. | Inspect extraction branch, duplicate classes, and actual query needs. | Loading all rows into model context. | Query by path or name, improve extractor, or use semantic identity. |
+| Relation rows consume memory or disk. | Measure `R`, language clusters, duplicate rows, and query utility. | Lowering unresolved count through unsafe forced resolution. | Stream or incrementally process in a future implementation, or use a suitable index. |
+| Graph rendering is slow. | Lower `G` only for presentation and analyze full TSVs separately. | Claiming the reduced graph is complete. | Skip SVG, retain Mermaid/DOT, or use a viewer on selected subgraphs. |
+| Artifacts stale before reuse. | Measure revision churn and `Q`. | Rebuilding reflexively for narrow exact queries. | Direct search or incremental semantic index. |
+| Narrow scope misses cross-boundary edges. | Record external interfaces and independently query parent or adjacent scopes. | Calling component output whole-repository blast radius. | Build graph or semantic traversal at the required boundary. |
+| Semantic verification dominates total work. | Ask whether rough candidate ranking materially reduces that work. | Keeping the rough stage only because it is familiar. | Route directly to native semantic, build, or runtime evidence. |
+
+**Measurement card**
+
+Before making capacity or performance claims, record:
+
+| category | measurements |
+| --- | --- |
+| Producer | Builder and reader hashes, command, `MAX_GRAPH_EDGES`, capability flags, `symbols.tsv` kind distribution, and `ctags.jsonl` state. |
+| Target | Root, revision, working state, filesystem type or locality, language and extension distribution. |
+| Population | `F`, `C`, `B`, `S`, `R`, internal rows, unresolved rows, `E`, and artifact bytes. |
+| Environment | Machine resources, shell, Python, `rg`, Ctags, Graphviz, cache state, competing load. |
+| Stages | Wall and CPU time where available, peak resident memory, read/write volume, exit state, and partial-output state. |
+| Utility | `Q`, time to first relevant source, retained evidence, mismatch classes, and whether the map changed a decision. |
+| Quality | Coverage reconciliation, pointer samples, relation samples, counterexamples, and authoritative project outcomes. |
+
+Repeat under equivalent conditions before attributing a change to implementation. Separate cold and warm filesystem runs. Report distributions or repeated observations rather than one lucky duration when variance matters. Do not extrapolate from a small fixture to a heterogeneous monorepo without validation.
+
+**Optimization impact ledger**
+
+| optimization | likely benefit | evidence-contract impact |
+| --- | --- | --- |
+| Reuse valid artifacts | Avoids repeated batch scans. | Safe only while producer, target, environment-relevant branch, and claim scope remain compatible. |
+| Narrow root | Reduces `F`, `C`, `B`, `S`, and `R`. | Changes inventory population and can erase cross-boundary relationships; all global claims must be narrowed. |
+| Lower graph cap | Reduces projection and rendering size. | Does not change TSV evidence, but visible density and graph-derived conclusions must disclose the new cap. |
+| Skip SVG | Removes external render cost and dependency. | No semantic loss; Mermaid and DOT text remain presentation sources. |
+| Stream relation rows in a future producer | Could lower peak `R` memory. | Must preserve ordering, duplicate policy, counters, and exact artifact contract or start a new comparable cohort. |
+| Cache parsed source or incremental index | Amortizes repeated scans and queries. | Introduces invalidation correctness, persistent state, versioning, and stale-index risks. |
+| Parallelize independent scans | May reduce elapsed time on suitable hardware and filesystem. | Can increase I/O contention and nondeterminism; outputs and error aggregation need verification. |
+| Replace lexical resolver with semantic analysis | Improves identity for supported languages. | Produces a different evidence product with version, index, configuration, and coverage requirements. |
+
+**Good, bad, and conditional workload decisions**
+
+Good: Validate one current artifact set and reuse it for several pointer-first questions, while measuring stage cost and preserving claim-specific escalation. The broad scan is amortized and semantic limits remain visible.
+
+Bad: Rebuild before every named-symbol lookup, quote the seed's 500-file number as a capacity guarantee, and reduce the root silently when runtime grows. This spends more while weakening evidence.
+
+Conditional: Run a narrow component map for a local ownership review when external interfaces are explicitly recorded and no whole-repository blast-radius claim is made. The same artifact is invalid for a global deletion decision.
+
+Workload optimization and reliability are coupled. Scoping, caching, capping, parallelism, and extractor changes can alter input population, freshness, relation meaning, or only presentation. Classify the impact before claiming improvement. Faster output is valuable only when it preserves the evidence contract needed by the bounded decision.
 
 ## Reliability Target
 
-| reliability_target_name | measurable_threshold_value | evidence_collection_method |
+**Reliability objective:** The workflow must produce reproducible rough evidence, make its observation limits visible, prevent unsupported promotion into consequential action, detect material mismatches before handoff where practical, contain invalidation to dependent claims, and preserve a clear recovery or escalation path.
+
+This is not a promise that every symbol or relation is correct. The mapper is intentionally heuristic and cannot observe every semantic, configured, generated, or runtime relationship. Reliability comes from separating what the producer can guarantee from what must be sampled, verified, or accepted by an owner.
+
+**Target types**
+
+| target type | appropriate use | expression | evidence |
+| --- | --- | --- | --- |
+| Hard invariant | Deterministic structure, provenance, policy, and promotion rules. | All required instances satisfy the rule, or the dependent state fails. | Parser, command, complete enumeration, or decision-record audit. |
+| Sampled indicator | Pointer quality, relation agreement, route usefulness, and other repository-dependent behavior. | Counts and locally calibrated trends under a documented sampling frame; no universal threshold. | Stratified samples, raw evidence, uncertainty, and independent comparison. |
+| Sentinel event | Rare but severe counterexample such as unsafe deletion from a missed runtime path. | One verified event can trigger a boundary or gate review without becoming a percentage estimate. | Causal incident or fixture record. |
+| Owner-accepted risk | Residual uncertainty that technology cannot or need not eliminate under the bounded action. | Explicit scope, owner, rationale, review date, and invalidation trigger. | Project authorization mechanism. |
+
+Do not combine these types into one synthetic reliability score. A structural pass is certain within its parser contract; semantic relation quality is sampled; a severe counterexample may set policy; risk acceptance belongs to an accountable owner.
+
+**Reconciled seed targets**
+
+| reliability_target_name | evolved target | evidence_collection_method | boundary |
+| --- | --- | --- | --- |
+| `source_boundary_preservation` | Every material final recommendation identifies its evidence class and distinguishes current local fact, run observation, target-source fact, unrefreshed external pointer, inference, and unresolved uncertainty. Missing classification fails durable handoff. | Claim-to-source audit plus focused parser where fields are structured. | This is a hard documentation invariant, not a claim that all underlying evidence is correct. |
+| `decision_accuracy_sample` | Review route decisions through a documented local task sample with raw counts, task classes, reviewer criteria, disagreements, and uncertainty. No universal `18 of 20` threshold is asserted. | Stratified downstream-task review, route-return records, and consequence-weighted mismatch analysis. | Results apply only to the sampled producer, repositories, tasks, reviewers, and period. |
+| `unsupported_claim_rate` | No final production, security, latency, reliability, completeness, or deletion claim may survive without claim-appropriate evidence, explicit inference where relevant, and a verification or escalation route. | Complete review of high-consequence final claims and rejection tests for promotion gates. | A zero-tolerance policy can be enforced; it does not imply that reviewers detect every hidden unsupported premise. |
+| `recovery_path_clarity` | Every avoid, contradiction, invalidation, and failure case names the failed premise, affected claims, rollback or containment, owner, next evidence system, and stop condition. | Decision-record and failure-mode audit. | Recovery clarity does not guarantee recovery succeeds under unavailable access or tooling. |
+
+The seed's `100 percent`, `18 of 20`, `zero`, and `every` expressions mixed unlike properties. Exact completion remains appropriate for enumerated hard policies, such as required fields. The unexplained routing sample is removed as a target because its task population, reviewer criteria, and statistical interpretation were absent.
+
+**Reliability objective tree**
+
+| dimension | hard objective | sampled or contextual objective | failure response |
+| --- | --- | --- | --- |
+| Prevention | Do not run writes outside authorization; do not reuse artifacts without identity; do not authorize consequential absence from rough non-observation. | Track which fit checks prevent unsuitable map use. | Stop production or promotion; route to suitable evidence. |
+| Producer integrity | Scripts parse; required capabilities exist; invocation, producer, target, options, and output state are captured. | Compare stage behavior and artifact stability after producer changes. | Reject partial or mixed output and preserve diagnostics. |
+| Artifact integrity | Required names and schemas reconcile; inventory transformations match; graph caps and conditional SVG state are explicit. | Sample row-level correctness and detect stale or duplicated artifacts. | Rebuild or repair before interpretation. |
+| Evidence boundary | Every material claim has a source class, scope, and uncertainty state. | Audit whether reviewers interpret labels consistently. | Narrow, relabel, or reject the claim. |
+| Retrieval reliability | Every durable cited pointer resolves on the bound revision and ambiguous paths use a safe form. | Sample whether expanded spans identify intended constructs. | Regenerate pointer, expand context, or use semantic identity. |
+| Relation interpretation | Lexical rows remain candidate evidence until corroborated; unresolved remains a valid state. | Stratify internal, unresolved, and suspicious missing-edge checks by risk class. | Reclassify mismatch and invalidate dependent ranks or claims. |
+| Decision containment | Evidence profile must match action consequence; high-assurance claims cannot inherit navigation status. | Review route choice and pre-action reversals. | Block, downgrade, or seek owner acceptance. |
+| Recovery | Every durable claim has invalidation and next-step semantics. | Audit whether another operator can identify the failed premise and recover without replaying all context. | Update record, route, fixture, or guidance. |
+| Learning | Producer and guidance changes start a new versioned evidence trajectory. | Trend recurring mismatch classes and downstream outcomes without pooling incompatible cohorts. | Fix, document, reroute, retire, or expand with verified evidence. |
+
+**Reliability profiles**
+
+| profile | reliable outcome | required controls | prohibited promotion |
+| --- | --- | --- | --- |
+| Navigation | A current candidate pointer and source read answer a reversible location question. | Target identity, direct read, duplicate disambiguation, and stop reason. | Cannot become a consumer, blast-radius, absence, or safety claim without stronger gates. |
+| Standard decision | Coverage-audited rough evidence and project checks support an explanation, review order, or reversible scoped change. | Full provenance, artifacts, samples, counterevidence, source, project checks, and invalidation. | Cannot authorize material absence, security, or exhaustive migration by default. |
+| High assurance | Claim-specific semantic, build, configuration, generated-state, test, runtime, and owner evidence support the bounded consequential action. | Standard controls plus domain policy, variants, negative tests, residual-risk review, and recovery. | Rough graph or one green test cannot substitute for the required evidence set. |
+
+Profile status is not transitive upward. Reusing a navigation artifact in a high-assurance review requires running the missing gates; adding a warning is not enough.
+
+**Hard reliability invariants**
+
+For durable standard and high-assurance use:
+
+1. Every artifact set has reconstructable producer, target, environment-relevant branch, options, working state, and timestamp identity.
+2. Every source population has explicit inclusion and exclusion policy, and consequential omitted classes block dependent completeness claims.
+3. Every graph projection discloses its cap and links back to complete relation rows.
+4. Every durable pointer is checked against the current bound revision before citation or edit.
+5. Every material claim links supporting evidence, counterevidence, sufficiency rule, owner, and invalidation trigger.
+6. Every rough absence result remains candidate evidence until a stronger observation model addresses the relevant false-negative classes.
+7. Every verification pass states what it leaves unproven.
+8. Every contradiction reopens the earliest false premise and dependent conclusions.
+9. Every unavailable evidence path leads to explicit escalation rather than invented certainty.
+10. Every action remains inside write, data, security, and ownership authorization.
+
+Failure of an invariant is not compensated by a high sampled relation agreement rate.
+
+**Locally calibrated indicators**
+
+| indicator | purpose | required report | no-claim boundary |
+| --- | --- | --- | --- |
+| Pointer semantic hits | Detect extraction or stale-range problems. | Counts, stratification, producer, revision, exact mismatches. | Cannot estimate symbols never extracted. |
+| Internal-edge agreement | Detect lexical false positives and configuration misses. | Sample rule, source and semantic checks, agreement classes. | Cannot establish complete recall. |
+| Rough-absence counterexamples | Detect false-negative classes before action. | Consequential claims investigated, stronger evidence, mechanism. | Selection bias prevents universal probability claims. |
+| Route-review agreement | Improve adopt, adapt, avoid, and adjacent-route decisions. | Task classes, reviewer rubric, disagreements, consequence. | Reviewer consensus is not program truth. |
+| Reproduction success | Test provenance and command usability. | Record cohort, replay environment, exact divergence. | Reproducing the same producer does not validate semantic correctness. |
+| Pre-action versus post-action reversals | Distinguish healthy detection from escaped evidence failure. | Claim, timing, consequence, root cause, affected gates. | Sparse events should remain events, not unstable percentages. |
+
+Local target setting should begin only after the team has enough comparable observations to understand variance and sampling bias. The target must state which decision it protects and what happens when missed. This reference supplies no current baseline.
+
+**Consumer reliability obligations**
+
+The producer can write accurate metadata and still be used unreliably. Consumers must:
+
+- inspect complete rows before graph projections;
+- preserve candidate and unresolved states instead of forcing conclusions;
+- read target source before explaining behavior;
+- seek independent evidence for consequential relations and absences;
+- reject stale or mixed artifacts;
+- carry exclusions, branch differences, and counterevidence into summaries;
+- avoid treating multiple outputs from the same lexical pipeline as independent corroboration;
+- rerun invalidated gates after source, producer, environment, configuration, or workload change.
+
+**Failure budget interpretation**
+
+No numeric semantic-error budget is asserted. Reliability response follows error class and consequence:
+
+| event | acceptable containment | required response |
 | --- | --- | --- |
-| source_boundary_preservation | 100 percent of recommendations keep local, external, and inference boundaries visible | review generated text for the three evidence labels before reuse |
-| decision_accuracy_sample | at least 18 of 20 sampled uses route to the correct adopt, adapt, avoid, or adjacent-reference decision | sample downstream tasks and record reviewer verdicts |
-| unsupported_claim_rate | zero unsupported production, security, latency, or reliability claims in final guidance | reject claims without source row, explicit inference note, or verification method |
-| recovery_path_clarity | every avoid or failure case names the rollback, escalation, or next-reference route | inspect failure-mode and adjacent-routing sections together |
+| Wrong candidate found during navigation | Source read detects mismatch before action. | Search another candidate; record systematic extraction issue if recurring. |
+| False internal edge in review ranking | Sample or source check detects it before priority is finalized. | Recalculate affected ranks and inspect mismatch class. |
+| Missing dynamic edge before deletion | Stronger configuration or runtime check detects it and blocks action. | Preserve as sentinel, strengthen mandatory escalation, add fixture when safe. |
+| Unsupported claim reaches durable handoff | No acceptable containment. | Withdraw or narrow claim, audit promotion path, and repair gate. |
+| Invalidated record remains in use | No acceptable durable state once invalidation is known. | Mark invalid, notify dependent owners, refresh or retire. |
+| Optional SVG missing while TSVs are valid | Acceptable under recorded Graphviz absence. | Continue with text artifacts; do not classify as semantic failure. |
+
+This consequence-aware approach avoids treating all mismatches equally while refusing to normalize severe escapes into an average rate.
+
+**Verification ladder**
+
+1. Run deterministic syntax, identity, schema, heading, field, uniqueness, and hygiene checks.
+2. Exercise negative fixtures for inventory exclusions, fallback spans, aliases, graph caps, stale pointers, and dynamic registration.
+3. Audit stratified target samples against direct source and an independent project-aware mechanism.
+4. Review route decisions and claim promotions with explicit rubrics and dissent records.
+5. Analyze pre-action catches, post-action reversals, and escaped defects causally.
+6. Confirm that fixes improve the protected outcome without degrading a counter-metric or changing the product silently.
+
+**Good, bad, and conditional target language**
+
+Good hard target: "Every high-consequence final claim has claim-appropriate evidence and an escalation path; a missing field blocks handoff." The population is enumerable and the enforcement response is clear.
+
+Bad empirical target: "At least 18 of 20 uses are correct, so routing is 90 percent reliable." Without task sampling, reviewer definition, uncertainty, and consequence, the fraction is unsupported and nonportable.
+
+Conditionally valid report: "In this documented local sample, reviewers agreed on 18 routes and disagreed on 2." This may be useful raw evidence if the tasks, rubric, reviewers, disagreements, and no-generalization boundary are retained. It still does not become a universal guarantee.
+
+Reliability decomposes into prevention, detection, containment, recovery, and learning. An approximate candidate can be operationally safe when source checks catch errors before action; a rare undetected absence error can be severe. For decision-support mapping, bounded error propagation and clear recovery can matter more than an uncalibrated average match rate.
 
 ## Failure Mode Table
 
-| failure_mode_name | likely_trigger_condition | required_mitigation_action |
+Treat failure as a state transition. Identify the earliest verified stage, preserve diagnostics, reject artifacts whose integrity cannot be established, and invalidate every dependent claim. Continue only when the remaining artifacts are both structurally valid and sufficient for the narrowed claim.
+
+| handling class | meaning | default action |
 | --- | --- | --- |
-| source drift hides truth | external or local guidance changes after the reference was written | refresh public evidence, rerun local corpus gate, and mark stale claims before reuse |
-| generic advice escapes review | agent copies plausible best practices without theme-specific verification | block completion until the verification gate names concrete command, reviewer question, or metric |
-| dirty tree loses intent | mutation starts before separating user changes from generated changes | inspect git status, isolate touched paths, and record ownership before edits |
-| blast radius exceeds review | broad search or rewrite touches files outside the intended scope | limit pathspecs and summarize changed files before final verification |
+| `fatal_production` | Required input, command, parse, or write contract failed; the run did not complete reliably. | Stop, retain diagnostics, and rebuild in a fresh authorized directory after correcting the cause. |
+| `silent_degradation` | The run may finish but coverage or artifact content is weaker than appearance suggests. | Detect through invariants and samples, label the degradation, and block dependent claims. |
+| `claim_blocking` | Artifacts can support some navigation but cannot support the pending semantic or consequential conclusion. | Preserve useful candidates, downgrade the claim, and route to stronger evidence. |
+| `optional_output_loss` | A nonessential projection or convenience output failed while core tabular artifacts remain valid. | Record the loss and continue within the unaffected evidence contract. |
+| `informational_difference` | Environment or branch differs but no contract has failed yet. | Capture the difference and avoid invalid cross-run comparisons. |
+
+**Producer and artifact failures**
+
+| failure_mode_name | class | likely_trigger_condition | observable_signal | required_mitigation_action | invalidated_or_preserved_evidence |
+| --- | --- | --- | --- | --- | --- |
+| source drift hides truth | claim_blocking | Local guidance, script, target source, configuration, or external documentation changes after a record was written. | Hash, revision, capability, artifact, or refreshed-source identity no longer matches. | Mark dependent claims stale, rerun only affected stages, and preserve the prior version as historical evidence. | Invalidates claims downstream of the changed source; unrelated historical facts remain. |
+| generic advice escapes review | claim_blocking | Agent copies plausible best practices without theme-specific source and verification. | Recommendation has no evidence class, target boundary, falsification, or next gate. | Block durable completion until claim, source, inference, and verification are explicit. | Navigation ideas may remain hypotheses; no action authorization survives. |
+| dirty tree loses intent | claim_blocking | Mutation begins before separating user changes, generated state, and map output. | Status lacks baseline or touched files mix unrelated owners and producers. | Capture state before production, isolate output, and attribute each changed path before edits. | Existing source observations may be ambiguous until state is reconstructed. |
+| blast radius exceeds review | claim_blocking | Broad query or rewrite touches files outside the user's intended decision. | Changed-file or evidence set expands without a revised boundary. | Stop mutation, compare planned versus actual scope, and obtain authorization or split the task. | Preserve verified in-scope evidence; reopen cross-boundary claims. |
+| target root does not resolve | fatal_production | Root path is missing, inaccessible, or not a directory. | Initial `cd` fails and the strict shell exits. | Correct and re-identify the root; do not reuse any directory from the failed attempt. | No target-map conclusion is valid. |
+| wrong root maps successfully | silent_degradation | A valid but unintended directory is supplied. | Artifacts are internally valid yet repository identity, expected paths, or counts disagree. | Verify canonical root before build and compare manifest with user scope. | Entire artifact set is irrelevant to the intended target, even if technically correct. |
+| required ripgrep missing | fatal_production | `rg` is absent from `PATH`. | Explicit error says ripgrep is required. | Install or expose an authorized `rg`, or choose another method; rerun preflight. | No run artifacts should be interpreted. |
+| implicit Python requirement missing | fatal_production | `python3` is absent or incompatible. | A Python stage fails after early shell setup; the script's initial explicit check did not name Python. | Include Python in preflight, capture version, and rebuild fresh after correction. | Earlier inventory files may exist but the directory is partial and untrusted as a complete map. |
+| output directory creation or write fails | fatal_production | Permission, invalid path, storage exhaustion, read-only mount, or quota prevents creation or writes. | `mkdir`, `cd`, redirection, or Python open fails. | Select an authorized writable fresh location and verify capacity. | Reject partial output; source repository remains unchanged unless another command wrote elsewhere. |
+| existing output directory mixes runs | silent_degradation | The builder writes into a directory containing artifacts from an older producer or environment. | Required files are overwritten selectively while stale conditional files such as prior SVG or Ctags JSON can remain. | Require a new directory or a verified transactional cleanup owned by the operator; manifest every file. | Reject optional and mixed artifacts; rebuild before cross-file interpretation. |
+| interrupted run leaves partial artifacts | fatal_production | Shell, Python, disk, signal, or user interruption stops between stages. | Some named files exist, but required set, schemas, timestamps, or summary are incomplete. | Treat completion marker as absent, preserve diagnostics, and rebuild fresh rather than resuming implicitly. | No complete-run claim survives; individually inspected raw files remain diagnostic only. |
+| invalid graph cap fails late | fatal_production | `MAX_GRAPH_EDGES` is not parseable as an integer or is otherwise unsuitable for the Python logic. | Relation/projection Python exits after earlier inventory and symbol artifacts may already exist. | Validate option before production and rerun in a fresh directory. | Earlier artifacts are partial-run diagnostics; summary and graph conclusions are invalid. |
+| no supported source remains | fatal_production | Filtered inventory contains none of the finite supported extensions. | Explicit `no supported source files` error. | Select a suitable language-aware tool or correct the root and coverage policy. | The rough builder is not the primary method for this target. |
+
+**Inventory and source-read failures**
+
+| failure_mode_name | class | likely_trigger_condition | observable_signal | required_mitigation_action | invalidated_or_preserved_evidence |
+| --- | --- | --- | --- | --- | --- |
+| tracked-only inventory omits live input | silent_degradation | Relevant untracked, ignored, generated, or nested content exists inside a Git worktree. | Independent build/input audit finds paths absent from `all_files.txt`. | State policy, include through an authorized alternative, or route to project-native analysis. | Invalidates completeness, rank, and absence claims affected by omitted content. |
+| supported-extension filter erases a dependency authority | silent_degradation | Configuration, schemas, Kotlin, templates, generated manifests, or other relevant types are not in the fixed list. | Raw inventory includes the path but `code_files.txt` does not. | Add a separate analysis route or a tested producer change; retain exclusion in every claim. | Supported-source navigation can continue; cross-surface completeness cannot. |
+| selected source disappears or cannot be read | silent_degradation | File is deleted, races with the run, has permission issues, or cannot be opened. | `files.tsv` can record line count zero; symbol and relation scans catch `OSError` and skip the file. | Investigate every zero count, freeze source state where possible, and rebuild. | All symbol, relation, and absence conclusions involving the skipped file or its consumers are invalid. |
+| decoding replacement hides malformed text | silent_degradation | Source contains bytes invalid under UTF-8. | Readers use `errors="replace"`; extraction may see replacement characters without a fatal error. | Identify encoding, inspect affected files with project-appropriate tooling, and avoid claiming parser completeness. | Unaffected files remain candidates; affected-file syntax conclusions are weak. |
+| repository changes during multi-pass scan | silent_degradation | Source mutates between line count, symbol extraction, relation scan, and summary. | Counts, pointers, or rows disagree with current source despite one run directory. | Run against a stable revision or detect state change before and after production. | Artifact consistency and all cross-stage comparisons are suspect. |
+
+**Symbol extraction failures**
+
+| failure_mode_name | class | likely_trigger_condition | observable_signal | required_mitigation_action | invalidated_or_preserved_evidence |
+| --- | --- | --- | --- | --- | --- |
+| Ctags unavailable or JSON probe fails | informational_difference | No Ctags command or exact JSON mode is unsupported. | `tooling.tsv` records `ctags=no`; regex `kind` rows appear. | Record fallback, sample pointer quality, and escalate for semantic identity when needed. | Navigation may continue; complete spans and semantic symbols are not implied. |
+| Ctags probe passes but actual run yields nothing | silent_degradation | Actual Ctags invocation fails or emits an empty `ctags.jsonl` after the capability probe succeeded. | `tooling.tsv` says `ctags=yes`, while fallback `kind=regex` rows appear because an empty symbol file triggers fallback. | Determine actual producer from `symbols.tsv` kinds and `ctags.jsonl`, preserve diagnostics, and avoid calling capability the selected extractor. | Fallback candidates remain usable under their limits; Ctags-span claims are invalid. |
+| malformed nonempty Ctags output blocks fallback | silent_degradation | `ctags.jsonl` is nonempty but records are invalid JSON or lack path/name fields. | Parser creates a header-only `symbols.tsv`; nonempty header prevents fallback. | Validate data-row count and JSON parse yield, then correct Ctags or force an explicit tested fallback in a future producer. | Relation artifacts may remain available; symbol and pointer discovery is incomplete. |
+| legitimate header-only symbol table misclassified | informational_difference | Supported files contain no constructs matched by the active extractor. | `symbols.tsv` has only its header, source inventory is valid, and no parser error is found. | Compare expected constructs and use direct or structural search; do not label failure without an expectation. | File and relation artifacts can still be valid; symbol-based claims remain absent. |
+| fallback range overstates definition coverage | claim_blocking | Regex extractor records declaration line as both start and end. | `kind=regex` and equal range values. | Treat pointer as entry point, expand context, and inspect full module when annotations or body matter. | Candidate identity may survive; body, size, and range-sensitive claims do not. |
+| duplicate names collapse conceptual identity | claim_blocking | Same name occurs across scopes, overloads, tests, or files. | Grouped symbol query returns multiple path/range rows. | Keep path-qualified candidates and use language-aware identity when callers or ownership matter. | Name-only summaries and merged consumer claims are invalid. |
+
+**Relation and projection failures**
+
+| failure_mode_name | class | likely_trigger_condition | observable_signal | required_mitigation_action | invalidated_or_preserved_evidence |
+| --- | --- | --- | --- | --- | --- |
+| multiline or unsupported import form is missed | claim_blocking | Syntax does not match fixed line-oriented patterns. | Direct source or native analyzer finds a relation absent from `import_edges.tsv`. | Record mismatch class and use structural, semantic, build, or configuration evidence. | All affected recall and absence claims are invalid; observed rows remain observations. |
+| lexical match is not a semantic dependency | claim_blocking | Type-only, conditional, commented-like, platform-specific, or otherwise nonbehavioral syntax matches. | Endpoint or project-aware review contradicts inferred meaning. | Preserve raw row, reclassify claim, and sample the mismatch family. | Raw extraction fact survives; behavior and rank interpretation may not. |
+| internal alias remains unresolved | claim_blocking | Project alias, re-export, package, or framework convention is outside resolver rules. | Row appears in `external_ref_edges.tsv` but project configuration resolves internally. | Keep unresolved state until project-aware resolution; revise external classification and counts. | Raw reference survives; external-dependency claim is invalid. |
+| unresolved row is forced external | silent_degradation | Consumer treats filename `external_ref_edges.tsv` as taxonomy. | External inventory lacks configuration check and clusters internal-looking aliases. | Rename concept in downstream prose to unresolved and verify each consequential family. | Artifact row remains; third-party and ownership conclusions are blocked. |
+| no internal edges makes graph use unresolved pairs | silent_degradation | `internal_rows` is empty, so graph pair counts fall back to unresolved source-target references. | Mermaid and DOT contain targets not present as internal files; summary internal count is zero. | Label graph as unresolved-reference projection, inspect complete external rows, and avoid architectural interpretation. | Raw unresolved navigation survives; internal topology and hub claims are invalid. |
+| graph cap hides relations | claim_blocking | Unique pair population exceeds `MAX_GRAPH_EDGES`. | TSV counts exceed Mermaid/DOT edge counts. | Analyze complete rows, disclose cap, and treat graph as presentation only. | Full TSV evidence survives; visual completeness and visual centrality claims do not. |
+| graph label syntax breaks projection | optional_output_loss | Paths or targets contain characters that are not safely escaped for Mermaid or DOT output. | Renderer or parser errors, malformed labels, or missing nodes despite valid TSV rows. | Use TSVs as authority, sanitize in a tested future producer, and validate projection. | Tabular artifacts remain; graph communication is invalid. |
+| Graphviz rendering fails nonfatally | optional_output_loss | `dot` is detected but render command fails, or SVG cannot be written. | `tooling.tsv` can say `dot=yes` while current SVG is missing; the shell intentionally tolerates render failure. | Record render failure, verify DOT text, and reject any stale SVG from a reused directory. | TSV, Mermaid, DOT, and summary may remain valid after independent checks. |
+
+**Pointer and consumer failures**
+
+| failure_mode_name | class | likely_trigger_condition | observable_signal | required_mitigation_action | invalidated_or_preserved_evidence |
+| --- | --- | --- | --- | --- | --- |
+| stale pointer still resolves | silent_degradation | Lines move while old numeric bounds remain inside the file. | Reader exits successfully but displayed text no longer identifies the expected construct. | Bind revision, verify content identity, search qualified symbol, and regenerate. | Old pointer identity is invalid; current direct source can restore the observation. |
+| out-of-range pointer yields no source lines | silent_degradation | Start and end exceed file length. | Reader prints pointer and window headers, `sed` returns success, but no numbered source lines follow. | Assert that output contains expected lines and validate bounds against current file length. | Exit status alone is invalid evidence; no source observation occurred. |
+| colon-bearing path is parsed incorrectly | fatal_production for retrieval | Combined `file:start:end` form conflicts with colons in the path. | File lookup targets a truncated path or numeric fields are wrong. | Use separate file, start, and end arguments and test the exact path. | Combined pointer is invalid; artifact row may remain usable. |
+| reversed range hides upstream defect | informational_difference | Producer or user supplies start greater than end. | Reader silently swaps bounds and displays content. | Record normalization and investigate whether producer range logic is wrong when repeated. | Local read can be usable; original range-order quality claim is not. |
+| successful artifact shape becomes semantic approval | claim_blocking | Consumer treats schema, nonempty files, or green reference tests as proof of code behavior. | Final claim lacks source, project, or runtime evidence appropriate to consequence. | Downgrade, add independent verification, and audit promotion path. | Structural pass remains true; semantic conclusion is withdrawn. |
+| observation-model gap triggers endless retries | claim_blocking | Dynamic, generated, security, or runtime claim is repeatedly sent through lexical mapping. | New runs produce no material evidence change. | Stop retrying, preserve the gap, and route to the capable system or owner. | Candidate discovery may remain; the pending consequential claim is unresolved. |
+
+**Causal failure chains**
+
+| chain | unsafe outcome | earliest break and recovery |
+| --- | --- | --- |
+| Existing directory -> stale SVG survives -> new run lacks `dot` -> reviewer opens old SVG | Architecture is interpreted from another producer or revision. | Require fresh directory and manifest; delete or archive only under owned policy, then rebuild. |
+| Ctags probe succeeds -> actual output malformed -> header-only symbols -> no candidates | Repository appears to have no symbols. | Validate data-row and parse yield; inspect `ctags.jsonl`; use explicit fallback or another extractor. |
+| File becomes unreadable -> line count zero and scans skip -> no inbound edge -> deletion | Live code disappears silently from the evidence population. | Investigate zero line counts and stabilize source before relation interpretation. |
+| No internal resolutions -> graph falls back to unresolved pairs -> visual looks connected | Unresolved names are mistaken for internal topology. | Compare internal count and graph targets; label or reject projection for architecture claims. |
+| Old pointer remains in bounds -> reader exits zero -> wrong helper is edited | Successful range read masks semantic staleness. | Verify expected construct identity and revision before editing. |
+| Rough absence -> repeated lexical retries -> no new evidence -> owner pressure | Unsupported certainty accumulates through repetition. | Detect same-blind-spot loop and escalate to semantic, configuration, runtime, or owner evidence. |
+
+**Failure-injection plan for a future authorized fixture**
+
+| injected condition | expected observable state | required workflow transition |
+| --- | --- | --- |
+| Missing `rg` | Explicit early failure and no accepted map. | `fatal_production` -> correct environment or switch method. |
+| Unsupported-only source tree | Explicit no-supported-source failure. | Route to another analyzer. |
+| Nonempty malformed Ctags JSON | Header-only symbol data unless producer is improved. | Reject symbol completeness and record regression case. |
+| Unreadable selected source | Zero line count or missing rows. | Coverage gate fails before relation use. |
+| Alias plus actual external import | Both rough unresolved, project-aware check separates them. | Preserve unresolved state until classification. |
+| More pairs than graph cap | Full TSV count exceeds projections. | Keep full-row authority and disclose cap. |
+| Existing directory with old SVG, later run without `dot` | Stale SVG remains unless consumer rejects directory. | Manifest/freshness gate fails. |
+| Pointer beyond file length | Reader returns headers without numbered source. | Content-presence gate fails despite exit zero. |
+| Dynamic configuration registration | No rough internal edge, positive runtime/configuration evidence. | Absence claim refuted and routed. |
+
+Current script reading establishes these mechanics; occurrence rates across operating systems, filesystems, Ctags builds, path conventions, and repositories are unmeasured. Classify severity by invisibility, affected claim, and consequence, then collect local incidence only under stable definitions.
+
+The table's core invariant is that recovery changes a premise. A retry is justified only when environment, input, producer, option, or method changes in a way that addresses the verified cause. Unchanged repetition should trigger backpressure and escalation, which the next section defines.
 
 ## Retry Backpressure Guidance
 
-- Retry only after the failed verification signal is classified as transient, stale evidence, missing context, or true contradiction.
-- Use one bounded retry for stale external evidence refresh, then escalate to a human or a narrower source-specific reference.
-- Apply backpressure by stopping new generation or implementation work when source coverage, critique coverage, or verification gates are red.
-- For long-running agent workflows, checkpoint after each batch and re-read the current spec before any broad rewrite, commit, push, or destructive operation.
-- For distributed execution, assign one owner per generated file or theme batch and require merge-time verification of exact path, heading, and evidence-boundary invariants.
+Retry only after the failed signal has a verified or testable class and the next attempt changes a premise. A retry is a controlled experiment, not repetition. Name the changed environment, input, producer, option, state, authorization, or method; predict the intermediate signal that should differ; isolate the output; and stop when the same mechanism recurs without new information.
+
+The builder itself has no retry, backoff, queue, lock, resume, or transaction protocol. These controls belong to the operator or surrounding orchestrator unless a future producer implements and verifies them.
+
+**Retry state machine**
+
+| state | entry evidence | permitted transition | prohibited action |
+| --- | --- | --- | --- |
+| `failure_observed` | Command error, invariant mismatch, empty or malformed content, contradiction, or unavailable evidence. | Preserve diagnostics and classify earliest stage. | Immediate blind rerun into the same directory. |
+| `cause_classified` | Transient, environment, authorization, input, source stability, producer, option, artifact mixing, semantic gap, contradiction, or unknown class recorded. | Identify a changed premise and expected new signal, or route to terminal state. | Labeling every failure transient for convenience. |
+| `retry_ready` | Corrective condition exists, output location is fresh and authorized, target state is captured, owner and stop condition are named. | Execute one bounded attempt and capture a new manifest. | Reusing partial output or discarding first diagnostics. |
+| `retry_running` | Attempt identity, start state, resource owner, and cancellation boundary are recorded. | Complete, fail with a new signature, or fail with the same mechanism. | Concurrent writer entering the same artifact path. |
+| `retry_succeeded` | Predicted intermediate gate changes and full artifact plus claim gates pass. | Compare attempts, retain causal conclusion, and resume bounded work. | Treating eventual exit zero as proof that the diagnosed cause was correct. |
+| `new_failure_discovered` | Attempt progresses beyond the old stage but exposes a distinct mechanism. | Return to classification with the new evidence. | Charging a new mechanism against an unrelated retry rule without diagnosis. |
+| `same_failure_repeated` | Same earliest mechanism recurs without material information gain. | Apply backpressure and route, redesign, wait, or escalate. | Another unchanged rerun. |
+| `method_boundary_reached` | The claim requires evidence the rough mapper cannot observe. | Transfer the claim to semantic, build, configuration, runtime, security, history, or owner route. | Adding lexical retries or warnings as substitutes. |
+| `authorization_blocked` | Required write, data, credential, or owner approval is unavailable. | Wait for explicit state change or answer within a narrower read-only boundary. | Circumventing ownership or permission controls. |
+| `contradicted` | Positive evidence refutes the pending universal or absence claim. | Update decision, invalidate dependents, or define a separately authorized migration. | Retrying until the contradicting evidence disappears. |
+
+Success requires both the predicted changed signal and all downstream gates relevant to the claim. If installing `rg` allows inventory to begin but Python then fails, the first diagnosis was valid and a new failure was discovered; the map is still incomplete.
+
+**Failure-class guidance**
+
+| failure class | retry eligibility | changed premise required | backpressure or terminal route |
+| --- | --- | --- | --- |
+| Missing required command | Eligible after authorized installation or `PATH` correction. | The exact capability probe now passes. | Switch method if installation is unavailable or prohibited. |
+| Invalid root or output path | Eligible after path identity and authorization are corrected. | Canonical root and fresh writable output are verified. | Escalate scope or permission when ownership is unclear. |
+| Storage or permission pressure | Eligible after capacity or permission state changes. | Fresh output can be created and written safely. | Wait, choose an authorized volume, or stop; do not overwrite valuable files. |
+| Source changed during multi-pass run | Eligible after source state stabilizes or a frozen revision is selected. | Pre- and post-run identities match. | Use immutable checkout, project snapshot, or accept a narrower observation. |
+| Existing directory contains mixed artifacts | Do not rerun in place. Rebuild as a new attempt. | New empty authorized directory and complete manifest. | Quarantine old directory as diagnostic evidence. |
+| Ctags capability passes but actual output is empty or malformed | Not eligible unchanged. | Diagnose binary and invocation, correct producer, or deliberately select a tested fallback. | Use direct/structural/semantic route if symbol quality remains inadequate. |
+| Optional Graphviz rendering fails | Core map need not retry when TSV, Mermaid, DOT, and summary gates pass. | If visual output is required, correct renderer or label issue and rerender from verified DOT. | Continue without SVG under an explicit optional-output state. |
+| Unsupported source extension | Not retryable by the unchanged builder. | Producer gains tested support or a different analyzer is selected. | Route that source class elsewhere and narrow claims. |
+| Alias or semantic resolution miss | Not solved by unchanged lexical rerun. | Project-aware configuration or semantic method is introduced. | Preserve unresolved state and route. |
+| Dynamic or generated relationship gap | Not retryable within the same observation model. | Build, configuration, generation, or runtime evidence becomes available. | Terminal for rough-map verification. |
+| Positive counterexample refutes absence | No retry of the original claim. | A new migration changes the system and has its own acceptance criteria. | Mark refuted and block deletion under current state. |
+| Public documentation is stale | Refresh only when browsing is authorized and the current claim needs it. | Primary source is retrieved, version-matched, and locally reproduced. | After one scoped refresh that does not settle applicability, route to owner or narrower source. |
+| Shared workspace owner is editing the path | Wait rather than retrying writes. | Owner releases boundary or coordinates an explicit handoff. | Do not overwrite, revert, or race another lane. |
+| Unknown cause | One diagnostic attempt may be appropriate if it adds instrumentation rather than repeating output. | New observability is added and expected hypotheses are named. | Stop after no information gain and escalate diagnosis. |
+
+The "one bounded retry" default is a reasoning safeguard for deterministic local work, not a universal distributed-systems parameter. When an external API, remote service, network filesystem, or job runner has an established retry policy, follow its idempotency, delay, jitter, deadline, and rate-limit semantics. Do not invent timing constants in this reference.
+
+**Retry attempt record**
+
+| field | required content |
+| --- | --- |
+| `attempt_identifier` | Unique identity linked to the original decision and prior attempt. |
+| `failure_signature` | Earliest failed stage, exact observable signal, and affected artifact or claim. |
+| `cause_class` | Verified cause or bounded hypotheses with distinguishing check. |
+| `changed_premise` | Environment, input, producer, option, source state, authorization, scope, or method difference. |
+| `expected_new_signal` | The first intermediate result that should change if the diagnosis is correct. |
+| `target_identity` | Root, revision, working state, and relevant configuration. |
+| `producer_identity` | Script hash, command, options, capabilities, and actual symbol-producer evidence. |
+| `output_identity` | New authorized directory; never the prior partial or complete attempt path. |
+| `resource_owner` | Agent or operator with exclusive write responsibility during the attempt. |
+| `start_and_stop_condition` | When to launch, cancel, wait, route, or accept completion. |
+| `result` | Predicted signal outcome, complete gates, new failure, repeated failure, or contradiction. |
+| `claim_effect` | Claims resumed, narrowed, invalidated, refuted, or transferred. |
+
+Retain enough diagnostics to explain divergence without preserving sensitive source or runtime data outside policy.
+
+**Backpressure controls**
+
+| pressure | control | release condition |
+| --- | --- | --- |
+| Red source-coverage gate | Stop graph interpretation and implementation derived from omitted classes. | Inventory is corrected or claims are narrowed and routed. |
+| Red artifact-integrity gate | Stop query and handoff; reject partial or mixed directory. | Fresh complete run passes manifest and schema checks. |
+| Red pointer-content gate | Stop citation and patching from the range. | Current source identity and expected construct are restored. |
+| Red consequential-claim gate | Stop deletion, migration, security, or broad refactor authorization. | Claim-appropriate independent evidence and owner acceptance pass. |
+| Repeated same failure | Open a circuit for that method and claim combination. | A materially new capability, producer, input, or authorization state is available. |
+| CPU, memory, I/O, or storage pressure | Serialize, schedule, narrow with explicit boundary, or switch to an amortized index. | Resource budget and evidence contract are restored. |
+| Shared output-path contention | Enforce one writer and unique attempt directories. | Current owner completes or hands off explicitly. |
+| Context-window pressure | Persist packet, reference, decision record, and progress checkpoint before loading more context. | Durable state can reconstruct the exact next step. |
+| Reviewer or owner capacity | Queue consequential decisions rather than auto-approving weak evidence. | Qualified reviewer accepts the bounded claim or requests more evidence. |
+| External rate or service pressure | Use service-specific retry and deadline policy with idempotency. | Service recovers or terminal policy activates. |
+
+Backpressure is not merely sleeping. It includes refusing new generation, limiting concurrency, isolating output, narrowing scope visibly, preserving context on disk, pausing promotion, and escalating authority.
+
+**Long-running agent cadence**
+
+- Persist each complete ten-question packet section before rewriting its reference section.
+- Persist the matching evolved reference section immediately, then run an atomic sanity check.
+- Record a lane checkpoint no later than every three completed sections and at Red, Green, and Refactor transitions.
+- During full reread, persist review progress after at most five sections so an interruption does not erase review state.
+- Re-read the current specification, exclusive paths, user updates, and progress journal before any broad rewrite or phase transition.
+- Never commit, push, clean, revert, or modify a shared assignment surface unless explicitly authorized.
+- Treat new user instructions as state changes that may invalidate the plan before the next write.
+
+**Distributed execution rules**
+
+1. Assign exactly one owner per generated file, packet, or theme batch.
+2. Use unique output and attempt paths; never let two producers write the same artifact directory.
+3. Preserve unrelated workspace changes and coordinate when another owner's edit affects the same decision.
+4. Do not use retries to race an active owner or overwrite a newer artifact.
+5. Require integration-time verification of exact paths, headings, evidence boundaries, producer identities, and normalized uniqueness where applicable.
+6. Transfer blockers with the last verified state, repeated failure signature, attempted premise changes, and release condition.
+
+**Examples**
+
+Good local retry: Preflight fails because `rg` is missing. After an authorized installation, the exact probe succeeds. A new output directory is selected, inventory appears as predicted, and all downstream gates run. The changed capability explains progress.
+
+Bad semantic retry: An empty rough inbound-edge query is rerun several times against unchanged source and producer, then treated as stronger absence evidence. No premise changed and the observation model still cannot see runtime registration.
+
+Conditional source-stability retry: The first run spans a source update and produces pointer mismatches. The agent records both states, selects a stable revision, and rebuilds in a new directory. This is valid even though the script bytes are unchanged because the input-consistency premise changed.
+
+Good no-retry decision: `dot` rendering fails, but complete TSV, Mermaid, DOT text, summary, and cap checks pass. SVG is optional for the user's source-navigation question, so the failure is recorded and work continues without consuming another full map attempt.
+
+**Verification of retry and backpressure**
+
+A future authorized fixture suite should establish that:
+
+- correcting a missing command advances the predicted stage;
+- unchanged deterministic reruns are blocked after repeated mechanism detection;
+- every retry uses a fresh directory and preserves prior diagnostics;
+- concurrent owners cannot claim the same output path;
+- optional render failure does not invalidate complete tabular artifacts;
+- unsupported and runtime-only claims transition to route states rather than retry loops;
+- an out-of-range pointer's successful exit does not pass the content gate;
+- source mutation between stages is detected or invalidates the run;
+- a positive counterexample moves an absence claim to refuted, not retry-ready;
+- progress checkpoints reconstruct the exact durable boundary after interruption.
+
+Attempt history is an evidence trajectory. Recurring mechanisms should update failure fixtures, observability, routing, or producer design so future workers do not repeat no-information work. The history need not be verbose for trivial corrections, but durable or repeated failures should leave a concise sanitized record of what changed and why another attempt is or is not justified.
 
 ## Observability Checklist
 
-- Record which local sources were loaded and which were intentionally skipped.
-- Record the exact verification command, reviewer question, or rendered artifact used as proof.
-- Record p50/p95/p99 latency or reviewer-time measurements when the reference affects runtime or workflow speed.
-- Capture branch name, dirty-state summary, pathspec, changed-file count, and push/commit boundary.
-- Record leading indicator and failure signal from this file in the coverage manifest or journal when the reference drives real work.
-- Keep audit evidence small enough to review: command output summary, changed-file list, and unresolved-risk notes are preferred over raw transcript dumps.
+Observability must make a map-derived decision reconstructable without turning the record into a source dump. Capture identities, boundaries, transitions, and bounded observations. Retain raw diagnostics only when reproduction, policy, and secure storage require them.
+
+**What the current builder emits**
+
+| emitted surface | observable fact | missing context that must come from wrapper or operator |
+| --- | --- | --- |
+| `all_files.txt` | Raw selected path population for the inventory branch. | Target revision, dirty state, command, producer hash, and whether the population fits the decision. |
+| `code_files.txt` | Paths surviving the finite extension filter. | Relevant unsupported, configuration, generated, untracked, ignored, and runtime surfaces. |
+| `files.tsv` | Selected paths and line counts, including possible zero on read failure. | Why a zero occurred and whether source changed during the run. |
+| `symbols.tsv` | Symbol candidates, ranges, kind, and scope fields. | Whether rows came from usable Ctags output or fallback must be inferred from kind distribution and `ctags.jsonl`; semantic identity is absent. |
+| `ctags.jsonl` when the capability branch runs | Raw Ctags command output, possibly empty or malformed. | Binary identity, actual invocation status, parse yield, and whether fallback later contributed. |
+| Relation TSVs | Lexical import rows, resolved internal candidates, and unresolved references. | Semantic accuracy, alias configuration, complete recall, and runtime relationship meaning. |
+| `tooling.tsv` | `rg` assumption plus Ctags JSON-probe, ast-grep availability, and `dot` availability flags. | Actual ast-grep contribution is always absent in this producer; Ctags capability does not prove actual symbol contribution; tool versions are not captured. |
+| Mermaid and DOT | Up to the configured common source-target pairs. | Full relation population, cap value unless retained elsewhere, label validity, and semantic meaning. |
+| Optional SVG | Graphviz rendering exists when detected execution succeeds. | A missing current SVG can reflect absent or failed rendering, and an old SVG can survive directory reuse. |
+| `summary.md` | Counts, tooling flags, fan candidates, and pointer-first reminder. | Producer and target identity, stage duration, sample accuracy, decision rationale, and complete graph evidence. |
+
+The builder does not emit a transactional completion marker, run identifier, artifact hash manifest, stage start/finish events, per-stage timing, peak memory, read/write volume, retry history, query history, claim state, or owner approval. A shell wrapper or decision record can add those without changing extraction semantics, but the wrapper then becomes part of the producer chain and needs its own identity.
+
+**Minimum run envelope**
+
+| field | required observation | reason |
+| --- | --- | --- |
+| `decision_identifier` | Stable link to the bounded user decision and claim cards. | Correlates static, source, project, runtime, and handoff evidence. |
+| `attempt_identifier` | Unique value for every production or diagnostic attempt. | Prevents output and retry history from merging. |
+| `producer_chain` | Wrapper, builder, pointer reader paths and hashes plus exact command and options. | Reconstructs implemented and orchestration behavior. |
+| `target_identity` | Canonical root, repository/workspace identity, revision, branch when relevant, and working-state summary. | Binds every pointer and relation to source state. |
+| `authorization_boundary` | Allowed read/write paths, sensitive-data constraints, commit/push boundary, and owner. | Prevents observability and artifacts from escaping scope. |
+| `environment_identity` | Shell, Python, `rg`, Ctags probe and version where available, ast-grep availability, Graphviz state, filesystem locality, and relevant machine context. | Explains branch and performance differences. |
+| `time_identity` | Start, finish, time zone, and clock source when comparisons matter. | Orders attempts and detects long source-change windows. |
+| `output_identity` | Fresh authorized directory and ownership. | Rejects partial, mixed, or raced artifact sets. |
+| `completion_state` | Complete, failed stage, cancelled, partial, contradicted, or route-away. | Exit code alone is not enough for optional and content-level failures. |
+
+Capture branch and dirty-state information because they affect evidence identity, not because branch names inherently prove source content. Changed-file count is contextual; the builder scans selected repository inventory, not only the changed set.
+
+**Stage-event checklist**
+
+| stage | start observation | completion observation | critical anomaly |
+| --- | --- | --- | --- |
+| Preflight | Required paths, commands, capabilities, root, output authorization. | Exact probes and selected intended mode recorded. | Missing required tool, ambiguous root, or unauthorized output. |
+| Inventory | Repository state and inventory branch. | `all_files.txt` count, hash or identity, independent reconciliation. | Omitted relevant class or source state changes. |
+| Code filter | Supported extension policy. | `code_files.txt` and `files.tsv` path equality plus exclusion ledger. | Relevant language or dependency authority disappears. |
+| Symbols | Ctags capability and expected constructs. | `ctags.jsonl` state, `symbols.tsv` row count and kind distribution, sampled pointers. | Capability/output divergence, header-only unexpected table, or stale ranges. |
+| Relations | Source population and fixed parser families. | Import, internal, unresolved counts; sample and mismatch classes. | Empty internal set with unresolved graph fallback, alias cluster, or missing known relation. |
+| Projection | Full pair count and `MAX_GRAPH_EDGES`. | Mermaid/DOT counts, label validation, optional SVG state. | Projection exceeds or contradicts cap, malformed labels, or stale optional output. |
+| Summary | All input artifact identities. | Summary counts reconcile and fan lists are bounded as candidates. | Summary derived from mixed, partial, or mismatched artifacts. |
+| Query and read | Exact question, filter, selected rows, pointer reader identity. | Current source observations and eliminated hypotheses. | No numbered source lines, wrong construct, duplicate identity, or irrelevant context growth. |
+| Decision | Claim evidence, counterevidence, sufficiency rule, owner. | Supported, refuted, unresolved, or escalation state with next action. | Rough output promoted beyond profile or contradiction omitted. |
+
+Stage events can be a compact table or structured event stream. They need not contain source bodies.
+
+**Artifact manifest checklist**
+
+For every attempt, retain:
+
+- artifact filename and role;
+- size and row count where meaningful;
+- SHA-256 when durable comparison or handoff justifies it;
+- created or observed timestamp;
+- required, conditional, diagnostic, or derived status;
+- schema version or expected header;
+- producer and target identity link;
+- missing or stale status with reason;
+- privacy and retention class;
+- downstream claims that reference the artifact.
+
+Manifest checks should detect an old SVG or `ctags.jsonl` left by directory reuse, not merely confirm that expected required files exist.
+
+**Coverage observability**
+
+| question | retained evidence |
+| --- | --- |
+| Which local sources and instructions were loaded? | Exact paths, hashes when durable, and sections or roles used. |
+| Which sources were intentionally skipped? | Path class, reason, consequence, and route if later needed. |
+| Which repository files could enter the map? | Inventory branch, raw and filtered counts, independent comparison. |
+| Which files could not contribute relations? | Unsupported extensions, read errors, untracked/ignored policy, generated and configuration surfaces. |
+| Which observation classes are absent by design? | Semantic identity, dynamic dispatch, runtime registration, unexercised configurations, ownership authority. |
+| Did coverage change during collection? | Pre/post revision and working-state check or frozen source identity. |
+
+Absence of a file or edge from telemetry is not evidence that it does not exist in the program. Observability must name the observation population.
+
+**Query and context observability**
+
+Record:
+
+| field | purpose |
+| --- | --- |
+| Original question | Prevents query activity from drifting away from the decision. |
+| Artifact query | Makes candidate selection reproducible. |
+| Population and rank | Shows whether selection came from complete rows or a capped view. |
+| Selected and rejected candidates | Preserves useful negative evidence and detects confirmation bias. |
+| Pointer and context width | Binds source observation and explains expansion. |
+| Complete-file reason | Shows why pointer context was insufficient. |
+| Context unit and retained-use classification | Supports future efficiency review without equating less context with better evidence. |
+| Stop reason | Records when remaining uncertainty no longer changes the action or must route elsewhere. |
+
+**Evidence and claim observability**
+
+Every material claim should expose:
+
+- claim identifier, bounded text, class, consequence, and profile;
+- supporting and refuting evidence identifiers;
+- source class and observation scope for each item;
+- exact verification command, reviewer question, source span, rendered artifact, project check, or runtime trace used;
+- contradictions and the earliest verified pipeline stage;
+- promotion and downgrade events with actor and reason;
+- owner, residual risk, invalidation trigger, next action, and stop condition.
+
+A graph screenshot can be linked as a presentation artifact, but it cannot be recorded as the sole proof of semantic blast radius.
+
+**Retry and backpressure observability**
+
+| event | record |
+| --- | --- |
+| Failure | Stage, signature, diagnostics locator, affected artifacts and claims. |
+| Classification | Transient, environment, input, producer, semantic gap, contradiction, authorization, or unknown. |
+| Changed premise | Exact condition altered before retry. |
+| Attempt | New output identity, resource owner, expected signal, start and stop conditions. |
+| Repeated mechanism | Circuit-open or route decision and release condition. |
+| Recovery | Causal comparison, resumed claims, and new invalidation rules. |
+| No retry | Why another run cannot add information and which evidence system owns the claim. |
+
+Record failures and contradictions, not only successful attempts. Otherwise feedback data systematically hides the cases that should change guidance.
+
+**Timing and reviewer-effort measurements**
+
+The seed requests p50, p95, and p99 latency or reviewer-time measurements. Percentiles are appropriate only when there are enough comparable observations and the tail statistic is stable for the decision. Do not publish percentile labels from a tiny or mixed sample merely because the names sound operational.
+
+For timing claims, retain:
+
+| field | requirement |
+| --- | --- |
+| Workload | `F`, `C`, `B`, `S`, `R`, `E`, `G`, query class, and verification profile as relevant. |
+| Environment | Machine, filesystem, cache state, tool versions, load, and producer. |
+| Sample | Count, inclusion, exclusions, failed/cancelled treatment, and raw observations or durable aggregate source. |
+| Clock | Wall versus CPU time, start/stop boundary, precision, and time zone when needed. |
+| Distribution | Median and tail measures only when justified; include range or variability and counts. |
+| Interpretation | What changed, uncertainty, and no-generalization boundary. |
+| Counter-metric | Coverage, mismatch, defect, or evidence-sufficiency signal that prevents speed gaming. |
+
+When only one run exists, report it as one observed duration under stated conditions, not as a percentile or performance guarantee. Reviewer time is similarly task- and expertise-dependent.
+
+**Storage and retention choices**
+
+| sink | strength | risk | suitable content |
+| --- | --- | --- | --- |
+| Markdown journal or decision record | Human-readable rationale and handoff. | Free-form drift and large diffs. | Claims, evidence locators, decisions, uncertainty, next actions. |
+| Structured JSON or TSV events | Machine validation and aggregation. | Schema lifecycle and accidental sensitive fields. | Run identity, stage state, counts, timing, manifest, mismatch classes. |
+| Shell output log | High-fidelity execution diagnostics. | Noise, truncation, secrets, path exposure, and poor queryability. | Securely retained failed-command context when needed. |
+| CI artifact | Centralized repeatability and owner visibility. | Retention limits, runner differences, and access controls. | Manifests, structured summaries, fixture outcomes, approved map output. |
+| Metrics system | Trends and alerts over comparable cohorts. | Lost raw context and incentive gaming. | Aggregates with links to definitions and evidence. |
+| Trace or runtime observability system | Correlation across dynamic behavior. | Sensitive data, sampling, cost, and unexercised paths. | Routed runtime claims under service policy. |
+| Issue or review system | Ownership, discussion, and approval. | Manual summaries can become stale. | Decision state, reviewer dissent, accepted risk, and follow-up. |
+
+Choose one authoritative identity and link secondary sinks. Do not copy mutable decision state into several places without an owner and synchronization rule.
+
+**Data minimization and integrity**
+
+- Prefer command summaries, artifact hashes and row keys, changed-file lists, pointers, mismatch classes, and unresolved-risk notes over raw transcript or repository dumps.
+- Do not log credentials, tokens, private customer data, environment secrets, or unrestricted runtime payloads.
+- Treat paths and symbol names as potentially sensitive under project policy.
+- Record truncation explicitly; missing tail output can hide the actual failure.
+- Protect manifests and logs from concurrent writers and partial upload.
+- Mark reconstructed state as reconstructed, including which fields came from filesystem timestamps or later inference.
+- Measure wrapper overhead when timing claims matter; observability can affect the workload it observes.
+
+**Profile examples**
+
+Navigation: retain target revision, exact query, selected pointer, direct source observation, duplicate resolution, and stop reason. No broad run telemetry is needed if no map was produced.
+
+Standard decision: retain the full run envelope, manifest, coverage, actual symbol-producer evidence, queries, samples, mismatches, project checks, claim transitions, and invalidation.
+
+High assurance: add configuration and variant identities, negative tests, build and runtime evidence, security or domain review, residual risk, and owner acceptance under applicable retention policy.
+
+Bad observability: save only an SVG and one elapsed-time value, with no cap, producer, root, revision, coverage, or source verification. The record cannot explain architecture or performance.
+
+**Reconstruction acceptance test**
+
+Give a reviewer who lacks the original conversation the retained record and ask them to identify:
+
+1. The exact user decision and consequence.
+2. Producer, target, working state, capabilities, actual symbol producer, options, and attempt.
+3. Whether the artifact directory is complete, fresh, and internally consistent.
+4. Included and excluded evidence surfaces.
+5. The query, selected rows, pointers, and direct source observations.
+6. Which evidence supports and refutes each material claim.
+7. Every failure, retry, contradiction, and route transition.
+8. The current decision state, owner, remaining uncertainty, invalidation, and next action.
+9. Which details are observed, derived, reconstructed, illustrative, or unknown.
+10. What can be discarded without losing reproducibility or violating retention policy.
+
+If the reviewer fills gaps from personal repository familiarity, repeat with a less context-rich reviewer. The strongest observability test is successful handoff under context loss.
+
+Observability closes the learning loop only when it retains correlation. A pointer mismatch without producer and revision cannot improve extraction; a post-action defect without its claim route cannot improve promotion gates. The run envelope and decision identifier provide those edges while keeping evidence compact enough to review.
 
 ## Performance Verification Method
 
-Performance method: require status checks before mutation and a bounded blast-radius report before broad repository edits.
-Leading indicator to measure: the chosen boundary reduces blast radius or uncertainty measured by explicit probes.
-Failure signal to watch: the reference jumps to a pattern before proving the problem shape.
-Required measurement packet: capture input size, source count, tool-call count, wall-clock time, p50/p95/p99 latency where runtime applies, and reviewer decision time where documentation applies.
-Pass condition: the reference must let a reviewer identify the correct next action, verification gate, and stop condition without reading unrelated files.
-Fail condition: the reference encourages implementation before the workload, reliability target, and failure-mode table are explicit.
+No performance benchmark was executed for this evolution. The method below defines how a future authorized study can make a bounded claim. Current latency, memory, throughput, capacity, percentile, reviewer-time, and productivity values remain unknown.
+
+**Separate the performance subject**
+
+| subject | start boundary | stop boundary | primary measures | quality counter-metrics |
+| --- | --- | --- | --- | --- |
+| Artifact production | Validated root and fresh output are ready. | Complete manifest and artifact gates finish. | Wall time, CPU time, peak memory, bytes read/written if available, artifact bytes, and stage times. | Inventory coverage, schema, symbol and relation samples, projection consistency, partial/failure count. |
+| Artifact query | Compatible artifacts are ready and a question is stated. | Ranked candidate rows are produced. | Query wall time, rows scanned, candidates returned, and memory where relevant. | Candidate usefulness, missed known candidates, complete-row versus projection use. |
+| Pointer retrieval | Candidate row and bound revision are ready. | Expected source context is displayed and classified. | Time to source, bytes or lines read, and expansion count. | Pointer semantic hit, stale range, duplicate identity, missing context. |
+| Decision workflow | User decision and evidence profile are stated. | Reviewer identifies next action, verification gate, stop condition, and residual uncertainty. | End-to-end elapsed time, reviewer active time when measurable, source units inspected, route count, and rework. | Claim sufficiency, contradiction discovery, post-action reversal, and escaped dependency defects. |
+
+Do not combine these subjects into one unlabeled duration. A producer optimization can improve map time and worsen reviewer time by emitting noisier candidates. A query can be fast because it reads a capped projection instead of complete evidence.
+
+**Experiment card**
+
+Before collecting a timing, define:
+
+| field | completion rule |
+| --- | --- |
+| Hypothesis | Name one causal change and the expected metric direction, stage, and reason. |
+| Decision | State what implementation or route choice the result can change. |
+| Baseline | Producer hash, wrapper, command, options, capabilities, and artifact contract. |
+| Candidate | Exact changed producer or method, with unrelated changes excluded. |
+| Workload | Frozen repository or fixture identity, `F`, `C`, `B`, `S`, `R`, `E`, `G`, language mix, filesystem, and evidence profile. |
+| Environment | Hardware, operating system, shell, Python, `rg`, Ctags, Graphviz, filesystem locality, cache state, power state, and competing load as relevant. |
+| Measurement boundary | Exact start and stop events, clock, profiler, sampling, warmup, and timeout/cancellation policy. |
+| Repetition design | Run count chosen from observed variance and desired claim, order randomization or alternation, and failed-run handling. |
+| Output equivalence | Structural and semantic properties that must match, plus intended differences. |
+| Counter-metrics | Coverage, pointer, relation, decision, and defect signals that must not regress silently. |
+| Pass rule | Predeclared evidence needed to adopt, reject, investigate, or reroute. |
+| No-claim boundary | Repositories, machines, variants, or user populations to which results do not generalize. |
+
+**Workload tiers**
+
+| tier | purpose | design | claim allowed |
+| --- | --- | --- | --- |
+| Mechanism fixture | Isolate one branch such as fallback spans, dense imports, graph cap, malformed labels, or streaming memory. | Small controlled source with deterministic expected artifacts and negative cases. | Causal statement about that mechanism under the fixture. |
+| Representative repository snapshot | Estimate behavior on a real stable source population. | Frozen revision, working-state policy, language and size profile, secure authorized output. | Bounded result for that repository and environment. |
+| Repository cohort | Assess portability across selected source populations. | Predeclared inclusion, language and architecture strata, identical benchmark protocol. | Cohort-bounded trend with heterogeneity reported. |
+| Operational workflow sample | Measure end-to-end decision and reviewer effects. | Comparable tasks, users or agents, evidence profiles, decision outcomes, and follow-up window. | Workflow result under the sampled task and reviewer population. |
+
+Keep fixture and target results separate. A fixture explains why a stage changes; it does not establish monorepo capacity. A repository snapshot establishes one environment; it does not become a universal threshold.
+
+**Baseline comparability gates**
+
+Abort or relabel the comparison when:
+
+- repository revision, dirty state, generated inputs, root, or inventory policy differs unintentionally;
+- Ctags capability, actual symbol producer, Python, `rg`, Graphviz inclusion, shell, or wrapper differs outside the hypothesis;
+- one attempt uses an existing output directory or contains stale conditional artifacts;
+- `MAX_GRAPH_EDGES`, language mix, fixture content, filesystem location, or cache treatment differs unintentionally;
+- one producer fails or emits a partial artifact set and the other completes;
+- background load, power state, thermal behavior, or storage pressure makes observations noncomparable for the intended claim;
+- measurement tooling or logging overhead differs materially;
+- quality gates reveal that the candidate produces a different evidence product not covered by the hypothesis.
+
+Real-world variation can be studied later as a field distribution. First establish controlled causality; then establish representativeness.
+
+**Output-equivalence contract**
+
+When the candidate intends only a performance change, verify:
+
+| artifact or claim | equivalence check |
+| --- | --- |
+| Inventory | Same ordered or normalized path population and line counts, unless ordering is explicitly irrelevant and compared as a multiset. |
+| Symbols | Same schema and semantically equivalent row multiset under the same actual extractor; inspect ranges and kinds, not only count. |
+| Raw imports | Same source, line, target reference, and kind rows under a defined duplicate and ordering policy. |
+| Internal and unresolved relations | Same row multisets and classifications under the same resolver contract. |
+| Projections | Same selected pair frequencies and cap behavior, allowing only documented deterministic serialization differences. |
+| Summary | Counts and fan rankings reconcile with equivalent underlying rows. |
+| Pointer behavior | Same accepted forms, normalization, context windows, and expected source output. |
+| Decision evidence | Same candidate, contradiction, and escalation outcomes on predeclared tasks. |
+
+Byte hashes are useful when deterministic serialization is expected. If timestamps, ordering, environment paths, or intentionally changed semantics make bytes differ, compare structured fields and row multisets with a parser. An unexplained artifact difference blocks a pure-performance claim.
+
+If the candidate intentionally improves semantics, do not force equivalence. Define expected corrected cases, unaffected cases, regression samples, and a new evidence-product version. Compare both quality and cost.
+
+**Instrumentation plan**
+
+| measurement | method class | caution |
+| --- | --- | --- |
+| Whole-command wall time | Monotonic external clock around preflight-complete invocation through manifest validation. | Include or exclude verification explicitly; do not mix boundaries. |
+| CPU and peak memory | Platform-appropriate process accounting or profiler, including child processes. | Tool syntax and accounting differ by operating system; record tool identity and overhead. |
+| Stage duration | Wrapper events around inventory, line count, symbols, relations/projection, rendering, and summary, or an instrumented candidate producer. | Current builder lacks stage telemetry; instrumentation changes the producer chain. |
+| Filesystem I/O | Operating-system counters, profiler, or wrapper estimates. | Cache, compression, network mounts, and other processes complicate attribution. |
+| Artifact size and rows | Structured file inspection and manifest. | More or fewer rows can be a semantic change, not performance. |
+| Query and pointer time | Clock bounded around reproducible query and source read. | Human typing and cold process startup should be included or excluded consistently. |
+| Reviewer active time | Instrumented task study or carefully logged activity intervals. | Expertise, interruptions, task difficulty, and observation effects are major confounders. |
+| Evidence utility | Decision record: retained candidates, contradictions, route changes, and correct next action. | Do not reduce heterogeneous value to an uncalibrated composite score. |
+
+Record tool-call count only if it answers a cost or orchestration question. Fewer calls are not inherently better when one call hides broad output or skips verification.
+
+**Cache and order design**
+
+- State whether runs are cold, warm, or operationally mixed and how that state was established.
+- Do not claim a cold cache merely because the process is new; operating-system cache can persist.
+- Alternate or randomize baseline and candidate order when drift and warmup could bias one side.
+- Use fresh output directories for every attempt.
+- Disclose warmup runs and exclude them only under a predeclared rule.
+- Keep failed, timed-out, and cancelled attempts in the ledger; classify rather than silently dropping them.
+- Monitor source identity before and after each multi-pass run.
+
+Avoid privileged cache manipulation unless explicitly authorized and safe. If true cold-cache control is impractical, measure the operational cache state and narrow the claim.
+
+**Distribution reporting**
+
+The seed requests p50, p95, and p99 measurements where runtime applies. Use a percentile only when the sample contains enough comparable observations for that tail to be meaningful, the quantile definition is stated, and raw counts are retained. This reference supplies no fixed minimum sample because required stability depends on variance and decision consequence.
+
+Report:
+
+- number of valid, failed, timed-out, cancelled, and excluded attempts;
+- raw observations or a durable recalculation source;
+- median, range, variability, and tail summaries justified by the data;
+- baseline and candidate paired or unpaired design;
+- confidence interval or uncertainty method when making an inferential claim;
+- outlier policy and sensitivity to alternative treatment;
+- exact cohort and no-generalization boundary.
+
+One run is one observation. Report its duration and conditions honestly; do not label it p50, p95, p99, typical, or guaranteed.
+
+**Quality counter-metric gate**
+
+A candidate cannot pass on speed alone. Verify at least the quality dimensions affected by the hypothesis:
+
+| risk | counter-metric or gate |
+| --- | --- |
+| Faster inventory omits files. | Independent coverage reconciliation and excluded-surface review. |
+| Faster symbol extraction loses constructs or ranges. | Stratified pointer resolution and semantic-hit samples plus fixture expectations. |
+| Faster resolver forces more false internal edges. | Internal-edge agreement and unresolved classification samples. |
+| Lower graph cap improves render time but hides relations. | Full-row equality and explicit projection-only claim. |
+| Fewer source reads miss context. | Claim sufficiency, whole-file expansion yield, contradiction and missed-consumer review. |
+| Faster workflow stops too early. | Correct next action, verification gate, stop condition, post-action reversals, and escaped defects. |
+| More logging slows production. | Wrapper overhead measured with equal observability requirements and no loss of reconstruction quality. |
+
+**Route-specific pass conditions**
+
+| performance decision | pass condition |
+| --- | --- |
+| Adopt a producer optimization | Predeclared performance objective improves under comparable workload, output equivalence or intended semantic improvement passes, variability is understood, and counter-metrics do not reveal material regression. |
+| Adopt a query optimization | Candidate set and complete-row semantics are preserved while relevant query cost improves under representative filters. |
+| Reduce context | Reviewer still identifies the correct bounded next action, evidence gate, stop condition, and unresolved risk without reading unrelated files or missing consequential evidence. |
+| Reuse instead of rebuild | Provenance-validation plus query cost is lower than measured rebuild cost for the decision, and artifact compatibility gates pass. |
+| Skip mapping | Direct or native evidence answers the claim with lower measured workflow cost and equal or stronger sufficiency. |
+| Reject result | Comparability, output, quality, sample, or uncertainty gates fail, even if one timing is faster. |
+
+**Worked experiment design, without results**
+
+Hypothesis: Streaming relation serialization in a future producer reduces peak memory for high-`R` workloads without changing relation rows, pair frequencies, graph projection, summary counts, or decision samples.
+
+Plan:
+
+1. Freeze a mechanism fixture with dense imports and a representative repository snapshot.
+2. Bind baseline and candidate hashes, wrapper, options, actual symbol producer, and environment.
+3. Use fresh attempt directories and alternate run order under disclosed cache state.
+4. Measure whole-command and relation-stage time, child-inclusive peak memory, artifact bytes, and attempt outcomes.
+5. Parse TSVs and compare row multisets; compare pair-frequency projections and summary counts.
+6. Replay alias, unresolved, cap, and selected decision samples.
+7. Report raw counts, distribution summaries justified by sample stability, instrumentation overhead, and no-claim boundary.
+8. Adopt only if memory improvement is reproducible and no semantic or operational regression appears.
+
+This design is actionable but contains no fabricated duration, memory saving, sample result, or pass verdict.
+
+**Performance result language**
+
+Good: "Under the frozen snapshot, matched capability branch, fresh output, and stated cache design, the candidate reduced the predeclared production measure across repeated runs; structured artifacts were equivalent and quality samples showed no observed regression within their scope."
+
+Bad: "One warm run was faster, so p99 performance improved and the tool scales." The evidence supports neither a tail statistic nor a capacity claim.
+
+Diagnostic only: "One run took the observed duration and spent most sampled CPU in the relation stage." This can motivate a controlled experiment but is not a general performance conclusion.
+
+The leading indicator remains decision-relevant uncertainty reduction, not raw command speed. The failure signal remains pattern or implementation commitment before workload, reliability, and failure boundaries are explicit. Performance verification is therefore evidence-throughput verification: time and resources matter only alongside the quality and decision value they produce.
 
 ## Scale Boundary Statement
 
-Dependency Map Cli Patterns stops being sufficient when the task spans multiple independent systems, more than one ownership boundary, unbounded source discovery, or production traffic without an explicit SLO.
-Under distributed execution, split work by theme file and preserve one verification owner per split; do not let parallel agents rewrite the same reference without a merge checkpoint.
-Under long-running agent workflows, treat context drift as a reliability failure: checkpoint state, summarize open risks, and verify against the spec before continuing.
-Under large-codebase scale, require dependency or source-graph narrowing before applying this reference; a source list without ranked canonical guidance is not enough.
+Dependency Map Cli Patterns stops being sufficient when its batch workload, observation model, artifact lifecycle, review capacity, or ownership model cannot preserve the evidence contract required by the decision. Crossing a scale boundary does not mean every artifact is useless. It means claims must narrow, production must change, or the question must route to another evidence system.
+
+There is no universal file, line, edge, duration, memory, or agent-count threshold in this reference. Measure the intended workload and define local budgets. The current producer has no persistent index, incrementality, lock, queue, resume, transaction marker, or measured capacity.
+
+**Scale dimensions and route triggers**
+
+| dimension | observable pressure | boundary crossed when | response |
+| --- | --- | --- | --- |
+| Raw inventory `F` | Inventory time, path artifact size, nested scope, ignored policy. | A complete intended population cannot be produced or reviewed within authorized resource and time budgets. | Use native inventory, justified scope, or a persistent index; preserve exclusion ledger. |
+| Supported source `C` and `B` | Repeated line-count, symbol, and relation scans; large-file distribution; filesystem throughput. | Multi-pass batch cost exceeds reuse value or cannot complete reliably. | Direct search for narrow tasks, component scope with boundary rules, incremental parser/index, or scheduled background production. |
+| Symbols `S` | Artifact size, duplicate identities, query noise, pointer sample burden. | Compact queries no longer narrow source meaningfully or extractor quality cannot be reviewed. | Add qualification and semantic index, improve extractor with fixtures, or route symbol claims. |
+| Relation rows `R` and pairs `E` | Memory, TSV size, rank computation, sample and mismatch load. | In-memory accumulation or review burden is unacceptable, or heuristic error dominates useful candidates. | Stream in a future producer, persist a queryable graph, partition with join semantics, or use a stronger resolver. |
+| Projection cap `G` | Mermaid/DOT/SVG size and visual comprehensibility. | Graph cannot communicate a useful selected neighborhood even after cap and query. | Render focused subgraphs; keep TSVs authoritative. Lowering `G` never solves full extraction cost. |
+| Query volume `Q` | Repeated artifact filters, rebuild frequency, number of users or decisions. | Batch production and freshness checks are repeatedly paid or artifact access becomes contended. | Use shared immutable artifacts, indexed query service, or repository-native semantic platform with lifecycle ownership. |
+| Churn and reuse horizon | Revision changes, pointer invalidation, regenerated files, map age at first query. | Artifacts become stale before enough questions reuse them. | Direct or incremental search, event-driven rebuild, or a native index with verified invalidation. |
+| Language and syntax diversity | Unsupported extensions, mixed parser branches, alias and macro clusters. | Relevant source or relation classes fall outside observation or samples cannot bound error. | Federate language-specific analyzers under one decision identity. |
+| Configuration variants `V` | Features, targets, platforms, tenants, deployment modes, generated states. | One static map cannot support claims across relevant variants. | Build/configuration matrices, generated-state checks, tests, runtime observations, and owner scope. |
+| Dynamic behavior | Reflection, registration, plugin loading, data-driven dispatch, runtime topology. | The decisive relation exists only outside static lexical evidence. | Route to configuration and runtime evidence; rough map remains auxiliary discovery. |
+| Multiple systems | Repositories, services, deployed components, APIs, queues, databases, or third-party boundaries. | A local file graph cannot represent the end-to-end dependency or failure path. | Federated service/build/runtime topology and system-design or incident evidence. |
+| Ownership boundaries | Several teams, approval processes, sensitive domains, or conflicting architecture intent. | No single mapper or agent can authorize the global decision. | Preserve per-owner evidence, interface contracts, merge review, and accountable acceptance. |
+| Agent concurrency | Parallel readers and writers, shared output, overlapping files, merge conflicts. | Ownership or artifact identity can no longer be guaranteed. | One writer per surface, unique outputs, explicit handoffs, merge-time verification, and backpressure. |
+| Context and reviewer capacity | Large artifacts, repeated reads, unresolved-risk volume, handoff complexity. | Reviewers cannot reconstruct why selected evidence supports the action. | Query-first context, decision records, component reviews, and staged approval. |
+| Assurance level | Deletion, migration, security, compliance, availability, or production-impact claim. | Rough evidence cannot satisfy the required prevention and verification floor even at small input size. | Skip to high-assurance semantic, build, test, configuration, runtime, and owner evidence. |
+
+Scale is claim-relative. A huge repository can still support an exact `rg` navigation answer. A tiny service with runtime plugin registration can exceed the rough mapper's semantic boundary immediately.
+
+**Boundary outcomes**
+
+| outcome | permitted use | required language |
+| --- | --- | --- |
+| `within_full_batch_boundary` | Fresh full map, compact queries, source checks, and profile-appropriate verification. | State measured workload and no-generalization boundary. |
+| `within_scoped_boundary` | Component-local map and decisions whose consumers and interfaces are explicitly bounded. | Say component or root scope; never imply whole-repository completeness. |
+| `projection_only_boundary` | Full TSV artifacts remain usable, but graph rendering is capped or visually overloaded. | Analyze rows and describe graph as selected presentation. |
+| `discovery_only_boundary` | Rough evidence can identify candidates but cannot settle the claim. | Use candidate, observed, or unresolved states and name the stronger route. |
+| `batch_economics_boundary` | Fresh maps cost more than their reuse and decision utility. | Explain direct, incremental, or persistent replacement. |
+| `observation_model_boundary` | Unsupported, semantic, configured, generated, runtime, or security relation is decisive. | Stop verification within rough mapping and route. |
+| `governance_boundary` | Multiple owners or systems require coordinated authority. | Split evidence by ownership while preserving interfaces and global decision record. |
+| `authorization_boundary` | Required source, output, runtime, or data access is unavailable. | Report blocked evidence and owner; do not circumvent. |
+
+**Safe narrowing contract**
+
+Narrowing root, files, relation classes, queries, or samples is safe only when:
+
+1. The user decision can be restated within the narrowed scope.
+2. External interfaces and possible consumers outside scope are listed.
+3. The inventory rule and excluded paths are explicit.
+4. Cross-boundary imports, builds, configuration, runtime calls, data, and owners have a separate evidence route.
+5. No global absence, complete blast-radius, or whole-system claim is made from the narrowed artifact.
+6. The decision record carries the scope into source checks, tests, handoff, and invalidation.
+7. Scope expansion has a named trigger when new evidence crosses the boundary.
+
+Arbitrary directory scoping to make runtime acceptable is not a performance fix; it creates a different evidence product.
+
+**Sharding contract**
+
+When one full batch is impractical and the decision genuinely spans shards, define:
+
+| shard concern | required rule |
+| --- | --- |
+| Partition | Stable ownership, build, package, language, or component boundary with a reason; avoid accidental path-size chunks. |
+| Identity | Global repository revision and producer plus shard identifier and root. |
+| Coverage | Union and overlap policy; every intended file maps to zero, one, or documented multiple shards. |
+| Node identity | Qualified path or semantic identifier that prevents duplicate-name collapse across shards. |
+| Cross-shard edges | Separate extraction or authoritative system capable of finding interfaces beyond local roots. |
+| Duplicate policy | Deterministic handling of shared files, generated outputs, vendored code, and repeated relations. |
+| Merge | Structured row and claim reconciliation, not graph-image concatenation. |
+| Conflict | Owner and method for incompatible evidence, version, or configuration. |
+| Verification | Per-shard gates plus global interface, variant, and absence checks appropriate to the decision. |
+| Invalidation | Source or producer changes identify affected shards and global claims. |
+
+Parallel shards improve elapsed time only if filesystem and resource contention allow it. They increase coordination, merge, and identity cost. Measure both.
+
+**Persistent and federated routes**
+
+| need | likely route | new reliability burden |
+| --- | --- | --- |
+| Many repeated symbol and relation queries | Persistent semantic or code graph index. | Index version, freshness, invalidation, schema, access, and service availability. |
+| Frequent source churn | Incremental parser/index or repository-native service. | Correct incremental updates and stale-read detection. |
+| Multi-language semantics | Federated language analyzers with normalized identifiers. | Cross-language joins, differing capabilities, and partial failure. |
+| Build and generated composition | Build-system and generation graph. | Variant and target configuration, cache, generated artifact identity. |
+| Distributed runtime behavior | Traces, service topology, logs, and configuration inventory. | Sampling, workload coverage, privacy, clock correlation, and production safety. |
+| Organization ownership | Service catalog, ownership metadata, and review workflow. | Staleness, authority, and conflict with descriptive source evidence. |
+
+The scalable design is often federated evidence under a common decision identifier, not one graph pretending to encode source, build, runtime, and ownership equally.
+
+**Distributed execution boundary**
+
+- Assign one verification owner and one writer for each reference, packet, shard, or artifact directory.
+- Parallelize only independent reads or outputs with explicit roots and merge contracts.
+- Do not let agents rewrite the same reference or output without an ordered handoff and merge checkpoint.
+- Persist atomic section or shard completion before starting another unit.
+- Use backpressure when shared resource, review, or ownership capacity is saturated.
+- Verify exact paths, heading/order contracts, producer identities, coverage union, cross-shard edges, and evidence boundaries at merge.
+- Preserve user changes and other lanes; scale does not authorize destructive cleanup.
+
+**Long-running context boundary**
+
+Treat context drift as a reliability failure. Durable state must include current decision, completed units, source identities, open mismatches, failed attempts, exclusive paths, verification evidence, next step, and stop condition. Checkpoint before broad rewrites and at most every configured review slice. Re-read the current specification and newest user instructions after interruption.
+
+Context compaction is not evidence compaction. Preserve claim-relevant locators and invalidation even when conversation prose is summarized.
+
+**Production-traffic boundary**
+
+A repository map cannot establish a production service-level objective, latency distribution, throughput, availability, or live reachability. When a change affects production traffic:
+
+- define the service objective and workload separately;
+- identify deployed versions and configuration;
+- use benchmark, load, canary, trace, log, metric, and rollback evidence appropriate to the system;
+- protect sensitive production data and respect change controls;
+- treat static map candidates as source-navigation input only;
+- obtain operational owner acceptance for residual risk.
+
+The task crosses this reference's primary boundary even if the source repository is small.
+
+**Scale assessment procedure**
+
+1. State the decision and reliability profile.
+2. Estimate or probe `F`, `C`, `B`, expected `S`, `R`, `E`, `G`, `Q`, `V`, churn, systems, owners, and reviewer capacity.
+3. Identify relevant unsupported and dynamic relation classes before full production.
+4. Run a controlled fixture or representative snapshot only when authorized and safe.
+5. Capture resource, artifact, quality, freshness, and reconstruction measures.
+6. Compare full, scoped, persistent, or routed alternatives under the same claim.
+7. Select the least costly route that preserves evidence sufficiency and governance.
+8. Record boundary outcome, exclusions, release trigger, and invalidation.
+
+**Scale test tiers**
+
+| test | verifies | does not verify |
+| --- | --- | --- |
+| Growth fixture over source bytes and relation density | Stage growth and resource saturation mechanism. | Real repository semantics or filesystem mix. |
+| Scoped-versus-full snapshot comparison | Which candidate rows and cross-boundary relations narrowing loses. | Other repositories or future churn. |
+| Churn replay | Artifact invalidation and rebuild or index freshness behavior. | Runtime configuration not represented in source. |
+| Concurrent shard test | Output isolation, contention, merge, and failure handling. | Human owner agreement or semantic joins beyond test cases. |
+| Reviewer reconstruction | Whether evidence remains understandable at artifact scale. | Automated correctness of all claims. |
+| High-assurance scenario | Whether routing and owner gates block weak evidence. | Universal security or production safety. |
+
+**Examples**
+
+Good volume scaling: A measured full run exceeds the accepted batch window, so the team uses ownership-aligned shards, preserves a global revision, audits coverage union, extracts cross-shard interfaces with a native build graph, and limits local claims to each component.
+
+Bad volume scaling: The agent maps only `src/core`, omits cross-boundary consumers, and reports whole-repository blast radius because the command completed quickly.
+
+Good churn scaling: Maps become stale before reuse, so exact queries use direct search and repeated semantic queries move to an incremental index with freshness observability. Batch output is retained only for frozen review snapshots.
+
+Good assurance scaling: A small repository's security absence claim bypasses rough verification and routes to configuration, tests, runtime evidence, and an authorized security owner. Input size does not lower the assurance boundary.
+
+Conditional component use: A narrow map supports local navigation inside one service if interfaces and external consumers are out of scope and stated. It cannot authorize deletion of a shared contract.
+
+Scaling changes governance as well as computation. More shards, agents, indexes, variants, and systems require shared identity, ownership, merge semantics, invalidation, and conflict resolution. The first saturated resource may be reviewer coherence rather than CPU or memory. Preserve the evidence contract first; then optimize the mechanism that actually crossed its boundary.
 
 ## Future Refresh Search Queries
 

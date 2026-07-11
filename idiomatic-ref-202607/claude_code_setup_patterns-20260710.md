@@ -250,79 +250,603 @@ Verification is executable setup memory. Every accepted recommendation maps to a
 
 ## Agent Usage Decision Guide
 
-`agent_usage_decision_guide`: Use this reference when a task mentions this theme, one of the listed local source paths, or a nearby technology/workflow surface.
+`agent_usage_decision_guide`: Use this reference when the user wants to analyze, recommend, review, implement, or simplify repository-level Claude Code setup and the choice among hooks, skills, subagents, plugins, MCP servers, existing commands, documentation, or no change is material. A theme word alone is not sufficient. Route product support, credential issuance, security incidents, and production operations to their controlling workflows.
 
-- Start with the local corpus source map.
-- Prefer patterns with explicit verification gates.
-- Treat external sources as freshness and ecosystem checks, not replacements for local repo conventions.
-- Preserve the evidence boundary labels when reusing recommendations.
+1. **State the outcome and phase.** Is the user exploring options, requesting a recommendation, reviewing existing setup, or authorizing implementation? Name the recurring task or failure, affected users, consequence, and prohibited actions.
+2. **Capture the unchanged baseline.** Inventory active commands, tests, formatters, CI, service dependencies, existing `.claude/` configuration, team practices, owners, and current pain. A file or dependency is only a lead until active use is confirmed.
+3. **Decide whether setup is the problem.** Resolve unclear product requirements, missing data, or ordinary code defects before proposing automation. Keep no change, documentation, or an existing command in the option set.
+4. **Classify recurrence and consequence.** One reversible lookup needs less machinery than a shared auto-invoked control or an external service integration.
+5. **Map evidence and authority.** Separate direct task instructions, repository policy, inspected local facts, source-authored guidance, untrusted content, unrefreshed public leads, design inference, and unresolved owner decisions.
+6. **Choose the least-powerful adequate surface.** Match deterministic events to hooks, reusable expertise to skills, independent specialist analysis to subagents, maintained bundles to plugins, and necessary external operations to MCP. Compose surfaces only for distinct outcomes.
+7. **Design permission and ownership.** Record invocation, tools, paths, service scopes, credentials, data handling, approvals, idempotency, owner, failure behavior, rollback, and retirement before implementation.
+8. **Recommend before mutating unless implementation is explicit.** A recommendation report does not authorize settings writes, installation, network access, commits, or service connection.
+9. **Run focused positive and negative cases.** Verify intended behavior, unrelated-task silence, denied actions, failure containment, overlap, and restoration to the prior state.
+10. **Close with a lifecycle state.** Mark each item proposed, adopted, observed, narrowed, paused, replaced, rejected, or retired, and name the evidence that triggers reconsideration.
+
+| setup_branch | choose_when | avoid_or_route_when | minimum_evidence |
+| --- | --- | --- | --- |
+| No change, existing command, or documentation | Current workflow is sufficient, task is rare, or automation cost exceeds recurring value | A stable repeated failure remains unaddressed | Baseline command or process, owner confirmation, and reason automation adds no net value |
+| Hook | Behavior is deterministic, event-bound, narrow, fast, and safely repeatable | Judgment is contextual, command can recurse, event is unclear, or blocking semantics are unsafe | Active command, compatible event and matcher, timeout/failure policy, unrelated-path test, and disable path |
+| Skill | A repeatable workflow benefits from instructions, templates, scripts, examples, arguments, or controlled invocation | Task is one-off, schema is unknown, or bundled actions cannot be safely scoped | Repeated task sample, current schema, tool and invocation controls, fixture, failure behavior, and maintenance owner |
+| Subagent | Work is independently scoped, context isolation helps, tool access can be least privilege, and one return artifact can be evaluated | Work shares mutable state, ownership overlaps, or independent evaluation is absent | Immutable inputs, owned paths, tool list, return contract, evaluator, fan-in owner, and conflict case |
+| Plugin | A maintained bundle replaces several related local capabilities and team distribution matters | Contents or marketplace status are unknown, bundle overlaps local setup, or update ownership is absent | Current version and source, content inventory, permissions, representative tests, owner, and uninstall plan |
+| MCP server | A necessary external service operation cannot be met by local tools and approved least-privilege access exists | Dependency presence is the only signal, credentials or data policy are unresolved, or write effects lack recovery | Service owner, current compatibility, data flow, scopes, read-only probe where possible, denied-action test, revocation, and audit |
+
+**Stop and route.** If the user outcome is undecided, ask the smallest material question. If product behavior is freshness-sensitive, create a permitted primary-source refresh task. If service or credential authority is missing, return a permission and data-flow artifact to the owner. If production traffic, security response, or irreversible state is involved, this reference remains supporting guidance rather than the controlling process.
+
+**Gotchas.** Do not trigger a mega-analysis from a theme keyword, list every category to appear comprehensive, implement a recommendation without authorization, load every catalog into context, or retain overlapping controls. When candidate recommendations accumulate faster than the user can evaluate them, stop discovery and narrow by outcome, consequence, and owner.
+
+**Examples.** A repository with an active formatter and repeated churn may receive one narrowly tested hook. A recurring migration procedure may receive a user-controlled skill with validation and rollback. Applying a full setup portfolio to a one-time timestamp request is misuse. A proposed MCP integration with a real service need but no owner or scope is a valid pause: deliver the missing permission, compatibility, and probe requirements without connecting it.
+
+**Verification.** The decision log records outcome, phase, baseline, evidence, selected branch, rejected alternatives, permissions, cases, observed result, owner, rollback, residual risk, and lifecycle state. Include cases where no change and routing are correct so evaluation does not reward automation by default.
+
+The branch thresholds are design guidance, not universal measurements. Revisit setup when runtime or source versions change, ownership disappears, permissions expand, failure recurs, surfaces overlap, or the original repository signal vanishes. A mature setup can shrink.
 
 ## User Journey Scenario
 
-Role based opening scenario: The agent-system designer is starting from a task that needs context selection, tool use, delegation, and verification and needs a reference that turns source evidence into an executable next step.
-Primary user starting state: The user has a `claude_code_setup_patterns` task, one or more local source paths, and uncertainty about which pattern should drive implementation.
-Decision being made: choosing what context to load, what to offload, when to delegate, and how to prove completion.
-Reference opening trigger: Open this file when the task mentions claude code setup patterns, any mapped local source path, or an adjacent workflow with the same failure mode.
+Role based opening scenario: An agent-system designer or repository maintainer has a recurring workflow problem, an existing or proposed Claude Code setup, and uncertainty about whether no change, documentation, a hook, a skill, a subagent, a plugin, or an MCP integration is the right control.
+
+Primary user starting state: The user can describe an outcome or pain point but may not know which project signals are active, which setup already exists, which authority boundary controls implementation, or how to verify value without creating external side effects.
+
+Decision being made: Determine whether setup is the problem, select the least-powerful adequate surface, separate recommendation from implementation permission, validate behavior and rollback, and assign an observed lifecycle state.
+
+Reference opening trigger: Open this file when repository-level setup choice or review is material. Do not open it merely because Claude Code is mentioned; route debugging, product support, incident response, and ordinary feature work to their own workflows.
+
+**End-to-end journey.**
+
+1. **Intake.** Record the user-visible outcome, current phase, affected users, recurrence, consequence of error, and prohibited actions. Decide whether the request is exploration, recommendation, review, or implementation.
+2. **Baseline.** Inspect active project commands, tests, CI, service dependencies, ownership, existing `.claude/` files, personal-versus-project configuration, and the current manual path. Save the unchanged state needed for comparison and rollback.
+3. **Problem-fit check.** Ask whether an unresolved requirement, missing data, code defect, or organization policy owns the pain instead. Close with no setup change or route when automation is not the repair.
+4. **Evidence map.** Load the read-only entry skill and only the relevant detail lineage. Separate source fact, heuristic, unrefreshed public lead, untrusted content, design inference, and controlling authority.
+5. **Candidate narrowing.** Generate only decision-relevant options, including no change. Apply backpressure when candidates outnumber the user's ability to compare evidence and ownership.
+6. **Surface selection.** Match deterministic events to hooks, reusable workflows to skills, independent analysis to subagents, maintained bundles to plugins, and necessary external operations to MCP. Record why the simpler and nearest adjacent alternatives were rejected.
+7. **Authority design.** Specify invocation, tools, paths, service scopes, credentials, data handling, approvals, idempotency, failure behavior, owner, rollback, and retirement. Unknown authority creates a pause artifact rather than implied permission.
+8. **Recommendation close or implementation approval.** Recommendation-only work ends with evidence, ranked items, rejected alternatives, risks, and next approval. Configuration changes begin only when the user has authorized exact owned paths and effects.
+9. **Reversible implementation.** Change one major setup item at a time, preserve prior state, validate compatible schema, and avoid simultaneous prompt, evaluator, and mechanism changes that destroy attribution.
+10. **Focused evaluation.** Run positive behavior, unrelated-task silence, denied action, malformed input, overlap, failure containment, rollback, and regression cases. Inspect state, not only output text.
+11. **Observation.** Compare with the unchanged baseline for workflow value, noise, latency, review burden, duplicate effects, and user adoption. Installation alone is not success.
+12. **Lifecycle close.** Mark the item proposed, adopted, observed, narrowed, paused, replaced, rejected, or retired. Record owner, version assumptions, residual risk, next trigger, and a resumable checkpoint if another session or owner continues.
+
+**Failure transitions.** An ambiguous outcome returns to intake. Inactive repository signals return to baseline or no change. Missing current-product evidence creates a permitted refresh task. Missing service ownership or credentials creates a permission and data-flow handoff. Configuration failure returns to the schema or version layer. Unauthorized behavior stops effects and invokes containment. Failed rollback blocks rollout and may change the selected surface. Unmeasurable value returns the recommendation to provisional or retired rather than inviting more automation.
+
+**Good journey.** Repeated formatting churn is confirmed against an active command, one hook is selected over a broader plugin, a narrow matcher and failure policy are approved, related and unrelated fixtures pass, and the team observes lower churn without blocking edits. **Bad journey.** Dependency names produce a multi-category installation list that is implemented immediately and closed when each item reports success. **Borderline journey.** A service integration addresses a real need, but owner, credential scope, and current compatibility are absent; the correct artifact is a bounded permission and refresh packet while all connection changes remain frozen.
+
+**Success condition.** Another reviewer can reconstruct why setup was or was not chosen, what evidence and authority controlled each transition, which behavior passed or failed, what state changed, how to restore it, and who owns the next lifecycle event. Test the journey with no-change, missing-authority, incompatible-version, negative-scope, rollback-failure, and retirement cases, not only a clean adoption path.
+
+The exact approval channels and surface syntax vary by organization and runtime. The durable insight is that setup is a recoverable loop: evidence justifies a control, operation produces new evidence, and that evidence can narrow or remove the control later.
 
 ## Decision Tradeoff Guide
 
-| decision_option_name | when_to_choose_condition | tradeoff_cost_description | verification_question_prompt |
-| --- | --- | --- | --- |
-| Adopt when | local corpus and external evidence agree on the claude code setup patterns pattern | fastest path, but can copy stale local assumptions | Does the selected pattern appear in the canonical source and current external evidence? |
-| Adapt when | local sources are strong but public ecosystem guidance has changed | preserves repo fit, but requires explicit inference notes | Did the reference label the local fact, external fact, and combined inference separately? |
-| Avoid when | source evidence is thin, conflicting, or unrelated to the user journey | prevents false confidence, but may require deeper research | Is there a confidence warning or adjacent reference route? |
-| Cost of being wrong | wrong claude code setup patterns guidance can send an agent to the wrong files, tests, or abstraction | wasted implementation loop and weaker verification | Would a reviewer know what to undo and what to inspect next? |
+Use two independent gates. The **fit gate** asks whether the setup item addresses the observed repository outcome with the right mechanism and evaluator. The **authorization gate** asks whether its invocation, tools, paths, service scopes, data handling, and side effects are allowed. Passing either gate cannot substitute for the other.
+
+| decision_option_name | when_to_choose_condition | required_evidence | safe_fallback_and_tradeoff | revisit_trigger |
+| --- | --- | --- | --- | --- |
+| No change | Existing commands, documentation, or human process already meet the outcome, or automation cost exceeds recurring value | Baseline workflow, active use, owner confirmation, and comparison with the best setup candidate | Preserves zero new authority and low maintenance but may leave repeated manual cost | Workflow volume, failure rate, ownership, or available capability changes |
+| Adopt | Repository need, source scope, surface fit, authorization, cases, rollback, owner, and observed result all align | Active signal, bounded configuration, positive and negative results, permission review, and lifecycle owner | Fastest reuse after evidence, but can preserve stale assumptions if observation stops | Source, runtime, permission, owner, task, evaluator, or failure distribution changes |
+| Adapt | The outcome or invariant is valid but syntax, tool, model, event, repository convention, or permission differs | Kept requirement, changed mechanism, explicit design inference, rejected alternatives, and new cases | Preserves intent while adding local maintenance and migration responsibility | Adapted behavior fails, stronger current evidence appears, or upstream support changes |
+| Pause for evidence | A material compatibility, owner, permission, data, evaluator, or rollback question is finite and answerable | Exact missing fact, acquisition step, responsible owner, safe interim state, and decision-changing result | Delays adoption while preventing uncertainty from becoming policy | Evidence arrives, deadline or scope changes, or safe collection proves impossible |
+| Avoid | The item is unrelated, duplicates stronger setup, conflicts with authority, cannot be evaluated, or requires unavailable capability | Conflict or failure evidence, consequence, rejected repair, and safer alternative | Prevents false confidence but may require manual work or narrower design | Need, authority, capability, or evaluator changes materially |
+| Route | Security, service ownership, credential policy, production operations, product support, or incident handling controls the unresolved risk | Destination owner, bounded handoff payload, expected artifact, and return rule | Adds coordination but places the decision under proper authority | Returned artifact resolves the fit or authorization gate |
+| Replace | Another surface or maintained bundle provides the same outcome with clearer authority, lower overlap, or stronger lifecycle | Before/after behavior, dependency map, migration plan, compatibility, and rollback | Consolidates control but can break dependents or introduce new ownership | Replacement regressions, source drift, or maintenance failure |
+| Retire | Original workflow signal is gone, value no longer exceeds cost, owner is absent, permissions are excessive, or behavior is fully superseded | Usage and failure evidence, dependency and credential inventory, disable or removal test, and owner decision | Reduces invisible policy and maintenance but can remove a rarely used safeguard | Recurrence returns or retirement exposes a missing control |
+| Cost of being wrong | Evaluate for every branch, especially automatic, write-capable, shared, credentialed, or external setup | Blast radius, detection delay, unauthorized effects, secrets, duplicate work, rollback, review burden, and trust impact | More evidence costs time; too little evidence shifts cost into diagnosis and recovery | New dependency, scope, user group, side effect, or irreversibility increases consequence |
+
+**Surface tradeoffs.** A manual command has low setup and removal cost but weak discoverability and repeated human effort. Documentation improves shared understanding but cannot enforce behavior. A hook is deterministic and immediate but can block or recurse. A skill packages context and scripts but can hide invocation and side effects. A subagent isolates specialist context but creates fan-in and evaluator questions. A plugin reduces local duplication but adds bundle and update dependency. MCP provides direct service capability but introduces credentials, data flow, external authority, and revocation obligations.
+
+The least-powerful surface is a default, not a dogma. A maintained, inspected plugin may be safer than several improvised hooks and skills. A read-only external integration may have narrower effect than a skill script that writes files. Compare concrete configurations under one outcome, owner, permission model, and evaluator.
+
+**Branch gotchas.** Source agreement does not prove fit. A reversible local trial does not authorize production. Adaptation cannot invent permission. Pause without an owner and movement condition becomes indefinite. Avoid without a fallback transfers the problem. Replacement without dependency review creates breakage. Retirement without credential and state cleanup leaves residual authority. Sunk cost is not evidence for continued adoption.
+
+**Examples.** Adopt a formatter hook after active command and negative matcher evidence. Adapt a local skill when the workflow is sound but current schema differs. Pause an unrefreshed plugin recommendation with an owner and compatibility task. Route database credentials to the service owner. Replace overlapping review agents with one independently evaluated role. Retire a shared integration only after dependents, credentials, and rollback are checked.
+
+**Verification.** Record branch, fit evidence, authorization evidence, rejected alternatives, surface, versions, observed behavior, rollback, owner, residual risk, and revisit trigger. Another reviewer should be able to reach the same branch from the saved record. Include no-change and route cases so the evaluator does not reward automation by default.
+
+The inherited branch vocabulary is useful, but thresholds are local judgment. The second-order decision is portfolio coherence: an individually strong setup item can still be wrong when another control already owns the same outcome or when their combined authority is excessive.
 
 ## Local Corpus Hierarchy
 
-Classification vocabulary includes canonical, supporting, legacy, duplicate, and conflicting source roles.
+The local corpus is a six-lineage evidence set, not twelve independent votes. Each lineage has a current locator under `claude-skills/` and an archived locator under `agents-used-monthly-archive/claude-skills-202603/`. At the time of this evolution, every current/archive pair is byte-identical. That identity establishes provenance and prevents accidental double counting; it does not mean that two copies corroborate a claim, that an archive is obsolete, or that a current path is automatically more authoritative.
 
-| local_source_filepath_value | corpus_hierarchy_role | heading_signal_to_convert | reviewer_question_to_answer |
+Hierarchy is assigned to an atomic claim, not permanently to an entire file. One source can be primary for the workflow it defines, supporting for an example, provisional for a product-specific name, negative for a pattern that violates local constraints, and silent about a permission question it never addresses. This claim-scoped model allows useful material to survive without importing every instruction around it.
+
+**Classification Vocabulary**
+
+| role | operational meaning | evidence needed to assign it | effect on setup decisions |
 | --- | --- | --- | --- |
-| agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/SKILL.md | canonical primary source | Claude Automation Recommender; Output Guidelines; Automation Types Overview | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/hooks-patterns.md | supporting detail source | Hooks Recommendations; Auto-Formatting Hooks; Prettier (JavaScript/TypeScript) | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/mcp-servers.md | supporting detail source | MCP Server Recommendations; Setup & Team Sharing; Documentation & Knowledge | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/plugins-reference.md | supporting detail source | Plugin Recommendations; Official Plugins; Development & Code Quality | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/skills-reference.md | supporting detail source | Skills Recommendations; Available from Official Plugins; Plugin Development (plugin-dev) | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/subagent-templates.md | supporting detail source | Subagent Recommendations; Code Review Agents; code-reviewer | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| claude-skills/plugins/claude-code-setup/SKILL.md | supporting context source | Claude Automation Recommender; Output Guidelines; Automation Types Overview | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| claude-skills/plugins/claude-code-setup/references/hooks-patterns.md | supporting detail source | Hooks Recommendations; Auto-Formatting Hooks; Prettier (JavaScript/TypeScript) | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| claude-skills/plugins/claude-code-setup/references/mcp-servers.md | supporting detail source | MCP Server Recommendations; Setup & Team Sharing; Documentation & Knowledge | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| claude-skills/plugins/claude-code-setup/references/plugins-reference.md | supporting detail source | Plugin Recommendations; Official Plugins; Development & Code Quality | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| claude-skills/plugins/claude-code-setup/references/skills-reference.md | supporting detail source | Skills Recommendations; Available from Official Plugins; Plugin Development (plugin-dev) | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
-| claude-skills/plugins/claude-code-setup/references/subagent-templates.md | supporting detail source | Subagent Recommendations; Code Review Agents; code-reviewer | What guidance, warning, or example should this source contribute to Claude Code Setup Patterns? |
+| primary | The source directly defines the local workflow, contract, or owner-approved rule for the exact claim. | Relevant passage, applicable scope, identifiable authority, and no stronger controlling instruction. | May anchor guidance, but still requires compatibility and behavioral verification before implementation. |
+| supporting | The source adds an example, rationale, implementation pattern, or warning consistent with a primary claim. | Traceable passage plus a clear connection to the claim being evaluated. | Can refine or illustrate a recommendation; cannot independently grant permission or settle a conflict. |
+| provisional | The source offers a plausible claim whose freshness, version, availability, schema, or local fit has not been established. | Direct passage plus an explicit statement of the missing evidence and a way to obtain it. | May motivate a bounded investigation; must not be presented as current fact or enabled by default. |
+| negative | The source contains an example or instruction that should not be copied under the current task's constraints. | Specific risk, violated policy, failed case, excessive permission, or contradicted behavior. | Retain as a warning with its cause; exclude it from generated setup and recommendation defaults. |
+| duplicate | Two locators resolve to the same content lineage for the relevant version. | Byte identity or an exact semantic comparison, plus provenance linking the copies. | Count the content once. Prefer the operational locator while retaining the archive for provenance. |
+| conflicting | Two applicable claims recommend incompatible actions or assign different authority. | Both passages, their versions and owners, and the decision that cannot simultaneously hold. | Freeze dependent adoption until controlling authority, implementation evidence, or an owner resolves the conflict. |
+| stale | A claim was once applicable but no longer matches the supported version, implementation, policy, or observed behavior. | Historical applicability plus evidence of the change that invalidated it. | Preserve for migration history and failure prevention; do not use as current setup guidance. |
+| superseded | A controlling source intentionally replaced an earlier claim while preserving the same decision domain. | Explicit replacement, owner decision, or versioned migration evidence. | Route new work to the replacement and keep the old claim only for historical traceability. |
+| silent | The source does not answer the claim being decided. | Review of the relevant scope showing no applicable statement. | Do not infer approval, rejection, compatibility, or safety from absence. |
+
+`Canonical` is deliberately not used as a blanket file label. It can imply universal authority that the corpus does not possess. A local skill can be primary for how to produce a read-only recommendation report while remaining silent about current marketplace inventory and subordinate to repository security policy.
+
+**Six Content Lineages**
+
+| content lineage and locators | initial claim roles | authority boundary | evidence required before use |
+| --- | --- | --- | --- |
+| Entry workflow: `claude-skills/plugins/claude-code-setup/SKILL.md`; archive: `agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/SKILL.md` | Primary for the local read-only recommendation workflow, report shape, analysis sequence, and automation taxonomy. Duplicate across the two locators. | It does not establish present Claude Code behavior, prove that an automation improves outcomes, or authorize repository changes. A direct user instruction, repository policy, or security owner can narrow it. | Cite the exact workflow clause, confirm it applies to the requested task, inspect repository evidence, and obtain authorization before changing setup. |
+| Hook details: `claude-skills/plugins/claude-code-setup/references/hooks-patterns.md`; archive: `agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/hooks-patterns.md` | Supporting for candidate event patterns, formatting examples, and hook-specific risks. Product syntax and event availability are provisional until locally verified. Broad blocking, recursive, or unbounded examples become negative when they violate the task boundary. | A detail file can suggest implementation mechanics but cannot make an automatic action desirable, safe, or permitted. | Verify the installed event schema, matcher behavior, exit semantics, timeout, idempotence, failure visibility, and a disable path in a disposable case. |
+| MCP details: `claude-skills/plugins/claude-code-setup/references/mcp-servers.md`; archive: `agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/mcp-servers.md` | Supporting for MCP capability categories and configuration concerns. Server names, installation steps, authentication shape, and scope are provisional without a permitted current check. Dependency-match claims and broad credential patterns can be negative. | The file cannot prove that a named server is installed, maintained, compatible, least-privilege, or appropriate for the repository. | Confirm current availability, owner, data boundary, credential scope, tool inventory, failure behavior, and whether a local CLI or existing integration already satisfies the need. |
+| Plugin details: `claude-skills/plugins/claude-code-setup/references/plugins-reference.md`; archive: `agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/plugins-reference.md` | Supporting for bundle concepts and examples. Package names, marketplace status, contents, and compatibility remain provisional. Opaque bundles or overlapping automations are negative until inspected. | A plugin label does not reveal all skills, hooks, agents, tools, permissions, or lifecycle obligations carried by the bundle. | Inventory the actual installed contents, compare overlap with existing controls, review permissions and triggers, run representative tasks, and identify update and removal owners. |
+| Skill details: `claude-skills/plugins/claude-code-setup/references/skills-reference.md`; archive: `agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/skills-reference.md` | Supporting for progressive disclosure, packaging, trigger design, and reusable procedure examples. Schema details are provisional. Skills that run unsafe scripts or cause automatic side effects are negative for read-only recommendation work. | A skill can organize guidance but cannot make stale instructions current, replace domain authority, or guarantee that triggering and full-document loading behave as expected. | Validate metadata and path structure with the installed runtime, test intended and non-intended triggers, inspect bundled scripts, and confirm that instructions respect repository and user constraints. |
+| Subagent details: `claude-skills/plugins/claude-code-setup/references/subagent-templates.md`; archive: `agents-used-monthly-archive/claude-skills-202603/plugins/claude-code-setup/references/subagent-templates.md` | Supporting for context isolation, role focus, and tool-scope examples. Model names and delegation thresholds are provisional. Shared writes, circular delegation, or self-grading without independent evidence are negative. | A template cannot establish that delegation is cheaper, faster, or safer for a particular task, and it does not create ownership boundaries by itself. | Give each worker a non-overlapping scope, bounded tools, acceptance evidence, and a merge owner; compare output quality and coordination cost against a single-agent baseline. |
+
+The current locator is the default operational path because it is where active setup work would look first. The archive locator is the provenance anchor because it preserves the earlier captured state. While their hashes match, either path yields the same content and should be treated as one source. If a pair later diverges, preserve both versions and compare them; never silently overwrite the difference or assume that directory age settles authority.
+
+**Claim Classification Procedure**
+
+For every recommendation-changing claim:
+
+1. State the claim narrowly enough that it has one subject, one behavior, and one decision consequence. "Hooks are useful" is too broad; "a post-edit formatter hook may reduce unformatted JavaScript changes" can be evaluated.
+2. Record the exact source passage, content lineage, locator, version or capture date, and known owner. A heading alone is a discovery signal, not supporting evidence.
+3. Separate four dimensions: source content, authority, present compatibility, and local effectiveness. A direct quote can establish content while all three other dimensions remain unresolved.
+4. Assign one or more roles for this claim and explain the scope. Mixed classification is expected when an otherwise useful file contains a stale name or unsafe example.
+5. Compare controlling instructions in this order: direct user constraint, organization or repository policy, security and data rules, compatible implementation behavior, owner-approved local workflow, then supporting examples. This order is a decision boundary for this reference, not a universal governance model.
+6. Link any setup item that depends on the claim. A change to a hook event should identify the matching configuration and cases; it should not automatically reopen unrelated subagent guidance.
+7. Record what evidence would promote, narrow, reject, mark stale, or supersede the role. A provisional label with no path to resolution is merely vague.
+
+The procedure should remain proportional. A harmless wording example does not need a governance ledger. A claim that enables shell execution, sends repository data externally, stores credentials, blocks normal work, delegates writes, or installs a bundle does.
+
+**Conflict and Containment**
+
+When two applicable claims conflict, retain both passages and stop the dependent change. Do not settle the conflict by counting files, favoring the longer explanation, selecting the newest-looking path, or choosing the most confident wording. Instead:
+
+1. Identify the exact incompatible actions and the artifacts that would depend on either choice.
+2. Check whether one claim has direct authority over the repository, security boundary, supported runtime, or requested outcome.
+3. Compare lineage, owner, version, implementation behavior, and representative local cases.
+4. Ask the controlling owner when the dispute concerns permission, policy, data exposure, or operational responsibility.
+5. Record the resolution, rejected alternative, evidence, and conditions that would reopen it.
+6. Reclassify downstream guidance and remove or disable any setup that relied on the losing claim.
+
+Containment is a valid result. For example, if a detail file names a hook event that the installed runtime does not recognize, retain the event name as provisional historical material, leave the hook disabled, and continue with a manual command or existing formatter integration. If a skill recommends browsing but the active task forbids browsing, reject that clause for the task without demoting the skill's unrelated packaging guidance.
+
+**Examples and Boundary Cases**
+
+**Good classification:** The entry workflow explicitly says to inspect a repository before recommending automation and to return a read-only report. Treat that workflow shape as primary for this recommendation task. Treat the hook file's formatter command as supporting mechanics, verify the repository actually uses the formatter, and seek permission before installing an automatic hook.
+
+**Bad classification:** A reviewer sees the word `canonical` beside the archived entry skill, copies every named plugin and MCP server into configuration, and claims the duplicate current files independently confirm the choices. This collapses provenance, product freshness, local fit, permission, and outcome evidence into one label.
+
+**Borderline classification:** A subagent template describes a focused code reviewer and the repository has recurring review work, but no local comparison shows that delegation improves coverage or cost. The role is supporting for isolation design and provisional for adoption. A bounded parallel review with non-overlapping read-only scope, independent findings, and measured coordination cost can promote or reject the adoption claim.
+
+**Mixed-role source:** The skills reference provides a useful progressive-disclosure structure but includes a script with side effects inappropriate for read-only analysis. Preserve the structure as supporting, mark the script negative for this task, and require an explicit implementation review before any future use.
+
+**Silent source:** The plugin reference does not state who owns credentials for an external service. Its silence is neither permission nor rejection. The setup remains paused until repository policy or the responsible owner answers the question.
+
+**Verification and Change Review**
+
+Hierarchy evidence should support both backward and forward traceability:
+
+- Backward trace starts at a recommendation or configuration clause and reaches the exact source passage, role decision, authority, compatibility result, local case, and owner decision.
+- Forward trace starts at a changed source claim and reaches every recommendation, configuration, credential, test case, observation, rollback step, and lifecycle record that depends on it.
+
+Automate only the mechanical parts. Hashes can detect identical or diverged copies; path checks can find missing locators; schemas can validate known fields; behavior cases can exercise an adopted configuration. Human review is still required to classify mixed claims, interpret policy authority, and decide whether external access is acceptable. No hash, parser, or classifier should grant permission.
+
+Sample the trace after each material change. A later reviewer should be able to explain why a claim is primary, supporting, provisional, or negative without relying on the original conversation. For high-impact setup, use an independent reviewer and more than one representative task because a clean table and a single passing case can still encode reviewer bias.
+
+**Uncertainty and Role Movement**
+
+Known facts in this corpus include the file paths, inspected wording, heading inventory, and byte identity of each current/archive pair at the recorded review boundary. The corpus does not by itself prove current marketplace availability, supported configuration schemas, maintainer status, universal value, or owner approval. Those are refresh-dependent or judgment-dependent claims.
+
+Roles move when evidence changes:
+
+- Provisional becomes supporting after current compatibility and source purpose are verified.
+- Supporting becomes primary only when an applicable authority explicitly adopts the claim for its decision domain.
+- Primary narrows when a stronger instruction, policy, or implementation boundary applies.
+- Any role becomes stale after incompatible product or policy change.
+- A failed local trajectory can make an example negative while leaving its surrounding principle useful.
+- A versioned owner decision can supersede an earlier claim without deleting its history.
+- Unresolved evidence remains provisional, conflicting, or silent; confidence is not manufactured to fill a table.
+
+This hierarchy is also retrieval policy. Labels influence which files later agents load, which examples they copy, and which risks stay visible. Therefore, failed trajectories should update future retrieval priority, and negative examples should retain their causes. Historical legibility is not archival decoration: it prevents a rejected pattern from silently regaining authority when a later agent rediscovers it.
 
 ## Theme Specific Artifact
 
-Theme specific artifact: worked claude code setup patterns example with user goal, decision point, failure mode, and verification gate.
+The operational artifact for this reference is a **Claude Code Setup Decision Record**. It turns a request such as "improve our Claude setup" into one bounded candidate that a repository owner can inspect, authorize, test, disable, and eventually retire. The record is recommendation-only until an authorized person approves implementation. It must not disguise an unverified product name, event, schema field, marketplace package, or credential procedure as current fact.
 
-| artifact_field_name | artifact_completion_rule | evidence_source_hint |
+Start with the unchanged repository. A new control must close an observed gap more effectively than existing scripts, documentation, editor behavior, CI, or team practice. Prefer the least-powerful surface that covers the outcome: explicit instructions before delegated work, delegated work before automatic mutation, and local execution before an external data boundary. This ordering is a risk-sensitive default, not a ban on stronger controls.
+
+**Decision Record Schema**
+
+| artifact field | completion rule | why it is required |
 | --- | --- | --- |
-| user_goal_statement | state the user's concrete goal before applying Claude Code Setup Patterns | local corpus hierarchy plus critique findings |
-| decision_boundary_rule | define the point where this reference should be used or avoided | decision tradeoff guide |
-| verification_gate_rule | define the command, checklist, or review question that proves the artifact worked | verification gate command set |
+| decision identifier and status | Give the record a stable identifier and mark it proposed, paused, rejected, authorized, trialing, adopted, disabled, replaced, or retired. | Separates analysis from permission and makes lifecycle movement observable. |
+| user outcome | State the human-visible result in one sentence without naming a preferred automation. | Prevents a tool request from substituting for the actual problem. |
+| scope and owner | Name the repository, affected users, workflow boundary, decision owner, implementation owner, and observation owner. | Exposes split authority and avoids ownerless shared setup. |
+| observed friction | Record concrete skipped steps, repeated effort, review defects, latency, or confusion, including the observation window. | Establishes that there is a gap worth changing. |
+| unchanged baseline | Describe current scripts, CI, documentation, and manual sequence and what happens if setup remains unchanged. | Supplies the counterfactual for later value measurement. |
+| local evidence | Cite exact paths, commands, configuration, and representative behavior inspected. | Grounds the candidate in the repository rather than generic feature lists. |
+| evidence boundary | Separate local fact, inherited corpus claim, unrefreshed product claim, inference, owner decision, and measured result. | Keeps confidence proportional to evidence freshness and authority. |
+| candidate surface | Name the smallest suitable surface and describe its trigger, inputs, outputs, tools, writes, external access, and stop behavior. | Makes authority and context cost reviewable before implementation. |
+| credible alternatives | Compare no change and every materially plausible surface; record adopt, adapt, pause, avoid, route, replace, or retire reasons. | Prevents feature count or novelty from deciding the setup. |
+| permissions and data boundary | List files, commands, network destinations, secrets, production access, and human approvals the candidate would require. | Turns least privilege into an inspectable contract. |
+| overlap and dependencies | Name existing controls that duplicate, call, trigger, or are triggered by the candidate. | Prevents double execution and reveals replacement impact. |
+| failure model | For each likely failure, give trigger, observable signal, containment action, recovery, and escalation owner. | Converts warnings into operational response. |
+| verification packet | Define source trace, structural checks, intended cases, non-intended cases, forced failure, rollback rehearsal, baseline comparison, and independent review. | Requires evidence across correctness, safety, and usefulness. |
+| rollout and rollback | Specify disabled default, trial scope, observation period, enable authority, disable mechanism, and restoration of the prior workflow. | Keeps adoption reversible and limits blast radius. |
+| success and removal criteria | Name the outcome measure, acceptable false-trigger or failure level, review date, refresh signal, replacement rule, and retirement condition. | Prevents a once-useful control from becoming permanent by inertia. |
+| unresolved questions | Assign every material unknown to an owner, evidence source, and resolution gate. | Makes a pause actionable instead of leaving an ambiguous recommendation. |
+
+Use the full schema for shared, automatic, side-effecting, externally connected, security-sensitive, or difficult-to-remove setup. A reversible personal preference can use a shorter record containing outcome, baseline, candidate, authority, verification, and disable path. Split the record when two candidates cross different ownership, credential, production, or data boundaries.
+
+**Completed Worked Scenario**
+
+The following is an illustrative decision record, not a claim about this repository or the currently installed Claude Code schema.
+
+| field | completed value |
+| --- | --- |
+| decision identifier and status | `CCR-REVIEW-001`; proposed recommendation only. No configuration or repository file has been authorized for change. |
+| user outcome | Contributors should run the repository's established lint, focused test, and change-summary checks consistently before asking for code review. |
+| scope and owner | One TypeScript repository; contributors invoking the procedure; repository maintainer owns approval; a designated tooling maintainer would own implementation and observation. |
+| observed friction | In the scenario's last ten review handoffs, contributors used inconsistent command sequences and three handoffs omitted either lint or focused tests. This is scenario data for demonstrating the artifact, not measured corpus evidence. |
+| unchanged baseline | Contributors read package scripts and run checks manually. CI eventually catches some omissions, but feedback is delayed and the review handoff lacks a uniform evidence summary. |
+| local evidence | The hypothetical repository exposes `pnpm lint`, `pnpm test -- <affected-test>`, and `pnpm format:check`; contributor guidance requires changed-file and test evidence. Exact commands must be re-read from the real target repository before use. |
+| evidence boundary | The procedure shape comes from the inspected local setup corpus. Command names and omission counts belong only to this scenario. Present skill metadata and invocation behavior are unverified until checked against the installed environment. Expected reduction in missed checks is an inference awaiting a trial. |
+| candidate surface | A repository-scoped, user-invoked review skill containing the existing command-selection procedure and a compact evidence report. It receives the user's review request and changed-file context, reads relevant repository guidance, proposes or runs only approved local checks, writes no source files, uses no network service, and stops on command failure or an unresolved destructive step. |
+| trigger contract | Explicit contributor invocation for review preparation. Ordinary editing, commits, pushes, and unrelated questions must not activate it. If trigger discrimination cannot be established, keep the procedure as plain documentation. |
+| output contract | Changed-file summary, checks selected with reasons, summarized command outcomes, skipped checks with reasons, unresolved risks, and an explicit statement that no commit or push occurred. |
+| permissions | Read repository instructions and diffs; execute only repository-approved read-only or test commands after user authorization under local command policy. No credential access, network calls, production environment, source mutation, commit, or push. |
+| overlap and dependencies | Reuses package scripts and contributor policy as sources of truth. It does not replace CI, formatter configuration, test ownership, code review, or security approval. It must not duplicate an equivalent maintained skill already present. |
+
+**Alternatives Ledger**
+
+| option | decision | decisive evidence and tradeoff |
+| --- | --- | --- |
+| No setup change | Adapt as fallback | Safest and maintenance-free, but the scenario shows repeated omission. Improve contributor documentation first if a reusable procedure cannot trigger predictably. |
+| Plain checklist in repository guidance | Viable simpler alternative | Lowest runtime and permission cost. Prefer it when the sequence is short, rarely changes, and contributors reliably follow it without contextual command selection. |
+| User-invoked review skill | Recommend for bounded trial | Reuses current commands, packages a multi-step procedure, and preserves explicit invocation. It adds trigger, instruction-drift, and maintenance obligations that must be tested. |
+| Focused review subagent | Route only for broad independent review | Useful when isolated analysis or parallel issue classes materially improve coverage. Excessive for merely sequencing three local checks and more costly to coordinate. |
+| Automatic post-edit or pre-action hook | Pause | Could enforce consistency, but it introduces automatic execution, latency, reentrancy, and failure-blocking risk. The relevant event schema and repository approval are not established in this scenario. |
+| Plugin bundle | Avoid absent inventory | Bundle contents, overlap, version, and permissions are unknown; installing multiple controls to obtain one procedure expands maintenance and authority without evidence. |
+| MCP integration | Avoid | The outcome uses local repository evidence and commands; no external capability or data boundary is needed. |
+
+**Failure, Detection, and Recovery**
+
+| failure | detection signal | containment and recovery |
+| --- | --- | --- |
+| Skill activates for unrelated work | Non-review prompts select the procedure in negative trigger cases. | Disable the skill, narrow its trigger description, rerun negative cases, or retain the workflow as plain documentation. |
+| Procedure invokes a stale command | Package scripts or repository guidance no longer match the recorded sequence; command reports missing target. | Stop execution, re-read current repository contracts, update the candidate under review, and do not guess replacement commands. |
+| A check mutates source unexpectedly | Clean-worktree snapshot differs after a command classified as read-only. | Stop subsequent commands, preserve the diff for inspection, restore only with owner approval, and reclassify the command's authority. |
+| A failed check is hidden by the summary | Raw exit status is nonzero while the report claims success or omits the failure. | Mark the run failed, expose the command and concise error, repair output handling, and add a forced-failure case. |
+| Contributors trust the skill instead of CI or review | Handoff language treats the summary as final approval. | Add an explicit boundary to output, retain CI and human review, and evaluate misuse during the trial. |
+| Equivalent setup already exists | Inventory finds another skill, script, or plugin owning the same sequence. | Prefer the maintained owner, reconcile useful differences, and reject or retire the duplicate candidate. |
+| Maintainer becomes unavailable | Refresh date passes or failures have no responding owner. | Disable shared invocation, route users to repository-native commands, and assign or retire the control before reenabling it. |
+
+**Verification Packet**
+
+Before authorization, a reviewer should be able to replay these checks:
+
+1. Trace every command and instruction to current repository files; label scenario-only and unrefreshed product claims.
+2. Confirm the candidate's metadata and location against the installed runtime without assuming the archived schema remains current.
+3. Run positive cases for an ordinary source change, a focused test selection, and a documentation-only change where some checks may be intentionally skipped.
+4. Run negative trigger cases for editing, casual questions, commit requests, and unrelated planning; the candidate must remain inactive.
+5. Force lint failure, test failure, missing command, timeout, and unexpected dirty-worktree conditions; each must stop safely and remain visible.
+6. Disable or remove the candidate and confirm contributors can return immediately to the documented native command sequence.
+7. Compare a bounded sample against the unchanged baseline: missed required checks, unnecessary command runs, contributor effort, reviewer clarification time, false triggers, hidden failures, and maintenance interventions.
+8. Obtain repository-owner approval for the final authority contract and an independent reviewer verdict on the saved evidence.
+
+Passing one happy path is insufficient. The candidate passes trial only when intended invocation is predictable, non-intended activation is absent in the agreed sample, failures remain visible, no unapproved mutation or external access occurs, rollback restores the baseline, and the owner judges the review evidence more consistent at acceptable cost. Exact thresholds belong to the repository and must be set before the trial rather than inferred from this example.
+
+**Rollout and Lifecycle**
+
+Keep the candidate disabled until compatibility, cases, rollback, and permission gates pass. Trial it with one repository and a small contributor group for a fixed period. Save aggregate outcomes, not raw conversational transcripts or unnecessary source content. At the review boundary, adopt, adapt, pause, reject, or route based on evidence.
+
+Refresh the record when repository scripts, contributor policy, skill runtime behavior, ownership, or the candidate's dependencies change. Disable it immediately after unexplained mutation, external access, concealed failure, repeated false activation, or owner loss. Retire it when the workflow disappears, a repository-native control covers the outcome more directly, or maintenance cost exceeds measured benefit. Preserve the concise decision history so the same rejected automation is not repeatedly rediscovered without its earlier evidence.
+
+The completed record is also an authorization interface. Approval should name the exact candidate, scope, permissions, evaluator, and trial boundary. Approval of the general goal does not authorize a plugin installation, automatic hook, external connection, commit, push, or any other unlisted action.
 
 ## Worked Example Set
 
-Good example: Use Claude Code Setup Patterns after loading the canonical source, confirming the external evidence boundary, and writing a verification gate before implementation.
-Bad example: Use Claude Code Setup Patterns as a generic tutorial while ignoring the mapped local paths, source hierarchy, and cost of being wrong.
-Borderline case: Use Claude Code Setup Patterns only after adding a confidence warning when local evidence is thin or conflicts with current ecosystem guidance.
+These examples calibrate setup decisions; they are not current installation instructions. Every case is hypothetical. Keep the user outcome fixed within each set and compare the evidence, authority, trigger, failure handling, and lifecycle state. A good result is not necessarily adoption: choosing no change or routing to a domain owner can be the best setup decision.
+
+Use these classifications:
+
+| classification | required state |
+| --- | --- |
+| good | The recommendation is grounded in current local evidence, uses proportionate authority, exposes uncertainty, has approval appropriate to its effect, and includes replayable behavior, failure, rollback, and lifecycle evidence. |
+| bad | The action crosses a material evidence, authority, data, behavior, or recovery gate. Formatting quality and confident language do not repair the missing control. |
+| borderline | The candidate remains disabled or otherwise contained, the unresolved fact can change the decision, a named evaluator can resolve it, and a safe interim workflow exists. |
+
+**Set 1: Repeated Review Preparation**
+
+User outcome: contributors should present consistent lint, test, and change-summary evidence before review.
+
+| case | reasoning and action | classification evidence |
+| --- | --- | --- |
+| Existing contributor guidance and CI already produce consistent handoffs; a sample finds no repeated omission or costly clarification. The reviewer records the baseline and recommends no setup change. | New instructions would duplicate maintained controls and add another drift point without an observed gap. Revisit only if omission or review-delay evidence appears. | Good: no change is an explicit decision, local controls were inspected, and the refresh trigger is visible. |
+| A generic guide says skills improve consistency, so the reviewer creates a repository skill that invents command names and describes passing output without running or tracing any checks. | The surface label replaces repository evidence. The new procedure can mislead contributors and compete with CI. Remove it and return to current guidance. | Bad: unsupported commands, fabricated evidence, duplicate authority, and no failure path. |
+| The repository has repeated omissions and suitable native commands, but current skill metadata and trigger behavior have not been verified. | Save a recommendation-only decision record, use a plain checklist as the interim behavior, and keep the skill candidate disabled until structural and positive/negative trigger cases pass. | Borderline: fit evidence exists, compatibility does not, and one bounded verification packet can move the case. |
+
+Replay question: if the trigger check fails, does the recommendation safely fall back to documentation, or does the workflow remain dependent on an unavailable skill?
+
+**Set 2: Automatic Formatting**
+
+User outcome: source changes should satisfy the repository's established formatter without creating surprise mutations or blocking unrelated work.
+
+| case | reasoning and action | classification evidence |
+| --- | --- | --- |
+| The repository owner requires deterministic formatting, an existing formatter command is authoritative, automatic execution is approved, and the installed environment confirms the selected event. A disabled trial proves matcher scope, idempotence, bounded runtime, visible failure, no recursive activation, and one-step disable. | Adopt the hook for the proven file scope, retain CI as independent enforcement, observe latency and false activation, and assign an owner for command or event drift. | Good: automatic authority is justified by the invariant and backed by compatibility, failure, recovery, and owner evidence. |
+| A reviewer copies a JavaScript formatter example into an unknown project, uses an unverified event name, applies it to every file, and treats a clean happy path as completion. | The hook can mutate generated or unsupported files, trigger recursively, conceal nonexecution, or block work. Disable it and inspect the actual repository and runtime before any retry. | Bad: generic command, broad matcher, unknown trigger, no negative cases, and no rollback rehearsal. |
+| The formatter and policy are clear, but the available event, timeout semantics, or failure-blocking behavior remains unrefreshed. | Continue with the native formatter command and CI, preserve the hook as a paused candidate, and assign compatibility checks in a disposable worktree. | Borderline: the desired invariant is real, but automation mechanics could change safety; manual enforcement preserves work meanwhile. |
+
+Replay question: which evidence proves that the hook ran exactly when intended, rather than merely proving that one file happened to be formatted?
+
+**Set 3: Isolated Migration Review**
+
+User outcome: a broad dependency migration should receive focused analysis without parallel workers overwriting each other's conclusions or files.
+
+| case | reasoning and action | classification evidence |
+| --- | --- | --- |
+| The migration has separable dependency, test-impact, and data-contract questions. Three read-only subagents receive non-overlapping scopes, bounded source sets, identical evidence labels, and one merge owner; each returns findings and uncertainty rather than edits. A sample shows additional issue coverage at acceptable coordination cost. | Adopt isolated analysis for similarly shaped migrations, keep implementation under one owner, and compare future coverage and merge effort against a single-agent baseline. | Good: delegation follows real separability, shared writes are excluded, and value plus cost are observed. |
+| Three agents are told to "fix the migration" in the same checkout, all may edit shared manifests, and each self-reports completion without an independent build or merge review. | Conflicting writes and implicit decisions make provenance unrecoverable. Stop workers, preserve their findings separately, restore single ownership, and rerun verification after reconciliation. | Bad: overlapping authority, shared state, no deterministic merge, and self-grading as evidence. |
+| The questions appear separable, but the repository is small enough that delegation overhead may exceed analysis value. | Run one bounded read-only comparison: a single reviewer versus two focused analyses on the same frozen revision. Keep one implementation owner regardless of outcome. | Borderline: safety is contained, and measured coverage, latency, and reconciliation effort can decide future routing. |
+
+Replay question: does the subagent boundary follow independent evidence domains, or was delegation chosen merely because parallelism is available?
+
+**Set 4: Plugin Bundle Adoption**
+
+User outcome: the team wants a maintained set of related review controls without duplicating its current hooks, skills, or agents.
+
+| case | reasoning and action | classification evidence |
+| --- | --- | --- |
+| The reviewer inspects the exact compatible bundle contents, versions, triggers, tools, permissions, update channel, and removal behavior. The owner maps each bundled component against current controls, rejects unneeded capabilities, replaces only true duplicates, and runs representative workflows plus rollback. | Trial the reduced authorized bundle with one owner and an inventory record; adopt only the components whose outcomes and failure paths remain observable. | Good: the decision concerns inspected contents rather than the plugin label, and portfolio effects are reconciled. |
+| A package name looks official and advertises code quality, so the reviewer installs it without reading its manifest or discovering that it adds an automatic hook and an external integration overlapping local controls. | Disable and remove the bundle, rotate or revoke any unnecessary credentials, inspect changed files, and restore the prior portfolio before reconsideration. | Bad: brand inference, hidden authority, overlap, data-boundary expansion, and untested removal. |
+| The bundle appears relevant in an archived reference, but current availability, included surfaces, and supported version are unknown. | Do not install it. First obtain a permitted current inventory and compare that inventory to the local control map; continue with existing individual controls meanwhile. | Borderline: the package claim is provisional, the setup is contained, and inventory evidence can resolve fit. |
+
+Replay question: can a reviewer name every behavior and permission being adopted, or is the bundle still functioning as an opaque unit of trust?
+
+**Set 5: External Issue Context Through MCP**
+
+User outcome: an agent reviewing a change needs authoritative issue acceptance criteria while respecting repository and service data boundaries.
+
+| case | reasoning and action | classification evidence |
+| --- | --- | --- |
+| Repeated tasks require issue lookup, the service owner approves access, the exact server and tools are current and compatible, credentials are read-only and narrowly scoped, repository content sent externally is prohibited, and audit plus revocation paths are tested in a non-production boundary. | Trial only issue-read operations, expose source identifiers in outputs, stop on authorization or service failure, and retain a manual issue-link workflow. | Good: external capability is necessary, data and credentials are bounded, and loss of service degrades safely. |
+| A dependency appears in the repository, so the reviewer assumes a matching MCP server is needed and grants broad workspace credentials to every agent. Tool inventory, outbound data, and revocation are not inspected. | Revoke access, audit calls and data, remove the configuration, and route the question to the service and security owners. | Bad: dependency matching is not need evidence, and the credential plus data boundary is unjustified. |
+| Only one short task needs two acceptance criteria, and the service owner has not approved an integration. | Use user-provided, source-labeled issue text or a permitted manual lookup. Keep MCP adoption paused unless recurrence and ownership justify its standing cost. | Borderline: a lower-authority interim route meets the immediate outcome while integration value and permission remain unresolved. |
+
+Replay question: does the task require a persistent external capability, or can explicit bounded context satisfy it with less credential and maintenance cost?
+
+**Set 6: Production and Security Operations**
+
+User outcome: a contributor asks Claude Code setup to automate a production deployment approval or security exception workflow.
+
+| case | reasoning and action | classification evidence |
+| --- | --- | --- |
+| The setup reviewer identifies that production authorization, secret handling, and compliance ownership exceed this reference. It records the requested outcome and evidence already gathered, makes no configuration change, and routes to the deployment or security owner and their specialized controls. | Resume setup analysis only after the controlling domain defines permitted actions, audit, evaluator, failure containment, and human review points. | Good: routing preserves evidence while respecting authority; refusal to automate is an operational decision. |
+| The reviewer treats a shell-capable hook or agent as a convenient deployment wrapper, embeds credentials, and calls a successful non-production command sufficient verification. | Disable the control, contain credentials, audit effects, and follow the owning incident or security process. Do not reuse the generic setup example as a production design. | Bad: capability availability is mistaken for authorization and the verification boundary does not match the consequence. |
+| The request concerns only generating a read-only deployment checklist, but some items encode organization policy that the repository does not contain. | Draft a source-labeled outline without asserting missing policy, assign the unknown clauses to the deployment owner, and prohibit execution until the completed artifact is approved. | Borderline: a low-authority artifact is possible, but policy silence must remain visible and actionable. |
+
+Replay question: which part is ordinary agent setup, and at what exact clause does a domain owner become the only valid authority?
+
+**How to Use and Verify the Set**
+
+For a proposed recommendation, select the closest case by outcome rather than by product noun. Then answer:
+
+1. What local fact establishes the gap?
+2. What is the unchanged baseline and safe interim behavior?
+3. Why is this surface the least authority that covers the outcome?
+4. Which direct permission applies to its files, commands, data, and external effects?
+5. What positive, negative, forced-failure, and rollback evidence exists?
+6. Who owns observation, refresh, disablement, replacement, and retirement?
+7. What single missing fact keeps a borderline case from moving?
+
+Have a second reviewer classify a sample of decisions without seeing the original label. Disagreement should trigger a boundary review, not a vote based on confidence. Capture which variable caused the difference: evidence freshness, surface fit, permission, behavior, recovery, or ownership. Use failed real trajectories to add or revise cases, but keep stable decision invariants separate from versioned product details.
+
+A confidence warning alone never converts a bad case into a borderline one. Borderline means the risky action is contained, the resolution path is owned, and useful work can continue safely while evidence is gathered.
 
 ## Outcome Metrics and Feedback Loops
 
-Leading indicator: the next run needs fewer clarifications and produces fewer unverifiable claims.
-Failure signal: the reference tells agents what to do without defining context budget or escalation rules.
-Review cadence: Re-run the verifier after every generated-reference edit and refresh external sources when public APIs, docs, or tooling releases change.
+Measure whether a setup item improves its stated human outcome without exceeding authority, hiding failure, increasing total workflow cost, or becoming ownerless. Installation, invocation, tool-call volume, and generated text are activities, not outcomes. A setup item can be frequently used and still be the wrong control.
+
+The default measurement sequence is:
+
+1. Freeze the setup version and describe the unchanged workflow.
+2. Select one primary outcome, several non-negotiable guardrails, and a small number of cost and reliability measures.
+3. Record a baseline from comparable tasks when feasible; otherwise label the baseline weak and use paired review plus conservative rollout.
+4. Trial one item in one bounded scope with a named observation owner and review date.
+5. Include intended, non-intended, failed, skipped, and disabled opportunities in the denominator.
+6. Compare like-for-like tasks and state confounders such as simultaneous CI, policy, staffing, or repository changes.
+7. Adopt, adapt, pause, disable, replace, retire, or collect a predefined next tranche of evidence.
+
+Do not invent universal targets from this reference. Repositories should set thresholds from consequence, baseline variation, task frequency, and owner tolerance before seeing trial results. Percentiles are useful only when enough comparable observations exist to make their tails meaningful; sparse workflows need case review instead.
+
+**Metric Portfolio**
+
+| evidence class | candidate measure and denominator | interpretation boundary | action it can support |
+| --- | --- | --- | --- |
+| Primary outcome | The task-specific result named in the decision record, such as required review checks completed per eligible handoff, supported acceptance criteria recovered per issue-driven task, or independently confirmed issue classes per broad review. | Choose one outcome that represents user value. A proxy such as invocation count cannot replace it. | Expand, preserve, narrow, or reject the candidate based on baseline-relative outcome and confidence. |
+| Clarification load | Clarification requests caused by missing procedure, ambiguous output, or unsupported claims per comparable completed task. | Fewer questions can mean better context, concealed uncertainty, or disengaged users; sample semantic quality before interpreting a decrease. | Adapt instructions, context selection, output contract, or routing. |
+| Evidence support | Recommendation or output claims with traceable source and verification status divided by claims requiring evidence. | Style and citations do not establish authority or applicability. Sample whether links and local paths actually support the claim. | Repair evidence boundaries, mark provisional claims, or stop reuse. |
+| Trigger precision | Correct activations per expected activation opportunity and unwanted activations per non-intended opportunity. Also record expected events where the control did not run. | Execution logs alone miss silent non-invocation; negative prompts or events are part of the sample. | Narrow triggers, change invocation mode, return to explicit documentation, or disable. |
+| Behavioral reliability | Successful contract-compliant runs per invocation, categorized by normal completion, expected stop, command failure, timeout, and partial result. | Retried runs must not be counted as independent successes, and a produced artifact can still violate its contract. | Repair handling, reduce scope, adjust timeout, or suspend rollout. |
+| Safety guardrails | Unauthorized writes, commands, external calls, credential use, production effects, concealed failures, and unrecoverable mutations. | These are hard events, not weighted productivity metrics. One material occurrence can require immediate containment. | Disable, revoke, restore, audit, escalate, and reauthorize only after corrective evidence. |
+| Recovery quality | Successful disable or rollback rehearsals, time and steps to restore the native workflow, and residual changed state. | A documented command is not a recovery path until it is safely exercised at the appropriate boundary. | Keep, simplify, or reject rollout; improve restoration and owner readiness. |
+| Workflow cost | Contributor time, reviewer clarification time, command runtime, waiting time, context loaded, tool calls, delegated tasks, and reconciliation effort per comparable outcome. | Lower agent latency can shift work to reviewers or maintainers. Report total relevant cost and avoid billing precision unsupported by actual data. | Choose a smaller surface, reduce context, consolidate controls, or accept cost for higher-value outcomes. |
+| False work | Unnecessary commands, duplicate checks, duplicate agent findings, repeated context loading, and setup-generated changes later discarded. | Some redundancy is intentional independent verification; classify it rather than treating every duplicate as waste. | Remove overlap, revise routing, or preserve deliberate defense in depth. |
+| Maintenance burden | Updates, compatibility repairs, permission reviews, false-trigger investigations, credential rotations, and owner interventions per setup version and period. | A quiet month may mean stability or non-use; pair maintenance with eligible opportunities and lifecycle state. | Replace a bundle with a smaller control, assign ownership, or retire. |
+| User and reviewer judgment | Structured verdict on usefulness, trust, output clarity, interruption, and whether the control changed the correct next action. | Satisfaction can reward polished but inaccurate output. Review a sample against objective contracts. | Refine ergonomics, surface uncertainty, or challenge a misleading quantitative trend. |
+| Portfolio health | Number of overlapping triggers, duplicated outcomes, shared credentials, circular dependencies, and setup items without active owners. | A single item can be healthy while the combined portfolio creates excessive authority or maintenance. | Consolidate, sequence, replace, isolate, or retire adjacent controls. |
+
+**Guardrail Precedence**
+
+Convenience gains do not compensate for unauthorized behavior. Unless a controlling policy defines a stricter response, immediately contain and review:
+
+- an external call or data transfer outside the approved boundary;
+- secret access broader than the declared credential contract;
+- an unapproved commit, push, deployment, production mutation, or destructive command;
+- source mutation by a control classified as read-only;
+- failure or non-execution hidden behind a success report;
+- rollback that cannot restore the agreed baseline; or
+- shared automatic behavior with no responsible owner.
+
+Containment means stopping new invocations, disabling the item where safe, preserving a minimal audit record, restoring state under the appropriate owner, and invoking the repository's security or incident process when relevant. It does not mean repeatedly retrying until the metric turns green.
+
+**Measurement Methods and Tradeoffs**
+
+| method | strength | blind spot | appropriate use |
+| --- | --- | --- | --- |
+| Minimal command and trigger counters | Low-cost evidence of opportunities, activation, exit status, and runtime. | Cannot determine semantic correctness, authority, or user value. | Recurring local commands and automatic triggers, with privacy-minimal metadata. |
+| Sampled artifact review | Tests whether outputs preserve source boundaries, uncertainty, next actions, and contract fields. | Reviewer judgment can vary and sampling can miss rare cases. | Skills, subagents, decision records, and generated guidance. |
+| Paired baseline tasks | Improves attribution by comparing the same task class with and without the candidate. | Learning, order, and novelty effects can distort results. | Bounded trials where replay or comparable tasks are available. |
+| Limited canary rollout | Reveals real workflow fit while restricting affected users and repositories. | Short windows underrepresent rare failures and maintenance drift. | Shared hooks, skills, subagents, or bundles after static and forced-failure gates. |
+| Structured user or reviewer interview | Exposes interruption, trust, hidden correction work, and unclear outputs. | Memory and preference bias can conflict with actual behavior. | Small samples and cases where workflow cost is largely cognitive. |
+| Longitudinal lifecycle record | Captures compatibility repairs, owner interventions, replacements, and retirement pressure. | Slow feedback can leave a harmful control active if guardrails are weak. | Adopted shared setup with explicit periodic and event-driven review. |
+
+Collect the least sensitive evidence that can change the decision. Prefer aggregate counts, source identifiers, concise command outcomes, decision labels, and redacted risk notes over raw prompts, full transcripts, credentials, or source dumps. Monitoring itself requires approval when it captures user or external-service data.
+
+**Data Quality Checks**
+
+Before interpreting a trend, ask:
+
+- Does the denominator include failures, skipped opportunities, expected triggers that did not fire, and disabled periods?
+- Are retried attempts deduplicated into one workflow outcome?
+- Did task difficulty, repository size, contributor experience, setup version, or other controls change?
+- Did the automation move work to a reviewer, tooling maintainer, service owner, or incident responder outside the measured boundary?
+- Does sampled semantic quality agree with activity data and user experience?
+- Is the observation window long enough for the decision being made, without extending a weak trial indefinitely?
+- Could a favorable number be produced by non-invocation, narrower task selection, concealed uncertainty, or users avoiding the control?
+
+Record plausible alternative explanations. Imperfect data can justify a bounded adaptation or pause, but the confidence of the action must match the confidence of the evidence.
+
+**Feedback Loop**
+
+| step | required action | saved evidence |
+| --- | --- | --- |
+| Observe | Collect the declared outcome, guardrail, cost, reliability, and lifecycle signals for the frozen version. | Version, task class, opportunities, outcomes, failures, and observation boundary. |
+| Classify | Distinguish trigger, instruction, command, compatibility, permission, external service, overlap, ownership, and measurement failures. | Failure class and why an ordinary retry would or would not help. |
+| Contain | Stop expansion and disable or isolate material red behavior before diagnosis continues. | Time, affected scope, residual state, responsible owner, and safe interim workflow. |
+| Diagnose | Trace from signal to source claim, configuration, dependency, behavior case, and authority decision. | Reproduction, competing explanations, and evidence boundary. |
+| Change | Narrow, repair, reroute, replace, remove, or update the candidate and its dependent guidance. | Exact changed item, rejected alternatives, and expected effect. |
+| Verify | Rerun structural, positive, negative, forced-failure, rollback, and outcome checks proportionate to the change. | Command or review summaries plus remaining uncertainty. |
+| Learn | Add durable negative examples, routing rules, source-role changes, or evaluation cases only when evidence warrants generalization. | Scope of lesson, version dependence, and overturn condition. |
+| Revisit | Review on the next date or event and decide whether continued ownership still repays its cost. | Adopt, adapt, pause, disable, replace, retire, or next bounded evidence request. |
+
+Review is event-driven as well as periodic. Reopen the record after a product or schema change, repository command or policy change, credential or owner change, guardrail event, repeated false activation, unexplained non-invocation, dependency replacement, setup overlap, or failed rollback. Rerun the reference's static verifier after reference edits, but do not mistake document validity for behavioral value.
+
+**Illustrative Lifecycle Decisions**
+
+Good trial: in a declared sample of comparable review handoffs, required-check omissions decrease, false activations are absent in the sampled negative opportunities, failures remain visible, rollback succeeds, reviewer correction does not increase, and the owner accepts maintenance cost. The evidence supports a bounded adoption, not a universal claim.
+
+Bad dashboard: a team reports hundreds of skill invocations and shorter average runtime but excludes failed runs, cannot count expected triggers that did not fire, stores no semantic sample, and ignores reviewer cleanup. The data cannot establish value; pause expansion and repair the evaluator.
+
+Borderline trial: an explicit review procedure appears to reduce omissions, but the sample is small and CI changed during the same period. Keep the rollout narrow, compare a new tranche under the stable CI version, and set the decision rule before collecting it. Do not repeatedly extend observation merely to obtain a preferred result.
+
+Guardrail override: an external integration saves reviewer time but makes one unapproved data transfer. Disable and audit it regardless of the favorable timing result. Any future trial requires corrected scope, owner approval, revocation evidence, and a regression case for the escaped path.
+
+The inherited candidates "fewer clarifications" and "fewer unverifiable claims" can be useful leading signals, but they are not self-interpreting. A clarification decrease may indicate better context or concealed uncertainty. A claim-support increase may reflect more citations without better applicability. Validate both against the primary outcome, semantic samples, and guardrails.
+
+Finally, feed only durable lessons back into this reference. A recurring trigger failure can refine skill guidance; a high-consequence credential escape can become a negative MCP case; sustained bundle maintenance can justify portfolio consolidation. Keep one-off product details in versioned local records. This preserves general decision quality without teaching future agents to overfit one repository's temporary conditions.
 
 ## Completeness Checklist
 
-- The role scenario names the user, starting state, decision, and trigger for Claude Code Setup Patterns.
-- The decision guide includes Adopt when, Adapt when, Avoid when, and Cost of being wrong.
-- The local corpus hierarchy identifies canonical and supporting sources or gives a confidence warning.
-- The theme specific artifact is concrete enough to review without reading every mapped source.
-- The examples cover good, bad, and borderline usage.
-- The metrics section names one leading indicator and one failure signal.
-- The adjacent routing section points to a better reference when this one is not the right fit.
+Completeness is a point-in-time permission boundary, not a claim that setup is permanently correct. Define the target state before running the checklist. A recommendation can be complete while implementation remains blocked, and a no-change decision can be complete when it is supported by evidence and a revisit trigger. Conversely, a syntactically valid enabled control is incomplete if its authority, failure behavior, or owner is unresolved.
+
+Use these statuses for each gate: `not applicable`, `unmet`, `blocked`, `failed`, `passed`, or `passed with bounded uncertainty`. A `not applicable` decision needs a scope reason. `Passed with bounded uncertainty` is valid only when the risky behavior remains contained and the record identifies the evidence and owner that can resolve it. Do not calculate a composite score; one material failed gate can block progression.
+
+**Target Completion States**
+
+| target state | minimum claim that may be made | action that remains prohibited |
+| --- | --- | --- |
+| Analysis complete | The repository, user outcome, baseline, evidence boundaries, candidate surfaces, and adjacent routes were assessed. | Claiming that a candidate is authorized, compatible, effective, or safe. |
+| No-change decision complete | Current controls cover the outcome or the gap does not repay added setup; evidence and a revisit signal are recorded. | Installing a convenience control outside the decision. |
+| Recommendation complete | One bounded candidate, alternatives, authority needs, verification plan, rollback, owner, and unresolved questions are reviewable. | Implementing, installing, connecting, or enabling without separate authorization. |
+| Trial ready | Exact configuration or artifact, compatible environment, permission, positive and negative cases, forced-failure behavior, disable path, baseline, evaluator, and scope are accepted. | Expanding beyond the approved canary, users, repository, tools, or data boundary. |
+| Adopted | Trial evidence meets the predeclared outcome and guardrail decision, residual uncertainty is accepted by the owner, and maintenance plus retirement duties are assigned. | Treating adoption as permanent or silently increasing authority. |
+| Disabled or blocked | Risky behavior is contained, the native fallback works, and the resolution or escalation owner is named. | Repeated retries, partial reenablement, or describing the control as operational. |
+| Replaced or retired | Dependents are migrated or removed, credentials and automatic triggers are revoked, restoration is verified, and concise decision history remains. | Leaving duplicate execution, orphaned configuration, or an ambiguous active owner. |
+
+**Core Evidence Contract**
+
+| gate | pass evidence | common incomplete state |
+| --- | --- | --- |
+| User and outcome | Named user, starting workflow, observable friction, desired result, consequence of error, and task trigger. | A request for a tool or feature with no human outcome. |
+| Scope and ownership | Repository and user scope, decision owner, implementation owner, observation owner, escalation owner, and affected ownership boundaries. | "The team" owns the setup, or one reviewer implicitly approves another domain. |
+| Unchanged baseline | Existing scripts, guidance, CI, editor behavior, integrations, and measured or sampled behavior are recorded. | New setup is evaluated without its no-change counterfactual. |
+| Local source trace | Every recommendation-changing local claim reaches an exact path and passage; duplicate lineages are counted once. | A source heading or confident summary substitutes for the supporting passage. |
+| External and freshness boundary | Public claims are either refreshed under the task's rules or explicitly marked unrefreshed; versions and dates are attached where drift matters. | Archived product names or schema examples are asserted as current. |
+| Inference and uncertainty | Local fact, external fact, inherited claim, inference, owner decision, and measured outcome are distinguishable. Each material unknown has an overturn condition. | A confidence warning appears, but no action remains contained and no evaluator is assigned. |
+| Surface decision | No change, hook, skill, subagent, plugin, MCP, or adjacent route is chosen from outcome, trigger, context, authority, data, overlap, recovery, and maintenance evidence. | Feature availability or novelty chooses the surface. |
+| Alternatives | Credible options include no change and the safest interim behavior; rejected and paused reasons are recorded. | The candidate is presented as inevitable because no alternatives were inspected. |
+| Authority contract | Allowed files, commands, writes, tools, network destinations, credentials, production effects, and human approvals are explicit. | General approval of the outcome is treated as permission for every implementation action. |
+| Overlap and dependency map | Existing controls with the same outcome, trigger, command, data source, credential, or owner are reconciled; downstream dependents are listed. | Two controls run independently because each looked reasonable in isolation. |
+| Artifact completeness | The setup decision record contains status, evidence, candidate, failure model, verification packet, rollout, rollback, measures, owners, and lifecycle triggers. | A recommendation requires the original conversation to understand its boundaries. |
+| Verification design | Structural, source, positive, non-intended, forced-failure, rollback, outcome, and independent-review evidence is specified proportionately. | One happy-path command or a document validator is called end-to-end proof. |
+| Safe fallback | Users can continue through a documented repository-native or manual workflow while the candidate is absent, paused, or disabled. | Failure of the setup blocks the only known route to complete ordinary work. |
+| Outcome and guardrails | Baseline, primary measure, denominators, hard guardrails, trial scope, observation period, and decision rule are declared before results. | Invocation count, generated output, or installation is reported as value. |
+| Lifecycle | Refresh events, review date, compatibility owner, disable condition, replacement rule, retirement condition, and retention boundary are recorded. | A control remains enabled after owner loss or dependency drift because it once passed. |
+| Adjacent routing | Clauses outside generic setup authority are handed to the relevant context, verification, security, production, service, or architecture owner with current evidence preserved. | The reference stretches to answer a specialist question it cannot authorize. |
+
+**Conditional Surface Gates**
+
+Apply only the rows for candidate surfaces, but document why every excluded surface was not material to the outcome.
+
+| surface | additional required evidence before trial |
+| --- | --- |
+| Hook | Installed event and matcher semantics; exact command source; invocation opportunity; idempotence; recursion prevention; timeout; visible exit behavior; mutation boundary; latency; disable mechanism; manual fallback. |
+| Skill | Current metadata and location; intended and non-intended trigger cases; progressive-disclosure behavior; bundled scripts and references; allowed tools; command authorization; output contract; instruction-drift owner. |
+| Subagent | Separable task boundary; non-overlapping tool and write authority; frozen input revision; context budget; result schema; stop condition; merge owner; independent verification; coordination-cost comparison. |
+| Plugin | Exact compatible package and version; full component inventory; triggers; tools; permissions; external services; overlap map; update channel; maintainer; migration behavior; component and whole-bundle removal. |
+| MCP | Current server and tool inventory; owner; transport and authentication shape; least-privilege credentials; outbound and inbound data boundary; audit; timeout and partial failure; revocation; local fallback. |
+| Automatic or shared setup | Controlling owner approval; canary scope; guardrail monitoring; disable authority; notification and support route; no single maintainer dependency. |
+| Production, secrets, compliance, or security effect | Acceptance from the controlling domain process and owner; generic setup review cannot self-certify this gate. |
+
+**Phase Transition Rules**
+
+Analysis may end in no change, recommendation, pause, rejection, or adjacent routing. It does not have to produce an automation. Recommendation moves to trial readiness only after compatibility and authority are established for the exact saved candidate. Trial moves to adoption only after the predeclared outcome and guardrail review. Adoption can move backward to disabled or blocked after drift or failure. Replacement and retirement require downstream cleanup, not merely a changed label.
+
+Block progression when any of these remain unresolved:
+
+- permission for file mutation, external access, credentials, production action, or shared automatic behavior;
+- a source conflict that changes the recommended action;
+- compatibility of the chosen trigger, schema, package, server, or tool;
+- detection of non-execution, partial failure, or hidden error;
+- a safe disable and repository-native fallback;
+- an owner for observation, maintenance, escalation, and retirement; or
+- a material contradiction between the decision record, configuration, tests, and lifecycle state.
+
+Ordinary uncertainty can remain in a complete recommendation when the candidate is disabled, the unknown is explicit, the next evidence is owned, and users retain a safe path. A blocked state with these properties is more complete than an enabled candidate whose uncertainty is concealed.
+
+**Invalid Completion Patterns**
+
+- All headings and tables validate, but the automatic behavior has never been observed or forced to fail.
+- The artifact cites a current path whose content is byte-identical to an archive and counts the two locators as independent support.
+- A product-specific name is copied from the corpus without a permitted current compatibility check.
+- A trial reports only successful invocations and omits expected triggers that did not run, negative opportunities, retries, and disabled periods.
+- Rollback is a prose command that has not restored the relevant baseline safely.
+- A permission field says "approved" but does not identify who approved which files, commands, data, or scope.
+- A `not applicable` label removes the difficult gate without explaining why the candidate cannot cross that boundary.
+- An adopted control has no current owner, refresh event, or retirement condition.
+
+**Worked Completion Judgments**
+
+Complete no-change decision: repository-native checks cover the outcome, sampled handoffs show no recurring gap, a new skill would duplicate guidance, and the record names the omission or policy change that would reopen analysis. No implementation gate is needed because no candidate is being enabled.
+
+Incomplete hook: the configuration parses and one source file is formatted, but the event is unverified, negative matchers were not tested, failure can block editing, and no disable owner exists. Structural success cannot advance this item to trial readiness.
+
+Complete recommendation, blocked implementation: a plugin candidate has a clear user outcome, alternatives, expected permissions, and verification plan, but current bundle contents and owner approval are missing. The record is reviewable, the plugin remains uninstalled, current controls continue, and named inventory plus owner gates define resumption.
+
+**Fresh-Reviewer Replay**
+
+Before claiming the target state, ask a reviewer who did not write the recommendation to reconstruct from saved evidence:
+
+1. What exact outcome and scope are being decided?
+2. What happens if the repository remains unchanged?
+3. Which evidence is local fact, unrefreshed claim, inference, owner decision, or measured result?
+4. Why is this surface preferable to the credible alternatives?
+5. What authority is and is not granted?
+6. Which behavior, failure, rollback, and outcome checks passed for which exact revision?
+7. What remains blocked or uncertain, and what safe fallback is active?
+8. Who owns the next action, observation, disablement, refresh, and retirement?
+9. Which dependency or event invalidates the current completion claim?
+
+If the reviewer cannot answer without the original conversation, the artifact is not handoff-complete. If fields give individually plausible but incompatible answers, reopen the relevant gates rather than choosing the most favorable status.
+
+Completion evidence should decay visibly. Bind version-sensitive results to the exact setup and environment, timestamp owner and credential decisions where required, and invalidate only affected evidence plus the core regression set after change. Retain concise rationale and identifiers under local retention policy; do not preserve sensitive values or raw conversational content merely to make the checklist look comprehensive.
 
 ## Adjacent Reference Routing
 

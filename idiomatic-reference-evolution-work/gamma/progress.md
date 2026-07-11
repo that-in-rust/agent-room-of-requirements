@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 18:23:09Z
+- Updated: 2026-07-11 18:50:14Z
 - Current Phase: Red
 - Status: active
 
@@ -1289,3 +1289,84 @@ Assignment 4 sections 007-009: setup anti-patterns, verification gates, and usag
 - fieldCount=360
 - normalizedUniqueFieldCount=360
 - nextSection=007
+
+### Session: 2026-07-11 18:29:35Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- assignment4_sections_007_009_sanity: passing - Cumulative packet has 9 sections, 90 questions, 540 fields, exactUnique=540, normalizedUnique=540; first nine reference sections exceed seed and preserve exact heading order; placeholders=0; nonAscii=0.
+
+#### Implementation Progress:
+- Saved anti-pattern registry, layered verification gates, and risk-scaled usage guide in packet-then-reference order with immediate local checks.
+
+#### Current Focus:
+Assignment 4 sections 010-012: contributor journey, tradeoff guide, and claim-scoped corpus hierarchy.
+
+#### Next Steps:
+- Complete Section 010 journey packet and reference, then Sections 011 and 012; run the next cumulative gate at 720 normalized-unique fields.
+
+#### Context Notes:
+- Setup decisions can now end in no change, recommendation, authorized implementation, pause, rejection, removal, or domain routing. Assignment 5 remains unopened.
+
+#### Performance/Metrics:
+- assignment=4
+- completedSections=9
+- questions=90
+- fieldCount=540
+- normalizedUniqueFieldCount=540
+- nextSection=010
+
+### Session: 2026-07-11 18:39:04Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- assignment4_sections_010_012_sanity: passing - Cumulative packet has 12 sections, 120 exact questions, 720 fields, exactUnique=720, normalizedUnique=720; exact 26-heading order; Sections 010-012 exceed seed; placeholders, non-ASCII, tabs, trailing whitespace zero; tables and fences balanced.
+
+#### Implementation Progress:
+- Saved packet then reference for Sections 010-012. Section 012 now classifies six byte-identical lineages at claim scope, defines conflict containment and role movement, and treats hierarchy as retrieval policy.
+
+#### Current Focus:
+Assignment 4 sections 013-015: theme-specific control-plane guidance, vocabulary, and guided examples.
+
+#### Next Steps:
+- Write and save the complete Section 013 packet, rewrite and save its matching reference section, and run immediate sanity checks; repeat through Section 015, then require 900 normalized-unique fields.
+
+#### Context Notes:
+- Recovered Section 012 packet from disk after an interrupted tool response; it was complete at 720 fields, so no durable work was regenerated. Assignment 5 remains unopened.
+
+#### Performance/Metrics:
+- assignment=4
+- completedSections=12
+- questions=120
+- fieldCount=720
+- normalizedUniqueFieldCount=720
+- nextSection=013
+
+### Session: 2026-07-11 18:50:14Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- assignment4_sections_013_015_sanity: passing - Cumulative packet has 15 sections, 150 exact questions, 900 fields, exactUnique=900, normalizedUnique=900; exact 26-heading order; first 15 reference sections exceed seed; placeholders and non-ASCII zero; whitespace, fences, and tables clean.
+
+#### Implementation Progress:
+- Saved packet then reference for Sections 013-015. Added a setup decision record with a filled scenario, six controlled good/bad/borderline sets, and baseline-relative outcome metrics with hard safety guardrails and a closed feedback loop.
+
+#### Current Focus:
+Assignment 4 sections 016-018: completion contract, adjacent routing, and risk-scaled workload model.
+
+#### Next Steps:
+- Write and save the Section 016 packet, rewrite and save the completeness checklist as an evidence-bearing completion contract, and sanity-check immediately; repeat atomically through Section 018, then require 1080 normalized-unique fields.
+
+#### Context Notes:
+- No current product syntax, package availability, or external behavior was asserted without refresh. Assignment 5 remains unopened.
+
+#### Performance/Metrics:
+- assignment=4
+- completedSections=15
+- questions=150
+- fieldCount=900
+- normalizedUniqueFieldCount=900
+- nextSection=016

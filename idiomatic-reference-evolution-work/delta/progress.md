@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 18:24:14Z
+- Updated: 2026-07-11 18:54:16Z
 - Current Phase: Green
 - Status: active
 
@@ -1668,4 +1668,94 @@ Assignment 5 dependency_map_cli_patterns Sections 013-015 durably evolved and sa
 #### Performance/Metrics:
 - Assignment 5 durable progress: 15/26 sections; 150/260 questions; 900/1560 mandatory fields; uniqueFieldCount=900; normalizedUniqueFieldCount=900
 - Section 013 is 17531>651 characters, Section 014 is 13134>514, and Section 015 is 16441>380; every first-fifteen section comparison passes
+- Current hygiene: reference headings=26 exact and ordered; ASCII pass; forbidden markers=0; fence parity=0; malformed tables=0; tabs=0; trailing whitespace=0; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
+
+### Session: 2026-07-11 18:33:41Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment_5_sections_016_018_atomic: PASS - Packet-first/reference-second save order and immediate exact-heading, expansion, format, and marker sanity pass for checklist, routing, and workload model
+- assignment_5_normalized_uniqueness_018: PASS - 1080 mandatory values are raw unique and remain 1080 unique after prefix-stripped normalization
+- assignment_5_workload_precision_gate: PASS - Unmeasured seed boundary of 500 changed files was replaced by implementation-grounded variables and future measurement protocol without a fabricated capacity target
+
+#### Implementation Progress:
+- Updated idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md through Section 018 with 180 exact questions and 1080 substantive fields
+- Updated idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md through Section 018 with prerequisite-aware completeness, capability-gap routing, and measured-variable workload guidance
+- Updated idiomatic-reference-evolution-work/delta/progress.md at the eighteen-section Green cadence boundary
+
+#### Current Focus:
+Assignment 5 dependency_map_cli_patterns Sections 016-018 durably evolved and sanity-verified
+
+#### Next Steps:
+- Complete and save Section 019 reliability-target packet, then save its matching reference section and run immediate sanity
+- Continue assignment 5 one section at a time and journal again no later than Section 021; keep assignment 6 executable_metapattern_reference_digest unopened until assignment 5 Refactor completion
+
+#### Context Notes:
+- Changed paths remain limited to the assignment 5 reference, packet, and Delta progress journal
+- Adjacent routes are candidate capability classes with selection-time availability checks; no later Delta assignment content was opened
+
+#### Performance/Metrics:
+- Assignment 5 durable progress: 18/26 sections; 180/260 questions; 1080/1560 mandatory fields; uniqueFieldCount=1080; normalizedUniqueFieldCount=1080
+- Section 016 is 15491>649 characters, Section 017 is 13845>536, and Section 018 is 15810>1265; all first-eighteen comparisons pass
+- Current hygiene: exact reference headings=26; ASCII pass; forbidden markers=0; fence parity=0; malformed tables=0; tabs=0; trailing whitespace=0; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
+
+### Session: 2026-07-11 18:44:53Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment_5_sections_019_021_atomic: PASS - Packet-first/reference-second saves and immediate checks pass for reliability targets, concrete failure modes, and retry/backpressure state transitions
+- assignment_5_normalized_uniqueness_021: PASS - 1260 mandatory values are raw unique and remain 1260 unique after prefix-stripped normalization
+- assignment_5_extractor_provenance_correction: PASS - Script review confirmed tooling.tsv reports capability, while symbols.tsv kinds and ctags.jsonl state are needed to infer actual symbol producer; earlier wording was corrected
+
+#### Implementation Progress:
+- Updated idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md through Section 021 with 210 exact questions and 1260 substantive fields
+- Updated idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md through Section 021 with bounded reliability, stage-specific failure containment, and changed-premise retry/backpressure controls
+- Updated idiomatic-reference-evolution-work/delta/progress.md at the twenty-one-section Green cadence boundary
+
+#### Current Focus:
+Assignment 5 dependency_map_cli_patterns Sections 019-021 durably evolved and sanity-verified
+
+#### Next Steps:
+- Complete and save Section 022 observability-checklist packet, then save the matching reference section and run immediate sanity
+- Continue assignment 5 one section at a time and journal again no later than Section 024; keep assignment 6 executable_metapattern_reference_digest unopened until assignment 5 Refactor completion
+
+#### Context Notes:
+- Changed paths remain limited to the assignment 5 reference, packet, and Delta progress journal
+- A malformed Markdown table row in Section 020 was detected by the atomic check and corrected before this checkpoint
+
+#### Performance/Metrics:
+- Assignment 5 durable progress: 21/26 sections; 210/260 questions; 1260/1560 mandatory fields; uniqueFieldCount=1260; normalizedUniqueFieldCount=1260
+- Section 019 is 14315>882 characters, Section 020 is 20649>866, and Section 021 is 14131>769; every first-twenty-one comparison passes
+- Current hygiene: reference headings=26 exact and ordered; ASCII pass; forbidden markers=0; fence parity=0; malformed tables=0; tabs=0; trailing whitespace=0; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
+
+### Session: 2026-07-11 18:54:16Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment_5_sections_022_024_atomic: PASS - Packet-first/reference-second saves and immediate checks pass for observability, performance verification, and scale boundary guidance
+- assignment_5_normalized_uniqueness_024: PASS - 1440 mandatory values are raw unique and remain 1440 unique after prefix-stripped normalization
+- assignment_5_unmeasured_performance_boundary: PASS - Performance and scale sections define future experiments and route signals without claiming current latency, percentiles, capacity, memory, or productivity results
+
+#### Implementation Progress:
+- Updated idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md through Section 024 with 240 exact questions and 1440 substantive fields
+- Updated idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md through Section 024 with a reconstructable observability envelope, output-equivalent benchmark protocol, and multidimensional scale routing
+- Updated idiomatic-reference-evolution-work/delta/progress.md at the twenty-four-section Green cadence boundary
+
+#### Current Focus:
+Assignment 5 dependency_map_cli_patterns Sections 022-024 durably evolved and sanity-verified
+
+#### Next Steps:
+- Complete and save Section 025 future-refresh packet, then save the matching reference and run immediate sanity
+- Complete Section 026 next, run complete production Green checks, then begin at-most-five-section reread checkpoints; keep assignment 6 unopened until assignment 5 Refactor completion
+
+#### Context Notes:
+- Changed paths remain limited to the assignment 5 reference, packet, and Delta progress journal
+- No benchmark, target map, runtime probe, or external browse occurred; all such values remain explicitly unmeasured or unrefreshed
+
+#### Performance/Metrics:
+- Assignment 5 durable progress: 24/26 sections; 240/260 questions; 1440/1560 mandatory fields; uniqueFieldCount=1440; normalizedUniqueFieldCount=1440
+- Section 022 is 16417>706 characters, Section 023 is 15185>851, and Section 024 is 15344>759; every first-twenty-four section comparison passes
 - Current hygiene: reference headings=26 exact and ordered; ASCII pass; forbidden markers=0; fence parity=0; malformed tables=0; tabs=0; trailing whitespace=0; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
