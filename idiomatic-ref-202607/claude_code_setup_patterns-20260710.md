@@ -181,19 +181,72 @@ The three locators are known. Their present contents, authority, compatibility, 
 
 ## Anti Pattern Registry Table
 
-| anti_pattern_failure_name | failure_cause_risk_reason | safer_default_replacement_pattern | detection_signal_review_method |
-| --- | --- | --- | --- |
-| context_free_summary_output | agent skips local corpus and produces generic advice | source_map_first_synthesis | verify every listed local path appears in the generated file |
-| unsourced_recommendation_claims | guidance appears authoritative without source boundary | evidence_boundary_split_pattern | check for local, external, and inference labels |
-| unverified_agent_instruction | recommendation cannot be checked by command or review gate | verification_gate_coupling | require concrete gate in generated reference |
+An anti-pattern is operational only when the reviewer can detect its trigger, rank its consequence, contain any effect, choose a safer replacement, identify an owner, and prove recovery. Phrase-presence checks are useful for structure but cannot establish setup behavior.
+
+| anti_pattern_failure_name | trigger_and_observable_signal | consequence | immediate_containment | safer_default_replacement | recovery_and_regression_proof |
+| --- | --- | --- | --- | --- | --- |
+| context_free_summary_output | Recommendations could be copied to an unrelated repository; no active command, owner, or workflow changes the list | Generic automation adds noise and authority without project value | Stop implementation and retain the unchanged baseline | Repository-signal-first diagnosis with explicit no-change option | Each accepted item maps to an active signal, outcome, owner, and focused case |
+| unsourced_recommendation_claims | A current product, availability, security, or compatibility claim has no inspected source or explicit inference boundary | Reviewers cannot distinguish local fact from stale catalog advice | Withhold the claim and dependent setup item | Claim-scoped evidence ledger with access and version state | Source and local behavior support the bounded claim; unresolved parts remain labeled |
+| unverified_agent_instruction | Setup is accepted because prose looks detailed or configuration parses | Invalid matching, permissions, or behavior escapes review | Block release of the affected automation | Verification-gate coupling with positive, negative, and rollback cases | Exact focused results and owner verdict travel with the setup version |
+| recommendation_implementation_conflation | A read-only analysis immediately writes settings, installs software, or connects a service | Recommendation scope launders unapproved mutation | Stop writes and inspect changed state | Separate recommendation artifact from explicitly authorized implementation | Prior state restored or accepted by owner; implementation scope and cases are approved |
+| dependency_name_automation_match | A dependency, directory, or config filename directly triggers a hook, plugin, or MCP recommendation | Vestigial or incidental signals create irrelevant setup | Reclassify the signal as unconfirmed | Verify active command, repeated task, owner, and failure cost | Evidence shows the workflow is active and the chosen surface changes it usefully |
+| duplicate_surface_ownership | Two hooks, skills, agents, plugins, or integrations own the same trigger and output | Duplicate actions, conflicting edits, or unclear diagnosis | Disable one path and freeze expansion | One primary owner with explicit composition only for independent outcomes | Event and task matrix shows no overlapping effect or ambiguous owner |
+| blocking_or_recursive_hook | Event invocation repeats, blocks normal edits, or calls a command that retriggers itself | Development stalls or files churn indefinitely | Disable the hook and restore affected files or settings | Narrow matcher, idempotent command, timeout, and fail-open or fail-closed policy | Simulated event runs once, handles failure, and ignores unrelated paths |
+| sensitive_path_or_secret_exposure | Setup reads, logs, transmits, or edits secrets beyond the declared task | Credential or private-data compromise | Revoke access, restrict logs, and follow local incident policy | Data minimization, deny rules, least privilege, and redacted fixtures | Authorized owner confirms containment and negative secret-handling cases pass |
+| overbroad_mcp_authority | External integration receives write, administrative, or unrelated service scopes | Agent can mutate external state outside user intent | Disconnect or revoke scopes and inspect external activity | Necessary service only, least-privilege credentials, read-only probe, explicit approvals | Permission matrix and service audit show no undeclared access or effect |
+| unverified_external_catalog_entry | A plugin, server, command, or taxonomy is assumed current from local catalog text | Installation fails or incompatible behavior enters team policy | Keep the item as an unrefreshed lead | Versioned primary-source refresh plus compatible local test | Current source, revision, permissions, install behavior, and uninstall path are recorded |
+| opaque_plugin_bundle_adoption | A bundle is installed without inventorying skills, agents, hooks, commands, or permissions | Hidden overlap and update dependencies enter the repository | Disable the bundle and compare prior behavior | Inspect bundle contents and prefer maintained bundle only when it replaces known local duplication | Representative features pass; overlaps, permissions, version, owner, and removal are documented |
+| overpowered_or_self_grading_subagent | An analysis agent receives writes or judges its own preferred output without independent criteria | Isolated context becomes unreviewed authority or conflicting mutation | Cancel writes and quarantine the result | Least-privilege tools, immutable inputs, explicit return artifact, independent evaluator | Same task passes with no ownership violation and integrator can reproduce the verdict |
+| unsafe_skill_invocation_or_script | Automatic invocation or bundled script can deploy, commit, send, migrate, or alter shared state unexpectedly | Reusable expertise becomes a hidden side-effect channel | Disable invocation and inspect script effects | User-controlled invocation for side effects, constrained tools, safe fixtures, and failure checks | Argument, path, permission, failure, cleanup, and negative invocation cases pass |
+| stale_or_divergent_team_configuration | Checked-in, personal, and archived settings or sources no longer agree | Team members receive inconsistent behavior and evidence | Pin the trusted state and stop rollout | Named owner, versioned shared config, compatibility notes, and migration plan | Clean-environment replay matches documented behavior and stale copies are invalidated |
+| ownerless_setup_and_rollback | No person or process owns updates, alerts, failures, credentials, or removal | Broken automation persists as invisible repository policy | Pause adoption or disable active effects | Assign accountable owner, support boundary, rollback, and retirement trigger | Owner accepts evidence and a second reviewer can restore the prior state |
+
+**Default response.** Stop the affected behavior, preserve configuration and action evidence, classify the failed layer, inspect side effects, restore or bound state, choose the least-powerful replacement, and rerun the trigger plus nearby negative cases. A recommendation-only defect may need no fictional rollback; an active credentialed integration requires state and access review.
+
+Use structural lint for missing fields, event simulation for hook matching and recursion, inert fixtures for skills and subagents, sandboxed integration tests where authorized, and human review for authority and surface fit. Production or credential incidents remain with domain owners.
+
+**Good handling.** A database integration is paused because no service owner or read-only scope exists. **Bad handling.** It is approved from a package dependency and a catalog row. **Borderline handling.** A local read-only probe is allowed under isolated credentials while every write scope remains disabled; promotion requires owner approval, current compatibility, negative permission cases, and revocation proof.
+
+The seed establishes three generic failures but provides no incident distribution. Expanded severity is systems judgment until calibrated with versions, incidents, near misses, detection delay, containment success, false positives, and recurrence. Repeated failures at the same layer should change the mechanism or permission boundary, not merely lengthen the prompt.
 
 ## Verification Gate Command Set
 
-`verification_gate_command_set`: Run the repository verifier after editing this file.
+`verification_gate_command_set`: Preserve the inherited archive verifier as one evidence layer:
 
 ```bash
 python3 agents-used-monthly-archive/idiomatic-references-202606/tools/verify_reference_generation.py --stage final
 ```
+
+That command validates the archived corpus and its encoded specification. It does not by itself prove that this dated working reference is expanded, that its question packet is complete, or that any proposed Claude Code automation is safe and useful. The focused working-file gate is:
+
+```bash
+python3 tests/verify_idiomatic_reference_file.py --path idiomatic-ref-202607/claude_code_setup_patterns-20260710.md
+```
+
+Project-specific setup commands must be discovered from the repository and recorded exactly. Do not invent `npm`, `pytest`, `cargo`, formatter, plugin, or runtime commands from a catalog match.
+
+| verification_gate_layer | claim_it_can_falsify | required_evidence | important_limit |
+| --- | --- | --- | --- |
+| frozen_source_identity_gate | The intended seed and semantic spans were used before edits | Seed digest, 146 source-span hashes, path owner, heading inventory, and line coverage | Identity does not establish guidance quality |
+| focused_reference_structure_gate | All 26 headings, section growth, packet counts, mandatory fields, uniqueness, and placeholder rules hold | Canonical focused verifier output and static checks | Structure does not prove setup behavior |
+| source_and_repository_signal_gate | A recommendation is grounded in applicable source material and an active project workflow | Passage locator, command or ownership evidence, exclusions, and source access state | Signal presence does not grant permission |
+| configuration_shape_gate | The selected runtime accepts the settings, frontmatter, manifest, or connection schema | Compatible parser, built-in diagnostic, or isolated load result with version | A valid configuration can still be unsafe or irrelevant |
+| permission_and_data_boundary_gate | Tools, paths, credentials, services, and data handling stay within declared authority | Permission matrix, secret exclusions, approval record, and denied-action cases | Paper permissions need behavior confirmation |
+| surface_behavior_gate | The hook, skill, subagent, plugin, or MCP integration performs the intended task | Fixed positive case, expected output or action, exact command, and observed result | One happy case does not establish scope |
+| unrelated_task_negative_gate | The setup remains silent or refuses when trigger, path, authority, or prerequisite is absent | Unrelated file, denied action, malformed input, missing service, and injected instruction cases | Negative cases must rotate to avoid memorization |
+| overlap_and_fan_in_gate | Several setup items do not duplicate effects or create ambiguous ownership | Trigger-to-output matrix, parallel result audit, and one integration owner | Low-frequency conflicts may need longer observation |
+| rollback_and_revocation_gate | The prior safe state can be restored and external authority can be removed | Before/after config, uninstall or disable step, credential revocation, state inspection, and rerun | Some external effects are irreversible and need stronger prevention |
+| semantic_owner_review_gate | The chosen surface, maintenance cost, residual risk, and no-change comparison are acceptable | Independent reviewer or accountable owner decision with rejected alternatives | Human judgment can disagree and must expose uncertainty |
+
+**Default order.** Run cheap identity and shape checks first, then permission review, then inert or reversible behavior, then negative scope, overlap, rollback, and semantic acceptance. A passing earlier layer never overrides a later authority or effect failure. Skip a gate only when the reason is explicit and the omitted claim is not part of completion.
+
+**Evaluation record.** Capture setup version, source and repository signal, exact command or review procedure, runtime and tool versions, fixture, trusted and untrusted inputs, expected behavior, observed output and actions, violations, state before and after, reviewer disposition, and residual uncertainty. Keep evidence compact and redact secrets; raw transcripts and credentials are not release artifacts.
+
+**Failure interpretation.** A deterministic contract or permission failure requires changing the owning source inference, configuration, surface, evaluator, or integration before rerun. An isolated transient environment failure may justify a bounded unchanged retry after it is demonstrated to be transient. A global suite can remain red because other owned files are incomplete; report that condition and continue focused checks without editing another owner's work. Never weaken expected behavior merely to make the setup green.
+
+**Good evidence.** A hook configuration parses, runs once on an intended fixture, ignores unrelated and sensitive paths, handles command failure without recursion, and can be disabled cleanly. **Bad evidence.** "The plugin installed successfully." **Borderline evidence.** An MCP configuration parses and connects but requests broader service scopes than the task needs; the permission failure blocks adoption despite structural success.
+
+Verification is executable setup memory. Every accepted recommendation maps to a gate capable of disproving it, and every failed gate maps back to the source, authority, configuration, evaluator, or mechanism that owns repair.
 
 ## Agent Usage Decision Guide
 

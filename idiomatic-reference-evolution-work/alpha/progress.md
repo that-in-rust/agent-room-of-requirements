@@ -2,7 +2,7 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 18:22:08Z
+- Updated: 2026-07-11 18:28:23Z
 - Current Phase: Green
 - Status: active
 
@@ -4584,3 +4584,118 @@ Assignment 13 Sections 007-009 operational gates saved
 
 #### Performance/Metrics:
 - Assignment 13 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-11 18:23:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 720 of 720 normalized values unique
+- atomic prefix sanity: passing - 12 sections, 120 questions, 720 fields, first 12 reference sections expanded
+
+#### Implementation Progress:
+- Added an end-to-end contributor journey, per-claim adoption tradeoffs, and claim-relative corpus authority rules
+
+#### Current Focus:
+Assignment 13 Sections 010-012 decision path saved
+
+#### Next Steps:
+- Complete Sections 013-015 for the theme artifact, examples, and outcome metrics
+
+#### Context Notes:
+- Live run facts can override archived operational details without overriding pinned-version policy
+
+#### Performance/Metrics:
+- Assignment 13 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-11 18:24:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 900 of 900 normalized values unique
+- atomic prefix sanity: passing - 15 sections, 150 questions, 900 fields, first 15 reference sections expanded
+
+#### Implementation Progress:
+- Defined a replayable investigation packet, graph-specific contrasting examples, and evidence-sensitive outcome metrics
+
+#### Current Focus:
+Assignment 13 Sections 013-015 artifact and learning loop saved
+
+#### Next Steps:
+- Complete Sections 016-018 for completeness, adjacent routing, and workload modeling
+
+#### Context Notes:
+- No numeric performance or accuracy threshold was invented without a local dataset
+
+#### Performance/Metrics:
+- Assignment 13 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 18:25:58Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1080 of 1080 normalized values unique
+- atomic prefix sanity: passing - 18 sections, 180 questions, 1080 fields, first 18 reference sections expanded
+
+#### Implementation Progress:
+- Added claim-dependent completion, capability-based adjacent routing, and synchronized run/query/context workload boundaries
+
+#### Current Focus:
+Assignment 13 Sections 016-018 scope controls saved
+
+#### Next Steps:
+- Complete Sections 019-021 for reliability, failure recovery, and retry backpressure
+
+#### Context Notes:
+- Adjacent routes are selected by evidence capability rather than unstable filename lists
+
+#### Performance/Metrics:
+- Assignment 13 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-11 18:27:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1260 of 1260 normalized values unique
+- atomic prefix sanity: passing - 21 sections, 210 questions, 1260 fields, first 21 reference sections expanded
+
+#### Implementation Progress:
+- Separated hard artifact gates from sampled outcomes, localized failure blast radius, and made retries evidence-changing and bounded
+
+#### Current Focus:
+Assignment 13 Sections 019-021 reliability and recovery saved
+
+#### Next Steps:
+- Complete Sections 022-024 for observability, performance verification, and scale boundaries
+
+#### Context Notes:
+- Seed numeric thresholds are preserved as proposed contracts, not represented as achieved measurements
+
+#### Performance/Metrics:
+- Assignment 13 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-11 18:28:23Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1440 of 1440 normalized values unique
+- atomic prefix sanity: passing - 24 sections, 240 questions, 1440 fields, first 24 reference sections expanded
+
+#### Implementation Progress:
+- Added run-correlated observability, a matched-cohort performance protocol, and workspace-aware scale exits
+
+#### Current Focus:
+Assignment 13 Sections 022-024 observability and scale saved
+
+#### Next Steps:
+- Complete Sections 025-026, run full Green validators, then begin grouped whole-artifact reread
+
+#### Context Notes:
+- The seed ten-minute p95 remains an unproven candidate acceptance hypothesis
+
+#### Performance/Metrics:
+- Assignment 13 progress: 24/26 sections and 1440/1560 fields

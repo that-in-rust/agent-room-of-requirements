@@ -1616,19 +1616,268 @@ Promote an explanatory example into an executable regression fixture when the fa
 
 ## Outcome Metrics and Feedback Loops
 
-Leading indicator: the chosen boundary reduces blast radius or uncertainty measured by explicit probes.
-Failure signal: the reference jumps to a pattern before proving the problem shape.
-Review cadence: Re-run the verifier after every generated-reference edit and refresh external sources when public APIs, docs, or tooling releases change.
+No outcome values were measured while evolving this reference. The metrics below are future capture definitions, not current results, universal targets, or claimed productivity gains. Establish local baselines under stable definitions, retain raw evidence and cohort identity, and refuse comparisons when producer, repository population, task mix, or sampling policy materially changes.
+
+**Metric card contract**
+
+Every reported metric must include:
+
+| field | completion rule |
+| --- | --- |
+| Decision purpose | Name the workflow or tool choice the metric can change. |
+| Definition | Specify numerator, denominator, unit, inclusion, exclusion, and deduplication rules. |
+| Cohort | Record repository, revision range, language mix, task class, producer, options, capability branch, and profile. |
+| Sampling | State random, stratified, risk-based, exhaustive, or fixture selection and why it represents the claim. |
+| Raw evidence | Retain row identifiers, source pointers, command results, mismatch records, or incident links needed to recalculate. |
+| Counter-metric | Name the quality or safety signal that prevents optimization of the metric in isolation. |
+| Uncertainty | Report sample size and known bias; use a no-comparison state when conditions differ. |
+| Trigger | Define what change prompts investigation, not an unsupported universal pass threshold. |
+| Action | Choose fix, document, reroute, expand with evidence, retire, or collect more data. |
+| Invalidation | State which producer, definition, repository, or policy change makes the series incomparable. |
+
+The original leading indicator remains valid only when made concrete: the chosen boundary should reduce decision-relevant uncertainty or unnecessary blast-radius exploration, as shown by explicit probes and without increasing missed consequential evidence.
+
+**Deterministic contract gates**
+
+These are pass/fail properties of one identified run, not estimates of semantic quality.
+
+| gate metric | definition | pass interpretation | failure action |
+| --- | --- | --- | --- |
+| `producer_identity_complete` | Required producer path, hash, invocation, options, target root, revision, working state, and output location are present. | Another operator can identify the intended run inputs. | Downgrade artifacts to hints or rebuild with a complete manifest. |
+| `artifact_set_consistent` | Required artifact names exist, schemas match, conditional SVG behavior agrees with `tooling.tsv`, and no mixed producer identity is detected. | The output contract is structurally usable. | Diagnose production, stale mixing, or schema drift before interpretation. |
+| `inventory_rows_reconcile` | `code_files.txt` paths equal `files.tsv` paths under documented sorting and `all_files.txt` matches the implemented inventory branch. | Internal artifact inventory transformation is consistent. | Repair the producer or reject the run; separately assess whether inventory policy fits the task. |
+| `pointer_bounds_valid` | Every durable cited pointer names an existing current file and valid integer range after revision binding. | Cited spans can be read. | Regenerate or disambiguate; validity still does not prove semantic identity. |
+| `graph_projection_bounded` | Edge cap, full TSV count, Mermaid count, DOT count, and optional SVG state are recorded and noncontradictory. | Presentation limits are explicit. | Rebuild or correct projection claims before using the visual. |
+| `claim_next_action_present` | Every unresolved or contradicted consequential claim has a nonempty owner, next mechanism, and stop condition. | Uncertainty has an operational route. | Block handoff until responsibility and evidence need are explicit. |
+
+A deterministic green gate cannot be summed into an accuracy score. All six can pass while lexical relations still miss dynamic behavior.
+
+**Sampled artifact-quality indicators**
+
+| indicator | numerator | denominator | required stratification | misuse warning |
+| --- | --- | --- | --- | --- |
+| `pointer_resolution_rate` | Sampled symbol rows whose paths and bounds resolve on the bound revision. | All sampled symbol rows. | Language, extraction branch, multiline shape, duplicate name, file size, and decision importance. | Resolution does not mean the span covers the full construct. |
+| `pointer_semantic_hit_rate` | Resolved sampled rows whose span or expanded context identifies the intended symbol. | Resolved sampled symbol rows inspected in source. | Same strata plus overloaded or nested constructs. | A high hit rate cannot establish recall for symbols never extracted. |
+| `internal_edge_agreement_rate` | Sampled internal rows corroborated by source and the selected project-aware mechanism. | All sampled internal rows with completed checks. | Language, edge kind, alias use, directory boundary, test/production class, and fan rank. | Convenience positives can hide false edges in difficult classes. |
+| `unresolved_classification_completion` | Sampled unresolved rows classified as internal miss, actual external, unsupported form, generated/configured, or still unresolved with reason. | All sampled unresolved rows. | Prefix cluster, language, source directory, and consequence. | Lower unresolved count is not inherently better; aggressive false resolution can game it. |
+| `rough_absence_counterexample_rate` | Investigated rough empty or missing-edge claims for which stronger evidence finds at least one relevant relation. | Consequential rough absence claims sent to stronger checks. | Claim type, language, dynamic/configuration risk, and action consequence. | The metric reflects selected investigations and must not estimate global false-negative probability without representative design. |
+| `ranked_candidate_usefulness` | Inspected ranked candidates that contribute to final source evidence or a documented eliminated hypothesis. | All ranked candidates inspected for the decision. | Query type, ranking method, repository area, and profile. | Eliminated hypotheses can be useful; counting only confirmed candidates rewards confirmation bias. |
+| `mismatch_localization_rate` | Recorded mismatches assigned to a verified inventory, extraction, resolution, presentation, retrieval, or semantic mechanism. | All mismatches investigated to the agreed effort limit. | Pipeline stage and severity. | Do not force a mechanism to improve the ratio; unresolved is valid. |
+
+Report counts alongside every rate. A ratio based on two easy samples should not look comparable to a stratified review of many high-impact rows. Controlled fixtures and target-repository samples must remain separate cohorts.
+
+**Workflow and context indicators**
+
+| indicator | definition | desirable interpretation | counter-metric |
+| --- | --- | --- | --- |
+| `time_to_first_relevant_source` | Elapsed time from clarified decision to the first source span later retained in evidence. | Routing and compact querying find a useful starting point quickly. | Final evidence sufficiency and late contradiction count; speed alone can reward premature commitment. |
+| `selected_context_usefulness` | Inspected source units that support, refute, or materially contextualize a final claim divided by all inspected source units under a stable unit definition. | Query-first retrieval limits irrelevant reads while valuing eliminated hypotheses. | Missed-consumer and post-action defect signals; low context can mean under-search. |
+| `whole_file_expansion_yield` | Complete-file expansions that reveal a material fact absent from the initial pointer divided by all complete-file expansions. | The pointer-to-file escalation rule selects cases where wider context matters. | False-negative reviews; low yield may reflect overexpansion, while high yield may indicate pointers are routinely too narrow. |
+| `artifact_reuse_acceptance` | Existing artifact sets accepted after provenance and compatibility review divided by all reuse candidates. | Reuse saves rebuilds when identities genuinely match. | Stale-artifact discoveries and decision reversals; maximizing acceptance is unsafe. |
+| `reproduction_success_rate` | Decision records another operator can replay to the same artifact observation under the recorded state divided by records audited. | Provenance and commands are usable. | Semantic agreement and environment portability; replaying the same weak producer does not validate truth. |
+| `route_escalation_yield` | Escalations that discover material confirming, refuting, or boundary-changing evidence divided by completed escalations. | Agents route consequential uncertainty to stronger evidence productively. | Missed escalation incidents; maximizing yield can discourage necessary precautionary checks. |
+
+Time and context measures are optional. Collect them only when routing efficiency is a real optimization question and when instrumentation does not distort the work. Never compare elapsed time across unlike repository sizes, task classes, machine states, or approval constraints without adjustment and explanation.
+
+**Decision and downstream outcome indicators**
+
+| indicator | definition | feedback meaning | latency |
+| --- | --- | --- | --- |
+| `pre_action_claim_reversal_count` | Claims downgraded or refuted by verification before implementation or authorization. | Often a healthy sign that counterexample checks prevent weak evidence from escaping. | Immediate. |
+| `post_action_evidence_reversal_count` | Decisions reopened after action because material evidence was missed, stale, or misclassified. | Investigate route, coverage, escalation, and handoff failures. | Delayed. |
+| `map_attributable_rework` | Rework episodes whose verified cause includes a wrong map-derived candidate, relation, absence, rank, or stale pointer. | Quantifies downstream cost only after causal review. | Delayed and confounded. |
+| `escaped_dependency_defect_count` | Production, integration, or review defects where a relevant dependency was omitted or misinterpreted after the workflow claimed sufficient evidence. | High-severity lagging signal that can set a safety boundary even without statistical volume. | Potentially long. |
+| `safe_abstention_count` | Consequential claims explicitly routed away from rough mapping before unsupported action. | Shows negative capability and appropriate method fit. | Immediate; do not optimize upward without context. |
+| `record_invalidation_timeliness` | Time between a known invalidating change and downgrade or refresh of dependent decision records. | Measures whether durable claims stop being reused promptly. | Event-driven. |
+| `reviewer_recovery_success` | Audited failures for which the record identifies the failed premise, dependent claims, and next evidence without reconstructing the entire session. | Tests selective rollback and handoff quality. | Review or incident time. |
+
+A pre-action reversal is not necessarily failure: finding a configured runtime use before deletion is evidence that the feedback loop worked. A post-action reversal from the same missed class is more concerning. Metrics should distinguish prevention from escape.
+
+**Feedback routing table**
+
+| observed signal | likely stage | first investigation | possible durable action |
+| --- | --- | --- | --- |
+| Independent inventory finds relevant omitted files. | Inventory | Root, Git branch, ignore policy, extension filter, generated and nested inputs. | Fix inventory, add a coverage gate, or route that language or file class elsewhere. |
+| Pointer bounds fail after a producer-stable run. | Retrieval or source freshness | Revision binding, generated files, path syntax, and pointer parser. | Improve manifest, regenerate pointers, or add a stale-range fixture. |
+| Bounds resolve but semantic hit rate falls. | Extraction | Ctags/fallback branch, multiline constructs, duplicate names, and grammar support. | Improve extraction, expand context defaults, or use semantic indexing for affected constructs. |
+| Internal-edge disagreements cluster around aliases. | Resolution | Project path configuration, re-exports, extension and index conventions. | Add tested resolver support or classify and route alias claims to native tools. |
+| Unresolved count drops while false internal edges rise. | Resolution incentive | Aggressive resolver changes and classification policy. | Restore unresolved as a valid state and gate on sampled precision. |
+| Graph-derived rankings reverse after full-row analysis. | Presentation | Edge cap, duplicates, rank metric, and summary projection. | Compute ranks from TSVs, disclose cap, and add a regression fixture. |
+| Stronger checks repeatedly refute rough absence. | Observation-model boundary | Dynamic, generated, configuration, macro, or unsupported-language classes. | Make escalation mandatory or bypass rough mapping for that claim class. |
+| Context grows but retained evidence does not. | Retrieval | Query specificity, rank rule, pointer expansion, and whole-file triggers. | Tighten query-first guidance and measure missed evidence as a counter-signal. |
+| Another operator cannot reproduce a row. | Provenance | Producer hash, root, revision, working state, options, environment, and mixed artifacts. | Require decision-record identity fields and fresh output directories. |
+| Downstream defects occur despite structurally green artifacts. | Gate overreach | Which structural pass was promoted into semantic certainty. | Rewrite pass language and add independent project verification. |
+
+**Review cadence**
+
+| event | review |
+| --- | --- |
+| Every generated-reference edit | Run the focused structural verifier, exact heading and expansion checks, packet uniqueness checks, and hygiene gates. |
+| Builder or pointer-reader change | Replay contract fixtures, compare artifact schemas and branches, and invalidate producer-dependent metrics. |
+| Optional-tool or environment change | Capture capability differences and avoid combining branch-dependent samples without stratification. |
+| New language, framework, or repository class | Audit inventory and relation observation boundaries before extending prior baselines. |
+| Consequential mismatch or escaped defect | Perform a causal review, update anti-patterns and routing, and add a fixture when the mechanism is reproducible. |
+| Public API, documentation, or tool release relevant to a live decision | Refresh the primary external source only with authorization, version-match locally, and keep prior cohorts separate. |
+| Periodic repeated-use review | Examine whether metrics changed decisions, whether fields are used, and whether the rough mapper should fix, reroute, or retire any claim class. |
+
+**Good, bad, and sentinel interpretations**
+
+Good: "Under the same producer and stratification, fallback pointer semantic hits improved after an extraction change, while internal-edge sample agreement and missed-consumer reviews did not worsen. Raw sample identifiers and counts are retained." This supports a local improvement claim within the cohort.
+
+Bad: "The new mapper emits more edges and fewer unresolved rows, so accuracy increased." More edges can be false positives, and fewer unresolved rows can result from incorrect forced resolution.
+
+Sentinel: One configuration-driven deletion regression can justify a mandatory escalation boundary even when there are too few events for a stable rate. Record it as a high-consequence counterexample, not as a percentage estimate.
+
+**Feedback loop**
+
+1. Capture an invariant failure, sampled mismatch, route outcome, or downstream event with complete identity.
+2. Classify the earliest verified pipeline mechanism and the claims that depend on it.
+3. Decide whether to fix implementation, improve documentation, add a gate, reroute a claim class, retire a workflow, or gather a better sample.
+4. Replay controlled fixtures and a representative target sample under the new producer.
+5. Start a new comparable series only when definitions and conditions permit; preserve the old cohort for historical interpretation.
+6. Confirm that the change improved decision quality without degrading its counter-metric.
+
+The most important feedback outcome may be an earlier stop. If recurring evidence shows that runtime-only or security absence claims cannot be served safely by rough mapping, success is not a higher edge count. Success is routing those claims to the right evidence system before weak output reaches a decision.
 
 ## Completeness Checklist
 
-- The role scenario names the user, starting state, decision, and trigger for Dependency Map Cli Patterns.
-- The decision guide includes Adopt when, Adapt when, Avoid when, and Cost of being wrong.
-- The local corpus hierarchy identifies canonical and supporting sources or gives a confidence warning.
-- The theme specific artifact is concrete enough to review without reading every mapped source.
-- The examples cover good, bad, and borderline usage.
-- The metrics section names one leading indicator and one failure signal.
-- The adjacent routing section points to a better reference when this one is not the right fit.
+Use this checklist as a set of revisitable phase gates, not a one-pass form. Every completed item must point to evidence. A conditional item needs a recorded reason for not applying. A critical failure blocks all dependent claims even if later boxes were previously marked complete.
+
+Status has three distinct meanings:
+
+| status type | meaning | valid evidence |
+| --- | --- | --- |
+| Machine pass | Deterministic structure, identity, schema, count, hash, syntax, or format contract passed. | Captured command or parser result. |
+| Reviewer pass | A person verified claim-to-evidence fit, counterarguments, scope, and interpretation. | Review record with source pointers and rationale. |
+| Authorized acceptance | The project owner accepted the bounded decision and remaining risk under applicable policy. | Approval mechanism defined by the project. |
+
+A machine pass never implies reviewer or owner acceptance.
+
+**Gate A: reference-construction completeness**
+
+The following seven rows preserve and strengthen the seed checklist.
+
+| requirement | completion evidence | severity if missing |
+| --- | --- | --- |
+| The role scenario names the user, starting state, decision, and trigger for Dependency Map Cli Patterns. | Section 010 contains an explicit role, compound request, branch-specific decisions, observation boundary, route change, and handoff. | Stop reference completion because the guidance lacks an operational user journey. |
+| The decision guide includes Adopt when, Adapt when, Avoid when, and Cost of being wrong. | Section 011 preserves all four postures and connects each to concrete production, retrieval, and verification tradeoffs. | Stop reference completion because method fit and error consequence are underspecified. |
+| The local corpus hierarchy identifies canonical and supporting sources or gives a confidence warning. | Section 012 preserves seed roles, hashes duplicate content, defines typed authority, and records the unexplained canonical-versus-legacy metadata. | Stop source-backed claims until authority and uncertainty are visible. |
+| The theme specific artifact is concrete enough to review without reading every mapped source. | Section 013 defines a decision-record schema with producer, coverage, evidence, claim, mismatch, verification, decision, and invalidation blocks. | Stop durable handoff; navigation may continue with a current pointer. |
+| The examples cover good, bad, and borderline usage. | Section 014 provides six orthogonal examples plus good, bad, and recoverable synthesis. | Warn for concise expert notes; stop training/reference completion if boundaries remain abstract. |
+| The metrics section names one leading indicator and one failure signal. | Section 015 defines deterministic gates, sampled leading indicators, delayed failures, denominators, counter-metrics, and feedback actions without claiming measured values. | Stop metric claims; the workflow can continue without a measurement program. |
+| The adjacent routing section points to a better reference when this one is not the right fit. | Section 017 must route by unresolved question and stronger observation model, including terminal escalation. | Stop claims outside rough-map fit until a suitable route is named. |
+
+Additional reference requirements:
+
+| requirement | verification | severity |
+| --- | --- | --- |
+| All 26 original level-two headings remain exact and ordered. | Parse reference and compare heading texts with the archive seed. | Critical structural stop. |
+| Every evolved section is strictly longer than its matching seed section. | Compare parsed section character lengths. | Critical evolution stop. |
+| The packet contains 26 exact section headings and 260 exact question headings. | Parse packet and compare each ten-question cycle with the specification. | Critical rationale stop. |
+| The packet contains 1,560 mandatory values with raw and prefix-stripped normalized uniqueness. | Parse the six required fields under every question and normalize with the focused test helper. | Critical quality stop. |
+| All factual source and implementation claims preserve evidence boundaries. | Review hashes, script literals, no-browse labels, and illustrative examples. | Stop unsupported claims; narrow or correct them. |
+| No unrelated shared file or lane was changed. | Review scoped status and diff paths. | Critical ownership stop. |
+| Output is ASCII, table-consistent, fence-balanced, tab-free, trailing-whitespace-free, marker-free, and final-newline-terminated. | Run focused hygiene parser. | Correct before final handoff. |
+
+**Gate B: method fit before artifact production**
+
+| check | completion evidence | profile | response if failed |
+| --- | --- | --- | --- |
+| The user's actual decision is stated separately from the surface query. | Claim card with action, false-positive cost, false-negative cost, and reversibility. | All profiles. | Clarify before choosing tools. |
+| Repository and directory instructions were read. | Paths and relevant requirements recorded. | All profiles. | Stop; native tools and write boundaries may override this guide. |
+| Native search, semantic, build, ownership, and runtime tools were considered. | Route-selection rationale. | Standard and high assurance; abbreviated for navigation. | Use the stronger native route if it answers the claim directly. |
+| Rough mapping can observe the relevant source and relation classes. | Fit statement covering extensions, tracked policy, configuration, generation, dynamic behavior, and semantic need. | All profiles. | Skip or use as auxiliary discovery only. |
+| Writing artifacts is authorized at the chosen output location. | Explicit scope or user/project authorization. | Every fresh build. | Do not run the builder. |
+| Existing artifacts were considered before rebuilding. | Reuse eligibility or rejection record. | Standard and high assurance. | Reuse only with complete compatible provenance. |
+| Stop and escalation conditions are known before production. | Named evidence threshold and route-away triggers. | All profiles. | Define them so a successful command cannot become automatic approval. |
+
+Method-fit failure can be a complete and correct outcome: the claim is routed to a semantic, build, configuration, security, or runtime evidence system.
+
+**Gate C: producer and target identity**
+
+| check | completion evidence | prerequisite | severity |
+| --- | --- | --- | --- |
+| Builder and pointer reader are readable, syntax-valid, and hash-bound. | Paths, SHA-256 values, `bash -n` results. | Authorized build or durable pointer evidence. | Critical for reproducible use. |
+| Target root and repository identity are unambiguous. | Canonical path, top-level result, revision, workspace identity. | Every map or reused artifact. | Critical; wrong-root output is irrelevant. |
+| Working-tree and generated state are captured. | Status and material local-input note. | Standard and high assurance. | Critical when local state can alter evidence; warning for navigation. |
+| Invocation, options, output directory, and timestamps are retained. | Exact command and run manifest. | Fresh build. | Critical for cross-run reuse. |
+| Required and optional capabilities are distinguished. | Shell, Python, `rg`, Ctags JSON probe, ast-grep availability, Graphviz availability. | Fresh build and cross-run comparison. | Record fallback or stop when a required capability is absent. |
+| Output directory is fresh and authorized. | Pre-run nonexistence and post-run manifest. | Fresh build. | Critical against artifact mixing or overwrite. |
+
+**Gate D: inventory and artifact contract**
+
+| check | completion evidence | what a pass does not prove | severity |
+| --- | --- | --- | --- |
+| `all_files.txt` matches the implemented inventory branch. | Independent sorted comparison. | That tracked-only or `rg --files` policy fits the question. | Critical for interpreting all downstream rows. |
+| `code_files.txt` and `files.tsv` paths reconcile. | Structured TSV comparison and counts. | That supported extensions include every relevant source or configuration file. | Critical structural gate. |
+| Excluded file and language classes are explicit. | Coverage ledger for untracked, ignored, generated, vendored, nested, unsupported, configuration, and data files. | That exclusions are harmless. | Critical when any class can affect the claim. |
+| `tooling.tsv` records the selected capability state. | Header, rows, and captured preflight agreement. | That detected ast-grep was invoked or that Ctags/fallback rows are semantically correct. | Critical for span interpretation and comparisons. |
+| Required artifacts exist and schemas match. | Structured parser over files, symbols, edges, tooling, summary, Mermaid, and DOT; conditional SVG check. | Accuracy, completeness, or semantic meaning. | Critical production contract. |
+| Summary and graph projections reconcile with full rows and cap. | Full counts, projected counts, `MAX_GRAPH_EDGES`, optional render state. | That full TSV rows represent all program dependencies. | Stop graph-derived claims if inconsistent. |
+
+An inventory defect reopens extraction, relation, ranking, and absence conclusions derived from that population. Do not patch only the visible summary.
+
+**Gate E: query, pointer, and interpretation**
+
+| check | completion evidence | profile | response if failed |
+| --- | --- | --- | --- |
+| The compact query and candidate-selection rule are retained. | Exact filter or rank, population, included and excluded rows. | Standard and high assurance; query note for navigation. | Reproduce or narrow selection before handoff. |
+| Durable pointers resolve on the bound revision. | File existence, integer bounds, reader result. | All profiles. | Regenerate or disambiguate. |
+| Pointer context is sufficient for the claim. | Expanded span or complete-file rationale. | All profiles. | Read wider context; one-line fallback is only an entry point. |
+| Duplicate symbols and ambiguous identities are handled. | Qualified path, scope cues, semantic resolution when needed. | Standard and high assurance. | Keep candidate state or escalate. |
+| Consequential positive edges are sampled in source. | Endpoint reads and project-aware corroboration. | Standard and high assurance. | Downgrade ranks and relation claims. |
+| Suspicious absence or unresolved rows receive an independent check. | Search, configuration, semantic, build, or runtime result. | High assurance and any consequential absence. | Block absence, deletion, migration, or security claims. |
+| Graph appearance is not used as sole architectural evidence. | Full-row analysis, cap disclosure, source samples. | Every graph-derived claim. | Recalculate from complete rows and narrow language. |
+
+**Gate F: claim sufficiency and action**
+
+| check | completion evidence | severity |
+| --- | --- | --- |
+| Each claim is typed as candidate, observed, corroborated, verified for scope, refuted, or unresolved. | Claim card with bounded text. | Critical for durable handoff. |
+| Supporting evidence and counterevidence are linked separately. | Bidirectional evidence registry. | Critical; confirmation-only records are incomplete. |
+| Evidence strength matches consequence and reversibility. | Sufficiency rule and tradeoff review. | Critical for code changes and authorization. |
+| Absence claims use authoritative evidence beyond rough non-observation. | Semantic, build, configuration, generated-state, test, runtime, and owner evidence appropriate to scope. | Critical hard stop. |
+| Conflicting sources are reconciled or remain explicitly unresolved. | Mismatch record and affected claims. | Stop dependent decisions. |
+| Project-native build and test gates cover the implemented boundary. | Exact commands, configuration, outcomes, and limitations. | Critical for implementation completion. |
+| Remaining uncertainty has an owner and cannot silently broaden the claim. | Owner, next mechanism, stop condition, and accepted scope. | Critical for handoff. |
+
+**Gate G: decision-record and handoff quality**
+
+| check | completion evidence |
+| --- | --- |
+| Record profile matches the action. | Navigation, standard, or high-assurance rationale. |
+| Producer, target, environment, and artifact identities are reconstructable. | Decision-record Blocks A through C. |
+| Every evidence item supports, refutes, or contextualizes a claim. | Bidirectional links. |
+| Every claim names consequence, owner, sufficiency, and invalidation. | Complete claim cards. |
+| Every mismatch identifies the earliest verified stage and dependent claims. | Mismatch ledger. |
+| Verification passes state what they leave unproven. | Gate limitation field. |
+| Decision result and implementation boundary are explicit. | Proceed, proceed within scope, redesign, reject, or escalation required. |
+| Rollback or recovery identifies what to inspect if the premise fails. | Recovery field and source dependency links. |
+| Next action and stop condition are nonempty. | Executable next step with owner. |
+| Sensitive repository or runtime data follows handling policy. | Redaction and storage review. |
+
+**Gate H: final evolution and whole-file quality**
+
+Before declaring this evolved reference complete:
+
+1. Confirm packet section count `26`, question count `260`, field count `1,560`, raw unique count `1,560`, and prefix-stripped normalized unique count `1,560`.
+2. Confirm the reference retains exactly the 26 original headings in order and each parsed section is longer than its seed counterpart.
+3. Run the focused reference verifier and all shared structural tests that do not require modifying another lane.
+4. Confirm local source hashes and frozen span anchors remain unchanged where the assignment expects immutability.
+5. Scan both outputs for forbidden markers, non-ASCII characters, malformed tables, unbalanced fences, tabs, trailing whitespace, and missing final newline.
+6. Reread the complete packet and reference in slices of at most five sections, persisting a review checkpoint after every slice.
+7. Record Green after complete file and packet production, then Refactor after whole-file reread and final focused verification.
+8. Report exact changed paths, counts, current test evidence, blockers, and the next assigned file without opening it early.
+
+**Quality contrasts**
+
+Good: The standard profile links a map run to reconciled coverage, source samples, counterevidence, project checks, and a bounded refactor decision. A dynamic deletion subclaim fails its hard gate and routes elsewhere while the review branch proceeds.
+
+Bad: Every section exists, the summary is nonempty, and all boxes are marked, but producer identity, unsupported configuration files, counterevidence, and semantic checks are absent. This is document completeness without decision completeness.
+
+Recoverable navigation: A current direct pointer and source read answer a location question under the lightweight profile. If that evidence later enters a refactor or deletion review, the stronger profile gates must be run; the old completion status cannot be promoted automatically.
+
+The checklist is a prerequisite graph. Completion propagates forward only when supporting premises pass. Contradiction propagates backward to reopen the earliest false premise and every dependent conclusion. This selective invalidation is more useful than clearing every status, but it requires explicit dependency links and an honest unresolved state.
 
 ## Adjacent Reference Routing
 

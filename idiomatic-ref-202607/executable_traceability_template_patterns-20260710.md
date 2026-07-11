@@ -747,19 +747,215 @@ Promotion is reversible. Target evidence can demote a historically useful mechan
 
 ## Theme Specific Artifact
 
-Theme specific artifact: worked executable traceability template patterns example with user goal, decision point, failure mode, and verification gate.
+Use a **Traceability Change Record** when a behavior change must remain explainable across owners, tools, release stages, or delayed handoffs. The record is not a second specification. It is a revision-scoped decision object that identifies the authoritative claim, the evidence relevant to that claim revision, and the release disposition reached from that evidence.
 
-| artifact_field_name | artifact_completion_rule | evidence_source_hint |
-| --- | --- | --- |
-| user_goal_statement | state the user's concrete goal before applying Executable Traceability Template Patterns | local corpus hierarchy plus critique findings |
-| decision_boundary_rule | define the point where this reference should be used or avoided | decision tradeoff guide |
-| verification_gate_rule | define the command, checklist, or review question that proves the artifact worked | verification gate command set |
+The full record is justified for cross-team APIs, generated contracts, data migrations, security controls, operational limits, regulated approvals, and behavior whose failure is costly to reverse. For a local low-risk change, a compact record containing claim identity, authoritative location, evidence identity, disposition, and retrieval result is enough. Exploratory code that cannot ship need not acquire release governance prematurely.
+
+### Minimum record contract
+
+| Record field | Completion rule | Failure the field prevents |
+|---|---|---|
+| `change_id` | Use one immutable identity for the proposed behavior change | Evidence from unrelated work being attached by proximity |
+| `claim_revisions` | List each atomic claim identity and exact revision or content digest | An older passing result silently approving changed semantics |
+| `decision_owner` | Name the accountable role and the authority under which it acts | A reviewer comment being mistaken for product or release acceptance |
+| `behavior_cases` | Link positive, negative, boundary, and interaction cases required by the claims | Happy-path coverage standing in for the whole contract |
+| `implementation_links` | Identify the code, configuration, schema, or operational mechanism that realizes each claim | Requirements and tests agreeing while production behavior is elsewhere |
+| `evidence_requirements` | State the evidence type and why it fits each claim | A unit test being used to prove deployment, policy, or human-review behavior |
+| `evidence_runs` | Bind artifact digest, environment, command or review question, result, and observed time | A green label with no reproducible artifact or execution boundary |
+| `negative_probe` | Record a mutation, controlled fault, or counterexample that relevant evidence detects | An assertion that passes regardless of prohibited behavior |
+| `exceptions` | Record scope, rationale, owner, compensating control, expiry, and review trigger | A temporary waiver becoming an invisible permanent policy |
+| `decision` | Record accepted, rejected, conditional, or superseded state with rationale | Complete-looking data without an accountable conclusion |
+| `release_links` | Identify the build, package, deployment, or approval to which the decision applies | Evidence for one artifact authorizing a different release candidate |
+| `invalidation_triggers` | Name changes that make the decision or evidence stale | A once-correct record surviving claim, tool, dependency, or environment drift |
+
+Validate lifecycle state as well as field presence:
+
+| State | Required observation | Transition that must be rejected |
+|---|---|---|
+| `proposed` | Atomic claims and accountable owner exist | Direct transition to accepted with no evidence requirements |
+| `evidence_pending` | Cases, links, and expected evidence are defined | Treating missing or inaccessible evidence as a pass |
+| `reviewable` | Required current evidence is retrievable and exceptions are explicit | Review with a run bound to another claim revision |
+| `accepted` | Authorized decision and matching release boundary are recorded | Acceptance by a role lacking the stated authority |
+| `conditional` | Limitation, compensating control, owner, and expiry are present | Open-ended conditional state without a review trigger |
+| `rejected` | Reason and observed counterevidence are retained | Deleting rejection history and later repeating the same proposal |
+| `superseded` | Replacement revision and migration disposition are linked | Reusing superseded evidence as current approval |
+
+### Worked record
+
+The following values are illustrative, not target policy. The example concerns a change that revokes all active sessions after a user resets a password.
+
+```yaml
+traceability_change_record:
+  change_id: AUTH-CHANGE-042
+  claim_revisions:
+    - id: AUTH-SESSION-017
+      revision: 3
+      statement: A successful password reset invalidates every active session for that account.
+  decision_owner:
+    role: identity-service-owner
+    authority: authentication-behavior-acceptance
+  behavior_cases:
+    - password-reset-invalidates-two-active-sessions
+    - failed-reset-preserves-existing-sessions
+    - concurrent-refresh-cannot-revive-revoked-session
+    - unrelated-account-session-remains-valid
+  implementation_links:
+    - identity-service/reset-password-handler
+    - session-store/account-revocation-generation
+  evidence_requirements:
+    - type: integration-behavior
+      reason: The claim crosses credential and session-store boundaries.
+    - type: controlled-concurrency-probe
+      reason: A refresh racing with revocation is an interaction risk.
+  evidence_runs:
+    - artifact_digest: build-auth-20260711-042
+      environment: isolated-integration
+      result: passed
+      evidence_key: run-auth-session-042
+  negative_probe:
+    mutation: Disable the account revocation-generation update.
+    expected_observation: The two-session integration case fails.
+    observed_result: detected
+  exceptions: []
+  decision:
+    state: accepted
+    rationale: Required cases pass, the negative probe is detected, and evidence matches revision 3.
+  release_links:
+    - identity-service-candidate-20260711-042
+  invalidation_triggers:
+    - claim revision changes
+    - session-store protocol changes
+    - evidence artifact becomes unavailable
+    - release candidate digest changes
+```
+
+This record does not prove that password-reset revocation is the right product policy. That policy must already be accepted by the proper owner. It proves which accepted claim revision was evaluated, why integration and concurrency evidence fit, which implementation was exercised, and which release candidate may rely on the decision.
+
+### Representation choices
+
+| Representation | Best fit | Main benefit | Main risk |
+|---|---|---|---|
+| Markdown matrix | Small, review-centered repositories | Easy human scanning and diff review | Weak state transitions and accidental manual drift |
+| Code annotations | Stable claims close to implementation | High code proximity and searchable identity | Poor cross-repository and release visibility |
+| Issue workflow | Approval-heavy organizational change | Ownership, discussion, and access controls | Evidence can become detached or links can decay |
+| Append-only event ledger | Audited state transitions and long retention | Preserves rejected and superseded decisions | Higher query and migration complexity |
+| Generated projection | Several audiences need different views | One write model can serve review, CI, and audit | Generator correctness and schema compatibility become dependencies |
+
+Choose one authoritative write model. Generate secondary matrices, dashboards, release summaries, and audit views when possible. Two manually maintained authoritative copies create a reconciliation problem that the artifact was meant to prevent.
+
+### Artifact verification ladder
+
+1. Parse the record and reject missing identities, unknown states, duplicate claim revisions, or invalid links.
+2. Build the typed graph and reject required claims without cases, implementation, evidence requirements, or a decision path.
+3. Review semantic fit: confirm that each case addresses the claim and each evidence type can observe the stated failure.
+4. Run a negative probe and show that relevant evidence changes from passing to failing for the expected reason.
+5. Verify that every cited run matches the claim revision, implementation artifact, environment, and release candidate under review.
+6. Retrieve stored evidence from its durable identity after the authoring workspace is unavailable.
+7. Reject expired exceptions, missing compensating controls, inaccessible evidence, unauthorized decisions, and stale invalidation conditions.
+8. Reconcile the final release so accepted claims are current, rejected claims are not shipped, and superseded evidence grants no authority.
+
+**Good:** the worked record binds revision 3 to a specific build, exercises cross-boundary and concurrency behavior, detects a disabling mutation, and records an authorized release decision. **Bad:** a row says only `AUTH-SESSION-017 -> test passed` and gives no revision, artifact, assertion sensitivity, owner, or release identity. **Borderline:** a current test run exists, but its artifact was produced before revision 3; preserve the run as historical evidence and execute the required evidence against the new candidate before acceptance.
+
+The record is deliberately small at its write boundary and rich in reproducible projections. Downstream impact analysis, release automation, audit review, evidence retention, migration planning, and incident reconstruction can consume stable identities without turning the record into the owner of domain execution. When a claim, implementation, schema, runner, authority, dependency, or environment changes, invalidate affected projections and reopen only the decisions whose causal support has changed.
 
 ## Worked Example Set
 
-Good example: Use Executable Traceability Template Patterns after loading the canonical source, confirming the external evidence boundary, and writing a verification gate before implementation.
-Bad example: Use Executable Traceability Template Patterns as a generic tutorial while ignoring the mapped local paths, source hierarchy, and cost of being wrong.
-Borderline case: Use Executable Traceability Template Patterns only after adding a confidence warning when local evidence is thin or conflicts with current ecosystem guidance.
+Use this sequence for worked transformations:
+
+1. State the accepted need and its authority.
+2. Separate atomic claims while preserving interaction claims.
+3. Derive positive, negative, boundary, and interaction cases.
+4. Select evidence that can observe each claim's failure mechanism.
+5. demonstrate an expected failing probe before relying on a passing result.
+6. Bind current evidence to a revision, artifact, owner, and disposition.
+
+The examples below teach that sequence. Their identifiers, values, technologies, and organizational roles are illustrative; they do not establish policy for an unseen target repository.
+
+### Example A: split a bundled cancellation request without losing the transaction
+
+**Raw request:** "When a customer cancels a paid order, cancel fulfillment and issue a refund."
+
+A weak rewrite creates one broad claim, one test called `cancellation_works`, and one link from that test to the requirement. It cannot say which obligation failed, and it can pass while fulfillment is cancelled but no refund is recorded.
+
+A stronger decomposition is:
+
+| Claim | Atomic behavior | Required case | Evidence fit |
+|---|---|---|---|
+| `ORDER-CANCEL-001` revision 1 | An eligible paid order enters cancelled state | Eligible paid order is cancelled | Domain behavior test |
+| `ORDER-CANCEL-002` revision 1 | Cancellation prevents a new fulfillment handoff | Handoff attempted after cancellation is rejected | Integration test at fulfillment boundary |
+| `ORDER-CANCEL-003` revision 1 | Cancellation records one refund instruction for captured payment | Captured payment produces one instruction | Persistence and payment-adapter integration test |
+| `ORDER-CANCEL-004` revision 1 | Cancellation is all-or-recoverable across state, handoff, and refund effects | Refund adapter fails after cancellation starts | Controlled fault plus recovery-state assertion |
+
+The fourth claim matters. Splitting the request into three atomic outcomes without an interaction claim could approve a partially applied cancellation. The exact transaction or compensation policy still requires product and architecture authority; the example only makes that decision visible.
+
+**Expected negative probe:** disable refund-instruction persistence. Evidence for `ORDER-CANCEL-003` and the interaction claim must fail, while the isolated cancellation-state case may still pass. If every case stays green, the evidence graph is structurally linked but semantically insensitive.
+
+**Good:** each claim has a separate result, and the fault probe exposes partial application. **Bad:** one passing end-state assertion checks only `order.status`. **Borderline:** all four cases pass, but the run belongs to a build produced before revision 1; retain it as history and rerun against the candidate.
+
+### Example B: turn "make search fast" into an accepted quality contract
+
+Do not begin by copying a latency number from a template. First capture the workload and decision authority:
+
+| Contract dimension | Concrete question | Required evidence |
+|---|---|---|
+| Population | How many indexed records and tenants represent the supported boundary? | Reproducible dataset manifest and distribution summary |
+| Request mix | Which query forms, cache states, and result sizes matter? | Versioned workload profile |
+| Metric | Which latency statistic and error handling define success? | Measurement method and aggregation rule |
+| Environment | Which hardware, concurrency, dependency, and warm-up state apply? | Environment manifest and calibration record |
+| Objective | Which value has the product or service owner accepted? | Decision record with owner and revision |
+| Regression policy | What comparison, tolerance, and repeated-run rule blocks release? | Statistical gate with raw result retention |
+
+Suppose a target owner accepts a hypothetical objective for a named workload. The resulting traceability record must link that accepted value to a benchmark that actually generates the workload, retains raw samples, reports the chosen statistic, and identifies the tested artifact. A unit test that sleeps for a fixed duration is not evidence of search latency, and a single local run does not establish a stable service objective.
+
+**Expected negative probe:** add a controlled delay to the measured search path, not to unrelated setup. The quality gate should cross its accepted boundary while correctness cases remain interpretable. **Borderline:** the benchmark detects the delay but uses a dataset smaller than the supported population; record the run as partial evidence rather than changing the workload claim after seeing the result.
+
+### Example C: match evidence to a cross-boundary security behavior
+
+**Accepted claim:** a successful password reset invalidates all active sessions for the affected account and does not invalidate another account's sessions.
+
+| Candidate evidence | What it can show | What it cannot establish alone | Disposition |
+|---|---|---|---|
+| Handler unit test with mocked session store | The reset handler requests revocation | Stored sessions and refresh races actually obey it | Useful but insufficient |
+| Session-store component test | Revocation generation blocks older tokens | Password-reset workflow invokes the mechanism | Useful but insufficient |
+| Integration test across reset and session boundaries | End-to-end account-scoped behavior | Production deployment and telemetry state | Required behavior evidence |
+| Controlled concurrency probe | Refresh racing with reset cannot revive an old session | All operational environments behave identically | Required interaction evidence where race is in scope |
+| Deployment verification | Candidate configuration enables the expected protocol | Assertion sensitivity in source tests | Separate release evidence |
+
+**Bad:** link the claim only to the mocked unit test because it is fast. **Good:** retain fast unit evidence for handler intent and add the integration and concurrency observations required by the claim. **Borderline:** integration evidence passes but another account is never exercised; the account-isolation clause remains missing rather than implicitly accepted.
+
+### Example D: reconcile a temporary evidence exception with release
+
+A migration changes a data format, but one platform-specific compatibility suite is unavailable. "Known issue" is not an executable exception. A reviewable exception records:
+
+```yaml
+exception_id: MIGRATION-EXCEPTION-006
+affected_claim: DATA-COMPAT-009 revision 2
+missing_evidence: platform-z-compatibility-suite
+reason: isolated runner is unavailable
+compensating_control: block platform-z rollout and verify read-only export against retained fixtures
+owner: migration-release-owner
+expiry: release-candidate-3
+review_trigger: runner restored or candidate digest changes
+release_scope: platforms-a-and-b-only
+```
+
+At release reconciliation, platforms A and B may proceed only if their required current evidence passes and the release mechanism enforces the stated scope. Platform Z remains blocked. The exception expires at the named boundary; copying it into the next candidate without a new decision is a failure.
+
+**Good:** missing evidence is explicit, the rollout cannot exceed the compensating scope, and expiry is enforced. **Bad:** mark the missing suite as skipped and count the job green. **Borderline:** the exception is approved and scoped, but the deployment configuration has not been checked; the governance record is complete while release enforcement remains unproved.
+
+### Verification and reuse rules
+
+For each worked example, a target adaptation should answer:
+
+- Which facts came from an accepted target need rather than this illustration?
+- Which first draft was rejected, and what ambiguity or failure did it hide?
+- Which traceability edges are required, optional, missing, stale, or superseded?
+- Which probe makes relevant evidence fail for the expected reason?
+- Which artifact, environment, run, reviewer role, and release boundary produced the observation?
+- Which values, APIs, identities, and authority roles must be replaced locally?
+- What change invalidates the result or reopens the decision?
+
+Promote stable adaptations into conformance fixtures for parsers, graph validators, generators, review checks, and release reconciliation. Include bad and borderline fixtures as well as valid ones. Then add novel incident-derived mutations over time: a fixture suite that recognizes only its teaching examples can pass while production invents a failure it was never asked to detect.
 
 ## Outcome Metrics and Feedback Loops
 

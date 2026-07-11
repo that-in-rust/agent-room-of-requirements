@@ -232,12 +232,48 @@ python3 agents-used-monthly-archive/idiomatic-references-202606/tools/verify_ref
 
 ## User Journey Scenario
 
+**Decision supported.** This section helps decide how a contributor should move from an unfamiliar codebase symptom or change request to a bounded, reviewable graph-assisted conclusion. The seed describes an unfamiliar-theme contributor choosing what to load and trust, but it stops before a concrete Parseltongue run, query sequence, decision point, and evidence handoff.
+
+**Recommended default and causal basis.** Translate the request into one structural question, verify or prepare an isolated 1.7.2 run, orient before searching, resolve an entity, trace in the direction implied by the question, and read the narrowed source before recommending action. Each step removes a different uncertainty in order: environment identity, repository shape, entity identity, dependency topology, and finally program semantics.
+
+**Operating conditions and assumptions.** The contributor has repository access, can preserve a run folder, can articulate a symptom or candidate change, and can stop once the graph has reduced the relevant code surface. Use this scenario for onboarding, code archaeology, refactor scoping, and structural bug hypotheses, while routing live production diagnosis to telemetry-first workflows.
+
+**Failure boundary and alternatives.** The user expects a one-command diagnosis, the symptom is operational rather than structural, setup cannot be isolated, the entity surface is unparsed, or the trace grows without converging on a reviewable corridor. Bounded alternatives and recoveries: begin with logs or failing tests for operational symptoms, use direct search for a known small feature, ask for a stable symbol or file boundary, or defer graph setup until expected reuse justifies it.
+
+**Counterexample, gotchas, and operational comparison.** Solving the wrong user question, presenting setup output as progress toward diagnosis, failing to capture the actual URL, following the first fuzzy search match, and handing the user a graph dump instead of a decision. Good: a contributor traces callers into a broken serializer, tests a suspected normalizer from the opposite direction, reads the overlap, and reports one guarded fix path. Bad: return all hotspots. Borderline: use a partial corridor but state missing dynamic edges.
+
+**Verification, evidence, and uncertainty.** Preserve the initial request, structural reformulation, run facts, orientation snapshot, search candidates, chosen entity key, forward and reverse query summaries, source spans, rejected hypotheses, and final next action. The local corpus supplies every mechanical stage of this journey and multiple paired-direction workflows that convert broad repository questions into narrower source reads. Time-to-value varies with installation state, repository size, parser coverage, and symbol naming, so the journey has no defensible universal duration.
+
+**Second-order consequence.** A successful user journey ends with less graph interaction than it began with; the output is a smaller decision surface, not an ever-richer graph.
+
+**Revision decision.** Replace the generic role statement with a start-to-finish scenario, decision checkpoints, failure exits, evidence packet, and a concrete good, bad, and borderline outcome.
+
+**Retained seed evidence.** The contributor role, starting uncertainty, trust decision, and theme-based opening trigger remain retained as the initial journey frame. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Role based opening scenario: The new contributor or agent is starting from an unfamiliar theme and deciding whether this reference is the right tool and needs a reference that turns source evidence into an executable next step.
 Primary user starting state: The user has a `parseltongue_graph_workflow_patterns` task, one or more local source paths, and uncertainty about which pattern should drive implementation.
 Decision being made: choosing what to load, what to trust, what to avoid, and what evidence proves success.
 Reference opening trigger: Open this file when the task mentions parseltongue graph workflow patterns, any mapped local source path, or an adjacent workflow with the same failure mode.
 
 ## Decision Tradeoff Guide
+
+**Decision supported.** This section helps decide whether to adopt a Parseltongue workflow unchanged, adapt it, avoid it, or stop after partial use for the task at hand. The seed offers adopt, adapt, avoid, and cost-of-being-wrong rows around source agreement, but it does not compare Parseltongue setup cost, graph reach, semantic limits, index freshness, or repeat-use value.
+
+**Recommended default and causal basis.** Adopt when the run is healthy and the question is structural, adapt when coverage or workflow shape is partial, avoid when exact dynamic behavior dominates, and explicitly account for wrong-run and overreach costs. The relevant tradeoff is not graph versus no graph in the abstract; it is narrowing benefit and repeatability versus setup, staleness, parser gaps, and semantic confirmation cost.
+
+**Operating conditions and assumptions.** The choice considers repository size, run readiness, expected reuse, entity stability, claim type, acceptable uncertainty, and a concrete next-best method. Apply tradeoffs per question and per claim rather than approving or rejecting the tool for an entire repository once.
+
+**Failure boundary and alternatives.** Adopt is triggered merely by local/external agreement, adapt hides an invalid substrate, avoid means abandoning all evidence gathering, or cost of being wrong is expressed only as wasted time. Bounded alternatives and recoveries: use a lightweight dependency map, direct code search, language-server references, tests, runtime tracing, logs, ownership metadata, or a later refreshed Parseltongue run.
+
+**Counterexample, gotchas, and operational comparison.** Sunk-cost bias after installation, overvaluing a visually broad blast radius, underpricing stale graph risk, adapting around a failed health gate, and ignoring the cost of false exclusion during deletion or migration. Good: adopt reverse and forward traces for a large refactor, then confirm guards in code. Bad: adapt a wrong-version run by caveating results. Borderline: use partial coverage to identify likely owners but not to certify deletion safety.
+
+**Verification, evidence, and uncertainty.** Write a decision record with claim type, repository and run state, expected reuse, coverage evidence, chosen option, rejected alternatives, wrong-choice consequence, source-reading requirement, and stop or revisit trigger. The corpus provides strong examples for graph-supported debugging, migrations, seam discovery, deletion safety, and architecture analysis, alongside explicit modeling cautions. Setup and query costs are environment-dependent, and the sources provide no comparative benchmark against language servers or manual navigation.
+
+**Second-order consequence.** Partial use is a first-class outcome: Parseltongue can validly narrow ownership or topology even when it cannot support the final behavioral claim.
+
+**Revision decision.** Reframe adopt, adapt, avoid, and wrong-cost rows around run validity, structural fit, semantic depth, repeat value, and reversible partial use.
+
+**Retained seed evidence.** The four original decision options and their verification prompts remain available in the retained table. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 | decision_option_name | when_to_choose_condition | tradeoff_cost_description | verification_question_prompt |
 | --- | --- | --- | --- |
@@ -247,6 +283,24 @@ Reference opening trigger: Open this file when the task mentions parseltongue gr
 | Cost of being wrong | wrong parseltongue graph workflow patterns guidance can send an agent to the wrong files, tests, or abstraction | wasted implementation loop and weaker verification | Would a reviewer know what to undo and what to inspect next? |
 
 ## Local Corpus Hierarchy
+
+**Decision supported.** This section helps decide which evidence wins when Parseltongue policy, endpoint detail, workflow guidance, live run facts, or target-code behavior disagree. The seed labels the skill canonical and all three reference files supporting, but it does not specify conflict resolution among archived prose, live API help, run configuration, server output, and repository source.
+
+**Recommended default and causal basis.** Use the skill for pinned-version policy, `run.config` and logs for this run's facts, live API documentation for exposed routes, detail references for workflow design, and target source or runtime evidence for program semantics. Authority changes with the question: static policy cannot reveal an auto-incremented port, a workflow cannot override a live route contract, and a graph service cannot determine unmodeled target behavior.
+
+**Operating conditions and assumptions.** Each disputed claim is classified, compared only across relevant authorities, and either resolved by the highest direct evidence or retained as an explicit conflict requiring refresh. Use canonical and supporting labels for archived corpus organization, then incorporate live and target-code evidence by claim class without rewriting frozen source roles.
+
+**Failure boundary and alternatives.** Canonical is interpreted as universally superior, live output silently rewrites archived policy, a supporting heuristic overrides endpoint behavior, or target code is ignored because the graph response appears complete. Bounded alternatives and recoveries: refresh the archived reference after confirmed drift, query API help, inspect server logs, reindex, read implementation source, or suspend the claim when two direct authorities remain inconsistent.
+
+**Counterexample, gotchas, and operational comparison.** One global hierarchy for every claim, confusing recency with relevance, treating a generated config as aspirational input, allowing silent fallback behavior to pass as policy, and losing the version boundary during conflict resolution. Good: `run.config` determines the actual bound URL while the skill still governs the required version. Bad: a workflow sample fixes the port at 7777. Borderline: live API help differs from archived endpoints, so use the live route and record documentation drift.
+
+**Verification, evidence, and uncertainty.** Maintain a conflict ledger containing claim class, competing evidence, timestamps or hashes, selected authority, rationale, effect on prior conclusions, refresh action, and unresolved uncertainty. The local sources explicitly distinguish ground truth, version policy, endpoint guidance, workflow catalogs, and code-reading limits, which supports a claim-relative hierarchy. The corpus cannot anticipate every live divergence or parser defect, so human judgment remains necessary when direct evidence conflicts at the same authority level.
+
+**Second-order consequence.** A hierarchy is a routing function, not a prestige ladder; its purpose is to send each question to the evidence capable of answering it.
+
+**Revision decision.** Add a claim-relative precedence matrix, conflict ledger, examples of legitimate overrides, same-level tie handling, and refresh obligations.
+
+**Retained seed evidence.** The canonical skill row and three supporting detail rows, including paths and heading signals, remain exactly preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 Classification vocabulary includes canonical, supporting, legacy, duplicate, and conflicting source roles.
 
@@ -259,6 +313,24 @@ Classification vocabulary includes canonical, supporting, legacy, duplicate, and
 
 ## Theme Specific Artifact
 
+**Decision supported.** This section helps decide what compact artifact should accompany every consequential Parseltongue investigation so another reviewer can reproduce the narrowing path and challenge its interpretation. The seed asks for a worked example with goal, decision boundary, and verification gate, but its three-field table is too small to reproduce a Parseltongue run or audit a graph-derived conclusion.
+
+**Recommended default and causal basis.** Produce a graph investigation packet containing question and claim class, versioned run identity, orientation and coverage evidence, entity resolution, exact queries, summarized results, source confirmations, uncertainty, alternatives, and stop decision. Reproducibility requires both substrate facts and reasoning transitions; query output without its selected entity and model boundary cannot explain why a conclusion was reached.
+
+**Operating conditions and assumptions.** The packet is small enough to review, includes only decision-relevant responses, links every conclusion to a query and source span, and records negative evidence without overclaiming absence. Require the full packet for changes, deletion, risk, and debugging claims; allow a lighter record for disposable exploratory orientation with no downstream decision.
+
+**Failure boundary and alternatives.** The artifact is a raw transcript, omits actual URL or entity keys, stores only screenshots, discards rejected hypotheses, or reports a graph pattern without direct semantic confirmation where required. Bounded alternatives and recoveries: use a reduced orientation packet for simple onboarding, a migration choreography record for staged changes, an incident evidence packet for runtime symptoms, or direct source notes when graph use is not justified.
+
+**Counterexample, gotchas, and operational comparison.** Copying huge JSON responses, leaking machine-specific paths unnecessarily, losing query order, recording labels but not parameters, and treating a context bundle as self-explanatory evidence. Good: a deletion-safety packet records reverse callers, forward callees, blast radius, dynamic-boundary caveats, and source confirmations. Bad: attach only hotspot output. Borderline: omit runtime proof for an architecture-only claim while stating that limit.
+
+**Verification, evidence, and uncertainty.** Replay the packet from a clean shell against the named run, confirm query parameters and keys, compare summarized counts to responses, locate every cited source span, and ask whether the stop decision still follows. The local references provide all constituent operations, and the bidirectional workflows repeatedly combine orientation, paired traces, quantification, and direct follow-up. A universal packet size is not established; sensitive repositories may also require redaction or storage controls outside this reference.
+
+**Second-order consequence.** The artifact should preserve the investigation's decision topology rather than every token, making review faster without erasing the path from question to evidence.
+
+**Revision decision.** Expand the three seed fields into a reproducible packet schema, completion rules, redaction guidance, replay test, and claim-specific minimal variants.
+
+**Retained seed evidence.** The original user goal, decision boundary, and verification gate rows remain retained as the packet's core. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Theme specific artifact: worked parseltongue graph workflow patterns example with user goal, decision point, failure mode, and verification gate.
 
 | artifact_field_name | artifact_completion_rule | evidence_source_hint |
@@ -269,17 +341,71 @@ Theme specific artifact: worked parseltongue graph workflow patterns example wit
 
 ## Worked Example Set
 
+**Decision supported.** This section helps decide what observable behavior distinguishes a sound graph-assisted investigation from misuse and from a valid but incomplete structural result. The seed gives one generic good, bad, and borderline sentence about source loading, but none demonstrates actual Parseltongue direction choice, graph interpretation, or direct-code confirmation.
+
+**Recommended default and causal basis.** Judge examples by substrate verification, question-to-endpoint fit, bounded interpretation, evidence preservation, source handoff, and an explicit stop or escalation condition. Contrasting examples teach decision boundaries more effectively than idealized commands because the same valid query can support, overstate, or fail a conclusion depending on its use.
+
+**Operating conditions and assumptions.** The good case converges evidence from both directions, the bad case exposes a category error with consequences, and the borderline case states exactly which claim remains supportable. Use examples to teach graph-evidence reasoning across languages while preserving that parser coverage and dynamic features vary by target codebase.
+
+**Failure boundary and alternatives.** Examples differ only in tone, the bad case is implausibly careless, the borderline case is secretly accepted as complete, or the recovery does not name stronger evidence. Bounded alternatives and recoveries: use a staged migration example for change planning, a boundary-leak example for architecture, a parse-frontier example for dynamic behavior, or an ownership-routing example for review assignment.
+
+**Counterexample, gotchas, and operational comparison.** Making graph breadth look inherently good, omitting run verification from concise examples, treating a counterexample as proof the tool is useless, and failing to show the cost of a false negative. Good: intersect callers of a failing sink with callees of a suspected source, read the overlap, and falsify one branch hypothesis. Bad: delete a symbol because reverse callers are empty. Borderline: route reviewers from cluster and fan-in evidence while verifying ownership metadata.
+
+**Verification, evidence, and uncertainty.** For each example, identify the question, run prerequisite, endpoint direction, graph observation, permissible inference, prohibited inference, direct evidence, consequence, recovery, and reviewer verdict. Meet-in-the-middle, deletion safety, boundary leak, ownership routing, and parse-frontier workflows are directly documented in the local corpus. The examples are schematic rather than executions against a supplied repository, so names and outcomes illustrate reasoning form rather than measured tool output.
+
+**Second-order consequence.** Borderline examples are the strongest calibration device because they demonstrate that evidence can be useful without being sufficient for the final claim.
+
+**Revision decision.** Replace generic contrasts with realistic meet-in-the-middle, deletion, and ownership cases that expose decisions, consequences, uncertainty, and stronger-evidence recovery.
+
+**Retained seed evidence.** The original good, bad, and borderline source-boundary statements remain preserved before the richer operational contrasts. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Good example: Use Parseltongue Graph Workflow Patterns after loading the canonical source, confirming the external evidence boundary, and writing a verification gate before implementation.
 Bad example: Use Parseltongue Graph Workflow Patterns as a generic tutorial while ignoring the mapped local paths, source hierarchy, and cost of being wrong.
 Borderline case: Use Parseltongue Graph Workflow Patterns only after adding a confidence warning when local evidence is thin or conflicts with current ecosystem guidance.
 
 ## Outcome Metrics and Feedback Loops
 
+**Decision supported.** This section helps decide which signals show that Parseltongue reduces investigation uncertainty without increasing unsupported conclusions, and how failures should update the workflow. The seed names a better next decision, a source-map failure signal, and a refresh cadence, but none is defined sufficiently to measure graph-workflow usefulness or detect systematic overreach.
+
+**Recommended default and causal basis.** Track time to first relevant entity, graph-to-source narrowing ratio, proportion of claims directly confirmed, ambiguous-entity corrections, stale-run detections, false-exclusion findings, and reviewer decision acceptance. Speed alone rewards broad but unsafe answers, while confirmation and correction metrics reveal whether topology actually improved the quality and efficiency of source reasoning.
+
+**Operating conditions and assumptions.** Metrics are collected on comparable task classes, include denominator and evidence packet, distinguish orientation from diagnosis, and trigger a concrete workflow or corpus change. Measure assistance quality for repeated comparable investigations, not raw model quality, repository correctness, or universal Parseltongue accuracy.
+
+**Failure boundary and alternatives.** Anecdotal wins become percentages, fewer tool calls is assumed better, large blast radius is treated as useful output, reviewer agreement replaces truth, or metrics never feed back into prompts and gates. Bounded alternatives and recoveries: use qualitative postmortems for low-volume work, measure query-to-source handoff completion, sample deletion and migration decisions, or track only gate failures until enough observations accumulate.
+
+**Counterexample, gotchas, and operational comparison.** Survivorship bias from successful tasks, mixing repository sizes, measuring wall time without setup state, hiding unresolved dynamic edges, and optimizing the metric instead of the decision. Good: record that reverse tracing narrowed 80 candidate files to 6 and source reading rejected 2 graph hypotheses. Bad: claim 90-percent accuracy from reviewer approval. Borderline: report faster orientation while keeping semantic accuracy unmeasured.
+
+**Verification, evidence, and uncertainty.** Define each metric, task cohort, numerator, denominator, collection point, reviewer role, acceptable uncertainty, adverse threshold, and the specific reference or workflow change triggered by a miss. The corpus supports measuring query direction, context selection, coverage, and direct-code handoff; the seed's leading and failure signals establish the intended decision-quality focus. No production dataset accompanies the sources, so thresholds and causal improvement claims must be learned locally rather than invented in this reference.
+
+**Second-order consequence.** Corrections are valuable telemetry: a graph hypothesis disproved quickly by source can indicate successful narrowing, whereas an unrecorded contradiction teaches the system nothing.
+
+**Revision decision.** Operationalize leading, adverse, and learning signals with denominators, cohort boundaries, feedback owners, and prohibition on unsupported benchmark claims.
+
+**Retained seed evidence.** The better-decision leading indicator, source-map failure signal, and verifier-plus-refresh cadence remain intact as high-level anchors. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Leading indicator: the next task uses the reference to make a better decision with less ambiguity.
 Failure signal: the reference remains a source map and never becomes an operating guide.
 Review cadence: Re-run the verifier after every generated-reference edit and refresh external sources when public APIs, docs, or tooling releases change.
 
 ## Completeness Checklist
+
+**Decision supported.** This section helps decide what minimum evidence must be present before a Parseltongue workflow reference or investigation packet can be called operationally complete. The seed checks role, decision options, hierarchy, artifact, examples, metrics, and adjacent routing, but it does not require verified run facts, model limits, query reproducibility, or source confirmation.
+
+**Recommended default and causal basis.** Require all structural invariants plus version and run identity, orientation and coverage, question classification, entity resolution, exact query record, bounded inference, direct-code handoff, alternatives, stop condition, and unresolved uncertainty. Omitting any prerequisite can make a structurally polished packet irreproducible, misdirected, or semantically overconfident even when every original checklist item appears.
+
+**Operating conditions and assumptions.** Each checkbox names an observable artifact or pass condition, nonapplicable items include a reason, failures block only dependent claims, and completion is rechecked after reconciliation edits. Apply the full list to consequential graph-assisted decisions, and document reduced variants explicitly rather than silently relaxing gates.
+
+**Failure boundary and alternatives.** The list becomes a prose reminder, checkmarks lack evidence locations, semantic confirmation is waived without scope reduction, or a single verifier pass substitutes for claim-specific gates. Bounded alternatives and recoveries: use a lighter orientation checklist for disposable discovery, a stricter migration or deletion variant for high-blast-radius changes, or route runtime incidents to an observability evidence checklist.
+
+**Counterexample, gotchas, and operational comparison.** Checking version without run identity, recording search text without selected key, counting query success without response relevance, omitting empty-result interpretation, and marking uncertainty complete merely because it is mentioned. Good: a refactor packet links every checked gate to config, response summary, or source span. Bad: all boxes are checked after only artifact validation. Borderline: skip runtime evidence for a topology-only conclusion and record the narrower scope.
+
+**Verification, evidence, and uncertainty.** Audit every item against a location in the packet, rerun structural and uniqueness validators, replay sampled queries, inspect cited code, test exclusion cases, and require a reviewer to identify the final decision and stop condition. The source corpus directly supplies run, endpoint, workflow, diagnostic, context, and modeling-limit requirements; the seed checklist supplies the durable reference-level categories. Some repositories require additional language, confidentiality, or operational checks not represented in this tool-specific corpus.
+
+**Second-order consequence.** Completeness is claim-dependent: a packet may be complete for ownership routing and simultaneously incomplete for deletion safety or runtime causality.
+
+**Revision decision.** Extend every seed checklist category with evidence pointers, claim-dependent applicability, substrate and semantic gates, and a final reviewer replay check.
+
+**Retained seed evidence.** All seven original checklist bullets remain preserved as top-level completion categories. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 - The role scenario names the user, starting state, decision, and trigger for Parseltongue Graph Workflow Patterns.
 - The decision guide includes Adopt when, Adapt when, Avoid when, and Cost of being wrong.
@@ -291,12 +417,48 @@ Review cadence: Re-run the verifier after every generated-reference edit and ref
 
 ## Adjacent Reference Routing
 
+**Decision supported.** This section helps decide where to route when Parseltongue setup, structural graph analysis, exact code semantics, runtime behavior, repository history, or language-specific implementation becomes the dominant need. The seed points abstractly to parseltongue, graph, and workflow references without naming the capability gap that triggers a route or the evidence expected on return.
+
+**Recommended default and causal basis.** Stay in this reference for graph investigation design; route to the pinned run skill for environment operations, endpoint references for route syntax, direct code tools for semantics, runtime diagnostics for execution, and domain references for implementation. Adjacent routing should cross an evidence boundary intentionally, adding a capability that the current reference lacks instead of merely changing vocabulary.
+
+**Operating conditions and assumptions.** The unresolved question is named, the destination can answer it, a minimal handoff packet travels with the task, and the result returns with its evidence class and effect on the graph hypothesis. Use this router at clear capability limits and preserve ownership of the original graph packet; do not let adjacent guidance silently rewrite verified run facts.
+
+**Failure boundary and alternatives.** Routing is triggered by keyword similarity, the next reference repeats the same source map, history evidence is asked to prove runtime state, or a handoff loses run and entity identity. Bounded alternatives and recoveries: use lightweight CLI dependency mapping when a persistent server is unjustified, language-server navigation for local references, repository-history capture for change rationale, or language-specific testing guidance for implementation proof.
+
+**Counterexample, gotchas, and operational comparison.** Routing too early before orientation, routing too late after a model boundary is crossed, opening several adjacent references at once, and allowing different tools' entity identifiers to be conflated. Good: graph evidence finds a parse frontier, then a language-specific reference guides direct analysis and tests. Bad: route to generic graph prose for a stale-index failure. Borderline: use Git history to explain ownership while keeping reachability claims separate.
+
+**Verification, evidence, and uncertainty.** Record trigger question, destination capability, handoff inputs, evidence returned, contradictions, resolved and unresolved claims, and whether the task should return, continue there, or stop. The local skill explicitly prefers graph tools for topology and direct reading for exact code, and its supporting references expose distinct endpoint and workflow roles. The exact adjacent file inventory can evolve independently, so routing is defined by capability and evidence type rather than a frozen list of filenames.
+
+**Second-order consequence.** A good route changes the evidence modality; if the destination cannot answer a question the current workflow cannot, the handoff only adds context cost.
+
+**Revision decision.** Replace generic neighboring-theme pointers with capability-gap triggers, minimal handoff fields, return criteria, and examples spanning direct code, runtime, history, and lightweight mapping.
+
+**Retained seed evidence.** The original parseltongue, graph, and workflow adjacency prompts remain retained as broad route labels. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Adjacent reference guidance: Use the nearest language, workflow, agent, or documentation reference when the theme becomes concrete.
 Adjacent reference 1: consider the parseltongue adjacent reference when the current task pivots away from parseltongue graph workflow patterns.
 Adjacent reference 2: consider the graph adjacent reference when the current task pivots away from parseltongue graph workflow patterns.
 Adjacent reference 3: consider the workflow adjacent reference when the current task pivots away from parseltongue graph workflow patterns.
 
 ## Workload Model
+
+**Decision supported.** This section helps decide how much repository and investigation work one Parseltongue run and one agent context should handle before the task must be narrowed, refreshed, or split. The seed defines one theme, all mapped sources, and one downstream review as capacity, but it does not model isolated-run setup, indexing freshness, query fan-out, response size, context selection, or semantic follow-up.
+
+**Recommended default and causal basis.** Reuse one verified isolated run per stable workspace state, process one governing question at a time, bound traversal depth and context output, and split independent systems or ownership questions into separate evidence packets. The service can answer many topology queries, but agent attention and graph freshness degrade when unrelated hypotheses, repositories, or change states share one investigation record.
+
+**Operating conditions and assumptions.** Workspace identity is stable, freshness is checked after code changes, query depth follows the decision, outputs are summarized before context inclusion, and each packet has one accountable conclusion. Use workload controls to protect investigation coherence; administer process-level server capacity with measured operational data outside this reference.
+
+**Failure boundary and alternatives.** Multiple repositories share assumed configuration, long-running changes outpace indexing, broad blast and smart-context calls become default, or several independent decisions are merged into a single final claim. Bounded alternatives and recoveries: refresh incrementally between change batches, build separate timestamped runs, use scoped queries and lower depth, delegate independent packets to sole owners, or abandon server setup for a small direct-read task.
+
+**Counterexample, gotchas, and operational comparison.** Equating server capacity with review capacity, ignoring response truncation, parallel writers mutating the same run evidence, carrying stale entity keys after reindexing, and measuring workload only by source count. Good: one migration packet evaluates a bounded corridor against a refreshed run. Bad: a single context combines architecture, incident, deletion, and ownership questions across services. Borderline: reuse one run for sequential questions while rechecking health and freshness.
+
+**Verification, evidence, and uncertainty.** Record workspace and code revision, run folder, last index event, question count, traversal depths, response sizes, selected context size, packet owner, source-reading effort, refresh points, and split decisions. The skill requires isolated run folders and supports reindexing, while endpoint guidance offers scoped queries, depth controls, context budgets, and diagnostics. The sources do not provide universal repository-size, token, latency, or concurrency limits, so capacity must be observed and bounded locally.
+
+**Second-order consequence.** The scarce resource is not graph storage alone but synchronized evidence: every additional question increases the chance that run state, context, and conclusion drift apart.
+
+**Revision decision.** Replace the source-count capacity model with run lifecycle, freshness, query-depth, context, ownership, and split boundaries plus observable pressure signals.
+
+**Retained seed evidence.** The four original workload rows remain preserved as high-level usage, capacity, source-pressure, and artifact-pressure anchors. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 `combined_evidence_inference_note`: Treat Parseltongue Graph Workflow Patterns as a general reference operating reference, not as a prose summary.
 
@@ -309,6 +471,24 @@ Adjacent reference 3: consider the workflow adjacent reference when the current 
 
 ## Reliability Target
 
+**Decision supported.** This section helps decide what reliability means for a graph-assisted reference and how strict documentation gates should be separated from sampled investigation outcomes. The seed sets 100-percent evidence labels, 18-of-20 routing accuracy, zero unsupported claims, and universal recovery paths, but it does not identify these as proposed acceptance targets or cover graph freshness and false exclusion.
+
+**Recommended default and causal basis.** Enforce deterministic gates for provenance, unsupported high-impact claims, and recovery instructions; sample task routing and semantic confirmation separately; monitor stale-run and false-exclusion incidents without inventing a universal accuracy promise. Document structure can reasonably require complete compliance, while investigation correctness depends on repository coverage and must be measured from observed tasks with explicit denominators.
+
+**Operating conditions and assumptions.** Each target names its unit, evidence collector, sample boundary, consequence of a miss, and whether it is a hard release gate, review sample, or learning signal. Use seed thresholds as review contracts or proposed sampling gates, never as published measurements of Parseltongue or agent accuracy.
+
+**Failure boundary and alternatives.** 18 of 20 is reported as demonstrated accuracy, 100 percent labels imply semantic truth, zero unsupported claims hides unlabeled uncertainty, or recovery-path presence substitutes for testing recovery. Bounded alternatives and recoveries: retain strict per-artifact review rules, bootstrap outcome baselines with qualitative audits, increase sampling for high-risk deletion or migration uses, or suspend aggregate reporting until task labels stabilize.
+
+**Counterexample, gotchas, and operational comparison.** Small-sample confidence theater, double-counting one investigation across metrics, excluding failed setup attempts, treating dynamic-edge misses as user error, and optimizing labels without improving evidence. Good: reject an unlabeled production claim while separately sampling whether route choices led to correct evidence. Bad: advertise 90-percent accuracy from the 18-of-20 target. Borderline: accept a topology claim with full provenance while semantic reliability remains out of scope.
+
+**Verification, evidence, and uncertainty.** For every target, record definition, hard-or-sampled class, denominator, observed result, confidence caveat, failure examples, owner, corrective action, and retest window. The four seed targets directly express provenance, routing, unsupported-claim, and recovery concerns; local modeling limits justify adding freshness and exclusion monitoring. No evaluated task sample or incident history accompanies the corpus, so outcome rates and useful thresholds remain local hypotheses until collected.
+
+**Second-order consequence.** Reliability improves when hard invariants and empirical outcomes are not collapsed; one protects artifact discipline while the other reveals model and workflow limits.
+
+**Revision decision.** Classify each target, add graph freshness and false-exclusion signals, require denominators and miss handling, and prohibit claims of achieved rates without observations.
+
+**Retained seed evidence.** The original four threshold rows remain exactly preserved and visibly labeled as seed acceptance targets. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 | reliability_target_name | measurable_threshold_value | evidence_collection_method |
 | --- | --- | --- |
 | source_boundary_preservation | 100 percent of recommendations keep local, external, and inference boundaries visible | review generated text for the three evidence labels before reuse |
@@ -317,6 +497,24 @@ Adjacent reference 3: consider the workflow adjacent reference when the current 
 | recovery_path_clarity | every avoid or failure case names the rollback, escalation, or next-reference route | inspect failure-mode and adjacent-routing sections together |
 
 ## Failure Mode Table
+
+**Decision supported.** This section helps decide which failure class occurred, how far its effects propagate through an investigation, and what evidence is required before dependent work resumes. The seed covers source drift, generic advice, implicit decisions, and unsynthesized corpora, but it omits wrong-run identity, stale indexing, ambiguous entities, graph-model overreach, and incomplete direct evidence.
+
+**Recommended default and causal basis.** Classify failures by substrate, query selection, entity identity, graph coverage, interpretation, semantic confirmation, or artifact integrity, then invalidate only conclusions downstream of the failed prerequisite. Precise failure localization prevents both unsafe continuation and wasteful full restarts; a malformed packet does not necessarily corrupt live queries, while a stale run invalidates every dependent trace.
+
+**Operating conditions and assumptions.** The trigger is observable, affected claims are enumerated, mitigation changes evidence state, recovery is reverified, and recurrence produces a durable update to the checklist or source map. Use this table for investigation and reference failures; report reproducible Parseltongue implementation defects through the tool's own issue and diagnostic process.
+
+**Failure boundary and alternatives.** All errors become stale context, a retry is prescribed before classification, partial query results are silently accepted, or a fixed document is assumed to repair conclusions produced from bad graph state. Bounded alternatives and recoveries: repair structural artifacts, resolve entity keys, narrow or switch endpoints, incrementally reindex, rebuild an isolated run, read code directly, or use runtime diagnostics for unmodeled behavior.
+
+**Counterexample, gotchas, and operational comparison.** HTTP success with semantically empty results, stale config after process restart, fuzzy-search collisions, old entity keys after reindex, graph cycles mislabeled feedback execution, and source confirmation performed on a different revision. Good: an ambiguous entity invalidates only symbol-specific traces and is resolved before replay. Bad: retry the same blast query after discovering stale indexing. Borderline: keep cluster evidence for orientation while withdrawing a dynamic reachability claim.
+
+**Verification, evidence, and uncertainty.** Capture failure class, first observable signal, run and code revision, affected packet fields and claims, mitigation, replay output, source or runtime confirmation, recurrence counter, and permanent prevention change. The skill and endpoint references provide diagnostics, configuration, reindex, search, and code-reading controls; flow guidance explicitly warns about approximation. New language parsers, server defects, and repository generation pipelines may create failure signatures absent from the archived guidance.
+
+**Second-order consequence.** Failure blast radius should itself be traced: knowing which conclusions depend on a bad prerequisite is the documentation analogue of dependency analysis.
+
+**Revision decision.** Retain the four generic rows and add failure layers, downstream invalidation rules, evidence-changing mitigations, replay requirements, and recurrence feedback.
+
+**Retained seed evidence.** Source drift, generic advice, implicit decisions, and corpus-list failures remain preserved as cross-cutting categories. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 | failure_mode_name | likely_trigger_condition | required_mitigation_action |
 | --- | --- | --- |
@@ -327,6 +525,24 @@ Adjacent reference 3: consider the workflow adjacent reference when the current 
 
 ## Retry Backpressure Guidance
 
+**Decision supported.** This section helps decide when a failed Parseltongue operation deserves a retry, when investigation work must pause, and when the workflow should switch evidence modalities. The seed sensibly limits stale-evidence retries and stops work on red gates, but it does not define retry identity, evidence change, safe query replay, or how reindexing affects entity keys and conclusions.
+
+**Recommended default and causal basis.** Retry only transient transport or freshness failures after changing an observable prerequisite, cap repeated attempts per failure class, replay from verified run identity, and stop graph work when substrate or model-fit gates remain red. A retry that does not change state is repetition, while uncontrolled continuation on stale or ambiguous evidence compounds invalid conclusions across later queries.
+
+**Operating conditions and assumptions.** The failure is classified, retry precondition and budget are explicit, operations are read-only or safely refreshable, prior entity assumptions are revalidated, and success is measured beyond HTTP status. Apply these controls to agent-operated local Parseltongue 1.7.2 runs and documentation workflows, not as a generic distributed-system retry policy.
+
+**Failure boundary and alternatives.** Semantic disagreement triggers the same query, reindex loops indefinitely, concurrent agents refresh one run, entity keys survive unchecked across rebuilds, or a retry budget is reset by rewording the error. Bounded alternatives and recoveries: switch to direct code reading, inspect server logs, use live API help, create a fresh isolated run, reduce traversal scope, defer to runtime tests, or escalate with the preserved evidence packet.
+
+**Counterexample, gotchas, and operational comparison.** Automatic port changes after restart, stale shell variables, partial index updates, cached responses, non-idempotent helper scripts, and background processes that make a failed attempt appear recovered. Good: after a verified code change, perform one incremental refresh, re-resolve the entity, and replay the bounded query. Bad: rerun search ten times on a wrong server URL. Borderline: retry one transient timeout, then switch to direct reading if health stays uncertain.
+
+**Verification, evidence, and uncertainty.** Record failure fingerprint, attempt number, changed prerequisite, command, run identity before and after, logs, health and coverage result, entity re-resolution, query semantic result, stop reason, and escalation destination. The local skill documents reindexing, configuration, diagnostics, and process lifecycle, while the seed establishes bounded retry, backpressure, checkpointing, and sole ownership. Safe retry counts and timeout policies depend on local process behavior and workload; the corpus does not define production-grade service SLOs.
+
+**Second-order consequence.** Backpressure protects epistemic state as much as compute: pausing prevents later reasoning from normalizing an unresolved substrate failure.
+
+**Revision decision.** Add retry fingerprints, evidence-change prerequisites, entity revalidation, concurrency ownership, semantic success criteria, and modality-switch escalation.
+
+**Retained seed evidence.** The original classification, one-refresh retry, red-gate stop, checkpoint, and single-owner bullets remain intact. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 - Retry only after the failed verification signal is classified as transient, stale evidence, missing context, or true contradiction.
 - Use one bounded retry for stale external evidence refresh, then escalate to a human or a narrower source-specific reference.
 - Apply backpressure by stopping new generation or implementation work when source coverage, critique coverage, or verification gates are red.
@@ -334,6 +550,24 @@ Adjacent reference 3: consider the workflow adjacent reference when the current 
 - For distributed execution, assign one owner per generated file or theme batch and require merge-time verification of exact path, heading, and evidence-boundary invariants.
 
 ## Observability Checklist
+
+**Decision supported.** This section helps decide which minimal observations must be captured so setup failures, query choices, graph interpretations, and later contradictions can be reconstructed. The seed records sources, verification, latency, reviewer decisions, signals, and compact audit evidence, but it lacks the run, index, entity, query, and code-revision context needed to explain a Parseltongue result.
+
+**Recommended default and causal basis.** Log version, run folder, actual configuration, code revision, health and diagnostics, index freshness, coverage, entity resolution, query parameters, bounded response summaries, source confirmations, decisions, and unresolved risks. Without correlation across run state and claim state, a later reviewer cannot distinguish tool drift, repository drift, query error, or interpretive overreach.
+
+**Operating conditions and assumptions.** Records use stable identifiers and timestamps, redact sensitive paths where necessary, summarize rather than dump responses, link claims to observations, and preserve errors and discarded hypotheses. Capture enough local evidence for reproducibility and review while avoiding secrets, full raw transcripts, and claims about production monitoring architecture.
+
+**Failure boundary and alternatives.** Telemetry contains only success output, raw logs overwhelm the decision record, machine paths are exposed unnecessarily, timestamps have no code revision, or p95 numbers mix setup and review stages. Bounded alternatives and recoveries: use a lightweight packet for one-off orientation, a structured incident trace for server instability, version-controlled fixtures for repeatable endpoint tests, or direct source annotations when no run exists.
+
+**Counterexample, gotchas, and operational comparison.** Watcher counters without logs, health from the wrong URL, response counts without query filters, missing empty-result semantics, inconsistent clocks, and observability that changes behavior through expensive unbounded calls. Good: correlate a stale reverse trace with code revision and last reindex event, then replay after refresh. Bad: attach server.log and call the case observable. Borderline: omit detailed timings for a qualitative architecture review while retaining causal evidence.
+
+**Verification, evidence, and uncertainty.** Sample records and reconstruct the run, selected entity, query direction, response interpretation, source handoff, and final decision; reject packets with orphan claims or observations that cannot identify their producer. The skill explicitly calls for configuration, health, watcher, logs, and changed-symbol checks, and the endpoint reference provides diagnostics plus query surfaces. Retention, privacy, and centralized telemetry requirements depend on the host environment and are outside the local corpus.
+
+**Second-order consequence.** Observability should make disagreement diagnosable: the goal is to locate the first divergence in substrate, query, or interpretation rather than merely prove activity.
+
+**Revision decision.** Extend the checklist with run and code correlation, index and entity state, compact response schemas, error preservation, redaction, and reconstruction tests.
+
+**Retained seed evidence.** The six original bullets on source loading, proof, timing, reviewer decisions, signals, and concise audit evidence remain retained. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 - Record which local sources were loaded and which were intentionally skipped.
 - Record the exact verification command, reviewer question, or rendered artifact used as proof.
@@ -344,6 +578,24 @@ Adjacent reference 3: consider the workflow adjacent reference when the current 
 
 ## Performance Verification Method
 
+**Decision supported.** This section helps decide how to evaluate whether Parseltongue helps reviewers reach a correct next verification action efficiently without sacrificing evidence quality. The seed proposes source preservation and p95 under ten minutes for identifying a next action, but it does not define the timing boundary, task cohort, setup state, reviewer population, or baseline.
+
+**Recommended default and causal basis.** Treat the ten-minute p95 as a candidate acceptance hypothesis, separate cold setup from warm investigation and source confirmation, compare like task classes, and require decision correctness and evidence completeness alongside elapsed time. A fast wrong route is not useful performance, while including installation in every sample can obscure the repeat-use value of a prepared graph workflow.
+
+**Operating conditions and assumptions.** The benchmark fixes repository snapshot, task prompt, run state, reviewer role, start and stop events, context budget, correctness rubric, sample size, and treatment of timeouts and retries. Evaluate documentation and investigation workflow efficiency, not Parseltongue server throughput or production service latency without a separate load-testing design.
+
+**Failure boundary and alternatives.** One successful run is labeled p95, unmatched manual and graph cohorts are compared, setup costs disappear, reviewer time ends before source confirmation, or slow failures are excluded. Bounded alternatives and recoveries: measure time to first relevant entity, time to bounded source set, reviewer effort, query count, or qualitative action clarity until enough samples exist for percentiles.
+
+**Counterexample, gotchas, and operational comparison.** Cache and warm-run effects, learning between repeated tasks, repository-size confounding, parallel work hidden from wall time, cherry-picked tasks, and a target becoming an asserted result. Good: benchmark warm reverse-trace tasks separately and score the chosen next action against source evidence. Bad: announce p95 below ten minutes from the seed sentence. Borderline: report median narrowing time with no tail claim while the sample grows.
+
+**Verification, evidence, and uncertainty.** Publish protocol, task cohort, raw durations, setup classification, failures, retries, action correctness rubric, evidence-completeness score, percentile calculation, baseline, and uncertainty before accepting the target. The seed directly states the proposed p95 and reviewer-action intent; local endpoints support concrete stages whose durations can be measured independently. No benchmark observations, sample size, hardware, repository cohort, or reviewer calibration is provided, so this reference cannot claim achieved performance.
+
+**Second-order consequence.** The best performance unit is a verified decision transition, not a tool response, because endpoint latency may be negligible while interpretation dominates total effort.
+
+**Revision decision.** Define the candidate target as unproven, split timing stages, add matched cohorts and correctness gates, expose percentile requirements, and offer low-sample alternatives.
+
+**Retained seed evidence.** The p95-under-ten-minutes statement, leading indicator, failure signal, measurement packet, pass condition, and fail condition remain preserved as seed criteria. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Performance method: require source-boundary preservation and p95 under 10 minutes for a reviewer to identify the next verification action.
 Leading indicator to measure: the next task uses the reference to make a better decision with less ambiguity.
 Failure signal to watch: the reference remains a source map and never becomes an operating guide.
@@ -352,6 +604,24 @@ Pass condition: the reference must let a reviewer identify the correct next acti
 Fail condition: the reference encourages implementation before the workload, reliability target, and failure-mode table are explicit.
 
 ## Scale Boundary Statement
+
+**Decision supported.** This section helps decide when a single Parseltongue 1.7.2 run and evidence packet cease to be a sufficient model for the system or organizational question. The seed stops at multiple systems, ownership boundaries, unbounded discovery, production traffic, and large codebases, but it does not specify run partitioning, cross-repository edges, change velocity, or dynamic integration limits.
+
+**Recommended default and causal basis.** Keep one run scoped to one coherent workspace snapshot, split independent repositories and owners, bound traversal and context, and use explicit cross-system contracts plus runtime telemetry for relationships the static graph cannot represent. Scaling a query over an incomplete model increases apparent coverage without adding missing deployment, message, reflection, generated, or organizational edges.
+
+**Operating conditions and assumptions.** The system boundary is declared, each run has a revision and owner, cross-boundary claims cite independent evidence, packet summaries preserve provenance, and a coordinator reconciles only explicit interfaces. Apply this statement to analysis scope and evidence coordination, not to claims about maximum supported repository size or server throughput.
+
+**Failure boundary and alternatives.** Separate services are merged by name, one graph is assumed to cover deployed topology, frequent changes outrun indexing, distributed agents write the same packet, or context compression drops uncertainty. Bounded alternatives and recoveries: federate per-repository packets manually, use service catalogs and distributed traces, analyze API schemas and queues, create a lightweight dependency inventory, or narrow to one migration corridor.
+
+**Counterexample, gotchas, and operational comparison.** Entity-key collisions across runs, incompatible language coverage, hidden generated clients, asynchronous message edges, cross-repo version skew, and aggregate hotspots that erase ownership. Good: analyze each service in its own verified run and join findings at a documented API contract. Bad: use one blast radius to certify a distributed rollout. Borderline: infer likely cross-repo coupling from names while requiring contract and runtime confirmation.
+
+**Verification, evidence, and uncertainty.** Record workspace partitions, revisions, language coverage, owners, cross-system evidence, indexing lag, query bounds, packet handoffs, unresolved dynamic links, coordinator decision, and explicit stop threshold. The local sources frame Parseltongue as a code graph with modeling limits, while the seed already recognizes ownership, context drift, large-codebase narrowing, and production-SLO boundaries. Actual service capacity, multi-repository support, and concurrency behavior are not benchmarked in the archived material and must not be inferred.
+
+**Second-order consequence.** Scale failure often begins as evidence-identity failure: once a response cannot be tied to one workspace snapshot and owner, more graph depth reduces trust.
+
+**Revision decision.** Add workspace partitioning, revision and owner identity, cross-system evidence requirements, dynamic-edge routing, coordination rules, and measurable stop triggers.
+
+**Retained seed evidence.** The original multiple-system, ownership, distributed-agent, context-drift, and graph-narrowing boundaries remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 Parseltongue Graph Workflow Patterns stops being sufficient when the task spans multiple independent systems, more than one ownership boundary, unbounded source discovery, or production traffic without an explicit SLO.
 Under distributed execution, split work by theme file and preserve one verification owner per split; do not let parallel agents rewrite the same reference without a merge checkpoint.

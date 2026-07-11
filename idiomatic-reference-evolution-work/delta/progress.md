@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 18:14:44Z
+- Updated: 2026-07-11 18:24:14Z
 - Current Phase: Green
 - Status: active
 
@@ -1639,3 +1639,33 @@ Assignment 5 dependency_map_cli_patterns Sections 010-012 durably evolved and sa
 - Assignment 5 durable progress: 12/26 sections; 120/260 questions; 720/1560 mandatory fields; uniqueFieldCount=720; normalizedUniqueFieldCount=720
 - Section 010 is 12168>720 characters, Section 011 is 15460>1100, and Section 012 is 13378>1569; all first-twelve section comparisons pass
 - Current hygiene: exact reference headings=26; ASCII pass; forbidden markers=0; fence parity=0; malformed tables=0; tabs=0; trailing whitespace=0; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
+
+### Session: 2026-07-11 18:24:14Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment_5_sections_013_015_atomic: PASS - Packet-first/reference-second cadence and immediate structural, expansion, formatting, and marker sanity pass for artifact schema, worked examples, and metrics
+- assignment_5_normalized_uniqueness_015: PASS - 900 mandatory values are raw unique and remain 900 unique after prefix-stripped normalization
+- assignment_5_unmeasured_claim_boundary: PASS - Theme artifact and examples are explicitly ungenerated/illustrative; metrics are future definitions with no fabricated baseline or universal target
+
+#### Implementation Progress:
+- Updated idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md through Section 015 with 150 exact questions and 900 substantive fields
+- Updated idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md through Section 015 with a decision-record contract, six orthogonal worked examples, and provenance-aware feedback metrics
+- Updated idiomatic-reference-evolution-work/delta/progress.md at the fifteen-section Green cadence boundary
+
+#### Current Focus:
+Assignment 5 dependency_map_cli_patterns Sections 013-015 durably evolved and sanity-verified
+
+#### Next Steps:
+- Complete and save Section 016 completeness-checklist packet, then save its matching reference and run immediate sanity
+- Continue assignment 5 one section at a time and journal again no later than Section 018; keep assignment 6 executable_metapattern_reference_digest unopened until assignment 5 Refactor completion
+
+#### Context Notes:
+- Changed paths remain limited to the assignment 5 reference, packet, and Delta progress journal
+- No artifact, fixture, network source, or later assignment was opened or written during this batch
+
+#### Performance/Metrics:
+- Assignment 5 durable progress: 15/26 sections; 150/260 questions; 900/1560 mandatory fields; uniqueFieldCount=900; normalizedUniqueFieldCount=900
+- Section 013 is 17531>651 characters, Section 014 is 13134>514, and Section 015 is 16441>380; every first-fifteen section comparison passes
+- Current hygiene: reference headings=26 exact and ordered; ASCII pass; forbidden markers=0; fence parity=0; malformed tables=0; tabs=0; trailing whitespace=0; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md

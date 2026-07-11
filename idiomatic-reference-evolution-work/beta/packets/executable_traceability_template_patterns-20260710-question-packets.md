@@ -861,3 +861,219 @@
 - **assumptions_and_boundaries:** Add lifecycle metadata when guidance is generated, shared, audited, release-blocking, or repeatedly reused.
 - **revision_decision:** Define promotion, retention, demotion, supersession, and retirement rules.
 - **additional_insight_to_add:** Hierarchy should be reversible so target evidence can demote a copied rule without rewriting historical provenance.
+
+## Section 013: Theme Specific Artifact
+### Question 01: What decision does this reference help make?
+- **current_section_observation:** The seed lists a user goal, decision boundary, and verification rule, but it does not define an artifact that can connect a changed claim to implementation and release evidence.
+- **supporting_reason:** A maintainer needs to decide which revision-scoped facts must travel together when a requirement is proposed, verified, accepted, superseded, or excepted.
+- **counterargument_or_limit:** A small local change may already be understandable from one test and its commit without another durable record.
+- **assumptions_and_boundaries:** Require the richer artifact when a claim crosses owners, generators, repositories, release gates, audit boundaries, or delayed handoffs.
+- **revision_decision:** Replace the generic three-row table with a concrete Traceability Change Record and explicit adoption threshold.
+- **additional_insight_to_add:** The artifact should capture a decision state, not merely restate documentation that other systems already own.
+### Question 02: What is the recommended default, and why?
+- **current_section_observation:** No default identity, revision, ownership, state, evidence, exception, or invalidation fields are present.
+- **supporting_reason:** A revision-scoped record with typed links prevents evidence for an older claim from silently approving a changed one.
+- **counterargument_or_limit:** Mandatory metadata can make authors optimize for form completion instead of semantic correctness.
+- **assumptions_and_boundaries:** Keep every required field tied to a consumer, gate, decision, or recovery action; remove fields with no operational use.
+- **revision_decision:** Specify a minimal record containing change identity, claim revisions, behavior cases, implementation links, current runs, decision, exceptions, and invalidation triggers.
+- **additional_insight_to_add:** State transitions deserve the same validation as field presence because a complete record can still occupy an impossible lifecycle state.
+### Question 03: When does the default work well?
+- **current_section_observation:** The seed does not say when its artifact justifies maintenance cost.
+- **supporting_reason:** A shared record works well when several reviewers need different views of the same change and must agree on one evidence boundary.
+- **counterargument_or_limit:** For exploratory code that cannot ship, a durable release-oriented record creates premature governance.
+- **assumptions_and_boundaries:** Apply it to accepted or release-candidate behavior rather than every discarded experiment.
+- **revision_decision:** Add use cases for cross-team APIs, generated contracts, migrations, security controls, operational limits, and regulated approvals.
+- **additional_insight_to_add:** The record is especially valuable when evidence arrives at different times, because missing and stale states remain visible between handoffs.
+### Question 04: When does it fail or become the wrong choice?
+- **current_section_observation:** The original artifact has no escape route for trivial, confidential, externally governed, or rapidly changing work.
+- **supporting_reason:** A central record fails when it duplicates an authoritative issue system, exposes restricted evidence, or cannot be updated atomically with the decision it represents.
+- **counterargument_or_limit:** Linking to external authority can preserve a local index without copying protected details.
+- **assumptions_and_boundaries:** A lighter record still needs claim identity, authority location, disposition, and a retrieval check when consequences are material.
+- **revision_decision:** Define disqualifiers and a compact alternative instead of imposing the full schema universally.
+- **additional_insight_to_add:** An artifact that routinely lags the source of truth becomes negative evidence about process reliability rather than proof of compliance.
+### Question 05: Which alternatives and tradeoffs matter?
+- **current_section_observation:** The seed presents one generic table and does not compare a matrix, annotations, issue workflow, event ledger, or generated view.
+- **supporting_reason:** A matrix is readable, annotations stay near code, issues support approval, ledgers preserve history, and generated views reduce duplicate editing.
+- **counterargument_or_limit:** Combining every representation can create synchronization failures and unclear ownership.
+- **assumptions_and_boundaries:** Select one authoritative write model and derive secondary views wherever target tooling can do so reliably.
+- **revision_decision:** Add an alternative table comparing authority, history, code proximity, automation, access control, and migration cost.
+- **additional_insight_to_add:** The decisive tradeoff is often not format but which system can enforce revision binding and preserve rejected transitions.
+### Question 06: Which gotchas and failure modes matter most?
+- **current_section_observation:** A populated artifact can still contain reused identifiers, bundled claims, shallow assertions, unrelated runs, permanent waivers, or a release decision from stale evidence.
+- **supporting_reason:** These failures preserve surface completeness while breaking the causal chain between accepted behavior and observed outcome.
+- **counterargument_or_limit:** Requiring every evidence type for every claim would manufacture noise and slow low-risk changes.
+- **assumptions_and_boundaries:** Evidence fit should follow claim semantics, consequence, and failure mechanism rather than a fixed universal checklist.
+- **revision_decision:** Add invariants for identity, atomicity, link types, run freshness, exception expiry, decision authority, and invalidation.
+- **additional_insight_to_add:** A pass-only record is suspicious because it cannot show that the linked assertion would notice the prohibited behavior.
+### Question 07: What do good, bad, and borderline examples look like?
+- **current_section_observation:** The seed offers no filled artifact demonstrating how its fields change a real release decision.
+- **supporting_reason:** A session-revocation record can show one claim revision, positive and negative cases, implementation links, a mutation observation, current runs, and an accountable acceptance.
+- **counterargument_or_limit:** A polished example can be copied as domain policy even when its timing, threat model, and test boundary do not transfer.
+- **assumptions_and_boundaries:** Label all example values illustrative and make readers replace them with accepted target facts.
+- **revision_decision:** Include good, bad, and borderline mini-records plus the specific gate that separates them.
+- **additional_insight_to_add:** The borderline case should expose a plausible green run whose artifact identity predates the changed claim revision.
+### Question 08: How can the important claims be verified?
+- **current_section_observation:** The seed asks for a command or checklist but does not define schema, graph, semantic, execution, retrieval, exception, or release checks.
+- **supporting_reason:** Layered verification can distinguish malformed records from missing links, insensitive assertions, stale runs, inaccessible evidence, and unauthorized decisions.
+- **counterargument_or_limit:** Some approvals and usability judgments remain human observations that cannot be reduced to deterministic commands.
+- **assumptions_and_boundaries:** Human evidence must still identify reviewer role, question, artifact revision, result, and time boundary.
+- **revision_decision:** Add a verification ladder with expected failure probes and a final release reconciliation query.
+- **additional_insight_to_add:** Reconstructing the decision from stored identities after the working directory is gone is a stronger test than viewing links during authoring.
+### Question 09: What is known confidently, and what remains judgment or uncertainty?
+- **current_section_observation:** The historical source confidently supports structured requirement and matrix concepts, but it does not establish a current target schema or toolchain.
+- **supporting_reason:** Revision binding, explicit states, and typed evidence address observable traceability failures independently of one implementation format.
+- **counterargument_or_limit:** Field granularity, retention duration, approval roles, and freshness windows depend on repository policy and consequence.
+- **assumptions_and_boundaries:** Mark the artifact as a reference model until a target owner adopts concrete storage and enforcement rules.
+- **revision_decision:** Separate durable invariants from target-selected fields and unresolved operational policy.
+- **additional_insight_to_add:** Confidence should attach to each invariant and gate, because an attractive complete schema can conceal uncertain governance choices.
+### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
+- **current_section_observation:** The seed treats artifact completion as an endpoint and omits what happens when claims, implementations, tools, or releases change.
+- **supporting_reason:** A durable record becomes an input to impact analysis, evidence retention, migration, audit views, release automation, and incident reconstruction.
+- **counterargument_or_limit:** Making the record a universal integration hub can turn a focused traceability aid into brittle infrastructure.
+- **assumptions_and_boundaries:** Extend it through stable identifiers and derived views, while leaving domain execution and artifact storage with their owning systems.
+- **revision_decision:** Add downstream consumers, invalidation events, retention behavior, and a rule against manually maintained duplicate truth.
+- **additional_insight_to_add:** The strongest artifact is small at its write boundary but rich in reproducible projections, allowing new reviewers to inspect the same decision without rewriting it.
+
+## Section 014: Worked Example Set
+### Question 01: What decision does this reference help make?
+- **current_section_observation:** The seed labels one good, bad, and borderline use but never shows how raw behavior becomes claims, cases, links, evidence, and a decision.
+- **supporting_reason:** Readers need to decide whether an example demonstrates executable traceability or merely repeats the reference vocabulary.
+- **counterargument_or_limit:** Full records for every illustration can obscure the distinct lesson each example is meant to teach.
+- **assumptions_and_boundaries:** Keep each worked path focused on one consequential failure while showing enough upstream and downstream context to evaluate it.
+- **revision_decision:** Replace generic labels with several compact transformations and explicit decision points.
+- **additional_insight_to_add:** An example earns reuse only when its reasoning can be adapted without copying its domain values as policy.
+### Question 02: What is the recommended default, and why?
+- **current_section_observation:** The seed recommends loading sources and writing a gate, but it does not require an accepted claim or an expected failing observation.
+- **supporting_reason:** Starting from one accepted behavior and one disconfirming probe exposes whether later links are causally useful.
+- **counterargument_or_limit:** Discovery work may begin before a product owner can accept exact semantics.
+- **assumptions_and_boundaries:** Mark discovery examples provisional and prevent them from authorizing implementation or release.
+- **revision_decision:** Use a six-step example pattern: need, atomic claims, cases, evidence fit, observed probe, and disposition.
+- **additional_insight_to_add:** Showing the rejected first draft is more instructive than presenting only a polished final artifact.
+### Question 03: When does the default work well?
+- **current_section_observation:** The original good example does not identify the kinds of ambiguity that structured walkthroughs resolve.
+- **supporting_reason:** Worked transformations are effective for bundled requirements, cross-boundary interactions, measurable qualities, evidence mismatch, and time-bounded exceptions.
+- **counterargument_or_limit:** Stable mechanical conventions may be clearer as a concise schema example and parser test.
+- **assumptions_and_boundaries:** Spend narrative detail where causal interpretation or authority could diverge.
+- **revision_decision:** Select examples that exercise different traceability edges rather than repeating one happy path in several languages.
+- **additional_insight_to_add:** Coverage diversity is about failure mechanisms, not the count of syntactic variants.
+### Question 04: When does it fail or become the wrong choice?
+- **current_section_observation:** A polished example can look authoritative even when its threshold, identity pattern, runner, ownership, or evidence type is invented.
+- **supporting_reason:** Copying those incidental choices can create unaccepted objectives and brittle local conventions.
+- **counterargument_or_limit:** Concrete values are necessary to make validation and decision transitions understandable.
+- **assumptions_and_boundaries:** Label values illustrative and show the target evidence required to replace them.
+- **revision_decision:** Add explicit non-transfer boundaries and examples of copied-detail failure.
+- **additional_insight_to_add:** An example becomes dangerous when its easiest-to-copy detail is less durable than its underlying reasoning.
+### Question 05: Which alternatives and tradeoffs matter?
+- **current_section_observation:** The seed contrasts only generic use, misuse, and low confidence without comparing transformation tables, narrative timelines, executable fixtures, or graph views.
+- **supporting_reason:** Tables support comparison, timelines explain state, fixtures prove syntax and behavior, and graphs reveal missing or many-to-many links.
+- **counterargument_or_limit:** Using all forms for one example duplicates content and invites drift.
+- **assumptions_and_boundaries:** Choose the representation that makes the disputed relationship easiest to inspect, then link to authoritative evidence.
+- **revision_decision:** Mix compact before-and-after tables with event sequences and verification snippets only where each adds a distinct observation.
+- **additional_insight_to_add:** A generated graph is most useful as a diagnostic projection, not as another manually curated truth source.
+### Question 06: Which gotchas and failure modes matter most?
+- **current_section_observation:** The one-line examples omit bundled obligations, interaction loss after splitting, assertions that cannot fail, fabricated service objectives, skipped evidence, and expired waivers.
+- **supporting_reason:** These are plausible ways an artifact can satisfy formatting checks while failing semantic or release intent.
+- **counterargument_or_limit:** No finite example set can enumerate domain-specific hazards.
+- **assumptions_and_boundaries:** Teach reusable probes and questions rather than claiming exhaustive coverage.
+- **revision_decision:** Make each worked example include a deceptive green state and the gate that exposes it.
+- **additional_insight_to_add:** Borderline examples should preserve evidence of what is missing instead of collapsing uncertainty into a pass or failure label.
+### Question 07: What do good, bad, and borderline examples look like?
+- **current_section_observation:** The seed supplies category names but no observable artifact differences.
+- **supporting_reason:** Good examples bind revisions and detect prohibited behavior; bad examples use vague claims or irrelevant evidence; borderline examples have credible but stale, partial, or unauthorized support.
+- **counterargument_or_limit:** A record can be good for one decision boundary and inadequate for a broader claim.
+- **assumptions_and_boundaries:** Grade examples against a named claim, consequence, and release scope.
+- **revision_decision:** Provide categorized records for atomicity, quality targets, cross-boundary behavior, and exceptions.
+- **additional_insight_to_add:** The same passing test can move from good to borderline when the release artifact or claim revision changes.
+### Question 08: How can the important claims be verified?
+- **current_section_observation:** The original examples contain no commands, mutations, graph queries, retrieval checks, or expected outputs.
+- **supporting_reason:** A worked path is reproducible only when a reviewer can observe the claimed distinction and the expected negative case.
+- **counterargument_or_limit:** Repository-specific commands cannot be supplied without inspecting the target toolchain.
+- **assumptions_and_boundaries:** State abstract gate classes and concrete expected observations, then require target command discovery.
+- **revision_decision:** Attach a verification recipe to every example and distinguish demonstrated output from proposed validation.
+- **additional_insight_to_add:** Replaying only the final pass misses whether the example's asserted failure was ever observable.
+### Question 09: What is known confidently, and what remains judgment or uncertainty?
+- **current_section_observation:** Source-backed template shapes are known, while the example domains, values, operational risks, and target acceptance are synthesized.
+- **supporting_reason:** The examples can confidently demonstrate reasoning structure without proving a universal identifier, threshold, retention, or approval policy.
+- **counterargument_or_limit:** Some target readers may mistake detailed illustrative records for repository facts despite labels.
+- **assumptions_and_boundaries:** Repeat boundaries near consequential sample values and avoid unsupported measured outcomes.
+- **revision_decision:** Add provenance and confidence notes per example family.
+- **additional_insight_to_add:** Uncertainty belongs at the claim-value boundary, not as a vague warning attached to the whole reference.
+### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
+- **current_section_observation:** The seed treats examples as explanatory endpoints rather than reusable tests for templates and tooling.
+- **supporting_reason:** Curated good, bad, and borderline fixtures can evaluate parsers, graph validators, review prompts, generators, and release reconciliation.
+- **counterargument_or_limit:** Fixture suites can ossify around the teaching examples and miss novel production failures.
+- **assumptions_and_boundaries:** Add examples from real incidents and periodically challenge the suite with unseen mutations.
+- **revision_decision:** Recommend promoting stable examples into conformance fixtures while retaining their source and limitation notes.
+- **additional_insight_to_add:** The example corpus should evolve from decorative documentation into a falsifiable compatibility contract for traceability infrastructure.
+
+## Section 015: Outcome Metrics and Feedback Loops
+### Question 01: What decision does this reference help make?
+- **current_section_observation:** The seed names one leading indicator, one failure signal, and one cadence without defining denominators, evidence freshness, decision use, or ownership.
+- **supporting_reason:** Teams need to decide whether traceability is improving release confidence and change recovery rather than merely increasing identifiers and links.
+- **counterargument_or_limit:** Some benefits, such as reviewer comprehension, resist reliable aggregation.
+- **assumptions_and_boundaries:** Combine system-derived measures with sampled human audits and incident evidence.
+- **revision_decision:** Define a balanced measurement model spanning structure, semantic quality, execution, decisions, outcomes, and maintenance.
+- **additional_insight_to_add:** A metric is useful only when a named owner can take a bounded action from an unfavorable result.
+### Question 02: What is the recommended default, and why?
+- **current_section_observation:** "Every shipped claim" and "fresh verification" are undefined, making the leading indicator impossible to reproduce consistently.
+- **supporting_reason:** Explicit populations, state rules, observation windows, evidence identities, and exclusions make trends comparable and challengeable.
+- **counterargument_or_limit:** A universal freshness window would be arbitrary across claim types and release models.
+- **assumptions_and_boundaries:** Define freshness by invalidation events and target policy, using elapsed time only where evidence actually decays with time.
+- **revision_decision:** Provide metric contracts with numerator, denominator, source, owner, countermetric, and response threshold.
+- **additional_insight_to_add:** Event-bound freshness is usually more causal than a calendar age because unchanged evidence can remain valid while a one-minute-old run can already be stale after a rebuild.
+### Question 03: When does the default work well?
+- **current_section_observation:** The seed cadence is tied to reference edits and public changes but ignores claim revisions, release candidates, exceptions, incidents, and tool migrations.
+- **supporting_reason:** Balanced metrics work when events are recorded consistently and can be joined by stable claim, artifact, run, and decision identities.
+- **counterargument_or_limit:** Small repositories may lack enough events for meaningful rates or trends.
+- **assumptions_and_boundaries:** Use counts and case reviews at low volume; avoid interpreting sparse percentages as stable performance.
+- **revision_decision:** Map each metric to event-triggered, release, periodic, or incident-review cadence.
+- **additional_insight_to_add:** Measurement maturity should grow with decision consequence and data volume rather than copying an enterprise dashboard into every project.
+### Question 04: When does it fail or become the wrong choice?
+- **current_section_observation:** Identifier coverage can reach a perfect value while assertions are insensitive, runs are stale, evidence is inaccessible, or releases ignore exceptions.
+- **supporting_reason:** Optimizing a single structural measure rewards easy links and can hide the exact failures traceability is supposed to expose.
+- **counterargument_or_limit:** Structural coverage remains a useful inexpensive prerequisite.
+- **assumptions_and_boundaries:** Pair every proxy with a semantic or outcome countermeasure and inspect disagreement.
+- **revision_decision:** State anti-gaming limits and forbid aggregate scores from replacing claim-level release decisions.
+- **additional_insight_to_add:** Divergence between high link coverage and poor mutation or incident outcomes is a diagnostic signal, not a reason to average the measures together.
+### Question 05: Which alternatives and tradeoffs matter?
+- **current_section_observation:** The seed does not compare exhaustive graph metrics, sampled audits, workflow timing, release defects, incident reconstruction, or qualitative feedback.
+- **supporting_reason:** Graph measures are cheap, audits inspect meaning, timing reveals friction, defects show outcomes, and interviews reveal workarounds.
+- **counterargument_or_limit:** Lagging incidents are rare and confounded, while audits cost reviewer time and may vary by assessor.
+- **assumptions_and_boundaries:** Triangulate rather than force one evidence class to answer every effectiveness question.
+- **revision_decision:** Add a metric portfolio with purpose, blind spot, and balancing measure.
+- **additional_insight_to_add:** The cheapest reliable portfolio often combines continuous structural checks, targeted mutation samples, and periodic decision reconstruction.
+### Question 06: Which gotchas and failure modes matter most?
+- **current_section_observation:** The three seed lines omit missing denominators, silent exclusions, rerun inflation, duplicate evidence, skipped checks, expired waivers, inaccessible artifacts, and survivorship bias.
+- **supporting_reason:** These defects can make dashboards improve while decision quality deteriorates.
+- **counterargument_or_limit:** Capturing every event may increase instrumentation and retention burden.
+- **assumptions_and_boundaries:** Retain the minimum raw facts needed to recompute consequential measures and investigate anomalies.
+- **revision_decision:** Define deduplication, missing-state, exception, retrieval, and release-reconciliation rules for metrics.
+- **additional_insight_to_add:** Treat unknown as a first-class state because silently dropping unjoinable records systematically overstates health.
+### Question 07: What do good, bad, and borderline examples look like?
+- **current_section_observation:** No example demonstrates how a metric changes an operational decision.
+- **supporting_reason:** A good metric can identify a stale-evidence release candidate and trigger rerun or block; a bad metric celebrates raw ID count; a borderline metric reports review time without outcome context.
+- **counterargument_or_limit:** Even action-linked metrics can be gamed if thresholds become targets detached from purpose.
+- **assumptions_and_boundaries:** Review metric behavior and unintended incentives as part of governance.
+- **revision_decision:** Add metric cards with example interpretations and prohibited conclusions.
+- **additional_insight_to_add:** A borderline measure becomes useful when segmented by consequence and paired with evidence about rework or escaped misunderstanding.
+### Question 08: How can the important claims be verified?
+- **current_section_observation:** The seed says to rerun a verifier but gives no method to validate metric computation or feedback effectiveness.
+- **supporting_reason:** Recomputing from raw records, injecting known missing and stale cases, sampling links, and tracing actions can test both calculation and response.
+- **counterargument_or_limit:** Historical outcome attribution cannot prove that traceability alone caused an improvement.
+- **assumptions_and_boundaries:** Report association and observed workflow change without claiming unsupported causality.
+- **revision_decision:** Add metric unit tests, synthetic event fixtures, sampled audits, and closed-loop action review.
+- **additional_insight_to_add:** A metric pipeline needs negative fixtures just like a traceability graph; otherwise unknown and excluded records can disappear undetected.
+### Question 09: What is known confidently, and what remains judgment or uncertainty?
+- **current_section_observation:** The reference can define reproducible structures, but no target baseline, acceptable range, trend, cost, or causal effect has been measured.
+- **supporting_reason:** Counts and joins can be computed once instrumentation exists, while thresholds and business value require local observation and authority.
+- **counterargument_or_limit:** Cross-project comparison may still reveal gross instrumentation faults if definitions are identical.
+- **assumptions_and_boundaries:** Avoid benchmarking teams whose populations, consequences, and workflows differ.
+- **revision_decision:** Separate metric definitions from target objectives and label all unmeasured outcome hypotheses.
+- **additional_insight_to_add:** A missing baseline is a reason to establish observation, not to import a precise target from the historical template.
+### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
+- **current_section_observation:** The seed's feedback loop only refreshes sources and misses how observed failures should evolve schemas, gates, examples, and ownership.
+- **supporting_reason:** Incidents, review reversals, stale evidence, and exception overruns reveal which traceability assumptions no longer hold.
+- **counterargument_or_limit:** Constantly changing the model can destabilize tooling and erase longitudinal comparability.
+- **assumptions_and_boundaries:** Version metric and schema changes, preserve old computation definitions, and migrate deliberately.
+- **revision_decision:** Define a closed loop from observation to diagnosis, bounded change, fixture update, rollout, and follow-up measurement.
+- **additional_insight_to_add:** The highest-value feedback may be removing a costly field or gate that never changes decisions, not adding more traceability data.

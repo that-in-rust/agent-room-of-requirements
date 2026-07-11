@@ -1213,3 +1213,165 @@
 - **assumptions_and_boundaries:** Reevaluate boundaries after verified implementation changes and keep prior metrics tied to their producer version.
 - **revision_decision:** Add feedback actions of fix, document, reroute, retire, or expand only with evidence.
 - **additional_insight_to_add:** The highest-value metric outcome may be discovering that a workflow should stop earlier and hand a claim to a different evidence system.
+
+## Section 016: Completeness Checklist
+### Question 01: What decision does this reference help make?
+- **current_section_observation:** The seed checklist verifies that major reference topics exist but does not decide whether the evidence, artifact, claim, and handoff are complete enough for their intended action.
+- **supporting_reason:** Presence of a scenario, table, example, or metric name cannot establish provenance, coverage, semantic sufficiency, or safe escalation.
+- **counterargument_or_limit:** Structural presence checks remain valuable for catching omitted reference sections quickly.
+- **assumptions_and_boundaries:** Preserve the seven seed content checks and add evidence-backed phase gates rather than replacing one kind of completeness with another.
+- **revision_decision:** Organize the checklist into reference construction, map production, interpretation, consequential decision, handoff, and final hygiene blocks.
+- **additional_insight_to_add:** Completeness is relative to the action profile, so navigation and deletion can share structure while requiring different evidence depth.
+
+### Question 02: What is the recommended default, and why?
+- **current_section_observation:** The default is that every checked item links to observable evidence, while every conditional item records a reason for not applying and every critical failure blocks dependent claims.
+- **supporting_reason:** This prevents check marks from becoming self-attestation and makes review reproducible.
+- **counterargument_or_limit:** Evidence links increase documentation effort for quick reversible tasks.
+- **assumptions_and_boundaries:** Use the lightweight profile for navigation and the full gate for durable or consequential decisions.
+- **revision_decision:** Add profile labels, evidence columns, and stop versus warning severity.
+- **additional_insight_to_add:** A checklist is useful only when failure changes behavior; otherwise it is a narrative outline disguised as a control.
+
+### Question 03: When does the default work well?
+- **current_section_observation:** Phase-specific checklists work well for shared-agent workflows, long-running analysis, code review, regulated handoffs, and repeated artifact generation.
+- **supporting_reason:** They create durable boundaries between stages and reveal exactly what another worker can trust or must reopen.
+- **counterargument_or_limit:** Rigid sequencing can slow exploratory loops where later evidence naturally sends the operator backward.
+- **assumptions_and_boundaries:** Permit backtracking and state transitions while requiring gates before promotion into an actionable claim.
+- **revision_decision:** Model the checklist as a revisitable state machine rather than a one-pass form.
+- **additional_insight_to_add:** Reopening an earlier gate after contradiction is evidence of a healthy workflow, not checklist failure.
+
+### Question 04: When does it fail or become the wrong choice?
+- **current_section_observation:** The checklist fails when it is copied unchanged across claim profiles, completed from memory, or treated as proof that an unsuitable observation model can answer the question.
+- **supporting_reason:** Formal completion cannot make dynamic behavior visible to a lexical mapper or establish absence from unsupported inventory.
+- **counterargument_or_limit:** A strong escalation item can still help the checklist identify method mismatch.
+- **assumptions_and_boundaries:** Include a mandatory fit check before production and a terminal route-away outcome.
+- **revision_decision:** Add explicit skip and escalation states instead of requiring every workflow to culminate in map approval.
+- **additional_insight_to_add:** The checklist must be capable of declaring the method complete precisely because it has handed the claim elsewhere.
+
+### Question 05: Which alternatives and tradeoffs matter?
+- **current_section_observation:** Alternatives include automated schema gates, typed decision records, peer review, free-form narratives, CI policy, and domain-specific approval workflows.
+- **supporting_reason:** Automation catches deterministic structure; reviewers judge claim fit; project policy establishes authorization; narratives preserve nuance.
+- **counterargument_or_limit:** Duplicating the same check across mechanisms can create inconsistent status and maintenance burden.
+- **assumptions_and_boundaries:** Assign one owner and evidence source to each requirement while allowing other systems to reference it.
+- **revision_decision:** Separate machine-verifiable, reviewer-verifiable, and owner-approval items.
+- **additional_insight_to_add:** A checklist should route each question to the mechanism best able to reject an invalid state rather than pretending all checks are automatable.
+
+### Question 06: Which gotchas and failure modes matter most?
+- **current_section_observation:** Checklist hazards include silent not-applicable items, stale links, checking artifact existence without row semantics, omitting dirty state, ignoring counterevidence, and leaving next actions empty.
+- **supporting_reason:** These defects preserve visual completion while removing the information needed for reproduction, falsification, or recovery.
+- **counterargument_or_limit:** Some evidence can be ephemeral and impractical to retain fully.
+- **assumptions_and_boundaries:** Retain a stable summary, identity, and reproduction route even when raw transient data cannot persist.
+- **revision_decision:** Add freshness and recoverability checks plus forbidden empty states.
+- **additional_insight_to_add:** The strongest checklist field may be the invalidation trigger because it limits how long a completed item can continue authorizing reuse.
+
+### Question 07: What do good, bad, and borderline examples look like?
+- **current_section_observation:** A good checklist links coverage and claim gates to evidence and blocks deletion on unresolved dynamic paths; a bad checklist marks all sections present and calls the work complete.
+- **supporting_reason:** The good example tests decision sufficiency, while the bad one tests document shape only.
+- **counterargument_or_limit:** A borderline navigation task can use a reduced checklist if the pointer is current and no broader claim survives.
+- **assumptions_and_boundaries:** The selected profile and downstream use must be explicit.
+- **revision_decision:** Add profile-specific good, bad, and recoverable completion examples.
+- **additional_insight_to_add:** A lightweight checklist becomes unsafe when its output is later promoted into a stronger workflow without rerunning the missing gates.
+
+### Question 08: How can the important claims be verified?
+- **current_section_observation:** Verify completeness by tracing each check to a source or command, deliberately injecting expected failures, reviewing conditional reasons, and confirming that critical defects block dependent states.
+- **supporting_reason:** Negative testing proves the checklist controls workflow rather than merely recording successful intent.
+- **counterargument_or_limit:** Simulating every critical failure can be expensive and may require disposable fixtures.
+- **assumptions_and_boundaries:** Test deterministic controls routinely and exercise high-consequence escalation paths during tool or policy changes.
+- **revision_decision:** Add checklist-control tests and a reviewer sampling protocol.
+- **additional_insight_to_add:** A gate's rejection path is part of its specification and should be reviewed with the same care as its success path.
+
+### Question 09: What is known confidently, and what remains judgment or uncertainty?
+- **current_section_observation:** Structural completeness can be checked deterministically, while evidence sufficiency, claim consequence, and appropriate escalation remain reviewer and domain judgment.
+- **supporting_reason:** Exact headings, files, schemas, fields, and hashes are machine-observable, but no parser can universally decide whether runtime evidence is adequate for a security claim.
+- **counterargument_or_limit:** Domain policies can encode stronger deterministic floors for recurring claim classes.
+- **assumptions_and_boundaries:** Distinguish automated pass, reviewer judgment, and authorized acceptance in checklist status.
+- **revision_decision:** Add verification-owner and evidence-type columns.
+- **additional_insight_to_add:** Separating these statuses prevents a machine-green artifact from masquerading as a human or domain-approved decision.
+
+### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
+- **current_section_observation:** The checklist is a dependency graph of prerequisites: inventory supports extraction interpretation, which supports relation queries, which support source selection, which supports bounded claims and actions.
+- **supporting_reason:** A failed upstream item invalidates multiple downstream checks even if their boxes remain visually marked.
+- **counterargument_or_limit:** Explicit dependency tracking adds complexity to a simple list.
+- **assumptions_and_boundaries:** Encode only high-impact prerequisite edges and use selective invalidation rather than recomputing every status.
+- **revision_decision:** Add prerequisite and reopen rules to each phase block.
+- **additional_insight_to_add:** Completion should propagate forward only when premises pass and propagate backward when contradictions reveal an earlier assumption was false.
+
+## Section 017: Adjacent Reference Routing
+### Question 01: What decision does this reference help make?
+- **current_section_observation:** The seed suggests dependency, debugging, map, and CLI references when the topic narrows but does not specify which unresolved evidence need should trigger each route.
+- **supporting_reason:** A relation can remain unresolved because the agent needs exact search, structural parsing, semantic identity, build composition, runtime behavior, history, diagnosis, or executable requirements.
+- **counterargument_or_limit:** Topic-level links are easy to scan and can expose useful neighboring material without a formal diagnosis.
+- **assumptions_and_boundaries:** The evolved router should preserve broad adjacent categories while requiring a concrete capability gap and handoff question.
+- **revision_decision:** Map unresolved claim classes to stronger observation systems, expected evidence, return conditions, and terminal escalation.
+- **additional_insight_to_add:** Routing quality depends on transferring the failed premise and evidence boundary, not merely naming another document or tool.
+
+### Question 02: What is the recommended default, and why?
+- **current_section_observation:** The default is to route by the smallest missing capability after classifying the earliest pipeline stage that rough mapping cannot settle.
+- **supporting_reason:** Inventory, syntax, semantics, build configuration, runtime paths, and historical causality require different tools, so broad escalation wastes context and can preserve the wrong question.
+- **counterargument_or_limit:** A mismatch can span stages, such as generated code affecting inventory, build, and runtime behavior simultaneously.
+- **assumptions_and_boundaries:** Route to the mechanism that can falsify the consequential claim first, then add complementary evidence if disagreement remains.
+- **revision_decision:** Add a primary route and optional secondary route to every gap class.
+- **additional_insight_to_add:** The best route is not the closest topic label but the next observation model capable of changing the decision.
+
+### Question 03: When does the default work well?
+- **current_section_observation:** Capability-gap routing works well in tool-rich repositories and agent environments where specialized references or native commands are discoverable and evidence can return to one decision record.
+- **supporting_reason:** Specialized tools improve precision without forcing the main mapping guide to absorb every language, runtime, and debugging method.
+- **counterargument_or_limit:** A repository may lack the recommended analyzer or have policies that prohibit its use.
+- **assumptions_and_boundaries:** Provide tool-class routes and acceptance criteria rather than assuming a named implementation is installed.
+- **revision_decision:** Add fallback routes based on direct source, project commands, and owner escalation.
+- **additional_insight_to_add:** Routing preserves modular guidance while a shared claim contract prevents fragmented conclusions across tools.
+
+### Question 04: When does it fail or become the wrong choice?
+- **current_section_observation:** Routing fails when agents bounce among references without a falsifiable question, transfer stale artifacts as facts, or use another rough tool with the same blind spot.
+- **supporting_reason:** More context and tool changes do not improve evidence when the unresolved premise is neither named nor tested by the destination.
+- **counterargument_or_limit:** Exploratory browsing can still discover a better problem formulation before a precise question exists.
+- **assumptions_and_boundaries:** Allow a bounded discovery pass, then require a route claim and stop condition.
+- **revision_decision:** Add loop detection, same-blind-spot warnings, and a terminal human or domain-owner route.
+- **additional_insight_to_add:** Repeated routing without evidence change is a blocking signal, not a reason to add another adjacent reference.
+
+### Question 05: Which alternatives and tradeoffs matter?
+- **current_section_observation:** Alternatives include keeping all methods in one monolithic guide, using repository-native discovery, consulting language-specific references, invoking graph indexes, or escalating directly to an owner.
+- **supporting_reason:** Monolithic guidance reduces navigation but increases context; modular routes improve specialization but add handoff cost; owner escalation resolves policy questions but may delay technical work.
+- **counterargument_or_limit:** Excessive modularity can make simple tasks feel like process orchestration.
+- **assumptions_and_boundaries:** Route only when the current method reaches a material boundary and stop once the missing evidence is supplied.
+- **revision_decision:** Add cost and expected information gain to each route category.
+- **additional_insight_to_add:** Adjacent references should be demand-loaded like source context, preserving attention until a specific gap justifies expansion.
+
+### Question 06: Which gotchas and failure modes matter most?
+- **current_section_observation:** Routing hazards include circular referrals, unavailable paths, version mismatch, ambiguous ownership, sensitive runtime data, duplicate analysis, and loss of the original decision consequence.
+- **supporting_reason:** These failures can consume time or produce technically correct evidence that no longer answers the user's question.
+- **counterargument_or_limit:** A complete availability and policy preflight for every possible route would be excessive.
+- **assumptions_and_boundaries:** Check destination availability and policy only when the route is selected, then carry a minimal handoff packet.
+- **revision_decision:** Add destination preconditions and a route ledger.
+- **additional_insight_to_add:** A route ledger reveals when several agents independently investigate the same gap and can prevent contradictory uncoordinated decisions.
+
+### Question 07: What do good, bad, and borderline examples look like?
+- **current_section_observation:** Good routing sends alias misses to project-aware resolution with the exact unresolved rows; bad routing sends an absence claim to another lexical search and calls agreement semantic proof.
+- **supporting_reason:** The good destination can observe the missing configuration, while the bad destination shares the original blind spot.
+- **counterargument_or_limit:** A borderline second lexical search may still find a direct string counterexample and refute absence cheaply.
+- **assumptions_and_boundaries:** Use correlated tools for falsification candidates, not as independent confirmation of completeness.
+- **revision_decision:** Add good, bad, and conditional route examples with return evidence.
+- **additional_insight_to_add:** A weaker adjacent tool can be valuable if it disproves a claim, even when it cannot verify the claim positively.
+
+### Question 08: How can the important claims be verified?
+- **current_section_observation:** Verify a route by checking that the destination consumed the stated gap, used a materially different observation model, returned reproducible evidence, and changed or bounded the decision.
+- **supporting_reason:** These criteria measure route utility rather than mere completion of another workflow.
+- **counterargument_or_limit:** Some routes primarily confirm that uncertainty is irreducible under current access or policy.
+- **assumptions_and_boundaries:** Treat a well-supported escalation-required outcome as useful evidence when it prevents unsupported action.
+- **revision_decision:** Add route acceptance fields for input, method difference, result, contradiction, and next state.
+- **additional_insight_to_add:** Routing succeeds when uncertainty is reduced, reclassified, or assigned safely, not only when the original hypothesis is confirmed.
+
+### Question 09: What is known confidently, and what remains judgment or uncertainty?
+- **current_section_observation:** It is clear which broad observation gaps rough mapping cannot cover, but the exact adjacent file, installed tool, and best route depend on current repository and agent environment.
+- **supporting_reason:** This assignment did not inspect every adjacent reference or tool installation, and later assignments remain unopened by sequence rule.
+- **counterargument_or_limit:** Stable local skill names and repository filenames can still provide useful candidate routes.
+- **assumptions_and_boundaries:** List route classes and examples without claiming availability or current content unless verified at selection time.
+- **revision_decision:** Mark candidate versus verified destinations and avoid opening later assignments prematurely.
+- **additional_insight_to_add:** A route catalog should separate conceptual destination from current executable availability so guidance remains portable.
+
+### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
+- **current_section_observation:** Adjacent routing forms a graph of evidence systems in which edges represent missing capabilities and return contracts rather than thematic similarity.
+- **supporting_reason:** This model enables shortest-path reasoning from unresolved claim to sufficient evidence while detecting cycles and correlated blind spots.
+- **counterargument_or_limit:** Formal graph optimization is unnecessary for most coding questions.
+- **assumptions_and_boundaries:** Use a qualitative route table and loop checks rather than numerical path weights.
+- **revision_decision:** Add route-entry, route-return, and terminal-stop semantics.
+- **additional_insight_to_add:** The main map's boundary becomes a strength when it can hand off precisely, because specialization improves without sacrificing decision continuity.
