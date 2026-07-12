@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:38:22Z
+- Updated: 2026-07-12 06:53:37Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4029,3 +4029,50 @@ Assignment 33 planning_execution_workflow_patterns complete
 
 #### Performance/Metrics:
 - Corpus: 60/99 references, 7264/11961 queue rows complete
+
+### Session: 2026-07-12 06:53:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a35 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Grounded in eight mapped paths read in full forming four texts (SKILL 554, server-types 536, authentication 549, tool-usage 538 lines; archive/live pairs byte-identical): two config methods, four transports, OAuth/env-var auth custody, tool-prefix contract
+
+#### Current Focus:
+Assignment 35 plugin_mcp_integration_patterns sections 1-9 saved
+
+#### Next Steps:
+- Generate sections 10-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 35 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 06:53:37Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 62/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved; transport/prefix/OAuth runtime contracts labeled archive-local; doubled external URL rows flagged; queue accepted 140 rows
+
+#### Current Focus:
+Assignment 35 plugin_mcp_integration_patterns complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/plugin_settings_configuration_patterns-20260710.md (delta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 62/99 references, 7544/11961 queue rows complete
