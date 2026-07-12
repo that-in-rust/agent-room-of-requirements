@@ -2,7 +2,7 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:25:16Z
+- Updated: 2026-07-12 05:34:02Z
 - Current Phase: Refactor
 - Status: active
 
@@ -8101,3 +8101,138 @@ Assignment 23 tauri_executable_reference_maps complete: verified, accepted, and 
 
 #### Performance/Metrics:
 - Corpus: 50/99 files fully complete; queue rows 6069/11961 complete, 5892 pending
+
+### Session: 2026-07-12 05:31:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-6: passing - 360/360 exact and normalized-unique fields, 6/26 sections evolved
+
+#### Implementation Progress:
+- Evolved title through external research map: successor-reader contract thesis, mirror-pair source identity (byte-identical 80-line copies confirmed), analogue-not-source framing for the three unretrieved URLs
+
+#### Current Focus:
+Assignment 24 tdd_progress_journal_schema sections 001-006
+
+#### Next Steps:
+- Generate sections 007-009
+
+#### Context Notes:
+- Both local schema copies read in full; external URLs remain unretrieved and labeled
+
+#### Performance/Metrics:
+- Assignment 24 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-12 05:31:54Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-12: passing - 720/720 exact and normalized-unique fields, 12/26 sections evolved
+
+#### Implementation Progress:
+- Anti-pattern registry gained phaseless-entry and prose-drift rows; gates added entry-completeness scan; usage guide keyed to task shape; journey extended through a resume event; tradeoffs rekeyed to interruption risk; hierarchy records mirror identity preferring 202604 copy
+
+#### Current Focus:
+Assignment 24 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-12 05:32:03Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-18: passing - 1080/1080 exact and normalized-unique fields, 18/26 sections evolved
+
+#### Implementation Progress:
+- Artifact adopts the schema's own dedupe example entry; worked examples recast around entry quality; metrics recentered on resume success and checkpoint staleness; checklist gains field-coverage items; routing replaced keyword stubs with named corpus neighbors; workload rederived as batch-per-entry cadence
+
+#### Current Focus:
+Assignment 24 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-12 05:32:23Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-24: passing - 1440/1440 exact and normalized-unique fields, 24/26 sections evolved
+
+#### Implementation Progress:
+- Reliability adds unbaselined resumability target; failure table gains stale-checkpoint, phase-drift, divergence, and abandoned-journal rows; retry semantics halt on unwritable entries with one reconstruction; observability treats the journal as the instrument; performance measures resume speed vs checkpoint overhead; scale prescribes per-lane sharding
+
+#### Current Focus:
+Assignment 24 sections 019-024
+
+#### Next Steps:
+- Generate sections 025-026, then bounded reread
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-12 05:32:36Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity all 26 sections: passing - 1560/1560 exact and normalized-unique fields, 26/26 sections evolved
+
+#### Implementation Progress:
+- Refresh queries rephrased to agent session-persistence vocabulary; evidence notes add mirror-as-one-source and analogue-downgrade rules
+
+#### Current Focus:
+Assignment 24 sections 025-026 complete; drafting finished
+
+#### Next Steps:
+- Reread evolved reference in groups of at most five sections, then run focused verifier
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 26/26 sections and 1560/1560 fields
+
+### Session: 2026-07-12 05:34:02Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier tdd_progress_journal_schema: passing - PASS: 26 sections, 260 questions, 1560/1560 exact and normalized-unique fields
+- packet uniqueness: passing - corpus-wide uniqueness holds
+- queue acceptance updater: passing - 116 rows marked complete
+- git diff --check: passing - clean
+
+#### Implementation Progress:
+- Evolved all 26 sections around resumability-contract framing grounded in the mirrored 80-line progress-journal-schema source; bounded rereads done in five-section groups
+
+#### Current Focus:
+Assignment 24 tdd_progress_journal_schema complete: verified, accepted, reconciled
+
+#### Next Steps:
+- Begin Alpha assignment 25: idiomatic-ref-202607/writing_skills_validation_patterns-20260710.md (122 pending rows)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 51/99 files fully complete; queue rows 6185/11961 complete, 5776 pending
