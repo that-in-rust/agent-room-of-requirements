@@ -2,7 +2,7 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:14:11Z
+- Updated: 2026-07-12 05:25:16Z
 - Current Phase: Refactor
 - Status: active
 
@@ -7878,3 +7878,226 @@ Assignment 22 accepted: tauri_executable_playbook_templates-20260710.md verified
 
 #### Performance/Metrics:
 - Corpus: 49/99 files complete; queue 5950 complete, 6011 pending
+
+### Session: 2026-07-12 05:21:50Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 3 sections, 30 questions, 180 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Framed the theme as mode-first routing discipline, recorded the byte-identical mirror between legacy and unclassified specs references, and ranked routing practices above hygiene rows
+
+#### Current Focus:
+Assignment 23 Sections 001-003 routing thesis, deduplicated source map, and reranked scoreboard saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 004-006 with atomic sanity checks
+
+#### Context Notes:
+- All three local sources read; two confirmed identical by diff; external URLs not retrieved
+
+#### Performance/Metrics:
+- Assignment 23 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-12 05:22:02Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 6 sections, 60 questions, 360 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Restated the thesis as classify-then-read, added routing to the map's four parts, and bound external rows to dated retrieval expectations
+
+#### Current Focus:
+Assignment 23 Sections 004-006 thesis restatement, per-part local routing, and external freshness guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 007-009 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-12 05:22:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 9 sections, 90 questions, 540 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Added map-skipping and stale-route anti-pattern rows, a route-resolution gate beside the document verifier, and use-then-leave admission criteria
+
+#### Current Focus:
+Assignment 23 Sections 007-009 routing anti-patterns, route-resolution gates, and junction usage guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 010-012 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-12 05:22:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 12 sections, 120 questions, 720 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Extended the journey through classification and ordered reading, rekeyed adopt-adapt-avoid to corpus familiarity, and collapsed the duplicate hierarchy rows into one mirrored content source
+
+#### Current Focus:
+Assignment 23 Sections 010-012 completed journey, familiarity-keyed tradeoffs, and mirror-aware hierarchy saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 013-015 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-12 05:22:31Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 15 sections, 150 questions, 900 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Extended the artifact into a route-trace record, grounded examples in classification events, and replaced inherited content metrics with misroute and dangling-route signals
+
+#### Current Focus:
+Assignment 23 Sections 013-015 route-trace artifact, routing-grounded examples, and misroute metrics saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 016-018 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-12 05:22:44Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 18 sections, 180 questions, 1080 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Added route-resolution checklist items, replaced keyword route stubs with condition-keyed destinations, and rederived workload boundaries from modes straddled and files opened
+
+#### Current Focus:
+Assignment 23 Sections 016-018 resolution checklist, condition-keyed routing, and mode-based workload model saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 019-021 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-12 05:22:54Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 21 sections, 210 questions, 1260 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Marked reliability thresholds unbaselined with sampling owners, added dangling-route and stale-order failure rows, and bounded routing retries to one reclassification plus one re-resolution
+
+#### Current Focus:
+Assignment 23 Sections 019-021 grounded reliability targets, routing failure rows, and bounded reroute semantics saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 022-024 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-12 05:23:05Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 24 sections, 240 questions, 1440 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Bound recorded signals to routing stages, recentered performance on time-to-correct-file with answer keys, and added straddle-rate approach signals ahead of hard scale limits
+
+#### Current Focus:
+Assignment 23 Sections 022-024 stage-bound observability, routing performance method, and classification-confidence scale signals saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 025-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-12 05:23:19Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Rephrased refresh queries in Tauri ecosystem vocabulary with section bindings and added claim-level labeling rules that count mirrored files as one source
+
+#### Current Focus:
+Assignment 23 Sections 025-026 ecosystem-vocabulary refresh queries and duplicate-aware evidence labeling saved; all 26 sections drafted
+
+#### Next Steps:
+- Reread evolved reference in groups of at most five sections, then run focused verifier
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 26/26 sections and 1560/1560 fields
+
+### Session: 2026-07-12 05:25:16Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier tauri_executable_reference_maps: passing - 26 sections, 260 questions, 1560/1560 exact and normalized-unique fields
+- packet uniqueness (test_packet_content_uniqueness): passing - corpus-wide normalized uniqueness holds
+- queue acceptance updater: passing - 119 rows marked complete
+- git diff --check: passing - no whitespace errors
+
+#### Implementation Progress:
+- Evolved all 26 sections around mode-first routing discipline grounded in the local reference map and merged specs reference; mirrored duplicate sources recorded; external URLs left labeled unrefreshed
+
+#### Current Focus:
+Assignment 23 tauri_executable_reference_maps complete: verified, accepted, and reconciled
+
+#### Next Steps:
+- Begin Alpha assignment 24: idiomatic-ref-202607/tdd_progress_journal_schema-20260710.md (116 pending rows)
+
+#### Context Notes:
+- Bounded rereads done in groups of at most five sections; local sources read in full; unclassified-yet copy confirmed byte-identical to legacy specs reference
+
+#### Performance/Metrics:
+- Corpus: 50/99 files fully complete; queue rows 6069/11961 complete, 5892 pending
