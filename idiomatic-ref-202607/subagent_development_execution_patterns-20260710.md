@@ -265,6 +265,24 @@ Reference opening trigger: Open this file when the task mentions subagent develo
 
 ## Decision Tradeoff Guide
 
+**Decision supported.** This section helps decide whether to adopt, adapt, or avoid delegated subagent execution for a specific task and what evidence retires the cost of choosing wrongly. The seed table keys Adopt, Adapt, and Avoid to generic local-versus-external evidence agreement instead of task independence, file ownership, review capacity, and user permission.
+
+**Recommended default and causal basis.** Adopt delegation when the plan is written and tasks are provably independent, adapt it when coupling or missing permissions require serialization or manual slices, and avoid it when design uncertainty or authority gaps dominate. Adoption criteria tied to observable task properties can be checked before dispatch, while agreement between two document sets says nothing about whether this task can be safely delegated.
+
+**Operating conditions and assumptions.** Each tradeoff row names its triggering condition, the cost it accepts, the recovery it implies, and one verification question a reviewer can answer from artifacts. The tradeoff guide ranks same-workspace delegation choices and cannot authorize commits, new agents, or scope the user has not granted.
+
+**Failure boundary and alternatives.** Adopt is chosen because sources agree, adapt hides an unresolved coupling, avoid becomes a reflex that blocks safe parallel research, or the cost row never names what to undo. Bounded alternatives and recoveries: run a single pilot task before committing to a route, downgrade to research-only delegation, split the decision per subtask instead of per project, or ask the user when the cost of being wrong is irreversible.
+
+**Counterexample, gotchas, and operational comparison.** Agreement can be stale on both sides, a cheap-looking adaptation can double review load, avoidance can silently convert to unplanned manual scope, and cost estimates ignore integration debt. Good: adopt delegation for two adapters only after freezing their interface and naming rollback. Bad: adopt because the local skill and a public page both praise subagents. Borderline: adapt by serializing one coupled task while keeping the rest parallel, documenting why.
+
+**Verification, evidence, and uncertainty.** Answer each row's verification question from actual artifacts, trace one adopt and one avoid decision to its observed outcome, and confirm the cost row identifies concrete undo and inspection steps. The seed's four-row adopt-adapt-avoid-cost skeleton and its verification-question column are directly reusable decision scaffolding. The true cost of a wrong route depends on unmeasured coupling and review capacity, so the guide's cost wording remains judgment rather than measurement.
+
+**Second-order consequence.** A tradeoff guide earns its place only when a wrong route leaves a visible trail a reviewer can reverse; routes without undo instructions are gambles, not decisions.
+
+**Revision decision.** Rekey each tradeoff row from generic evidence agreement to task independence, ownership clarity, permission state, and review budget.
+
+**Retained seed evidence.** The Adopt when, Adapt when, Avoid when, and Cost of being wrong rows with their verification prompts remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 | decision_option_name | when_to_choose_condition | tradeoff_cost_description | verification_question_prompt |
 | --- | --- | --- | --- |
 | Adopt when | local corpus and external evidence agree on the subagent development execution patterns pattern | fastest path, but can copy stale local assumptions | Does the selected pattern appear in the canonical source and current external evidence? |
@@ -273,6 +291,24 @@ Reference opening trigger: Open this file when the task mentions subagent develo
 | Cost of being wrong | wrong subagent development execution patterns guidance can send an agent to the wrong files, tests, or abstraction | wasted implementation loop and weaker verification | Would a reviewer know what to undo and what to inspect next? |
 
 ## Local Corpus Hierarchy
+
+**Decision supported.** This section helps decide which local artifact class to trust first when the workflow skill, role templates, and their archived duplicates disagree or overlap. The seed hierarchy labels the archived skill canonical and its byte-identical live copy merely supporting, labels role templates legacy while they remain the active prompts, and repeats one generic reviewer question for all eight rows.
+
+**Recommended default and causal basis.** Treat the live workflow skill plus its three role templates as one canonical protocol set, treat archive copies as provenance snapshots, and assign each row a role-specific reviewer question. Byte-identical duplicates cannot carry different authority, and a hierarchy that contradicts observed file equality trains readers to ignore its labels.
+
+**Operating conditions and assumptions.** Each hierarchy row states duplicate group, role in the protocol, activation order, the companion file it requires, and the reviewer question that its class must answer. The hierarchy classifies retrieval priority inside this corpus and does not grade external documentation or grant any template orchestration authority.
+
+**Failure boundary and alternatives.** Canonical status is read as permission to skip the other templates, legacy labels justify deleting active prompts, duplicate pairs drift after one side is edited, or the repeated question lets every row pass review identically. Bounded alternatives and recoveries: collapse duplicates into one row with two locations, rank by protocol stage instead of source tree, add hash checks to detect drift, or fall back to reading all four unique artifacts when classification is disputed.
+
+**Counterexample, gotchas, and operational comparison.** Archive and live trees can diverge silently after the hierarchy is written, role labels imply an execution order the table never states, and a single canonical pick hides that the protocol needs all four artifacts together. Good: route workflow questions to the skill and dispatch text to the implementer template while recording their duplicate locations. Bad: cite the archived and live skill as two independent canonical votes. Borderline: keep legacy labels for archive copies only after adding a drift check.
+
+**Verification, evidence, and uncertainty.** Recompute duplicate-pair hashes, confirm every unique artifact appears in exactly one duplicate group, and check that each row's reviewer question can only be answered by reading that artifact class. All eight seed paths, their heading signals, and the canonical-supporting-legacy vocabulary were checked against the byte-identical duplicate finding recorded in the evidence map. Whether future edits will land in the archive or live tree first is unknown, so which copy stays authoritative over time remains a maintenance judgment.
+
+**Second-order consequence.** Hierarchy is only meaningful relative to a change process; without a rule for where edits land first, canonical labels decay into historical accidents.
+
+**Revision decision.** Regroup rows by duplicate pair and protocol role, align class labels with observed byte equality, and replace the repeated reviewer question with role-specific questions.
+
+**Retained seed evidence.** All eight path rows, the classification vocabulary line, and the heading-signal column remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 Classification vocabulary includes canonical, supporting, legacy, duplicate, and conflicting source roles.
 
@@ -289,6 +325,24 @@ Classification vocabulary includes canonical, supporting, legacy, duplicate, and
 
 ## Theme Specific Artifact
 
+**Decision supported.** This section helps decide what concrete worked artifact must exist before this reference counts as operational for a real delegation task. The seed artifact table names goal, boundary, and gate fields but never instantiates them, so nothing proves the reference can drive one actual delegated task end to end.
+
+**Recommended default and causal basis.** Complete the artifact for one real task by writing the user goal, the delegation boundary decision, the failure mode expected, and the gate that proved the outcome, then keep it beside the reference. An instantiated example forces every abstract rule to survive contact with a specific task, which is the cheapest way to expose missing fields before another agent relies on the template.
+
+**Operating conditions and assumptions.** The artifact records task identity, dependency graph excerpt, chosen dispatch route, review evidence, integration result, and the residual risk accepted at completion. The artifact documents one delegation episode for review and cannot serve as blanket approval for repeating the same route on different tasks.
+
+**Failure boundary and alternatives.** Fields are filled with restated definitions instead of task facts, the artifact is written after the fact to justify a decision already made, or one stale example is reused as proof for every future run. Bounded alternatives and recoveries: link to a real progress journal entry instead of a synthetic example, require one artifact per lane rather than per file, or accept a reviewed dry-run walkthrough when no live task is available.
+
+**Counterexample, gotchas, and operational comparison.** A polished artifact can hide that the task was never delegated, goal statements drift from what the user actually asked, and completion rules quietly weaken when the gate command changes. Good: an artifact citing a real two-adapter delegation with its red-green evidence and integration diff. Bad: a table whose user goal is apply subagent patterns. Borderline: a simulated task walkthrough labeled as unexecuted but structurally complete.
+
+**Verification, evidence, and uncertainty.** Check each artifact field against the actual task record, rerun or inspect the named verification gate, and confirm the decision boundary matches what the dependency graph showed at dispatch time. The seed's three completion rules and their evidence-source hints map cleanly onto the goal, boundary, and gate stages of the local workflow. How often the artifact must be refreshed as tooling changes is unmeasured, so its shelf life is a maintenance judgment rather than a rule.
+
+**Second-order consequence.** Templates rot silently; only artifacts that were actually exercised by a task can certify that a reference still works.
+
+**Revision decision.** Extend the three-field skeleton into a full episode record with task identity, dispatch route, review evidence, integration result, and residual risk.
+
+**Retained seed evidence.** The worked-example definition line and the three artifact field rows with completion rules and evidence hints remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Theme specific artifact: worked subagent development execution patterns example with user goal, decision point, failure mode, and verification gate.
 
 | artifact_field_name | artifact_completion_rule | evidence_source_hint |
@@ -299,17 +353,71 @@ Theme specific artifact: worked subagent development execution patterns example 
 
 ## Worked Example Set
 
+**Decision supported.** This section helps decide which usage of this reference counts as exemplary, negligent, or conditionally acceptable when coaching an agent through delegation. The seed example set restates the corpus-loading ritual as good, ignoring paths as bad, and thin evidence as borderline without showing any delegation decision, worker artifact, or review consequence.
+
+**Recommended default and causal basis.** Anchor each example in one observable delegation event: what was dispatched, what evidence came back, which review caught what, and how integration ended. Examples teach by consequence, and a reader can only transfer a lesson when the example shows the action, the signal that judged it, and the cost or benefit that followed.
+
+**Operating conditions and assumptions.** Each example names the task shape, the dispatch or refusal decision, the review evidence observed, and the outcome that makes the verdict checkable. The examples illustrate delegation judgment inside this workspace protocol and do not certify tool behavior or generalize to platforms with different isolation guarantees.
+
+**Failure boundary and alternatives.** Good examples celebrate ritual compliance rather than outcomes, bad examples are strawmen no agent would attempt, or the borderline case gives no rule for when its exception is allowed. Bounded alternatives and recoveries: replace synthetic verdicts with excerpts from real progress journals, add a second borderline case covering permission ambiguity, or express examples as before-and-after task contracts.
+
+**Counterexample, gotchas, and operational comparison.** An example can pass structurally while the underlying decision was wrong, verdicts can encode taste rather than consequence, and copied examples lose the context that made them borderline. Good: dispatching one adapter after freezing its interface and confirming red tests. Bad: dispatching three workers into one module and merging by hope. Borderline: combining spec and quality review for a one-line fix while logging both verdicts separately.
+
+**Verification, evidence, and uncertainty.** Trace each example to a reproducible scenario, confirm the good case's gate actually fires on the bad case, and test that the borderline rule tells a reader when the exception expires. The seed's three-verdict structure survives directly and its bad case already names the real failure of ignoring mapped local paths. Which borderline conditions occur most often in practice is unknown here, so the chosen third case reflects judgment about likely ambiguity rather than frequency data.
+
+**Second-order consequence.** A bad example is only useful if the reference's own gates would catch it; otherwise the example set is advertising, not instrumentation.
+
+**Revision decision.** Rewrite each verdict around an observable delegation event with its dispatch decision, review signal, and outcome.
+
+**Retained seed evidence.** The good, bad, and borderline example lines with their original verdict framing remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Good example: Use Subagent Development Execution Patterns after loading the canonical source, confirming the external evidence boundary, and writing a verification gate before implementation.
 Bad example: Use Subagent Development Execution Patterns as a generic tutorial while ignoring the mapped local paths, source hierarchy, and cost of being wrong.
 Borderline case: Use Subagent Development Execution Patterns only after adding a confidence warning when local evidence is thin or conflicts with current ecosystem guidance.
 
 ## Outcome Metrics and Feedback Loops
 
+**Decision supported.** This section helps decide which observable signals should trigger revising this reference or the delegation workflow it encodes. The seed metrics section names one leading indicator, one failure signal, and a verifier-rerun cadence but never defines who measures them, on what runs, or what change each signal forces.
+
+**Recommended default and causal basis.** Instrument every delegation run to count clarification round-trips, reopened findings, and integration surprises, and route each threshold breach to a named revision action on this file. Signals only create a feedback loop when a specific measurement on a specific run population is bound to a specific corrective action; unattached indicators are slogans.
+
+**Operating conditions and assumptions.** Each metric states its unit, collection point in the journey, healthy range, breach action, and the owner who applies the correction. These metrics evaluate the reference and orchestration protocol, not worker model quality or repository health, which need their own instruments.
+
+**Failure boundary and alternatives.** Indicators are averaged across unlike tasks, the failure signal fires only after integration damage, cadence becomes calendar ritual detached from change events, or breaches accumulate with no revision ever applied. Bounded alternatives and recoveries: sample post-task retrospectives instead of continuous counters, review metrics at each lane checkpoint rather than on a clock, or tie refresh to source-change events like tool releases.
+
+**Counterexample, gotchas, and operational comparison.** Fewer clarifications can mean better prompts or workers guessing silently, metric gaming rises once thresholds are known, and rerunning the verifier checks structure while saying nothing about advice quality. Good: reopening the routing section after two runs where workers guessed instead of asking. Bad: declaring success because the verifier stayed green all month. Borderline: skipping a scheduled review after a week with no delegation runs, recording the skip.
+
+**Verification, evidence, and uncertainty.** Inspect journals for recorded metric values, confirm each breach maps to a committed revision, and cross-check that the leading indicator moved after the correction shipped. The seed's clarification-count indicator and its missing-context-budget failure signal both match failure modes the local workflow already warns about. Healthy thresholds for clarification and reopen counts are unmeasured for this corpus, so initial ranges are provisional and must be recalibrated from real runs.
+
+**Second-order consequence.** A reference without a feedback loop can only degrade, because every change in tools or tasks silently invalidates advice that nothing is measuring.
+
+**Revision decision.** Bind each signal to a measurement unit, run population, breach threshold, revision action, and owner.
+
+**Retained seed evidence.** The leading indicator, failure signal, and verifier-driven review cadence lines remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Leading indicator: the next run needs fewer clarifications and produces fewer unverifiable claims.
 Failure signal: the reference tells agents what to do without defining context budget or escalation rules.
 Review cadence: Re-run the verifier after every generated-reference edit and refresh external sources when public APIs, docs, or tooling releases change.
 
 ## Completeness Checklist
+
+**Decision supported.** This section helps decide when this reference may be declared complete enough to hand to an agent and what evidence backs each checklist tick. The seed checklist verifies that sections exist and name things but never asks whether their guidance is correct, consistent across sections, or executable by an agent under real constraints.
+
+**Recommended default and causal basis.** Keep the structural items and add cross-section consistency, executable-gate, authority-boundary, and evidence-label checks that each require citing the line that satisfies them. Existence checks catch missing prose while the expensive failures are contradictions between sections and gates that cannot actually run, which only content-level checks intercept.
+
+**Operating conditions and assumptions.** Each checklist item names its satisfying evidence, the section it inspects, and whether a human or script can evaluate it. The checklist gates this document's readiness for agent use and does not certify the delegation outcomes of tasks that later use it.
+
+**Failure boundary and alternatives.** Items are ticked from memory without citations, structural passes are read as content endorsement, or the checklist freezes while sections evolve and silently stops covering new obligations. Bounded alternatives and recoveries: generate structural items from the verifier instead of maintaining them by hand, replace some ticks with paired-reviewer sign-off, or sample two random sections per review for deep reading instead of shallow full passes.
+
+**Counterexample, gotchas, and operational comparison.** Checklists reward completion theater, an item spanning several sections gets ticked when only one satisfies it, and reviewers stop reading carefully once early items pass. Good: ticking the routing item only after quoting the adjacent-reference lines it requires. Bad: ticking all seven items in one glance because headings exist. Borderline: ticking a consistency item from last week's read, noting the staleness.
+
+**Verification, evidence, and uncertainty.** Demand a line citation per tick, rerun the structural verifier, and spot-check one claimed-consistent pair of sections for actual agreement on defaults and boundaries. The seed's seven items map one-to-one onto sections this file genuinely contains, so the structural layer is already sound scaffolding. How much deep review each item deserves per revision is a judgment that depends on how heavily the reference is edited, not a fixed rule.
+
+**Second-order consequence.** A checklist that can be completed without reading the document measures the checklist, not the document.
+
+**Revision decision.** Append consistency, executability, authority, and evidence-label items and require cited evidence for every tick.
+
+**Retained seed evidence.** All seven structural checklist items covering scenario, decision guide, hierarchy, artifact, examples, metrics, and routing remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 - The role scenario names the user, starting state, decision, and trigger for Subagent Development Execution Patterns.
 - The decision guide includes Adopt when, Adapt when, Avoid when, and Cost of being wrong.
@@ -321,12 +429,48 @@ Review cadence: Re-run the verifier after every generated-reference edit and ref
 
 ## Adjacent Reference Routing
 
+**Decision supported.** This section helps decide when to leave this reference and which neighboring reference should own the task instead. The seed routing splits the theme name into subagent, development, and execution keywords and points at unnamed adjacent references, giving an agent no real destination or handoff condition.
+
+**Recommended default and causal basis.** Route by failure surface: dispatch-prompt design to the agent-creation and context-instruction references, review-loop depth to the code-review and debate references, and progress persistence to the TDD checkpoint and journal references. An agent needs routing exactly when this file stops answering, and only condition-plus-destination pairs convert that moment into a next action instead of a dead end.
+
+**Operating conditions and assumptions.** Each route names its trigger condition, the concrete destination reference, what context to carry across, and what this file retains ownership of after the handoff. Routing redirects within this corpus's reference set and cannot substitute for the user's own prioritization or authorize work in the destination's domain.
+
+**Failure boundary and alternatives.** Keyword overlap routes to a file that merely shares a word, two references both claim the task and neither owns integration, or the router sends context-free handoffs that force rediscovery. Bounded alternatives and recoveries: consult the corpus index for exact titles before routing, keep the task here with an explicit gap note when no destination fits, or escalate to the user when two references genuinely conflict over ownership.
+
+**Counterexample, gotchas, and operational comparison.** Adjacent files evolve independently so routes silently dangle, circular routes can bounce an agent between two references, and a plausible route can hide that the corpus simply lacks the needed reference. Good: routing a prompt-template redesign to the agent-creation reference while keeping integration gates here. Bad: routing to the execution adjacent reference, which does not exist by that name. Borderline: routing a review-cadence question to the TDD checkpoint reference while duplicating one shared rule locally with a sync note.
+
+**Verification, evidence, and uncertainty.** Resolve every named destination to an actual corpus file, walk one sample task through each trigger condition, and confirm no pair of routes forms a cycle without an owner. The corpus visibly contains agent-creation, context-instruction, code-review, debate, and TDD checkpoint references that cover this file's adjacent failure surfaces. The best destination for mixed tasks that span dispatch and review depends on task emphasis, so some routings remain judgment calls the agent must record.
+
+**Second-order consequence.** Routing quality is a property of the corpus, not the file; every unresolved route is evidence of a missing or misnamed reference that the corpus owner should fix.
+
+**Revision decision.** Replace keyword stubs with trigger-condition routes to named corpus files plus carried-context and retained-ownership notes.
+
+**Retained seed evidence.** The adjacency guidance line and the three keyword-derived route stubs remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Adjacent reference guidance: Use debate, subagent, context, or verification references when the task narrows to a specific agent behavior.
 Adjacent reference 1: consider the subagent adjacent reference when the current task pivots away from subagent development execution patterns.
 Adjacent reference 2: consider the development adjacent reference when the current task pivots away from subagent development execution patterns.
 Adjacent reference 3: consider the execution adjacent reference when the current task pivots away from subagent development execution patterns.
 
 ## Workload Model
+
+**Decision supported.** This section helps decide how much delegation load one controller session can carry before quality collapses and where that load limit binds first. The seed workload table asserts a one-task, ten-file, three-subtask boundary and truncates its own heading-signal cell mid-word, without deriving any limit from controller attention, review cost, or task coupling.
+
+**Recommended default and causal basis.** Size workload by review capacity, dispatching only as many concurrent workers as the controller can spec-review and integrate within the session, which in practice keeps active delegation at one to three bounded tasks. The binding constraint is controller verification bandwidth, because every dispatched worker returns artifacts that demand line-level review, finding closure, and integration testing that cannot be delegated away.
+
+**Operating conditions and assumptions.** The model tracks active workers, files under exclusive ownership, open review findings, integration debt, and the context budget spent on task packets. The workload model bounds one controller session inside one workspace and says nothing about fleet-level scheduling or multi-session pipelines.
+
+**Failure boundary and alternatives.** Worker count is raised because dispatch is cheap, file limits are read as quality guarantees, source-pressure rows are truncated into noise, or workload accounting ignores the re-review loops that dominate real cost. Bounded alternatives and recoveries: measure per-run review minutes and set caps empirically, use a work-in-progress limit on open findings instead of worker count, or split oversized efforts into sequential sessions with journal handoffs.
+
+**Counterexample, gotchas, and operational comparison.** Three trivially independent subtasks cost less than one hidden-coupled pair, review debt compounds invisibly until integration, and static numeric caps invite gaming instead of judgment. Good: pausing new dispatch because two spec reviews are still open. Bad: running five workers because each touches different files. Borderline: temporarily exceeding the subtask cap for read-only research while implementation stays serialized.
+
+**Verification, evidence, and uncertainty.** Count open findings and review turnaround per journal, compare integration failures against concurrent-worker counts, and test whether the stated caps predict where quality actually degraded. The seed's bounded-capacity instinct and its artifact-pressure requirement match the local workflow's insistence on per-task review and audit. The numeric caps are unmeasured heuristics, and the true limit varies with task coupling and reviewer diligence, so all stated numbers are provisional planning aids.
+
+**Second-order consequence.** Delegation shifts cost from writing code to verifying it, so any workload model that counts tasks instead of verification effort will overestimate safe capacity.
+
+**Revision decision.** Rederive each boundary from controller review bandwidth and open-finding limits, and repair the truncated heading-signal cell.
+
+**Retained seed evidence.** The four workload dimensions with their boundary values and verification pressure points remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 `combined_evidence_inference_note`: Treat Subagent Development Execution Patterns as a agent workflow operating reference, not as a prose summary.
 
@@ -339,6 +483,24 @@ Adjacent reference 3: consider the execution adjacent reference when the current
 
 ## Reliability Target
 
+**Decision supported.** This section helps decide what measurable reliability this reference must exhibit before its guidance is trusted to steer real delegation. The seed reliability table promises a 100 percent boundary rate and an 18-of-20 sampled accuracy without any sampling procedure, sample source, or measurement owner ever existing.
+
+**Recommended default and causal basis.** Keep the four target dimensions but ground each in a feasible measurement: evidence labels checked by the verifier, routing accuracy sampled from journaled runs, unsupported claims caught at review, and recovery paths walked during audits. Targets create reliability only when someone can actually run the measurement; unmeasurable precision teaches readers to treat all numbers in the file as decoration.
+
+**Operating conditions and assumptions.** Each target names its metric, measurement method, sample population, evaluation owner, and the corrective action a miss triggers. The targets judge this document's guidance quality, not the reliability of agent platforms, repositories, or tasks that use it.
+
+**Failure boundary and alternatives.** Percentages are quoted as achievements rather than aspirations, samples are drawn only from successful runs, misses trigger no correction, or the zero-unsupported-claim rule quietly exempts the reliability table itself. Bounded alternatives and recoveries: start with binary pass-fail audits instead of ratio targets, pool samples across the reference family to reach measurable volume, or replace numeric accuracy with defect-review of every miss.
+
+**Counterexample, gotchas, and operational comparison.** A 20-use sample may take months to accumulate for a niche reference, reviewers disagree on what counts as a routing miss, and perfect label preservation can coexist with substantively wrong advice. Good: auditing five journaled uses and reopening the guide after two routing misses. Bad: reporting 18-of-20 accuracy no one measured. Borderline: provisionally claiming label preservation from verifier output while flagging that semantic drift is unchecked.
+
+**Verification, evidence, and uncertainty.** Run the verifier for label structure, pull journaled uses for routing outcomes, demand a source row or inference note for every claim, and walk each failure row's recovery path once. The four seed dimensions align with real failure classes this corpus has already hit: label loss, misrouting, unsupported claims, and dead-end failure guidance. No baseline measurement exists yet for any target, so current compliance is unknown and the first audit will define achievable thresholds.
+
+**Second-order consequence.** An unmeasured target is a liability beyond uselessness, because it manufactures false confidence exactly where the document claims to be most rigorous.
+
+**Revision decision.** Attach a sampling procedure, population, owner, and miss-triggered action to each target and mark all thresholds as unbaselined aspirations.
+
+**Retained seed evidence.** All four reliability rows with their threshold values and evidence-collection methods remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 | reliability_target_name | measurable_threshold_value | evidence_collection_method |
 | --- | --- | --- |
 | source_boundary_preservation | 100 percent of recommendations keep local, external, and inference boundaries visible | review generated text for the three evidence labels before reuse |
@@ -347,6 +509,24 @@ Adjacent reference 3: consider the execution adjacent reference when the current
 | recovery_path_clarity | every avoid or failure case names the rollback, escalation, or next-reference route | inspect failure-mode and adjacent-routing sections together |
 
 ## Failure Mode Table
+
+**Decision supported.** This section helps decide which delegation-workflow failures deserve standing mitigations and how each is detected before it corrupts integrated work. The seed failure table lists source drift, generic advice, context loss, and tool fanout generically but omits the delegation-specific failures its own earlier sections rank highest, such as false task independence and report-trusted review.
+
+**Recommended default and causal basis.** Keep the four generic rows and add the delegation-native failures: hidden task coupling, report-only acceptance, review-order inversion, open-finding carryover, and constraint loss between user and worker prompts. Failure tables pay off in the moment of triage, and triage needs the failures that actually occur in this workflow, ranked by blast radius rather than by genericity.
+
+**Operating conditions and assumptions.** Each row names its trigger, earliest observable signal, blast radius, containment step, corrective action, and the journey stage where detection belongs. The table covers orchestration and reference-usage failures and cannot enumerate domain-specific code defects, which belong to the repository's own test regime.
+
+**Failure boundary and alternatives.** Rows describe failures too abstractly to match live symptoms, mitigations restate the failure as an imperative, detection lands after integration where evidence is gone, or the table grows without pruning until triage is slower than guessing. Bounded alternatives and recoveries: order rows by observed frequency once journals accumulate, merge overlapping rows into failure families with shared containment, or link each row to the checklist item or gate that operationalizes it.
+
+**Counterexample, gotchas, and operational comparison.** Two failure modes often co-occur and mask each other, mitigation cost varies wildly across rows, and a well-worded row can create false confidence that detection is actually wired into the workflow. Good: catching hidden coupling at dependency-map time and merging the two tasks. Bad: discovering shared schema edits during final integration. Borderline: proceeding with a suspected-independent pair under an explicit watch condition and a prepared revert.
+
+**Verification, evidence, and uncertainty.** Inject one representative failure per row in a drill, confirm the named signal fires at the named stage, and check that containment leaves the workspace recoverable. The anti-pattern registry earlier in this file already names the delegation-native failures, so the table's gap is internal inconsistency rather than missing knowledge. Real frequency and cost rankings await accumulated journal data, so today's ordering encodes expected rather than observed risk.
+
+**Second-order consequence.** When two sections of one reference disagree about which failures matter, agents inherit the disagreement as unpredictable behavior; internal consistency is itself a reliability control.
+
+**Revision decision.** Merge the registry's delegation-native failures into the table and give every row an earliest-signal and journey-stage column.
+
+**Retained seed evidence.** All four seed failure rows with their triggers and mitigation actions remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 | failure_mode_name | likely_trigger_condition | required_mitigation_action |
 | --- | --- | --- |
@@ -357,6 +537,24 @@ Adjacent reference 3: consider the execution adjacent reference when the current
 
 ## Retry Backpressure Guidance
 
+**Decision supported.** This section helps decide when a failed delegation step should be retried, escalated, or halted, and how the workflow sheds load when gates go red. The seed retry bullets classify failure causes and cap retries sensibly but never define who classifies, where the classification is recorded, or how backpressure releases once gates recover.
+
+**Recommended default and causal basis.** Classify each failure once in the journal, allow a single bounded retry only for transient or stale-evidence causes, halt dispatch while any gate is red, and resume only after the blocking evidence is recorded green. Retries without recorded classification become infinite loops with amnesia, and dispatch during red gates multiplies unverifiable work faster than the controller can review it.
+
+**Operating conditions and assumptions.** The guidance assumes journaled failure records, gates that report red or green unambiguously, one owner per file, and a controller empowered to pause its own dispatch. This governs retry of orchestration steps like dispatch, review, and verification, not application-level retry logic inside the code being written.
+
+**Failure boundary and alternatives.** A true contradiction is retried as if transient, backpressure stops work but nothing records why, the halt lifts because time passed rather than because evidence changed, or escalation has no named recipient. Bounded alternatives and recoveries: escalate immediately for authority or contradiction failures instead of consuming the retry, re-prompt with amended context rather than replaying, or hand persistent blockers to a fresh session through the journal.
+
+**Counterexample, gotchas, and operational comparison.** Transient and systematic failures look identical on first occurrence, retrying a worker with the same prompt reproduces the same blind spot, and paused lanes silently expire context that resumption then rebuilds wrongly. Good: one retry after refreshing a stale source, then escalation with the diff attached. Bad: three silent replays of a failed spec review. Borderline: retrying a flaky-looking test once while logging that flakiness itself is an unverified hypothesis.
+
+**Verification, evidence, and uncertainty.** Audit journals for classification-before-retry ordering, count retries per failure to confirm the bound held, and replay one halt to confirm resumption required green evidence rather than elapsed time. The seed's four-way failure classification and its checkpoint-before-destructive-step rule match the persistence cadence this workstream already enforces. The right retry budget for semantic failures like weak packets is judgment; one bounded retry is a defensible default, not a derived optimum.
+
+**Second-order consequence.** Backpressure is a memory discipline as much as a flow control, because a halt that does not record its cause converts recoverable congestion into permanent context loss.
+
+**Revision decision.** Add classification ownership, journal recording, and an evidence-based release condition to the existing retry and halt rules.
+
+**Retained seed evidence.** All five retry and backpressure bullets, including the distributed one-owner-per-file rule, remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 - Retry only after the failed verification signal is classified as transient, stale evidence, missing context, or true contradiction.
 - Use one bounded retry for stale external evidence refresh, then escalate to a human or a narrower source-specific reference.
 - Apply backpressure by stopping new generation or implementation work when source coverage, critique coverage, or verification gates are red.
@@ -364,6 +562,24 @@ Adjacent reference 3: consider the execution adjacent reference when the current
 - For distributed execution, assign one owner per generated file or theme batch and require merge-time verification of exact path, heading, and evidence-boundary invariants.
 
 ## Observability Checklist
+
+**Decision supported.** This section helps decide what evidence each delegation run must emit so a later reader can reconstruct decisions without replaying the session. The seed observability bullets say record sources, commands, latencies, and counters but never state where records live, which journey stage writes them, or who consumes each signal.
+
+**Recommended default and causal basis.** Write observations into the lane journal at fixed stages: sources and skips at load, task packets at dispatch, review findings at each gate, and a compact audit block with counters and unresolved risks at completion. Evidence captured at the stage that produced it stays accurate and cheap, while end-of-session reconstruction forgets skipped sources and silently flattens the decision path.
+
+**Operating conditions and assumptions.** The checklist assumes a persistent journal, stable stage names shared with the journey scenario, and reviewers who actually read audit blocks before accepting work. Observability here serves workflow reconstruction and review, not runtime telemetry of shipped software, which belongs to the repository's own monitoring.
+
+**Failure boundary and alternatives.** Records are written only after success, latency percentiles are quoted for workflows nobody timed, raw transcripts get dumped as audit evidence, or signals accumulate that no reviewer ever consumes. Bounded alternatives and recoveries: derive counters mechanically from journal structure instead of hand-logging, sample deep audits on a fraction of runs, or attach evidence to queue completion notes when a lane journal is unavailable.
+
+**Counterexample, gotchas, and operational comparison.** Recording effort competes with task effort so under-pressure sessions log least when it matters most, and summaries can launder a bad decision into a tidy narrative. Good: a completion audit naming two skipped sources and one unresolved risk. Bad: p95 latency claims for a documentation workflow with no timer. Borderline: retroactively reconstructing one missing dispatch record and labeling it reconstructed.
+
+**Verification, evidence, and uncertainty.** Pick one completed run and rebuild its decision sequence solely from records, then list what could not be recovered and fix the stage that failed to write it. This workstream's own lane journals demonstrate the load-dispatch-gate-completion recording rhythm the seed bullets gesture at. The minimum record set that keeps runs reconstructable without drowning reviewers is workload-dependent and must be tuned from actual audit attempts.
+
+**Second-order consequence.** Observability that depends on discipline fails under pressure; whatever the workflow does not record automatically will be missing precisely on the runs worth investigating.
+
+**Revision decision.** Bind each recorded signal to a journey stage, a storage location, and a named consumer, and drop untimed latency claims.
+
+**Retained seed evidence.** All six observability bullets including the small-audit-evidence preference remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 - Record which local sources were loaded and which were intentionally skipped.
 - Record the exact verification command, reviewer question, or rendered artifact used as proof.
@@ -374,6 +590,24 @@ Adjacent reference 3: consider the execution adjacent reference when the current
 
 ## Performance Verification Method
 
+**Decision supported.** This section helps decide how to prove this reference improves delegation outcomes enough to justify its reading and maintenance cost. The seed performance method demands latency percentiles and measurement packets while its own pass condition is reviewer comprehension, mixing runtime metrics into a document whose real performance is decision quality.
+
+**Recommended default and causal basis.** Verify performance as decision quality by measuring whether a reader reaches the correct next action, gate, and stop condition faster and with fewer errors than without the reference, reserving latency packets for workflows that actually execute. A reference performs by changing decisions, so its verification must compare decisions made with and against it rather than timing operations it never performs.
+
+**Operating conditions and assumptions.** The method assumes access to representative tasks, at least two comparable runs or reviewers, journaled outcomes to score against, and agreement on what the correct next action was. This method evaluates the document's operational usefulness and does not benchmark agent platforms, model quality, or repository build performance.
+
+**Failure boundary and alternatives.** Percentile theater replaces judgment, pass is declared because a reviewer liked the prose, comparison runs differ in task difficulty so the delta is noise, or the measurement packet is demanded but never collected. Bounded alternatives and recoveries: run structured walkthroughs where a reviewer must locate five answers with citations, A-B test two versions of one section across lanes, or accept expert review as interim evidence while usage data accumulates.
+
+**Counterexample, gotchas, and operational comparison.** Comprehension tests measure the reader as much as the document, familiarity effects make second runs faster regardless of the reference, and small samples make every delta look significant. Good: timing how quickly a reviewer finds the correct dispatch precondition and stop rule. Bad: reporting p99 latency for reading markdown. Borderline: counting tool calls saved in one paired run while flagging the sample of one.
+
+**Verification, evidence, and uncertainty.** Define the answer key first, run the with-and-without comparison, score next-action correctness and time-to-answer, and record the delta with its sample-size caveat in the journal. The seed's own pass condition, that a reviewer identifies the correct next action without reading unrelated files, is already the right criterion and anchors the revised method. Effect sizes from single-reviewer comparisons are unstable, so early performance claims must carry explicit low-confidence labels until several runs accumulate.
+
+**Second-order consequence.** Measuring a document with runtime metrics is a category error that crowds out the harder, more valuable measurement of whether it changes decisions.
+
+**Revision decision.** Recenter measurement on decision-quality comparison and restrict latency packets to workflows with actual runtime.
+
+**Retained seed evidence.** The budget requirement, both indicator lines, the measurement packet, and the pass and fail conditions remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Performance method: require tool-call budgets, timeout budgets, and a resumable journal when the workflow exceeds one focused session.
 Leading indicator to measure: the next run needs fewer clarifications and produces fewer unverifiable claims.
 Failure signal to watch: the reference tells agents what to do without defining context budget or escalation rules.
@@ -383,12 +617,48 @@ Fail condition: the reference encourages implementation before the workload, rel
 
 ## Scale Boundary Statement
 
+**Decision supported.** This section helps decide at what task, team, or codebase scale this reference stops being sufficient and what must replace or supplement it beyond that line. The seed scale statement names multi-system spans, ownership boundaries, and SLO-bearing traffic as limits but gives no early indicators that a session is approaching them before quality fails.
+
+**Recommended default and causal basis.** Treat rising clarification rates, cross-boundary file touches, growing unreviewed-artifact backlogs, and dependency maps that no longer fit one screen as approach signals, and split work or escalate before crossing the stated limits. Scale failures are gradual capacity failures that announce themselves through backlog and rework signals well before the hard boundary, so leading indicators buy the time that hard limits cannot.
+
+**Operating conditions and assumptions.** The boundaries assume one controller, one workspace, journaled checkpoints, and tasks whose dependency structure can be mapped before dispatch. The statement bounds this orchestration reference and does not define scaling architecture for the software being built, which needs its own capacity design.
+
+**Failure boundary and alternatives.** Limits are read as targets to approach, splits happen after context is already drifting, merge checkpoints are skipped because parallel writers seem disjoint, or an SLO-bearing change proceeds because no one owned the escalation. Bounded alternatives and recoveries: shard by theme file with one verification owner per shard, hand off through journals to fresh sessions at checkpoint boundaries, or downgrade ambition to research-only work when limits are near but unquantified.
+
+**Counterexample, gotchas, and operational comparison.** Boundaries interact, since a modest codebase with many owners can exceed coordination capacity sooner than a huge single-owner one, and drift accumulates silently across long sessions that each seem fine locally. Good: splitting a two-system change into sequenced single-system sessions with an interface freeze between them. Bad: letting parallel agents rewrite one reference without a merge checkpoint. Borderline: continuing a long session past a drift warning with doubled checkpoint frequency.
+
+**Verification, evidence, and uncertainty.** Track approach indicators per session in the journal, review incidents for which boundary was actually crossed, and test one planned split to confirm the handoff preserved constraints. The four seed boundary classes match the failure surfaces this file's workload and failure sections independently identify, giving the statement internal corroboration. Exact thresholds where sufficiency ends are unmeasured and task-dependent, so the boundaries mark judgment lines rather than calibrated limits.
+
+**Second-order consequence.** Scale limits protect a workflow only when paired with early-warning signals; a boundary detected at the boundary has already been crossed.
+
+**Revision decision.** Add leading approach indicators and pre-crossing actions for each stated boundary.
+
+**Retained seed evidence.** All four scale boundary statements including the distributed split and context-drift rules remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
+
 Subagent Development Execution Patterns stops being sufficient when the task spans multiple independent systems, more than one ownership boundary, unbounded source discovery, or production traffic without an explicit SLO.
 Under distributed execution, split work by theme file and preserve one verification owner per split; do not let parallel agents rewrite the same reference without a merge checkpoint.
 Under long-running agent workflows, treat context drift as a reliability failure: checkpoint state, summarize open risks, and verify against the spec before continuing.
 Under large-codebase scale, require dependency or source-graph narrowing before applying this reference; a source list without ranked canonical guidance is not enough.
 
 ## Future Refresh Search Queries
+
+**Decision supported.** This section helps decide which future searches would actually refresh this reference's external evidence when a scheduled or event-driven update runs. The seed query table pastes the theme name into three generic templates whose literal phrasing would return noise, since subagent development execution patterns is this corpus's coinage rather than ecosystem vocabulary.
+
+**Recommended default and causal basis.** Search the vocabulary the ecosystem uses: multi-agent orchestration and subagent features in Claude and Codex documentation, AGENTS.md adoption, agent isolation and worktree behavior, and prompt-template practices for implementer and reviewer roles. Refresh queries only pay off when their phrasing matches how sources describe the topic, and platform docs describe delegation through their own feature names rather than this file's internal label.
+
+**Operating conditions and assumptions.** Queries assume an authorized browsing session, primary-source preference, retrieval-date recording, and the external map's promotion gate before any result becomes a fact. Queries feed the refresh workflow for this file's external claims and do not license opportunistic mid-task browsing outside an authorized refresh.
+
+**Failure boundary and alternatives.** Literal theme-name queries return search noise, results are pasted without the evidence-boundary labels, refresh updates the map but not the sections that cited stale behavior, or queries fossilize while platforms rename features. Bounded alternatives and recoveries: subscribe to platform changelogs instead of re-searching, pin the Codex repository and diff releases, or ask the user for the current platform of record before spending a refresh budget.
+
+**Counterexample, gotchas, and operational comparison.** Search engines personalize results so recorded queries do not reproduce, marketing pages outrank changelogs for feature claims, and a query that worked last quarter can silently start returning a renamed product. Good: querying claude code subagent isolation against official docs and recording the retrieval date. Bad: searching the literal phrase subagent development execution patterns changelog. Borderline: using a community comparison post as a candidate lead pending primary confirmation.
+
+**Verification, evidence, and uncertainty.** Dry-run each query in an authorized session, score the first page for primary-source hits, and confirm every adopted result lands in the external map with date, version, and applicability fields. The external source map already names the OpenAI Codex docs, agents.md, and the Codex repository as the primary surfaces these queries should target. Which agent platforms will matter at the next refresh is unknowable now, so the query set itself must be reviewed as part of each refresh rather than trusted as stable.
+
+**Second-order consequence.** Refresh queries encode a prediction about where truth will live later; reviewing the queries is therefore as important as running them.
+
+**Revision decision.** Replace literal theme-name phrasing with ecosystem vocabulary targeted at the mapped primary sources.
+
+**Retained seed evidence.** All three labeled query rows for official docs, repositories, and release notes remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 | search_query_label_name | search_query_text_value |
 | --- | --- |
@@ -397,6 +667,24 @@ Under large-codebase scale, require dependency or source-graph narrowing before 
 | `release_notes_query_phrase` | subagent development execution patterns changelog release notes migration |
 
 ## Evidence Boundary Notes
+
+**Decision supported.** This section helps decide which evidence label every statement in this file must carry and how those labels constrain reuse of its guidance. The seed boundary notes define three labels but omit the retrieval-status nuance this file actually needs, where the external URLs are unbrowsed candidates rather than verified facts.
+
+**Recommended default and causal basis.** Keep the three-label scheme and qualify it so local facts require a readable path, external labels carry retrieval status and date, and inference notes name which facts they combine so a reader can re-derive them. Labels earn trust by being checkable, and an external-fact label on an unread URL is exactly the unverifiable claim the labeling system exists to prevent.
+
+**Operating conditions and assumptions.** The scheme assumes statements are label-attributable, that maintainers update labels when sources are read or refreshed, and that downstream reuse preserves labels verbatim. The labels classify evidence provenance in this reference and do not grade the correctness of the underlying sources themselves.
+
+**Failure boundary and alternatives.** External labels imply verification that never happened, inference notes hide which premises they rest on, labels vanish when sections are quoted elsewhere, or a fourth ad hoc label appears and fragments the scheme. Bounded alternatives and recoveries: add an unverified-candidate qualifier instead of a fourth label, move retrieval metadata into the external map and reference it, or enforce label presence mechanically through the corpus verifier.
+
+**Counterexample, gotchas, and operational comparison.** Label drift is invisible at read time since a stale fact looks identical to a fresh one, and inference chains can quietly cite other inferences until nothing bottoms out at a source. Good: an inference note naming the two local facts it synthesizes. Bad: labeling agents.md content an external fact while its retrieval status says unbrowsed. Borderline: keeping a fact label on a hash-verified local claim whose live file could have changed since checking.
+
+**Verification, evidence, and uncertainty.** Sample statements per label and walk each back to its path, dated retrieval, or named premises, and reject any label whose chain breaks. This evolution itself demonstrates the scheme's value, since the byte-identical duplicate finding and the unbrowsed-URL status both came from enforcing label discipline. Whether three qualified labels remain sufficient as the corpus adds tool-generated evidence is an open design question deferred to corpus-level review.
+
+**Second-order consequence.** An evidence label is a promise about how a claim can be audited; labels that cannot be audited invert into camouflage for the weakest claims.
+
+**Revision decision.** Qualify each label with checkability requirements: paths for local facts, retrieval status for external facts, and named premises for inferences.
+
+**Retained seed evidence.** All three evidence boundary label definitions remain preserved. The original source facts, examples, and tables follow so that the evolved guidance remains auditable.
 
 - `local_corpus_sourced_fact`: statements tied directly to the local source paths above.
 - `external_research_sourced_fact`: statements tied to the public URLs above.

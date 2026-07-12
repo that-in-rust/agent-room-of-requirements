@@ -2,8 +2,8 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 20:25:35Z
-- Current Phase: Green
+- Updated: 2026-07-12 05:00:49Z
+- Current Phase: Refactor
 - Status: active
 
 ## Sessions
@@ -7569,3 +7569,113 @@ Assignment 21 Sections 007-009 failure, verification, and workflow routing saved
 
 #### Performance/Metrics:
 - Assignment 21 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-12 05:00:09Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 13 sections, 130 questions, 780 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added task-property tradeoff keys, duplicate-aware corpus hierarchy, and instantiated-episode artifact requirements
+
+#### Current Focus:
+Assignment 21 Sections 011-013 tradeoff, hierarchy, and artifact guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 014-016 with atomic sanity checks
+
+#### Context Notes:
+- Evidence-agreement adoption keys replaced with observable task properties
+
+#### Performance/Metrics:
+- Assignment 21 progress: 13/26 sections and 780/1560 fields
+
+### Session: 2026-07-12 05:00:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 16 sections, 160 questions, 960 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Anchored examples in observable delegation events, bound metrics to breach actions and owners, and added content-level checklist gates
+
+#### Current Focus:
+Assignment 21 Sections 014-016 examples, metrics, and checklist guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 017-019 with atomic sanity checks
+
+#### Context Notes:
+- Structural checklist passes are no longer read as content endorsement
+
+#### Performance/Metrics:
+- Assignment 21 progress: 16/26 sections and 960/1560 fields
+
+### Session: 2026-07-12 05:00:28Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 19 sections, 190 questions, 1140 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Replaced keyword route stubs with condition-destination pairs, rederived workload caps from review bandwidth, and grounded reliability targets in feasible measurements
+
+#### Current Focus:
+Assignment 21 Sections 017-019 routing, workload, and reliability guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 020-022 with atomic sanity checks
+
+#### Context Notes:
+- Unbaselined reliability thresholds are labeled aspirations, not achievements
+
+#### Performance/Metrics:
+- Assignment 21 progress: 19/26 sections and 1140/1560 fields
+
+### Session: 2026-07-12 05:00:38Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 22 sections, 220 questions, 1320 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Merged delegation-native failures into the failure table, added classification-before-retry and evidence-based halt release, and staged journal-bound observability
+
+#### Current Focus:
+Assignment 21 Sections 020-022 failure, retry, and observability guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 023-026 with atomic sanity checks
+
+#### Context Notes:
+- Backpressure halts must record their cause to avoid permanent context loss
+
+#### Performance/Metrics:
+- Assignment 21 progress: 22/26 sections and 1320/1560 fields
+
+### Session: 2026-07-12 05:00:49Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Recentered performance verification on decision quality, added scale approach indicators, rewrote refresh queries in ecosystem vocabulary, and qualified evidence labels with checkability requirements
+
+#### Current Focus:
+Assignment 21 Sections 023-026 performance, scale, refresh, and evidence guidance saved
+
+#### Next Steps:
+- Perform bounded rereads in groups of five sections, then run the focused verifier
+
+#### Context Notes:
+- Section drafting is complete; acceptance still requires rereads and focused verification
+
+#### Performance/Metrics:
+- Assignment 21 progress: 26/26 sections drafted and 1560/1560 fields
