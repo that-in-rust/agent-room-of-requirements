@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:59:33Z
+- Updated: 2026-07-12 06:06:44Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4270,3 +4270,50 @@ Assignment 27 kotlin_backend_skill_entrypoint complete
 
 #### Performance/Metrics:
 - Corpus: 54/99 references, 6548/11961 queue rows complete
+
+### Session: 2026-07-12 06:05:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a28 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Grounded in read-in-full kotlin-reliability-reference.md (167 lines, 15 KC1 patterns, 5 doctrine areas, 6 review questions); external URLs candidate-only
+
+#### Current Focus:
+Assignment 28 kotlin_reliability_reference_patterns sections 1-9 saved
+
+#### Next Steps:
+- Generate sections 10-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 28 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 06:06:44Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 55/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved from read-in-full kotlin-reliability-reference.md (15 KC1 patterns, 5 doctrine areas); fixed one doubled 'seed seed' phrase found during bounded reread; external URLs stay unretrieved candidates; queue accepted 115 rows
+
+#### Current Focus:
+Assignment 28 kotlin_reliability_reference_patterns complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/local_vision_media_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 55/99 references, 6663/11961 queue rows complete
