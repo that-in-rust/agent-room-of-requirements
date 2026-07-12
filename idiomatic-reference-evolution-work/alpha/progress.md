@@ -2,7 +2,7 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:34:02Z
+- Updated: 2026-07-12 05:43:42Z
 - Current Phase: Refactor
 - Status: active
 
@@ -8236,3 +8236,205 @@ Assignment 24 tdd_progress_journal_schema complete: verified, accepted, reconcil
 
 #### Performance/Metrics:
 - Corpus: 51/99 files fully complete; queue rows 6185/11961 complete, 5776 pending
+
+### Session: 2026-07-12 05:40:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 3/26 sections, 180/180 unique fields, packet-before-reference order held
+
+#### Implementation Progress:
+- Sections 1-3 evolved: TDD-for-skills framing, mirror-aware source mapping, scoreboard rekeyed to baseline/pressure/counter practices
+
+#### Current Focus:
+Assignment 25 writing_skills_validation_patterns in progress
+
+#### Next Steps:
+- Generate sections 4-6 with gen_a25.py then rerun sanity_a25.py
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-12 05:40:56Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 6/26 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Sections 4-6: thesis restated as observed-behavior-change, source map role split, external rows downgraded to unretrieved analogues
+
+#### Current Focus:
+Assignment 25 sections 4-6 saved
+
+#### Next Steps:
+- Generate sections 7-9
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 6/26 sections, 360/1560 fields
+
+### Session: 2026-07-12 05:41:04Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Sections 7-9: anti-pattern registry gains source-documented failures, verification gates split mechanical vs behavioral, usage guide triggered on skill create/edit/deploy events
+
+#### Current Focus:
+Assignment 25 sections 7-9 saved
+
+#### Next Steps:
+- Generate sections 10-12
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 05:41:13Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 12/26 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Sections 10-12: journey extended through full baseline-to-bulletproof campaign, tradeoffs rekeyed to skill-type test matrix, hierarchy corrected to co-canonical mirrored pairs
+
+#### Current Focus:
+Assignment 25 sections 10-12 saved
+
+#### Next Steps:
+- Generate sections 13-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 12/26 sections, 720/1560 fields
+
+### Session: 2026-07-12 05:41:22Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 15/26 sections, 900/900 unique fields
+
+#### Implementation Progress:
+- Sections 13-15: artifact redefined as campaign record, examples graded by observed-behavior question, metrics recentered on baseline coverage and rationalization recurrence
+
+#### Current Focus:
+Assignment 25 sections 13-15 saved
+
+#### Next Steps:
+- Generate sections 16-18
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-12 05:41:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 18/26 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Sections 16-18: checklist gains cycle/pressure/type coverage items, routing rekeyed to real corpus neighbors, workload rebounded around campaigns and convergence
+
+#### Current Focus:
+Assignment 25 sections 16-18 saved
+
+#### Next Steps:
+- Generate sections 19-21
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 18/26 sections, 1080/1560 fields
+
+### Session: 2026-07-12 05:41:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 21/26 sections, 1260/1260 unique fields
+
+#### Implementation Progress:
+- Sections 19-21: reliability adds bulletproof-rate target, failure table gains skipped-baseline and reopened-loophole rows, retry semantics keyed to meta-testing on stagnation
+
+#### Current Focus:
+Assignment 25 sections 19-21 saved
+
+#### Next Steps:
+- Generate sections 22-24
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-12 05:41:57Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 26/26 sections, 1560/1560 exact and normalized-unique fields, final newlines held
+
+#### Implementation Progress:
+- Sections 22-26: observability recentered on verbatim campaign transcripts, performance on campaign cost vs loopholes caught plus wc -w budgets, scale on sampled re-testing under model churn, refresh queries rephrased to prompt-evaluation vocabulary, evidence notes count mirror pairs as one source
+
+#### Current Focus:
+Assignment 25 drafted: all 26 sections saved
+
+#### Next Steps:
+- Reread evolved reference in groups of at most five sections, then run focused verifier
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-12 05:43:42Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: passing - 26 sections, 260 questions, 1560/1560 exact and normalized unique fields, status PASS
+- test_packet_content_uniqueness: passing - OK across corpus packets
+- queue acceptance: passing - 122 rows updated to complete
+- git diff --check: passing - no whitespace errors
+- full unittest suite: failing - 8 tests, 3 expected incomplete-corpus failures (52/99 files, 6307/11961 rows complete)
+
+#### Implementation Progress:
+- All 26 sections evolved with TDD-for-documentation synthesis from local writing-skills sources; mirror pairs counted as one logical source; external URLs kept unretrieved candidate-only; seed content, tables, and code fences preserved
+
+#### Current Focus:
+Assignment 25 complete: writing_skills_validation_patterns-20260710.md
+
+#### Next Steps:
+- Next Alpha assignment 26: idiomatic-ref-202607/image_generation_prompt_patterns-20260710.md (first pending file in queue order)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 52/99 files complete, 6307/11961 queue rows complete, 5654 pending

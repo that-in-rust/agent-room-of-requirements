@@ -2,7 +2,7 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:34:02Z
+- Updated: 2026-07-12 05:43:42Z
 - Current Phase: Refactor
 - Status: active
 
@@ -1040,3 +1040,27 @@ Alpha assignment 24 tdd_progress_journal_schema accepted
 
 #### Performance/Metrics:
 - Queue: 6185/11961 rows complete, 5776 pending; assignment 24 added 116 rows
+
+### Session: 2026-07-12 05:43:42Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: passing - status PASS, 1560/1560 unique fields
+- queue acceptance: passing - 122 rows complete
+- full suite: failing - 3 expected incomplete-corpus failures
+
+#### Implementation Progress:
+- Alpha lane completed writing_skills_validation_patterns-20260710.md first-pass evolution; external rows downgraded to unretrieved candidates; packet-before-reference ordering held throughout
+
+#### Current Focus:
+Alpha assignment 25 writing_skills_validation_patterns accepted
+
+#### Next Steps:
+- Alpha continues with image_generation_prompt_patterns-20260710.md; pass two remains blocked until all 99 references and 11961 rows are complete
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 52/99 files, 6307/11961 rows complete, 5654 pending
