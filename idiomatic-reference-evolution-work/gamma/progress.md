@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:06:44Z
+- Updated: 2026-07-12 06:13:13Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4317,3 +4317,50 @@ Assignment 28 kotlin_reliability_reference_patterns complete
 
 #### Performance/Metrics:
 - Corpus: 55/99 references, 6663/11961 queue rows complete
+
+### Session: 2026-07-12 06:12:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a29 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Grounded in read-in-full hermes-skills/media/local-vision-ollama/SKILL.md (149 lines, 4 critical rules, 6-step workflow, 5-row pitfalls table); mismatched external URLs downgraded to non-matching candidates
+
+#### Current Focus:
+Assignment 29 local_vision_media_patterns sections 1-9 saved
+
+#### Next Steps:
+- Generate sections 10-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 29 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 06:13:13Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 56/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved from read-in-full hermes-skills/media/local-vision-ollama/SKILL.md; hardware-coupled figures bound to M4/qwen3.5:4b context; mismatched external URLs kept as non-matching unretrieved candidates; queue accepted 113 rows
+
+#### Current Focus:
+Assignment 29 local_vision_media_patterns complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/minto_pyramid_writing_patterns-20260710.md (delta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 56/99 references, 6776/11961 queue rows complete
