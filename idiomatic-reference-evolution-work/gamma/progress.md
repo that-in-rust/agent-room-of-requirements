@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:52:38Z
+- Updated: 2026-07-12 05:59:33Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4201,3 +4201,72 @@ Assignment 26 image_generation_prompt_patterns complete (gamma-lane file; Alpha 
 
 #### Performance/Metrics:
 - Corpus: 53/99 references, 6433/11961 queue rows complete
+
+### Session: 2026-07-12 05:58:25Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a27 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Grounded in the single mapped local source SKILL.md (129 lines); seven bundled references treated as unread discovery surface; nine-mode menu, spec-first workflow, stance preservation synthesized; external URLs candidate-only
+
+#### Current Focus:
+Assignment 27 kotlin_backend_skill_entrypoint sections 1-9 saved
+
+#### Next Steps:
+- Generate sections 10-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 27 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 05:58:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a27 atomic check: passing - 21/26 sections, 1260/1260 unique fields
+
+#### Implementation Progress:
+- Sections 10-21: journey through the eight-section output contract, tradeoffs rekeyed to surface/stack/migration, hierarchy keeps confidence warning with ranked unread references, artifact redefined as work packet with traceability table, workload rebounded to packet-per-surface, retry section carries the idempotency guardrail as a labeled service layer
+
+#### Current Focus:
+Assignment 27 sections 10-21 saved
+
+#### Next Steps:
+- Generate sections 22-26 then rereads and verification
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 27 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-12 05:59:33Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 54/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved from the single mapped local source SKILL.md (read in full, 129 lines); seven bundled references consistently marked unread-local discovery surface; four external URLs kept unretrieved candidates; queue accepted 115 rows
+
+#### Current Focus:
+Assignment 27 kotlin_backend_skill_entrypoint complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/kotlin_reliability_reference_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 54/99 references, 6548/11961 queue rows complete
