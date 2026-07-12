@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 23:58:32Z
+- Updated: 2026-07-12 06:19:47Z
 - Current Phase: Refactor
 - Status: active
 
@@ -3634,3 +3634,50 @@ Assignment 9 Refactor complete: kotlin_quality_antipattern_gates; authorized Del
 #### Performance/Metrics:
 - Assignment 9 final counts: referenceSections=26; packetSections=26; questions=260; fields=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; queue span hashes=115/115.
 - Artifact hygiene: no whole-word TODO/TBD/FIXME/STUB, ASCII-only, no tabs or trailing whitespace, final newlines present, balanced fences, consistent table widths, and all three exact seed queries preserved with unexecuted_no_browse status.
+
+### Session: 2026-07-12 06:18:56Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a30 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Grounded in four read-in-full local sources (SKILL.md + 3 references, 490 lines): six core rules, SCQA, Key Line, R1-R2 framing, storyboarding, templates; mismatched external URLs downgraded
+
+#### Current Focus:
+Assignment 30 minto_pyramid_writing_patterns sections 1-9 saved
+
+#### Next Steps:
+- Generate sections 10-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 30 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 06:19:47Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 57/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved from four read-in-full local sources (490 lines); archive-vs-book provenance depth flagged; mismatched external URLs kept as non-matching unretrieved candidates; queue accepted 122 rows
+
+#### Current Focus:
+Assignment 30 minto_pyramid_writing_patterns complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/openai_api_documentation_patterns-20260710.md (gamma lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 57/99 references, 6898/11961 queue rows complete

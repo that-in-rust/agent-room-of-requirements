@@ -2,7 +2,7 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:13:13Z
+- Updated: 2026-07-12 06:19:47Z
 - Current Phase: Refactor
 - Status: active
 
@@ -1156,3 +1156,26 @@ local_vision_media_patterns evolution complete via gamma lane
 
 #### Performance/Metrics:
 - Corpus: 56/99 references, 6776/11961 queue rows complete
+
+### Session: 2026-07-12 06:19:47Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 122 rows accepted
+
+#### Implementation Progress:
+- Assignment 30 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+minto_pyramid_writing_patterns evolution complete via delta lane
+
+#### Next Steps:
+- Continue with openai_api_documentation_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 57/99 references, 6898/11961 queue rows complete
