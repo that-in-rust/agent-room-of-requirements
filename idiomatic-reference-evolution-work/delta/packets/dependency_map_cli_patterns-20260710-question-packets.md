@@ -220,7 +220,7 @@
 
 ### Question 08: How can the important claims be verified?
 - **current_section_observation:** Scoreboard utility can be checked through process conformance and sampled accuracy rather than by assuming the inherited numeric order is self-validating.
-- **supporting_reason:** Operators can compare repository inventory with `all_files.txt`, `code_files.txt`, and `files.tsv`, inspect extraction metadata, count full relation rows versus rendered edges, resolve selected pointers, and confirm claims in code or an authoritative tool.
+- **supporting_reason:** Operators can reconcile `all_files.txt`, `code_files.txt`, and `files.tsv`, inspect capability flags plus symbol-kind and Ctags-output provenance, compare full relation rows with rendered edges, resolve pointers, and confirm claims in authoritative evidence.
 - **counterargument_or_limit:** A few samples estimate obvious defects but cannot establish complete recall across an unfamiliar repository.
 - **assumptions_and_boundaries:** Record commands, artifact hashes or timestamps, sample selection rationale, observed mismatches, and the decision each check supports so another operator can reproduce the evidence.
 - **revision_decision:** Attach a verification gate to every scoreboard row and require stronger checks when a ranking informs irreversible or high-impact action.
@@ -317,7 +317,7 @@
 
 ### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
 - **current_section_observation:** The seed frames retrieval as a sequence, but the deeper pattern is an adaptive evidence pipeline whose next step depends on what the previous stage failed to establish.
-- **supporting_reason:** Coverage mismatch should return the operator to inventory policy, an invalid pointer should reopen extraction mode, a false edge should challenge the resolver, and semantic disagreement should trigger precision escalation.
+- **supporting_reason:** Coverage mismatch should return the operator to inventory policy, an invalid pointer should reopen revision and symbol-producer assumptions, a false edge should challenge the resolver, and semantic disagreement should trigger precision escalation.
 - **counterargument_or_limit:** Adaptive loops are harder to teach than a fixed recipe and can create indecision if stop conditions are vague.
 - **assumptions_and_boundaries:** Define explicit sufficiency and escalation criteria so feedback changes the method without producing endless analysis.
 - **revision_decision:** Express the final thesis as a bounded loop with provisional output states and a clear terminal requirement for consequential action.
@@ -382,7 +382,7 @@
 
 ### Question 08: How can the important claims be verified?
 - **current_section_observation:** Local-corpus claims can be verified through existence checks, complete reads, SHA-256 comparisons, shell syntax checks, capability probes, artifact inspection, and direct source reconciliation.
-- **supporting_reason:** These checks independently establish identity, parseability, branch availability, run selection, and semantic agreement rather than collapsing all verification into file presence.
+- **supporting_reason:** These checks independently establish identity, parseability, capability availability, actual artifact contribution, and semantic agreement rather than collapsing all verification into file presence.
 - **counterargument_or_limit:** Hash stability proves byte identity but says nothing about correctness, relevance, or whether an external program invoked that file.
 - **assumptions_and_boundaries:** Record what each check establishes and avoid using a stronger-sounding mechanism to answer a different question.
 - **revision_decision:** Attach a verification method and retained evidence field to every source family.
@@ -496,7 +496,7 @@
 
 ### Question 02: What is the recommended default, and why?
 - **current_section_observation:** The default is to run cheap invariant checks before graph interpretation and to classify every surprising result by pipeline stage before changing code or architecture.
-- **supporting_reason:** Inventory counts, tooling metadata, TSV reconciliation, pointer resolution, and sampled source checks expose many high-impact defects earlier than broad manual review.
+- **supporting_reason:** Inventory counts, capability flags, symbol-producer artifacts, TSV reconciliation, pointer resolution, and sampled source checks expose many high-impact defects earlier than broad manual review.
 - **counterargument_or_limit:** Invariants cannot detect relationships that the observation model never attempts to represent, especially runtime and generated wiring.
 - **assumptions_and_boundaries:** Use invariant checks to validate the rough map's contract, then escalate whenever the pending claim lies outside that contract.
 - **revision_decision:** Order the registry by pipeline stage and attach a minimal safe replacement to each failure.
@@ -585,7 +585,7 @@
 
 ### Question 03: When does the default work well?
 - **current_section_observation:** Layered command gates work well in local repositories with shell access, reproducible revisions, readable artifacts, and project-native tests or analyzers available after rough orientation.
-- **supporting_reason:** The operator can bind commands to concrete files, capture capability branches, compare counts, and inspect source without relying on opaque service state.
+- **supporting_reason:** The operator can bind commands to concrete files, capture capabilities and actual output contribution, compare counts, and inspect source without relying on opaque service state.
 - **counterargument_or_limit:** Sandboxed, remote, monorepo, or generated workspaces may require different roots, permissions, and project-specific entry commands.
 - **assumptions_and_boundaries:** Parameterize paths and avoid presenting one repository's commands as universal.
 - **revision_decision:** Add adaptation notes for Git versus non-Git inventory, optional tools, and repository-native verification.
@@ -608,7 +608,7 @@
 - **additional_insight_to_add:** Independence matters more than quantity: two checks derived from the same lexical rows add less confidence than one source read or semantic check with a different observation model.
 
 ### Question 06: Which gotchas and failure modes matter most?
-- **current_section_observation:** Command hazards include accidental output overwrite, stale artifact reuse, paths with whitespace or colons, pipeline exit masking, optional-tool branch drift, locale-dependent sorting, Git working-state changes, and checks that sample only easy positives.
+- **current_section_observation:** Command hazards include accidental output overwrite, stale artifact reuse, paths with whitespace or colons, pipeline exit masking, optional-tool capability-versus-contribution drift, locale-dependent sorting, Git working-state changes, and checks that sample only easy positives.
 - **supporting_reason:** These details can make identical-looking commands inspect different inputs or silently skip the edge cases most likely to falsify a conclusion.
 - **counterargument_or_limit:** The frozen builder already uses strict shell mode, reducing some command-composition errors inside the script.
 - **assumptions_and_boundaries:** Wrapper commands still need quoting, explicit roots, fresh output identity, and captured environment state.
@@ -786,7 +786,7 @@
 - **additional_insight_to_add:** A high-quality partial outcome advances safe work on verified branches while containing uncertainty on the branch that needs escalation.
 
 ### Question 08: How can the important claims be verified?
-- **current_section_observation:** Verify the scenario through inventory reconciliation, extraction metadata, full-row hub counts, sampled imports, direct registry and loader reads, configuration search, generated-output inspection, project tests, and a runtime registration probe.
+- **current_section_observation:** Verify the scenario through inventory reconciliation, capability and actual symbol-producer evidence, full-row hub counts, sampled imports, direct registry and loader reads, configuration search, project tests, and a runtime registration probe.
 - **supporting_reason:** These checks use independent observation models and target the exact failure path that lexical mapping misses.
 - **counterargument_or_limit:** A runtime probe only covers the exercised configuration and workload, so variants remain a boundary.
 - **assumptions_and_boundaries:** Record enabled features, configuration files, generated state, test selection, and runtime inputs with the final conclusion.
@@ -1175,7 +1175,7 @@
 - **additional_insight_to_add:** Leading indicators should trigger early investigation, while lagging outcomes validate whether those indicators actually predict safer decisions.
 
 ### Question 06: Which gotchas and failure modes matter most?
-- **current_section_observation:** Measurement hazards include denominator drift, convenience samples, duplicate rows, changing tool branches, mixed repository revisions, survivorship bias, unrecorded escalations, and treating unresolved as automatically bad.
+- **current_section_observation:** Measurement hazards include denominator drift, convenience samples, duplicate rows, mixing capability flags with actual extractor outcomes, mixed repository revisions, survivorship bias, unrecorded escalations, and treating unresolved as automatically bad.
 - **supporting_reason:** These defects can reverse apparent trends or reward aggressive but incorrect resolution.
 - **counterargument_or_limit:** Perfectly controlled operational data is rarely available during routine coding.
 - **assumptions_and_boundaries:** Retain cohort identity and uncertainty, and refuse comparisons when definitions or observation conditions materially differ.
@@ -1418,7 +1418,7 @@
 - **additional_insight_to_add:** Incrementality is valuable only when invalidation is correct; stale cached semantics can be worse than a slower transparent rebuild.
 
 ### Question 06: Which gotchas and failure modes matter most?
-- **current_section_observation:** Workload hazards include repeated file reads, large in-memory row lists, slow network filesystems, output overwrite, partial artifacts after failure, locale or path quirks, renderer cost, and comparing runs with different capability branches.
+- **current_section_observation:** Workload hazards include repeated file reads, large in-memory row lists, slow network filesystems, output overwrite, partial artifacts after failure, locale or path quirks, renderer cost, and comparing runs with different capability flags or actual extractor outcomes.
 - **supporting_reason:** These factors alter duration, memory, reproducibility, and artifact integrity independently of source count.
 - **counterargument_or_limit:** Strict shell mode and simple sequential stages make many failures loud and diagnosable.
 - **assumptions_and_boundaries:** Graphviz failure is intentionally tolerated, while earlier stage failures may leave an incomplete directory that must not be reused.
@@ -1499,7 +1499,7 @@
 - **additional_insight_to_add:** Profile separation allows one producer to support exploration without allowing exploratory evidence to become approval evidence by default.
 
 ### Question 06: Which gotchas and failure modes matter most?
-- **current_section_observation:** Reliability hazards include policy targets reported as measured outcomes, tiny convenience samples, hidden branch changes, stale pointers, partial output directories, correlated corroboration, and unresolved rows forced into classifications.
+- **current_section_observation:** Reliability hazards include policy targets reported as measured outcomes, tiny convenience samples, hidden capability or actual extractor changes, stale pointers, partial output directories, correlated corroboration, and unresolved rows forced into classifications.
 - **supporting_reason:** These defects make reliability appear better while reducing detectability and truth.
 - **counterargument_or_limit:** Some deterministic targets can be evaluated exactly and should not be weakened into vague aspirations.
 - **assumptions_and_boundaries:** Label each target as hard invariant, sampled indicator, or owner-accepted risk.
@@ -1591,12 +1591,12 @@
 - **current_section_observation:** Good handling rejects a header-only symbol table and identifies fallback provenance; bad handling reads an unresolved-pair graph as internal architecture; borderline handling continues without SVG after verifying tabular artifacts.
 - **supporting_reason:** These examples distinguish critical semantic ambiguity from an optional presentation failure.
 - **counterargument_or_limit:** A header-only symbol table can be a legitimate outcome for a repository with no matched declarations.
-- **assumptions_and_boundaries:** Compare against expected source constructs and extraction branch before classifying it as failure.
+- **assumptions_and_boundaries:** Compare against expected source constructs, complete symbol kinds, and the actual Ctags or fallback outcome before classifying it as failure.
 - **revision_decision:** Add context-sensitive examples and no-overclaim language.
 - **additional_insight_to_add:** Empty output requires an expectation model; absence of rows is neither automatically valid nor automatically defective.
 
 ### Question 08: How can the important claims be verified?
-- **current_section_observation:** Verify failure handling with negative fixtures, forced capability branches, malformed and empty outputs, wrong roots, stale directories, unreadable files, alias and dynamic counterexamples, and out-of-range pointers.
+- **current_section_observation:** Verify failure handling with negative fixtures, forced capability and extractor outcomes, malformed and empty outputs, wrong roots, stale directories, unreadable files, alias and dynamic counterexamples, and out-of-range pointers.
 - **supporting_reason:** Controlled faults show whether gates reject bad states and whether recovery invalidates the correct claims.
 - **counterargument_or_limit:** Some filesystem, platform, and tool-version failures are hard to reproduce portably.
 - **assumptions_and_boundaries:** Use targeted platform tests where relevant and preserve nonportable cases as documented operational risks.
@@ -1661,7 +1661,7 @@
 - **additional_insight_to_add:** Backpressure is broader than sleeping: it includes refusing new work, limiting concurrency, isolating output, narrowing claims, and escalating authority.
 
 ### Question 06: Which gotchas and failure modes matter most?
-- **current_section_observation:** Retry hazards include reusing the same output directory, losing the first diagnostics, source changing between attempts, different capabilities selecting another branch, concurrent agents colliding, and confirmation bias from eventually obtaining a desired artifact.
+- **current_section_observation:** Retry hazards include reusing the same output directory, losing the first diagnostics, source changing between attempts, capability changes producing a different actual extractor or renderer outcome, concurrent agents colliding, and confirmation bias from eventually obtaining a desired artifact.
 - **supporting_reason:** These changes can make attempts incomparable or mix outputs while the final success hides preceding instability.
 - **counterargument_or_limit:** Some capability changes are the intentional changed premise and should be compared explicitly.
 - **assumptions_and_boundaries:** Preserve each attempt's identity and use a new authorized directory for every production rerun.
@@ -1775,7 +1775,7 @@
 
 ### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
 - **current_section_observation:** Observability closes the learning loop by connecting failure mechanisms and decision outcomes back to routing, gates, and producer changes.
-- **supporting_reason:** Without correlation, mismatch metrics cannot show which script, branch, sample, or claim generated the outcome.
+- **supporting_reason:** Without correlation, mismatch metrics cannot show which script, capability state, actual extractor outcome, sample, or claim generated the result.
 - **counterargument_or_limit:** Instrumentation can alter performance and operator behavior, especially when timing and throughput become targets.
 - **assumptions_and_boundaries:** Measure overhead and use counter-metrics to prevent telemetry-driven gaming.
 - **revision_decision:** Add correlation and observability-overhead fields to future measurement design.
@@ -1799,7 +1799,7 @@
 - **additional_insight_to_add:** A benchmark run without evidence-contract checks measures a command, not the usefulness of the mapping product.
 
 ### Question 03: When does the default work well?
-- **current_section_observation:** Controlled comparison works well for producer changes, optional-tool branch evaluation, graph-cap tuning, wrapper instrumentation, and repeated repository workloads.
+- **current_section_observation:** Controlled comparison works well for producer changes, optional extractor or renderer outcome evaluation, graph-cap tuning, wrapper instrumentation, and repeated repository workloads.
 - **supporting_reason:** Stable inputs and outputs allow attribution of time, memory, artifact, and quality differences.
 - **counterargument_or_limit:** A synthetic fixture may not represent filesystem, language, or relation diversity in production repositories.
 - **assumptions_and_boundaries:** Pair controlled mechanism fixtures with at least one representative target cohort when generalizing.
@@ -1807,7 +1807,7 @@
 - **additional_insight_to_add:** Fixtures explain why performance changes, while target cohorts estimate whether the change matters operationally.
 
 ### Question 04: When does it fail or become the wrong choice?
-- **current_section_observation:** Performance verification fails when runs use different revisions, capability branches, output locations, cache states, machine load, or evidence profiles and are compared as though only code changed.
+- **current_section_observation:** Performance verification fails when runs use different revisions, capability flags or actual extractor and renderer outcomes, output locations, cache states, machine load, or evidence profiles and are compared as though only code changed.
 - **supporting_reason:** Any of those factors can dominate duration and artifact population.
 - **counterargument_or_limit:** Real-world performance includes environmental variation and should not be hidden entirely.
 - **assumptions_and_boundaries:** First establish controlled causality, then measure operational distributions across named environments.
@@ -1823,7 +1823,7 @@
 - **additional_insight_to_add:** Performance tools are evidence systems with their own observation boundaries, just like dependency mappers.
 
 ### Question 06: Which gotchas and failure modes matter most?
-- **current_section_observation:** Benchmark hazards include warm cache advantage, output-directory reuse, background load, turbo and power state, Ctags branch drift, Graphviz inclusion mismatch, partial failures, tiny samples, percentile theater, and quality regression.
+- **current_section_observation:** Benchmark hazards include warm cache advantage, output-directory reuse, background load, turbo and power state, Ctags capability-versus-contribution drift, Graphviz outcome mismatch, partial failures, tiny samples, percentile theater, and quality regression.
 - **supporting_reason:** These factors can produce impressive-looking differences unrelated to a safe implementation improvement.
 - **counterargument_or_limit:** Not every local decision needs laboratory-grade controls.
 - **assumptions_and_boundaries:** Scale rigor with the claim's breadth and consequence; label exploratory timing as exploratory.
@@ -1831,7 +1831,7 @@
 - **additional_insight_to_add:** The fastest invalid run is not a performance success, so failed and partial attempts must remain in the result ledger.
 
 ### Question 07: What do good, bad, and borderline examples look like?
-- **current_section_observation:** Good evidence compares the same frozen source under matched branches and reports quality; bad evidence times one warm run and claims p99 improvement; borderline evidence reports one duration as a diagnostic observation only.
+- **current_section_observation:** Good evidence compares the same frozen source under matched capability flags and actual extractor and renderer outcomes while reporting quality; bad evidence times one warm run and claims p99 improvement; borderline evidence reports one duration as a diagnostic observation only.
 - **supporting_reason:** The examples separate causal comparison, unsupported distribution claims, and honest exploratory measurement.
 - **counterargument_or_limit:** A single severe slow run can still motivate profiling even without a benchmark series.
 - **assumptions_and_boundaries:** Sentinel observations trigger investigation but do not quantify typical performance.
@@ -1942,3 +1942,165 @@
 - **assumptions_and_boundaries:** Introduce coordination only when measured workload or ownership requires it.
 - **revision_decision:** Add governance boundaries alongside computational boundaries.
 - **additional_insight_to_add:** The first scale bottleneck may be reviewer and ownership coherence rather than CPU or memory, so scale plans must include human evidence capacity.
+
+## Section 025: Future Refresh Search Queries
+### Question 01: What decision does this reference help make?
+- **current_section_observation:** The seed provides three broad search phrases but does not decide which implementation uncertainty or changed external condition justifies a refresh.
+- **supporting_reason:** Current research needs differ for Ctags output, inventory semantics, structural parsing, semantic navigation, alias resolution, graph rendering, incrementality, and artifact integrity.
+- **counterargument_or_limit:** Broad searches can discover unexpected tools and terminology beyond a predetermined queue.
+- **assumptions_and_boundaries:** Preserve exploratory queries but prioritize primary-source questions tied to a local failure or decision.
+- **revision_decision:** Add trigger, query, preferred source, expected evidence, local reproduction, and stop condition.
+- **additional_insight_to_add:** A refresh queue is valuable when each result can change a gate, route, or producer design rather than merely add citations.
+
+### Question 02: What is the recommended default, and why?
+- **current_section_observation:** The default is local inspection first, then an authorized versioned primary-source refresh for the smallest unresolved claim, followed by local capability and target reproduction.
+- **supporting_reason:** This preserves current executable truth while using external documentation to resolve a material gap and avoiding broad context expansion.
+- **counterargument_or_limit:** A local failure can result from upstream behavior that is fastest to understand through release notes or issue history.
+- **assumptions_and_boundaries:** External research can lead when the local version and failure signature are already known, but it still must return to empirical validation.
+- **revision_decision:** Add route exceptions for version-specific regression and deprecation research.
+- **additional_insight_to_add:** Search order should follow evidence dependency, not a ritual preference for either local or external sources.
+
+### Question 03: When does the default work well?
+- **current_section_observation:** Triggered refresh works well for tool upgrades, capability divergence, recurring mismatch classes, new languages, changed APIs, and producer redesign decisions.
+- **supporting_reason:** The query has a falsifiable local symptom and a clear integration or rejection test.
+- **counterargument_or_limit:** Emerging tools may lack stable primary documentation and require source or issue research.
+- **assumptions_and_boundaries:** Record source authority and uncertainty when evidence is provisional or community-derived.
+- **revision_decision:** Add a source-quality ladder and fallback research path.
+- **additional_insight_to_add:** A weak external source can suggest a hypothesis but should not bypass local fixtures or project evidence.
+
+### Question 04: When does it fail or become the wrong choice?
+- **current_section_observation:** Refresh fails when queries are generic, versionless, product-marketing driven, unrelated to a current decision, or used to replace repository conventions and actual installed behavior.
+- **supporting_reason:** Search results can be current yet inapplicable, or authoritative yet describe a different build or language.
+- **counterargument_or_limit:** Periodic broad horizon scanning can still reveal new approaches before a local failure occurs.
+- **assumptions_and_boundaries:** Keep exploratory scanning separate from decision evidence and do not force adoption without a local problem and evaluation.
+- **revision_decision:** Add exploratory versus decision-bound query classes.
+- **additional_insight_to_add:** Research debt grows when every interesting result enters guidance without an owner, trigger, or verification plan.
+
+### Question 05: Which alternatives and tradeoffs matter?
+- **current_section_observation:** Alternatives include installed `--help`, local source, vendored docs, release notes, issue trackers, protocol specifications, package metadata, reproducible experiments, and expert review.
+- **supporting_reason:** Local help matches the binary; versioned docs explain intent; issues expose edge cases; experiments establish actual behavior; experts resolve domain consequence.
+- **counterargument_or_limit:** Collecting all sources for every refresh is inefficient and can create contradictions.
+- **assumptions_and_boundaries:** Start with the narrowest authoritative source and add another only when it can resolve a remaining conflict.
+- **revision_decision:** Add source-selection and disagreement handling to the queue.
+- **additional_insight_to_add:** External freshness and local applicability are separate axes, so the best refresh often pairs one primary source with one minimal reproduction.
+
+### Question 06: Which gotchas and failure modes matter most?
+- **current_section_observation:** Query hazards include unpinned latest pages, search snippets without context, mutable URLs, stale local summaries, version aliases, renamed tools, unofficial mirrors, and excessive verbatim capture.
+- **supporting_reason:** These can corrupt provenance or create copyright, relevance, and maintenance problems.
+- **counterargument_or_limit:** Stable canonical URLs are often easier to maintain than archived snapshots.
+- **assumptions_and_boundaries:** Record retrieval date and version scope, paraphrase narrowly, and retain links rather than copying large documents.
+- **revision_decision:** Add evidence-capture and source-limit rules.
+- **additional_insight_to_add:** A refresh can improve one fact while invalidating surrounding guidance, so changed claim dependencies must be reviewed.
+
+### Question 07: What do good, bad, and borderline examples look like?
+- **current_section_observation:** A good query asks how a specific Ctags version exposes JSON end lines after a local probe mismatch; a bad query asks for best dependency mapping and copies the first tutorial.
+- **supporting_reason:** The good query has version, capability, symptom, and local verification, while the bad one lacks decision scope and authority.
+- **counterargument_or_limit:** A borderline broad survey can be acceptable during planned architecture exploration if its output stays a candidate list.
+- **assumptions_and_boundaries:** Label exploration and prohibit it from changing production guidance until evaluated.
+- **revision_decision:** Add query-quality examples and promotion rules.
+- **additional_insight_to_add:** Search query specificity is itself a relevance signal that reduces both research cost and authoritative-sounding drift.
+
+### Question 08: How can the important claims be verified?
+- **current_section_observation:** Verify refresh outcomes by opening primary pages, recording version and date, matching installed identity, running positive and negative local examples, and testing representative target cases.
+- **supporting_reason:** Documentation, capability, and applicability each need separate evidence.
+- **counterargument_or_limit:** Some current documentation cannot be pinned cleanly and some target conditions are hard to reproduce.
+- **assumptions_and_boundaries:** Preserve unresolved state and avoid stronger claims when version or applicability remains ambiguous.
+- **revision_decision:** Add a refresh-result acceptance card and rejection reasons.
+- **additional_insight_to_add:** A query is complete only when its answer changes or confirms a local testable decision, not when a plausible page is found.
+
+### Question 09: What is known confidently, and what remains judgment or uncertainty?
+- **current_section_observation:** The local precedent URLs and seed queries are known from frozen files, but no future query has been executed and no remote content is refreshed.
+- **supporting_reason:** Browsing is explicitly prohibited for this assignment.
+- **counterargument_or_limit:** Local installed behavior already answers some questions without external research.
+- **assumptions_and_boundaries:** Mark each queue item unexecuted and close it locally when evidence makes browsing unnecessary.
+- **revision_decision:** Add query status and local-resolution fields.
+- **additional_insight_to_add:** Closing a research item without browsing can be a successful outcome when current code and fixtures settle the decision more directly.
+
+### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
+- **current_section_observation:** Future search queries form a hypothesis backlog whose priority should be driven by recurrence, consequence, information gain, and implementation readiness.
+- **supporting_reason:** Not every uncertainty deserves immediate research, and some findings cannot be adopted without owner or fixture capacity.
+- **counterargument_or_limit:** Strict prioritization can miss serendipitous innovations.
+- **assumptions_and_boundaries:** Reserve a bounded exploratory lane while keeping decision-bound research accountable.
+- **revision_decision:** Add priority and retirement criteria to each query family.
+- **additional_insight_to_add:** Research scalability depends on deleting or closing stale questions as much as adding new ones, preventing the queue from becoming ceremonial bibliography.
+
+## Section 026: Evidence Boundary Notes
+### Question 01: What decision does this reference help make?
+- **current_section_observation:** The seed defines three broad evidence labels but does not tell readers whether a statement comes from guidance bytes, executable code, capability probes, generated artifacts, source semantics, runtime observation, external refresh, or synthesis.
+- **supporting_reason:** Those sources support different claim strengths and invalidation rules, so a three-way split can hide category errors inside the local label.
+- **counterargument_or_limit:** More labels can make prose cumbersome and reduce readability.
+- **assumptions_and_boundaries:** Use detailed classes in durable evidence and concise claim states in user-facing summaries.
+- **revision_decision:** Expand the taxonomy, precedence, promotion, and invalidation rules while preserving the three seed labels as umbrella categories.
+- **additional_insight_to_add:** Evidence classes function like types: they prevent an artifact row from being passed into a semantic or authorization claim without an explicit conversion gate.
+
+### Question 02: What is the recommended default, and why?
+- **current_section_observation:** The default is to attach the narrowest supporting source, observation scope, confidence state, counterevidence, and verification requirement to every material claim.
+- **supporting_reason:** Narrow provenance reduces overclaiming and allows selective review when one input changes.
+- **counterargument_or_limit:** Trivial navigation statements may not need a full claim card.
+- **assumptions_and_boundaries:** Apply a lightweight candidate or observed label for reversible navigation and full cards for durable or consequential decisions.
+- **revision_decision:** Add minimal and durable evidence-boundary profiles.
+- **additional_insight_to_add:** The narrowest source is often easier to falsify, making the workflow more efficient as well as more honest.
+
+### Question 03: When does the default work well?
+- **current_section_observation:** Claim-level boundaries work well across long sessions, shared agents, reviews, archive evolution, repeated runs, and multi-tool verification.
+- **supporting_reason:** They preserve temporal authority and explain why sources that agree or disagree do not necessarily have equal weight.
+- **counterargument_or_limit:** Informal local exploration can feel overstructured if every observation is classified explicitly.
+- **assumptions_and_boundaries:** Promote structure when evidence leaves the current operator's working memory or drives mutation.
+- **revision_decision:** Add a handoff trigger for durable classification.
+- **additional_insight_to_add:** Context loss turns implicit epistemic distinctions into bugs, so durable boundaries are a memory-safety mechanism for reasoning.
+
+### Question 04: When does it fail or become the wrong choice?
+- **current_section_observation:** The taxonomy fails when labels are applied ceremonially, sources are cited without claim fit, or inference is hidden behind authoritative wording.
+- **supporting_reason:** A labeled false claim remains false, and citation count cannot repair correlated blind spots.
+- **counterargument_or_limit:** Automated schema checks can at least ensure fields are present.
+- **assumptions_and_boundaries:** Reviewer judgment must assess claim-to-evidence fit and reject misleading classifications.
+- **revision_decision:** Add category-error examples and an evidence-fit review gate.
+- **additional_insight_to_add:** Epistemic labels are controls only when misuse changes claim state or blocks action.
+
+### Question 05: Which alternatives and tradeoffs matter?
+- **current_section_observation:** Alternatives include confidence scores, citation lists, formal provenance graphs, typed decision records, Bayesian estimates, and free-form caveats.
+- **supporting_reason:** Scores are compact but often uncalibrated; lists preserve sources but not role; graphs support invalidation; caveats are readable but inconsistent.
+- **counterargument_or_limit:** A full provenance graph can exceed the value of a quick lookup.
+- **assumptions_and_boundaries:** Use qualitative typed claims and dependency links unless enough data exists to calibrate probabilities.
+- **revision_decision:** Forbid unexplained numeric confidence and recommend simple source-to-claim links.
+- **additional_insight_to_add:** Qualitative types can be more precise than numbers when the uncertainty is structural rather than probabilistic.
+
+### Question 06: Which gotchas and failure modes matter most?
+- **current_section_observation:** Critical boundary mistakes include counting duplicate files as corroboration, treating public pointers as refreshed facts, confusing script possibility with selected behavior, and equating capability flags with actual extractor contribution.
+- **supporting_reason:** Each error promotes evidence across a boundary without the required observation or check.
+- **counterargument_or_limit:** Some conclusions can be strongly inferred from code even before a run, such as unsupported extensions never entering the filtered inventory.
+- **assumptions_and_boundaries:** Mark deterministic implementation consequence as inference from code, distinct from target run observation.
+- **revision_decision:** Add a category-error registry with safe replacement language.
+- **additional_insight_to_add:** Code-derived impossibility and run-derived incidence are different: one proves what cannot happen under the implemented filter or control path, while the other shows what did happen in a target state.
+
+### Question 07: What do good, bad, and borderline examples look like?
+- **current_section_observation:** Good language says Ctags capability passed but regex kinds reveal fallback contribution; bad language says `tooling.tsv` proves Ctags produced all symbols.
+- **supporting_reason:** The good claim reconciles capability and artifact evidence, while the bad claim skips actual output.
+- **counterargument_or_limit:** A borderline local prose summary may say "Ctags mode" if the decision record defines that shorthand unambiguously.
+- **assumptions_and_boundaries:** Avoid shorthand in durable cross-run comparisons where capability and contribution can diverge.
+- **revision_decision:** Add paired safe and unsafe claims across every evidence class.
+- **additional_insight_to_add:** Precise verbs such as records, emits, suggests, corroborates, refutes, and verifies expose source strength better than generic supports.
+
+### Question 08: How can the important claims be verified?
+- **current_section_observation:** Verify boundaries by tracing every material sentence to source identity, checking temporal and version scope, reproducing observations, reviewing counterevidence, and testing promotion gates with negative cases.
+- **supporting_reason:** This detects unsupported inference, stale sources, mislabeled capability, and semantic overreach.
+- **counterargument_or_limit:** Exhaustive sentence-level review is expensive for a very long reference.
+- **assumptions_and_boundaries:** Automate structural extraction and deeply sample high-consequence or fact-dense passages, then complete a whole-file reread.
+- **revision_decision:** Add claim audit, source-hash audit, and full reread to final verification.
+- **additional_insight_to_add:** Boundary verification should follow both directions: claims to sources and sources to every conclusion they invalidate when changed.
+
+### Question 09: What is known confidently, and what remains judgment or uncertainty?
+- **current_section_observation:** Local hashes, script mechanics, capability probes, section counts, and output hygiene are known; target map behavior, external page freshness, performance, scale capacity, and empirical accuracy remain unmeasured.
+- **supporting_reason:** The assignment read and verified local files but prohibited browsing and out-of-scope artifact production.
+- **counterargument_or_limit:** Strong systems reasoning supports recommended defaults despite absent target measurements.
+- **assumptions_and_boundaries:** Label such guidance as reasoned synthesis and provide verification paths rather than presenting it as observed outcome.
+- **revision_decision:** Add a final known, inferred, illustrative, unverified, and prohibited-claim ledger.
+- **additional_insight_to_add:** A complete reference can be operationally useful while explicitly leaving empirical values unknown, because it teaches how to measure them safely.
+
+### Question 10: What deeper deductions, second-order consequences, or additional insights follow, and how should they change the guidance?
+- **current_section_observation:** Evidence boundaries determine invalidation topology: changing guidance, producer, environment, repository, configuration, runtime workload, or external source reopens different claims.
+- **supporting_reason:** Claim-level dependencies make updates targeted and prevent stable facts from being discarded with one stale input.
+- **counterargument_or_limit:** Maintaining dependency links requires discipline and can become stale.
+- **assumptions_and_boundaries:** Record links for consequential and durable claims, then verify them during source changes and whole-file review.
+- **revision_decision:** End with an invalidation matrix and precedence rule.
+- **additional_insight_to_add:** The reference's reliability emerges from its conversion rules between evidence types and its ability to retract dependent claims when a conversion premise fails.

@@ -751,7 +751,7 @@ Use a **Traceability Change Record** when a behavior change must remain explaina
 
 The full record is justified for cross-team APIs, generated contracts, data migrations, security controls, operational limits, regulated approvals, and behavior whose failure is costly to reverse. For a local low-risk change, a compact record containing claim identity, authoritative location, evidence identity, disposition, and retrieval result is enough. Exploratory code that cannot ship need not acquire release governance prematurely.
 
-### Minimum record contract
+**Minimum record contract**
 
 | Record field | Completion rule | Failure the field prevents |
 |---|---|---|
@@ -780,7 +780,7 @@ Validate lifecycle state as well as field presence:
 | `rejected` | Reason and observed counterevidence are retained | Deleting rejection history and later repeating the same proposal |
 | `superseded` | Replacement revision and migration disposition are linked | Reusing superseded evidence as current approval |
 
-### Worked record
+**Worked record**
 
 The following values are illustrative, not target policy. The example concerns a change that revokes all active sessions after a user resets a password.
 
@@ -831,7 +831,7 @@ traceability_change_record:
 
 This record does not prove that password-reset revocation is the right product policy. That policy must already be accepted by the proper owner. It proves which accepted claim revision was evaluated, why integration and concurrency evidence fit, which implementation was exercised, and which release candidate may rely on the decision.
 
-### Representation choices
+**Representation choices**
 
 | Representation | Best fit | Main benefit | Main risk |
 |---|---|---|---|
@@ -843,7 +843,7 @@ This record does not prove that password-reset revocation is the right product p
 
 Choose one authoritative write model. Generate secondary matrices, dashboards, release summaries, and audit views when possible. Two manually maintained authoritative copies create a reconciliation problem that the artifact was meant to prevent.
 
-### Artifact verification ladder
+**Artifact verification ladder**
 
 1. Parse the record and reject missing identities, unknown states, duplicate claim revisions, or invalid links.
 2. Build the typed graph and reject required claims without cases, implementation, evidence requirements, or a decision path.
@@ -866,12 +866,12 @@ Use this sequence for worked transformations:
 2. Separate atomic claims while preserving interaction claims.
 3. Derive positive, negative, boundary, and interaction cases.
 4. Select evidence that can observe each claim's failure mechanism.
-5. demonstrate an expected failing probe before relying on a passing result.
+5. Demonstrate an expected failing probe before relying on a passing result.
 6. Bind current evidence to a revision, artifact, owner, and disposition.
 
 The examples below teach that sequence. Their identifiers, values, technologies, and organizational roles are illustrative; they do not establish policy for an unseen target repository.
 
-### Example A: split a bundled cancellation request without losing the transaction
+**Example A: split a bundled cancellation request without losing the transaction**
 
 **Raw request:** "When a customer cancels a paid order, cancel fulfillment and issue a refund."
 
@@ -892,7 +892,7 @@ The fourth claim matters. Splitting the request into three atomic outcomes witho
 
 **Good:** each claim has a separate result, and the fault probe exposes partial application. **Bad:** one passing end-state assertion checks only `order.status`. **Borderline:** all four cases pass, but the run belongs to a build produced before revision 1; retain it as history and rerun against the candidate.
 
-### Example B: turn "make search fast" into an accepted quality contract
+**Example B: turn "make search fast" into an accepted quality contract**
 
 Do not begin by copying a latency number from a template. First capture the workload and decision authority:
 
@@ -909,7 +909,7 @@ Suppose a target owner accepts a hypothetical objective for a named workload. Th
 
 **Expected negative probe:** add a controlled delay to the measured search path, not to unrelated setup. The quality gate should cross its accepted boundary while correctness cases remain interpretable. **Borderline:** the benchmark detects the delay but uses a dataset smaller than the supported population; record the run as partial evidence rather than changing the workload claim after seeing the result.
 
-### Example C: match evidence to a cross-boundary security behavior
+**Example C: match evidence to a cross-boundary security behavior**
 
 **Accepted claim:** a successful password reset invalidates all active sessions for the affected account and does not invalidate another account's sessions.
 
@@ -923,7 +923,7 @@ Suppose a target owner accepts a hypothetical objective for a named workload. Th
 
 **Bad:** link the claim only to the mocked unit test because it is fast. **Good:** retain fast unit evidence for handler intent and add the integration and concurrency observations required by the claim. **Borderline:** integration evidence passes but another account is never exercised; the account-isolation clause remains missing rather than implicitly accepted.
 
-### Example D: reconcile a temporary evidence exception with release
+**Example D: reconcile a temporary evidence exception with release**
 
 A migration changes a data format, but one platform-specific compatibility suite is unavailable. "Known issue" is not an executable exception. A reviewable exception records:
 
@@ -943,7 +943,7 @@ At release reconciliation, platforms A and B may proceed only if their required 
 
 **Good:** missing evidence is explicit, the rollout cannot exceed the compensating scope, and expiry is enforced. **Bad:** mark the missing suite as skipped and count the job green. **Borderline:** the exception is approved and scoped, but the deployment configuration has not been checked; the governance record is complete while release enforcement remains unproved.
 
-### Verification and reuse rules
+**Verification and reuse rules**
 
 For each worked example, a target adaptation should answer:
 
@@ -978,7 +978,7 @@ Definition version and refresh trigger
 
 Do not assign a target merely because a metric can be calculated. Establish a baseline, inspect failures, estimate collection and response cost, then let the accountable target owner choose an objective. Sparse repositories should review counts and cases; percentages over a tiny denominator look precise without being stable.
 
-### Balanced metric portfolio
+**Balanced metric portfolio**
 
 | Measure | Reproducible definition | Decision use | Blind spot or countermetric |
 |---|---|---|---|
@@ -1008,7 +1008,7 @@ Evidence freshness is primarily event-bound:
 
 A one-minute-old run against the wrong build is stale. An older immutable proof may remain current when its claim, artifact, environment assumptions, and retention integrity are unchanged.
 
-### Interpretation examples
+**Interpretation examples**
 
 **Good metric card:** current-evidence coverage names the release candidate population, counts stale and inaccessible evidence as non-current, identifies the graph and run store as sources, and routes failures to rerun, repair, exception, or release-block actions. Its countermetric samples evidence fit so authors cannot improve the rate with irrelevant passing jobs.
 
@@ -1018,7 +1018,7 @@ A one-minute-old run against the wrong build is stale. An older immutable proof 
 
 No portfolio score should average these measures into release authority. A high structural rate must not cancel an expired security exception or a failed behavior probe. Inspect disagreements directly: high edge completeness with poor negative-probe sensitivity suggests decorative links; high evidence coverage with low retrieval success suggests transient storage; low review time with increased rework suggests rushed decisions.
 
-### Verification of the measurement system
+**Verification of the measurement system**
 
 1. Unit-test each numerator, denominator, state classification, deduplication rule, and definition version.
 2. Feed synthetic records containing missing links, duplicate runs, stale revisions, inaccessible evidence, skipped checks, expired exceptions, and mismatched release digests.
@@ -1030,7 +1030,7 @@ No portfolio score should average these measures into release authority. A high 
 
 These checks verify computation and workflow response. They do not prove that traceability alone caused a change in defect rate, lead time, or incident severity. Report observed association, plausible mechanism, confounders, and remaining uncertainty.
 
-### Feedback loops and cadence
+**Feedback loops and cadence**
 
 | Trigger | Review action | Durable output |
 |---|---|---|
@@ -1061,7 +1061,7 @@ Use these states:
 | `not-applicable` | The gate does not fit this claim, with a recorded semantic reason | Excluded explicitly, never by omission |
 | `superseded` | A newer claim, artifact, run, decision, or gate definition replaced it | Preserved as history without current authority |
 
-### Gate A: source, need, and claim
+**Gate A: source, need, and claim**
 
 - [ ] The user or operational need is concrete enough to identify affected behavior and decision consequence.
 - [ ] The authority that accepted the behavior is named; an example or historical source is not mistaken for authority.
@@ -1074,7 +1074,7 @@ Use these states:
 
 **Completion decision:** the change may enter evidence design when semantics are reviewable. Product acceptance is not manufactured by this checklist.
 
-### Gate B: traceability graph
+**Gate B: traceability graph**
 
 - [ ] Claims link to required positive, negative, boundary, and interaction cases by typed relationships.
 - [ ] Claims link to the implementation, configuration, schema, policy, or operational mechanism that realizes them.
@@ -1086,7 +1086,7 @@ Use these states:
 
 **Completion decision:** the graph is structurally closed for the selected profile, but structural closure is not yet semantic or runtime proof.
 
-### Gate C: evidence design and expected failure
+**Gate C: evidence design and expected failure**
 
 - [ ] Each test or review case states which claim behavior it can distinguish.
 - [ ] Assertion depth matches the claim: output shape, side effect, error type, interaction, quality measure, or deployment state as required.
@@ -1098,7 +1098,7 @@ Use these states:
 
 **Completion decision:** implementation may proceed when the expected evidence can fail for a relevant reason. If the change existed before the evidence, create a controlled counterexample rather than inventing an earlier history.
 
-### Gate D: observed execution and retained evidence
+**Gate D: observed execution and retained evidence**
 
 - [ ] The expected negative observation occurred and its cause was inspected.
 - [ ] The minimum implementation changed relevant evidence to passing without masking unrelated failures.
@@ -1111,7 +1111,7 @@ Use these states:
 
 **Completion decision:** evidence is reviewable only for the artifact and boundary it actually observed.
 
-### Gate E: review, exceptions, and disposition
+**Gate E: review, exceptions, and disposition**
 
 - [ ] A reviewer checks semantic fit between need, claims, cases, implementation, assertions, and evidence.
 - [ ] The reviewer role has authority for the decision being recorded.
@@ -1123,7 +1123,7 @@ Use these states:
 
 **Completion decision:** a visible failure with an authorized rejection is more complete than an unexplained all-green record.
 
-### Gate F: release reconciliation
+**Gate F: release reconciliation**
 
 - [ ] The exact release candidate digest matches the artifacts exercised by required evidence.
 - [ ] Every in-scope active claim has a current disposition for this candidate.
@@ -1136,7 +1136,7 @@ Use these states:
 
 **Completion decision:** the candidate may ship only within the reconciled decision boundary. A previous release's green evidence cannot authorize a rebuilt artifact by label similarity.
 
-### Gate G: maintenance and recovery
+**Gate G: maintenance and recovery**
 
 - [ ] Invalidation triggers cover claim, implementation, dependency, runner, schema, environment, authority, and retention changes that matter.
 - [ ] Evidence and decisions can be reconstructed after the author's workspace and short-lived CI logs are gone.
@@ -1147,7 +1147,7 @@ Use these states:
 - [ ] Retired identifiers, profiles, and mechanisms have migration and consumer disposition.
 - [ ] Costly checks that never inform decisions are reviewed for simplification or removal.
 
-### Profile selection
+**Profile selection**
 
 | Profile | Use when | Required depth beyond core identity and disposition |
 |---|---|---|
@@ -1158,7 +1158,7 @@ Use these states:
 
 Core identity, revision binding, missing-state semantics, evidence fit, current disposition, and release scope are never waived by choosing a lighter profile. The profile changes depth, not the meaning of a pass.
 
-### Final reconstruction question
+**Final reconstruction question**
 
 An independent reviewer should be able to answer, from retained records:
 
@@ -1172,7 +1172,7 @@ Stay in this reference when the unresolved decision is how accepted claim revisi
 
 Relevant filenames below were observed in the July reference directory on 2026-07-11. Their path existence supports navigation only. Their evolved completeness, current authority, and compatibility with a target project were not evaluated here; read a selected reference before consequential adoption.
 
-### Decision-state router
+**Decision-state router**
 
 | Unresolved decision | Candidate adjacent reference | Expected return artifact | Reentry condition |
 |---|---|---|---|
@@ -1196,7 +1196,7 @@ Do not route by keyword alone. Ask:
 
 If no state changes, the route was orientation rather than resolution. That may still be useful, but it must not be reported as evidence.
 
-### Route contract
+**Route contract**
 
 Before leaving, record:
 
@@ -1213,7 +1213,7 @@ Reentry gate and stop condition
 
 On return, verify that the artifact can join to the original claim revision. A test result without the same build identity, a requirement rewrite without acceptance authority, or a checklist with incompatible state semantics is not a completed handoff.
 
-### Good, bad, and borderline routes
+**Good, bad, and borderline routes**
 
 **Good:** a bundled request is routed to executable specification guidance. It returns three atomic claims plus one interaction claim, each accepted by the product owner. This reference then builds cases, implementation links, evidence requirements, and release decisions around those revisions.
 
@@ -1221,7 +1221,7 @@ On return, verify that the artifact can join to the original claim revision. A t
 
 **Borderline:** an older workflow playbook provides a useful expected-failure responsibility but names obsolete runner syntax. Preserve the responsibility, discover the target command, and verify its observed states; do not copy the stale mechanism or treat the route as current authority.
 
-### Route verification
+**Route verification**
 
 Use inexpensive checks continuously:
 
@@ -1253,7 +1253,7 @@ Treat executable traceability as a change-and-evidence workload, not a document-
 
 Start with one coherent **change unit**: claims that share a behavior boundary, accountable decision, release fate, and evidence lifecycle. Measure pressure before selecting local limits.
 
-### Workload vector
+**Workload vector**
 
 | Dimension | Observation | Pressure signal | Possible response |
 |---|---|---|---|
@@ -1274,7 +1274,7 @@ Start with one coherent **change unit**: claims that share a behavior boundary, 
 
 Record `current` and `historical` workloads separately. Superseded claims and retry runs belong in retained history but should not inflate the current release denominator or slow its common queries unnecessarily.
 
-### Coherent-unit test
+**Coherent-unit test**
 
 Keep work in one traceability unit when most answers are yes:
 
@@ -1288,7 +1288,7 @@ Keep work in one traceability unit when most answers are yes:
 
 Partition when semantics, authority, release fate, access policy, or evidence lifecycle diverges. Do not split a transaction merely to satisfy a row count. If decomposition is unavoidable, preserve an explicit parent interaction claim and aggregate release view.
 
-### Partition strategies
+**Partition strategies**
 
 | Partition axis | Prefer when | Benefit | Cost to control |
 |---|---|---|---|
@@ -1302,7 +1302,7 @@ Partition when semantics, authority, release fate, access policy, or evidence li
 
 Choose the axis that best aligns authoritative change with evidence lifecycle. Count the resulting cross-partition edges and sample their review and reconciliation cost. A partition is not successful if local packets shrink while release assembly becomes an undocumented manual process.
 
-### Workload scenarios
+**Workload scenarios**
 
 **Small and coherent:** one session-revocation change has four claims, two implementation components, integration and concurrency evidence, one product owner, and one release candidate. Keep one unit; the low count and shared lifecycle make the interactions reviewable.
 
@@ -1314,7 +1314,7 @@ Choose the axis that best aligns authoritative change with evidence lifecycle. C
 
 **Borderline transaction:** one order-cancellation transaction spans order, fulfillment, and payment owners. Partition implementation evidence by service but retain a parent interaction claim, controlled partial-failure probes, and aggregate release reconciliation. Measure whether reviewers can reconstruct the transaction after the split.
 
-### Calibration and verification
+**Calibration and verification**
 
 Collect target evidence before setting limits:
 
@@ -1329,7 +1329,7 @@ Collect target evidence before setting limits:
 
 Synthetic scale can expose storage, query, generation, and invalidation behavior. It cannot reproduce every semantic misunderstanding or organizational handoff, so pair it with sampled real decisions, review reversals, and incidents.
 
-### Pressure responses
+**Pressure responses**
 
 - If graph reads slow but semantic coherence remains good, index or project before partitioning behavior.
 - If reviewers cannot understand claims despite fast queries, narrow the decision boundary or improve task-specific views.
@@ -1350,7 +1350,7 @@ Reliability has two layers:
 
 The historical values in the seed are not measured target results. Do not inherit a perfect percentage or a small sample threshold as policy.
 
-### Decision-integrity invariants
+**Decision-integrity invariants**
 
 | Invariant | Forbidden state | Detection | Required response |
 |---|---|---|---|
@@ -1367,7 +1367,7 @@ The historical values in the seed are not measured target results. Do not inheri
 
 These are safety intentions, not claims that an implementation has achieved perfection. Observe violations, retain incidents, and test recovery. An aggregate success rate must never create an allowed quota for a wrong high-consequence release authorization.
 
-### Operational objective contract
+**Operational objective contract**
 
 Define each local objective with:
 
@@ -1399,7 +1399,7 @@ Candidate indicators include:
 
 Set no objective until the population, consequence, indicator, and response are understood. Initial launch criteria may be conservative and provisional, but must state owner, expiry, and calibration plan.
 
-### Reliability across failure modes
+**Reliability across failure modes**
 
 | Failure condition | Preserve | Do not infer | Degraded action |
 |---|---|---|---|
@@ -1415,7 +1415,7 @@ Set no objective until the population, consequence, indicator, and response are 
 
 Availability and truth are orthogonal. A highly available cache can return stale authority; an unavailable store can contain correct evidence that cannot presently support a decision. Preserve those distinctions.
 
-### Control-plane policy
+**Control-plane policy**
 
 If traceability gates release automatically, choose outage behavior by consequence:
 
@@ -1427,7 +1427,7 @@ If traceability gates release automatically, choose outage behavior by consequen
 
 An emergency action does not erase missing evidence. After recovery, reconstruct the candidate, rerun or retrieve required observations, review the bypass outcome, resolve exceptions, and add a regression fixture for the failure mechanism.
 
-### Verification program
+**Verification program**
 
 | Reliability question | Verification method | Expected evidence |
 |---|---|---|
@@ -1476,7 +1476,7 @@ Contain incorrect authority first; diagnose exact cause second. A detector has n
 
 Not every requirement needs a test. It needs evidence appropriate to its semantics: automated behavior, benchmark, static rule, deployment observation, policy review, human judgment, or a combination. Conversely, one test name containing an ID does not establish a useful relationship.
 
-### Triage sequence
+**Triage sequence**
 
 1. Identify the claim revision, candidate, decision, and consequence that may be affected.
 2. Preserve raw states, conflicting records, logs, identities, and access observations before repair.
@@ -1488,7 +1488,7 @@ Not every requirement needs a test. It needs evidence appropriate to its semanti
 8. Reconcile every dependent decision: reaffirm with current evidence, narrow, reject, or supersede.
 9. Add a regression fixture and update schema, gate, guidance, ownership, or observability where justified.
 
-### Response examples
+**Response examples**
 
 **Good:** release reconciliation detects that a passing integration run belongs to an older artifact digest. The gate blocks the candidate, preserves the historical run, executes current evidence, records the new disposition, and adds a mismatch fixture.
 
@@ -1496,7 +1496,7 @@ Not every requirement needs a test. It needs evidence appropriate to its semanti
 
 **Borderline:** a graph migration repairs every current link, but old evidence objects cannot be retrieved. Current release may proceed if all required evidence is reproduced and accepted; historical reconstruction remains degraded and needs an explicit retention incident, not a silent green status.
 
-### Verification probes by family
+**Verification probes by family**
 
 - Introduce conflicting active revisions and confirm the graph quarantines rather than selects one.
 - Remove an interaction edge and confirm the aggregate release query reports a missing obligation.
@@ -1514,7 +1514,7 @@ The table is a reference hazard catalog, not observed frequency data. Rank targe
 
 Retry only when another attempt can produce new valid information without hiding prior state, changing the decision unit silently, or repeating unsafe side effects. A semantic contradiction is not an infrastructure transient.
 
-### Retry eligibility
+**Retry eligibility**
 
 | Failure class | Retry? | Required precondition | Escalation or alternative |
 |---|---|---|---|
@@ -1535,7 +1535,7 @@ Retry only when another attempt can produce new valid information without hiding
 
 "Retryable" never means "ignore the earlier attempt." Preserve each state and distinguish final behavior evidence from operability evidence. A test that passes after several infrastructure attempts may still support behavior for the exact artifact, while the attempt history creates a separate runner-reliability signal. A test that alternates pass and fail under unchanged controlled inputs is not made authoritative by choosing the last result.
 
-### Retry contract
+**Retry contract**
 
 Before enabling retries, define:
 
@@ -1557,7 +1557,7 @@ Numeric limits, delay curves, and concurrency caps require target measurements: 
 
 Where delayed retries are appropriate, increase delay between attempts and add jitter so independent workers do not synchronize. Stop on the earliest of success, non-retryable classification, elapsed deadline, attempt budget, candidate supersession, cancellation, or circuit-break condition. Do not sleep inside a scarce worker when durable queueing can release capacity safely.
 
-### Evidence-preserving attempt model
+**Evidence-preserving attempt model**
 
 | Attempt state | Meaning | Decision effect |
 |---|---|---|
@@ -1573,7 +1573,7 @@ Where delayed retries are appropriate, increase delay between attempts and add j
 
 Aggregate metrics by the decision unit, not attempt rows. Retain attempts for diagnosis. A hundred retries of one claim do not create broader claim coverage.
 
-### Backpressure controls
+**Backpressure controls**
 
 Apply backpressure before repeated low-information work consumes all capacity:
 
@@ -1589,7 +1589,7 @@ Apply backpressure before repeated low-information work consumes all capacity:
 
 Backpressure protects reviewer attention as well as compute. Repeated generation against unresolved source boundaries creates more prose without increasing evidence.
 
-### Long-running and distributed workflows
+**Long-running and distributed workflows**
 
 - Assign one owner to each mutable reference, packet, graph partition, or evidence decision unit.
 - Save complete atomic work before transferring ownership; never hand off an unrecorded in-memory state.
@@ -1600,7 +1600,7 @@ Backpressure protects reviewer attention as well as compute. Repeated generation
 - Verify headings, paths, evidence boundaries, and current revisions when independent outputs reunite.
 - Preserve rejected and failed work so another worker does not rediscover the same contradiction as new.
 
-### Timelines
+**Timelines**
 
 **Good retry:** attempt A times out retrieving immutable artifact digest `run-auth-session-042`. The timeout is retained. A delayed attempt uses the same identity, succeeds before the decision deadline, verifies the digest, and supplies retrieval evidence. The timeout remains an operability signal.
 
@@ -1608,7 +1608,7 @@ Backpressure protects reviewer attention as well as compute. Repeated generation
 
 **Borderline restart:** a generated matrix job fails transiently, but the source graph changes before the retry. The worker must cancel the old decision unit and start a new job bound to the new graph version. Attaching the successful projection to the old job would misstate lineage.
 
-### Verification
+**Verification**
 
 1. Inject each retryable and non-retryable error class and assert the intended transition.
 2. Run concurrent duplicate attempts and verify side effects deduplicate by the declared key.
@@ -1634,7 +1634,7 @@ Observe enough to reconstruct a decision and diagnose a failure without retainin
 - Which release candidate consumed that disposition?
 - Which later event invalidated, renewed, or superseded it?
 
-### Minimal event envelope
+**Minimal event envelope**
 
 | Field | Purpose | Constraint |
 |---|---|---|
@@ -1659,7 +1659,7 @@ Observe enough to reconstruct a decision and diagnose a failure without retainin
 
 Human review is evidence too. Record the question asked, artifact revision shown, reviewer role, observed conclusion, limitations, and time boundary. Do not record private reasoning transcripts when the decision and rationale can be captured directly.
 
-### Choose the signal for the question
+**Choose the signal for the question**
 
 | Signal | Best use | Required link | Common misuse |
 |---|---|---|---|
@@ -1673,20 +1673,20 @@ Human review is evidence too. Record the question asked, artifact revision shown
 
 Do not duplicate one fact manually across all signals. Emit one authoritative transition, derive metrics and projections, and link detailed diagnostics by immutable identity.
 
-### Illustrative event timeline
+**Illustrative event timeline**
 
 ```json
 {"event_id":"evt-101","event_type":"claim-revised","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"change_id":"AUTH-CHANGE-042","state":"proposed"}
 {"event_id":"evt-102","event_type":"evidence-required","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"evidence_requirement_id":"auth-session-integration","state":"missing","caused_by":["evt-101"]}
-{"event_id":"evt-103","event_type":"evidence-attempted","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","evidence_requirement_id":"auth-session-integration","attempt_id":"attempt-1","state":"failed","reason_code":"mutation-detected","caused_by":["evt-102"]}
-{"event_id":"evt-104","event_type":"evidence-attempted","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","evidence_requirement_id":"auth-session-integration","attempt_id":"attempt-2","state":"passed","evidence_key":"run-auth-session-042","caused_by":["evt-103"]}
-{"event_id":"evt-105","event_type":"claim-decided","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","actor_role":"identity-service-owner","authority_scope":"authentication-behavior-acceptance","state":"accepted","caused_by":["evt-104"]}
+{"event_id":"evt-103","event_type":"evidence-attempted","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042-mutation-disable-revocation","environment_id":"isolated-integration","evidence_requirement_id":"auth-session-integration","attempt_id":"attempt-1","state":"failed","reason_code":"mutation-detected","caused_by":["evt-102"]}
+{"event_id":"evt-104","event_type":"evidence-attempted","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","environment_id":"isolated-integration","evidence_requirement_id":"auth-session-integration","attempt_id":"attempt-2","state":"passed","evidence_key":"run-auth-session-042","caused_by":["evt-102","evt-103"]}
+{"event_id":"evt-105","event_type":"claim-decided","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","actor_role":"identity-service-owner","authority_scope":"authentication-behavior-acceptance","state":"accepted","caused_by":["evt-103","evt-104"]}
 {"event_id":"evt-106","event_type":"release-reconciled","schema_version":1,"claim_id":"AUTH-SESSION-017","claim_revision":3,"artifact_digest":"build-auth-20260711-042","release_candidate_id":"identity-service-candidate-20260711-042","state":"accepted","caused_by":["evt-105"]}
 ```
 
-The failed event is not erased by the pass. Here it records that a controlled mutation was detected. A real behavior failure would require a new artifact or explicit disposition before the later pass could grant authority. Event meaning comes from type, reason, identity, and causal relationship, not color alone.
+The failed event is not erased by the pass. Here it records that a distinct controlled-mutation artifact was detected in the same isolated environment, while the normal candidate passed. A real behavior failure in the normal candidate would require a new artifact or explicit disposition before a later pass could grant authority. Event meaning comes from type, reason, identity, and causal relationship, not color alone.
 
-### Capture checklist
+**Capture checklist**
 
 **Source and semantics**
 
@@ -1718,13 +1718,13 @@ The failed event is not erased by the pass. Here it records that a controlled mu
 - Define retention by decision consequence and recovery need, then test deletion and legal-hold behavior where applicable.
 - Record telemetry delivery loss, exporter backlog, sampling, and dropped-event counts.
 
-### Measurement conditions
+**Measurement conditions**
 
 Record latency percentiles only when a real question, comparable population, and method exist. Define start and end events, success and failure inclusion, concurrency, warm-up, sampling, aggregation, and observation window. Reviewer time and runtime latency are different populations. With sparse observations, report cases and ranges rather than implying stable tail behavior.
 
 Metrics should include definition version and link to event exemplars. High-cardinality identities belong in events, traces, or indexed logs rather than unbounded metric dimensions.
 
-### Verification
+**Verification**
 
 1. Contract-test every producer and consumer against versioned event fixtures.
 2. Inject duplicate, reordered, delayed, denied, corrupt, stale, missing, and superseded events.
@@ -1750,7 +1750,7 @@ Separate two performance questions:
 
 A requirement-to-test mapping percentage answers neither question. Claims may require benchmarks, deployment observations, policy review, or human evidence, and a link can exist without semantic fit.
 
-### Domain quality-claim contract
+**Domain quality-claim contract**
 
 Before measuring a domain claim, record:
 
@@ -1769,7 +1769,7 @@ Before measuring a domain claim, record:
 
 Do not invent a target to complete the form. If no owner has accepted an objective, measure a baseline or remove the quantitative claim.
 
-### Traceability workload fixtures
+**Traceability workload fixtures**
 
 | Fixture | Shape | Operations to exercise | Failure it reveals |
 |---|---|---|---|
@@ -1784,7 +1784,7 @@ Do not invent a target to complete the form. If no owner has accepted an objecti
 
 Build fixtures from observed target distributions where possible. Synthetic data should preserve degree distribution, version history, state mix, artifact sizes, and access behavior relevant to the claim. State clearly where it differs from production.
 
-### Method selection
+**Method selection**
 
 | Method | Use for | Strength | Blind spot |
 |---|---|---|---|
@@ -1798,7 +1798,7 @@ Build fixtures from observed target distributions where possible. Synthetic data
 
 Choose the least expensive method capable of observing the stated claim. Use profiles to select changes, then verify the outcome at the decision boundary.
 
-### Benchmark protocol
+**Benchmark protocol**
 
 1. **Accept the question.** Name the decision, objective or comparison, owner, and consequence.
 2. **Freeze identities.** Record claim revision, source revision, built artifact, harness, fixture, environment, and configuration digests.
@@ -1813,7 +1813,7 @@ Choose the least expensive method capable of observing the stated claim. Use pro
 11. **Review tradeoff.** Include resource use, false blocks, stale results, operational complexity, and recovery cost.
 12. **Bind disposition.** Record which artifact and workload the result supports and what change invalidates it.
 
-### Validity checks
+**Validity checks**
 
 - Include queue and retry time if users or releases experience it; excluding it can create coordinated omission.
 - Count errors, timeouts, cancellations, and unavailable evidence in the population rather than timing only successes.
@@ -1828,7 +1828,7 @@ Choose the least expensive method capable of observing the stated claim. Use pro
 - For reviewer studies, hold task consequence and complexity as comparable as possible, capture decision correctness and rework, and report learning or ordering effects.
 - Distinguish exploratory local timing from release evidence.
 
-### Correctness-under-load gates
+**Correctness-under-load gates**
 
 Performance evidence is invalid if the optimized system:
 
@@ -1844,7 +1844,7 @@ Performance evidence is invalid if the optimized system:
 
 These gates keep caching, compaction, denormalization, sampling, and partitioning from buying speed by weakening traceability meaning.
 
-### Worked benchmark interpretations
+**Worked benchmark interpretations**
 
 **Good:** a candidate index is tested on compact, dense, and long-history graphs. Claim-to-release result sets match the baseline, stale projections are rejected, raw samples and profiles are retained, and the accountable owner accepts the observed improvement for the defined environment.
 
@@ -1858,7 +1858,7 @@ No latency, throughput, memory, capacity, or reviewer-time result is asserted by
 
 This reference defines semantics and decision controls; it is not a universal storage, governance, or distributed-systems blueprint. Multiple owners or services do not automatically make it inapplicable. The boundary is crossed when the chosen implementation can no longer preserve identity, state, evidence, authority, access, release closure, or recovery at the required workload and consequence.
 
-### Three applicability zones
+**Three applicability zones**
 
 | Zone | Conditions | Use of this reference | Additional action |
 |---|---|---|---|
@@ -1868,7 +1868,7 @@ This reference defines semantics and decision controls; it is not a universal st
 
 Unaccepted product semantics also stop progress, regardless of scale. Traceability cannot manufacture authority for the behavior it links.
 
-### Direct-use coherence test
+**Direct-use coherence test**
 
 Direct use remains suitable when:
 
@@ -1883,7 +1883,7 @@ Direct use remains suitable when:
 
 Physical colocation is neither necessary nor sufficient. A multi-service password-reset transaction can remain one coherent decision model while each service owns local evidence. One monorepo can contain unrelated domains, incompatible authorities, and restricted evidence that should be separated.
 
-### Scale pressure and transition signals
+**Scale pressure and transition signals**
 
 | Signal | Why the current mechanism is insufficient | Next design question |
 |---|---|---|
@@ -1901,7 +1901,7 @@ Physical colocation is neither necessary nor sufficient. A multi-service passwor
 
 No universal system count, owner count, graph size, traffic level, or latency threshold is supported here. Calibrate transitions from observed errors, delay, query and generation behavior, review reconstruction, incident recovery, and accepted objectives.
 
-### Architecture choices beyond direct use
+**Architecture choices beyond direct use**
 
 | Model | Strength | Main tradeoff | Required invariant |
 |---|---|---|---|
@@ -1913,7 +1913,7 @@ No universal system count, owner count, graph size, traffic level, or latency th
 
 The durable default at organizational scale is often **federated evidence with narrowly shared identity, state, and reconciliation contracts**. Centralize only what requires global agreement. Keep domain execution, detailed evidence, and specialist authority with their owners where possible.
 
-### Cross-boundary contract
+**Cross-boundary contract**
 
 Every independently owned unit should publish or expose:
 
@@ -1933,7 +1933,7 @@ Degraded-mode and recovery contract
 
 One aggregate release owner or explicitly coordinated decision protocol must reconcile cross-unit claims. Local acceptance cannot silently grant global transaction acceptance.
 
-### Multi-agent and long-running execution
+**Multi-agent and long-running execution**
 
 - Assign exclusive mutable ownership by exact file, packet, graph partition, or evidence unit.
 - Complete and save atomic work before another owner consumes it.
@@ -1946,7 +1946,7 @@ One aggregate release owner or explicitly coordinated decision protocol must rec
 
 Exclusive file ownership prevents write collision. It does not prevent semantic split brain: two files can be internally valid while assigning different meaning to one state or requirement. Shared compatibility fixtures must cover those contracts.
 
-### Scale verification
+**Scale verification**
 
 1. Generate independent units with deliberate identity collisions and confirm quarantine.
 2. Run old and new schema producers concurrently and verify compatible joins or explicit rejection.
@@ -1959,7 +1959,7 @@ Exclusive file ownership prevents write collision. It does not prevent semantic 
 9. Sample real cross-owner decisions to expose authority delay and vocabulary mismatch that synthetic load cannot model.
 10. Migrate one unit and retire its old protocol only after consumer and historical-read evidence closes.
 
-### Zone examples
+**Zone examples**
 
 **Direct:** one repository owns a local parser change, its claims, focused tests, current run, and one package release. Repository-native traceability is sufficient if evidence is durable and identities are exact.
 
@@ -1986,7 +1986,7 @@ Refresh in this order:
 
 Search ranking, repository popularity, and repeated mirrors do not establish authority.
 
-### Refresh triggers
+**Refresh triggers**
 
 | Trigger | Question to resolve | Consumer impact to inspect |
 |---|---|---|
@@ -1999,7 +1999,7 @@ Search ranking, repository popularity, and repeated mirrors do not establish aut
 | Approaching retention or deprecation boundary | What history and consumers still require the mechanism? | Evidence recovery, migration, and retirement |
 | Scheduled high-consequence review | Have quiet upstream changes invalidated a consequential dependency? | Security, compliance, release, and operational controls |
 
-### Targeted query catalog
+**Targeted query catalog**
 
 | Query intent | Future query text | Preferred source | Evidence expected before adoption |
 |---|---|---|---|
@@ -2010,13 +2010,13 @@ Search ranking, repository popularity, and repeated mirrors do not establish aut
 | GitHub Actions cache boundary | `site:docs.github.com/actions cache key restore stale workflow evidence` | Current GitHub Actions documentation | Current cache semantics and a target stale-cache rejection probe |
 | Agent instruction format | `site:agents.md specification scope precedence version` | Current primary format site | Versioned format claims and observed compatibility with selected tools |
 | Repository release change | `site:github.com release notes traceability schema migration evidence graph` | Maintainer-owned repository and release records after a product is selected | Tagged release, migration notes, affected target version, and local compatibility result |
-| Assertion sensitivity | `official documentation mutation testing assertion sensitivity test false positive` | Official documentation for the selected target tool | Current mechanism and a local mutation that changes the expected assertion |
-| Evidence retention | `official documentation selected CI evidence artifact retention integrity access` | Product-owned docs for the selected CI and evidence store | Retention, access, integrity, deletion behavior, and target restore evidence |
-| Traceability interoperability | `official specification requirement traceability identity revision evidence schema` | Current standard or product authority selected by the target owner | Version, normative scope, compatibility mapping, and rejected differences |
+| Assertion sensitivity | `mutation testing assertion sensitivity equivalent mutants official documentation` | Primary documentation for a tool discovered through the query and then adopted locally | Current mechanism and a local mutation that changes the expected assertion |
+| Evidence retention | `CI artifact retention integrity access deletion restore official documentation` | Product-owned documentation discovered for the target CI and evidence store | Retention, access, integrity, deletion behavior, and target restore evidence |
+| Traceability interoperability | `requirements traceability identity revision evidence schema official standard` | Current standard or product authority retrieved and accepted by the target owner | Version, normative scope, compatibility mapping, and rejected differences |
 
-Replace generic terms such as `selected CI` or `official specification` with an actual adopted product or authority before execution. They mark query intent, not a finished search string.
+The final three are broad authority-discovery queries because no target mutation tool, evidence store, or interoperability standard was selected. Treat every result as a candidate locator until its primary owner, version, scope, and local applicability are verified.
 
-### Local refresh queries
+**Local refresh queries**
 
 Use repository evidence before broad external search:
 
@@ -2030,7 +2030,7 @@ rg -n 'skipped|cancelled|inaccessible|superseded|exception' .github tests docs
 
 Adapt paths to the target repository. A search hit is a candidate observation; inspect context, ownership, current version, and executed behavior before promoting it.
 
-### Refresh evidence record
+**Refresh evidence record**
 
 ```text
 Refresh trigger and affected claim
@@ -2048,7 +2048,7 @@ Affected references, generators, gates, evidence, and decisions
 Next trigger and review boundary
 ```
 
-### Result validation and disposition
+**Result validation and disposition**
 
 1. Open the primary page rather than relying on a search snippet.
 2. Confirm owner, publication or version boundary, and whether the page is normative, explanatory, or an example.
@@ -2068,7 +2068,7 @@ Version query intents as concerns and terminology evolve. Monitor known high-con
 
 Evidence role determines what a statement may authorize. Provenance alone does not establish current applicability, and repeated generation does not promote a synthesis into target policy.
 
-### Controlled evidence roles
+**Controlled evidence roles**
 
 | Role | Assignment test | Permitted use | Required caution |
 |---|---|---|---|
@@ -2083,7 +2083,7 @@ Evidence role determines what a statement may authorize. Provenance alone does n
 | Unknown | Required fact was not retrieved, observed, or interpretable | Keep a decision open or bounded | Never convert to passed or absent silently |
 | Negative evidence | A failure, omission, contradiction, or mutation demonstrates a limitation | Reject an overclaim and create a regression fixture | Omission alone does not prove the proposed replacement is correct |
 
-### Evidence ledger for this evolution
+**Evidence ledger for this evolution**
 
 | Claim group | Evidence available | Confidence and boundary |
 |---|---|---|
@@ -2100,7 +2100,7 @@ Evidence role determines what a statement may authorize. Provenance alone does n
 | External refresh queries | Query intents and direct source paths are specified for future work | Unexecuted retrieval plans, not external evidence |
 | Evolved artifact checks | Structure, uniqueness, heading, expansion, hygiene, table, fence, and test verifiers can establish properties of these files | They do not prove that the guidance improves an unseen production system |
 
-### Claim-record profile
+**Claim-record profile**
 
 For consequential guidance, retain:
 
@@ -2119,7 +2119,7 @@ Invalidation, refresh, and retirement trigger
 
 Orientation-only prose can use a compact role label and source map. Increase record depth when a claim is generated, shared, audited, release-blocking, costly to reverse, or retained across tool and schema versions.
 
-### Boundary rules
+**Boundary rules**
 
 1. A local source fact supports only what the identified span or paraphrase actually says.
 2. A historical source does not become current policy because several duplicate paths contain it.
@@ -2132,7 +2132,7 @@ Orientation-only prose can use a compact role label and source map. Increase rec
 9. Mixed-role paragraphs should be split when confidence, consequence, or refresh behavior differs.
 10. Unknown, denied, inaccessible, stale, and conflicting evidence remain explicit states.
 
-### Examples of boundary handling
+**Examples of boundary handling**
 
 **Good historical fact:** "The archived template contains a traceability matrix with one sample requirement linked to several evidence levels." This is directly inspectable and does not claim the matrix is sufficient.
 
@@ -2144,7 +2144,7 @@ Orientation-only prose can use a compact role label and source map. Increase rec
 
 **Conflict:** current target behavior disagrees with retrieved external guidance. Preserve both observations, inspect version and configuration, and let the accountable target owner resolve applicability. Do not hide the conflict by changing the evidence label.
 
-### Verification and lifecycle
+**Verification and lifecycle**
 
 - Hash frozen local sources and compare expected identities before reuse.
 - Map consequential claims to bounded source support or explicit synthesis records.

@@ -2,8 +2,8 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 18:55:29Z
-- Current Phase: Refactor
+- Updated: 2026-07-11 20:25:35Z
+- Current Phase: Green
 - Status: active
 
 ## Sessions
@@ -5536,3 +5536,2036 @@ Assignment 15 reread group 4 complete: Sections 016-020
 
 #### Performance/Metrics:
 - Assignment 15 reread: 20/26 sections and 1200/1560 fields
+
+### Session: 2026-07-11 18:55:42Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 5: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after retry, observability, performance, scale, and refresh review
+
+#### Current Focus:
+Assignment 15 reread group 5 complete: Sections 021-025
+
+#### Next Steps:
+- Reread Section 026, rerun final audits and whitespace, close assignment 15, then open assignment 16 only
+
+#### Context Notes:
+- Refresh remains a versioned package-behavior diff rather than link accumulation
+
+#### Performance/Metrics:
+- Assignment 15 reread: 25/26 sections and 1500/1560 fields
+
+### Session: 2026-07-11 18:56:07Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier final: passing - reference 105001 vs seed 21106 chars; packet 514787 chars; 26/260/1560 exact and normalized
+- terminal artifact audit: passing - minimum expansion 2970; 12 tables; one balanced fence; ASCII-only; 128/128 frozen hashes; no placeholders or preservation mismatches
+- whitespace: passing - git diff --check exit 0 for assignment 15 artifacts and Alpha journal
+
+#### Implementation Progress:
+- Changed assignment 15 reference and packet; reread 26 sections and byte-matched 1560 fields in six groups; no reconciliation edits required
+
+#### Current Focus:
+Assignment 15 plugin_structure_manifest_patterns final QA complete
+
+#### Next Steps:
+- Open assignment 16 python_reliability_reference_patterns only and establish complete Red baseline before editing
+
+#### Context Notes:
+- Hashes reference df71a84816dec6b3a68bc02f9775c64185eadc7a7e452543aee37e57a7031990; packet 7aff863deede72be3a98d0189bd7c40b58eaf66b1b692f4f15b4f125439acd9d; seed 2e4406c8e52a983614e5956ac02ce6e342bfe84cc72e80884bccf84fe527589a
+
+#### Performance/Metrics:
+- Assignment 15 final: 685 reference lines, 1871 packet lines, full reread complete
+
+### Session: 2026-07-11 18:56:51Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- focused verifier baseline: failing - working reference still matches archive seed
+
+#### Implementation Progress:
+- Read 205-line working and seed plus the complete 171-line local Python reliability reference; confirmed 26 headings and absent packet
+
+#### Current Focus:
+Assignment 16 python_reliability_reference_patterns baseline established
+
+#### Next Steps:
+- Create and save Section 001 packet, then its reference expansion, then run prefix-stripped normalized sanity
+
+#### Context Notes:
+- Seed and working hash b6f795869e2e9bc1f92cdae8a719ef41033e431f4ade6ad89f9fcbe0a3b5e67f; local hash 8ef3e500e98c7f80fb15d7e6686c1f51528b8e993f88730183356d8b92160e13; 115 frozen queue rows; four external docs links unrefreshed
+
+#### Performance/Metrics:
+- Local corpus covers 15 reliability patterns across boundaries, typing, data, exceptions, resources, asyncio, testing, packaging, and tooling
+
+### Session: 2026-07-11 18:58:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 180 of 180 normalized values unique
+- prefix heading and expansion sanity: passing - 3 packet sections, 30 questions, 180 fields, 26 reference headings, first 3 sections expanded
+
+#### Implementation Progress:
+- Added risk-calibrated reliability contract, claim-specific provenance, and bounded dual-scoreboard interpretation
+
+#### Current Focus:
+Assignment 16 Sections 001-003 saved under atomic cadence
+
+#### Next Steps:
+- Complete Sections 004-006 for thesis, local source routing, and external documentation boundaries
+
+#### Context Notes:
+- Scores are omission prompts, not probabilities or observed defect reduction
+
+#### Performance/Metrics:
+- Assignment 16 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-11 18:59:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 360 of 360 normalized values unique
+- atomic prefix sanity: passing - 6 sections, 60 questions, 360 fields, first 6 reference sections expanded
+
+#### Implementation Progress:
+- Added uncertainty-to-contract thesis, heading-level local router, and tool-specific external boundaries
+
+#### Current Focus:
+Assignment 16 Sections 004-006 evidence core saved
+
+#### Next Steps:
+- Complete Sections 007-009 for Python anti-patterns, verification, and usage routing
+
+#### Context Notes:
+- One local source is treated as a checklist with exposed gaps, not simulated consensus
+
+#### Performance/Metrics:
+- Assignment 16 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-11 19:00:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 540 of 540 normalized values unique
+- atomic prefix sanity: passing - 9 sections, 90 questions, 540 fields, first 9 reference sections expanded
+
+#### Implementation Progress:
+- Added information-erasure anti-patterns, behavior-first project gates, and risk-calibrated pattern routing
+
+#### Current Focus:
+Assignment 16 Sections 007-009 Python safety and routing saved
+
+#### Next Steps:
+- Complete Sections 010-012 for maintainer journey, tradeoffs, and single-source hierarchy
+
+#### Context Notes:
+- Static, runtime, packaging, and external-integration tests remain distinct evidence layers
+
+#### Performance/Metrics:
+- Assignment 16 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-11 19:01:05Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 720 of 720 normalized values unique
+- atomic prefix sanity: passing - 12 sections, 120 questions, 720 fields, first 12 reference sections expanded
+
+#### Implementation Progress:
+- Added staged maintainer journey, risk-versus-migration tradeoffs, and project-aware single-source hierarchy
+
+#### Current Focus:
+Assignment 16 Sections 010-012 migration decisions saved
+
+#### Next Steps:
+- Complete Sections 013-015 for freshness artifact, examples, and outcome metrics
+
+#### Context Notes:
+- Reliability migration shrinks uncertainty regions without using Any or tool churn as shortcuts
+
+#### Performance/Metrics:
+- Assignment 16 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-11 19:02:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 900 of 900 normalized values unique
+- atomic prefix sanity: passing - 15 sections, 150 questions, 900 fields, first 15 reference sections expanded
+
+#### Implementation Progress:
+- Defined behavior-diff freshness packet, boundary-specific examples, and anti-gaming reliability metrics
+
+#### Current Focus:
+Assignment 16 Sections 013-015 freshness artifact saved
+
+#### Next Steps:
+- Complete Sections 016-018 for completeness, adjacent routing, and workload boundaries
+
+#### Context Notes:
+- Freshness is versioned reproduced behavior, not a timestamp or link count
+
+#### Performance/Metrics:
+- Assignment 16 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 19:03:02Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1080 of 1080 normalized values unique
+- atomic prefix sanity: passing - 18 sections, 180 questions, 1080 fields, first 18 reference sections expanded
+
+#### Implementation Progress:
+- Added uncertainty-boundary completeness, domain-capability routing, and causally staged workload limits
+
+#### Current Focus:
+Assignment 16 Sections 016-018 scope controls saved
+
+#### Next Steps:
+- Complete Sections 019-021 for reliability targets, failure taxonomy, and retry backpressure
+
+#### Context Notes:
+- The binding workload is attributable causal change, not source or line count
+
+#### Performance/Metrics:
+- Assignment 16 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-11 19:03:59Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1260 of 1260 normalized values unique
+- atomic prefix sanity: passing - 21 sections, 210 questions, 1260 fields, first 21 reference sections expanded
+
+#### Implementation Progress:
+- Separated per-change contract gates from migration samples, localized information-loss failures, and made retries state- and cancellation-aware
+
+#### Current Focus:
+Assignment 16 Sections 019-021 reliability and replay saved
+
+#### Next Steps:
+- Complete Sections 022-024 for observability, performance verification, and scale boundaries
+
+#### Context Notes:
+- Cancellation is control flow and never a generic retry trigger
+
+#### Performance/Metrics:
+- Assignment 16 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-11 19:04:56Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1440 of 1440 normalized values unique
+- atomic prefix sanity: passing - 24 sections, 240 questions, 1440 fields, first 24 reference sections expanded
+
+#### Implementation Progress:
+- Added information-preserving observability, unproven-target review sampling, and package-service scale exits
+
+#### Current Focus:
+Assignment 16 Sections 022-024 observability, review performance, and scale saved
+
+#### Next Steps:
+- Complete Sections 025-026, run Green validators, then begin grouped whole-artifact reread
+
+#### Context Notes:
+- The ten-minute review target remains a candidate hypothesis with no observed sample
+
+#### Performance/Metrics:
+- Assignment 16 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-11 19:05:50Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- focused verifier: passing - 26 sections, 260 questions, 1560 exact and prefix-stripped normalized-unique fields; reference 100508 vs seed 17442 chars
+- frozen artifact audit: passing - 115 of 115 hashes and preserved spans; minimum expansion 3002; 12 tables; one balanced fence; ASCII-only
+
+#### Implementation Progress:
+- Completed and saved all 26 Python reliability packet and reference sections under packet-first atomic cadence
+
+#### Current Focus:
+Assignment 16 implementation complete; entering whole-artifact reread
+
+#### Next Steps:
+- Reread Sections 001-005 and byte-match all 300 generated field values
+
+#### Context Notes:
+- No reconciliation change required before reread
+
+#### Performance/Metrics:
+- Assignment 16 Green hashes: reference 4f95e5ec889672a59bdba924a95b7aab8a6918231f38187d140b736eb81010c7; packet b945bf016dfbe9c88a615a3cc1cad147be5310559902f213880cceed0318a6c5; seed b6f795869e2e9bc1f92cdae8a719ef41033e431f4ade6ad89f9fcbe0a3b5e67f
+
+### Session: 2026-07-11 19:06:05Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 1: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after reliability contract, provenance, ranking, thesis, and local-source review
+
+#### Current Focus:
+Assignment 16 reread group 1 complete: Sections 001-005
+
+#### Next Steps:
+- Reread Sections 006-010 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Dynamic uncertainty and lifecycle ownership remain the governing thread
+
+#### Performance/Metrics:
+- Assignment 16 reread: 5/26 sections and 300/1560 fields
+
+### Session: 2026-07-11 19:06:25Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 2: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after external tools, anti-patterns, verification, routing, and migration journey review
+
+#### Current Focus:
+Assignment 16 reread group 2 complete: Sections 006-010
+
+#### Next Steps:
+- Reread Sections 011-015 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Static checking never substitutes for runtime boundary and lifecycle evidence
+
+#### Performance/Metrics:
+- Assignment 16 reread: 10/26 sections and 600/1560 fields
+
+### Session: 2026-07-11 19:06:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 3: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after tradeoff, hierarchy, freshness artifact, examples, and metrics review
+
+#### Current Focus:
+Assignment 16 reread group 3 complete: Sections 011-015
+
+#### Next Steps:
+- Reread Sections 016-020 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Migration remains behavior-first, staged, and rollback-capable
+
+#### Performance/Metrics:
+- Assignment 16 reread: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 19:06:54Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 4: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after completeness, routing, workload, reliability, and failure review
+
+#### Current Focus:
+Assignment 16 reread group 4 complete: Sections 016-020
+
+#### Next Steps:
+- Reread Sections 021-025 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Failure classification continues to preserve distinctions rather than collapse them
+
+#### Performance/Metrics:
+- Assignment 16 reread: 20/26 sections and 1200/1560 fields
+
+### Session: 2026-07-11 19:07:08Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 5: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after retry, observability, performance, scale, and refresh review
+
+#### Current Focus:
+Assignment 16 reread group 5 complete: Sections 021-025
+
+#### Next Steps:
+- Reread Section 026, rerun final audits and whitespace, close assignment 16, then open assignment 17 only
+
+#### Context Notes:
+- Refresh, performance, and observability remain evidence- and version-bounded
+
+#### Performance/Metrics:
+- Assignment 16 reread: 25/26 sections and 1500/1560 fields
+
+### Session: 2026-07-11 19:07:36Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier final: passing - reference 100508 vs seed 17442 chars; packet 510688 chars; 26/260/1560 exact and normalized
+- terminal artifact audit: passing - minimum expansion 3002; 12 tables; one balanced fence; ASCII-only; 115/115 frozen hashes; no placeholders or preservation mismatches
+- whitespace: passing - git diff --check exit 0 for assignment 16 artifacts and Alpha journal
+
+#### Implementation Progress:
+- Changed assignment 16 reference and packet; reread 26 sections and byte-matched 1560 fields in six groups; no reconciliation edits required
+
+#### Current Focus:
+Assignment 16 python_reliability_reference_patterns final QA complete
+
+#### Next Steps:
+- Open assignment 17 rust_backend_security_resilience only and establish complete Red baseline before editing
+
+#### Context Notes:
+- Hashes reference 4f95e5ec889672a59bdba924a95b7aab8a6918231f38187d140b736eb81010c7; packet b945bf016dfbe9c88a615a3cc1cad147be5310559902f213880cceed0318a6c5; seed b6f795869e2e9bc1f92cdae8a719ef41033e431f4ade6ad89f9fcbe0a3b5e67f
+
+#### Performance/Metrics:
+- Assignment 16 final: 673 reference lines, 1871 packet lines, full reread complete
+
+### Session: 2026-07-11 19:08:25Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- focused verifier baseline: failing - working reference still matches archive seed
+
+#### Implementation Progress:
+- Read 205-line working and seed plus the complete 90-line local Rust backend security and resilience source; confirmed 26 headings and absent packet
+
+#### Current Focus:
+Assignment 17 rust_backend_security_resilience baseline established
+
+#### Next Steps:
+- Create and save Section 001 packet, then its reference expansion, then run prefix-stripped normalized sanity
+
+#### Context Notes:
+- Seed and working hash 5988d5f58e0b71ef23a5a8ecdc7052e9c5b730d8f69e30c2580b0809aff1c258; local hash f7f4473cd2ccd4580241fa025d33ac12edc5ea45aa433e61412f1225bce6caf2; 115 frozen queue rows; four external Rust/Tokio/Axum links unrefreshed
+
+#### Performance/Metrics:
+- Local corpus covers credentials, sessions, anti-enumeration, idempotency, transactions, failure classes, timeouts, and background processing
+
+### Session: 2026-07-11 19:09:37Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 180 of 180 normalized values unique
+- prefix heading and expansion sanity: passing - 3 packet sections, 30 questions, 180 fields, 26 reference headings, first 3 sections expanded
+
+#### Implementation Progress:
+- Added bounded security-resilience contract, layer-specific provenance, and non-assurance scoreboard interpretation
+
+#### Current Focus:
+Assignment 17 Sections 001-003 saved under atomic cadence
+
+#### Next Steps:
+- Complete Sections 004-006 for thesis, local routing, and external boundaries
+
+#### Context Notes:
+- The thin source is explicitly not treated as a complete threat model
+
+#### Performance/Metrics:
+- Assignment 17 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-11 19:10:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 360 of 360 normalized values unique
+- atomic prefix sanity: passing - 6 sections, 60 questions, 360 fields, first 6 reference sections expanded
+
+#### Implementation Progress:
+- Added durable-state-machine thesis, flow-routed local source, and mechanism-bounded Rust/Tokio/Axum evidence
+
+#### Current Focus:
+Assignment 17 Sections 004-006 evidence core saved
+
+#### Next Steps:
+- Complete Sections 007-009 for security anti-patterns, verification, and usage routing
+
+#### Context Notes:
+- Ecosystem correctness is necessary but never treated as complete product security
+
+#### Performance/Metrics:
+- Assignment 17 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-11 19:11:42Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 540 of 540 normalized values unique
+- atomic prefix sanity: passing - 9 sections, 90 questions, 540 fields, first 9 reference sections expanded
+
+#### Implementation Progress:
+- Added ambiguous-state anti-patterns, cross-layer abuse and fault verification, and bounded flow activation with mandatory exits
+
+#### Current Focus:
+Assignment 17 Sections 007-009 security safety and routing saved
+
+#### Next Steps:
+- Complete Sections 010-012 for engineer journey, tradeoffs, and thin-source hierarchy
+
+#### Context Notes:
+- Compile success and framework correctness never substitute for product threat evidence
+
+#### Performance/Metrics:
+- Assignment 17 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-11 19:12:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 720 of 720 normalized values unique
+- atomic prefix sanity: passing - 12 sections, 120 questions, 720 fields, first 12 reference sections expanded
+
+#### Implementation Progress:
+- Added asset-to-recovery engineer journey, ambiguity-focused tradeoffs, and product-aware thin-source hierarchy
+
+#### Current Focus:
+Assignment 17 Sections 010-012 flow design and hierarchy saved
+
+#### Next Steps:
+- Complete Sections 013-015 for threat artifact, worked cases, and outcome metrics
+
+#### Context Notes:
+- Deployment rollback and data reconciliation remain distinct recovery responsibilities
+
+#### Performance/Metrics:
+- Assignment 17 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-11 19:13:42Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 900 of 900 normalized values unique
+- atomic prefix sanity: passing - 15 sections, 150 questions, 900 fields, first 15 reference sections expanded
+
+#### Implementation Progress:
+- Defined threat-and-recovery packet, adversarial flow examples, and leak-repeat-ambiguity metrics
+
+#### Current Focus:
+Assignment 17 Sections 013-015 threat artifact saved
+
+#### Next Steps:
+- Complete Sections 016-018 for completeness, adjacent routing, and workload boundaries
+
+#### Context Notes:
+- Permission and supply-chain completeness remain explicit adjacent-evidence gaps
+
+#### Performance/Metrics:
+- Assignment 17 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 19:14:34Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1080 of 1080 normalized values unique
+- atomic prefix sanity: passing - 18 sections, 180 questions, 1080 fields, first 18 reference sections expanded
+
+#### Implementation Progress:
+- Added flow-bounded completeness, threat-capability routing, and ambiguity-based workload limits
+
+#### Current Focus:
+Assignment 17 Sections 016-018 scope controls saved
+
+#### Next Steps:
+- Complete Sections 019-021 for reliability targets, failure taxonomy, and retry backpressure
+
+#### Context Notes:
+- Seed endpoint and request counts remain provisional metadata, not calibrated security capacity
+
+#### Performance/Metrics:
+- Assignment 17 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-11 19:15:38Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1260 of 1260 normalized values unique
+- atomic prefix sanity: passing - 21 sections, 210 questions, 1260 fields, first 21 reference sections expanded
+
+#### Implementation Progress:
+- Separated hard flow invariants from operational samples, localized ambiguous-state failures, and made retries identity- and evidence-gated
+
+#### Current Focus:
+Assignment 17 Sections 019-021 reliability and backpressure saved
+
+#### Next Steps:
+- Complete Sections 022-024 for observability, performance verification, and scale boundaries
+
+#### Context Notes:
+- Backpressure protects both capacity and the evidence needed for secure reconciliation
+
+#### Performance/Metrics:
+- Assignment 17 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-11 19:16:47Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1440 of 1440 normalized values unique
+- atomic prefix sanity: passing - 24 sections, 240 questions, 1440 fields, first 24 reference sections expanded
+
+#### Implementation Progress:
+- Added knowledge-asymmetric observability, threat-aware SLO protocol, and cross-system state boundaries
+
+#### Current Focus:
+Assignment 17 Sections 022-024 observability, performance, and scale saved
+
+#### Next Steps:
+- Complete Sections 025-026, run Green validators, then begin grouped whole-artifact reread
+
+#### Context Notes:
+- Seed 200/500 ms figures are preserved only as unvalidated metadata and never used as universal gates
+
+#### Performance/Metrics:
+- Assignment 17 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-11 19:17:37Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- focused verifier: passing - 26 sections, 260 questions, 1560 exact and prefix-stripped normalized-unique fields; reference 102301 vs seed 17728 chars
+- frozen artifact audit: passing - 115 of 115 hashes and preserved spans; minimum expansion 2860; 12 tables; one balanced fence; ASCII-only
+
+#### Implementation Progress:
+- Completed and saved all 26 Rust backend security packet and reference sections under packet-first atomic cadence
+
+#### Current Focus:
+Assignment 17 implementation complete; entering whole-artifact reread
+
+#### Next Steps:
+- Reread Sections 001-005 and byte-match all 300 generated field values
+
+#### Context Notes:
+- No reconciliation change required before reread; unsupported generic latency precision is explicitly bounded
+
+#### Performance/Metrics:
+- Assignment 17 Green hashes: reference b115aa4ea3813e03408948375c4253beb631ec19e2ac42b88807322a5a45c6cc; packet 8cc9c6ef603c2275f8c22d19881a80b9e7339ba72117b73d883773b4e724bc62; seed 5988d5f58e0b71ef23a5a8ecdc7052e9c5b730d8f69e30c2580b0809aff1c258
+
+### Session: 2026-07-11 19:17:59Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 1: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after security contract, provenance, ranking, thesis, and local-source review
+
+#### Current Focus:
+Assignment 17 reread group 1 complete: Sections 001-005
+
+#### Next Steps:
+- Reread Sections 006-010 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Bounded source scope and durable-state reasoning remain consistent
+
+#### Performance/Metrics:
+- Assignment 17 reread: 5/26 sections and 300/1560 fields
+
+### Session: 2026-07-11 19:18:14Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 2: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after ecosystem boundary, anti-patterns, verification, routing, and engineer journey review
+
+#### Current Focus:
+Assignment 17 reread group 2 complete: Sections 006-010
+
+#### Next Steps:
+- Reread Sections 011-015 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Product security and framework mechanics remain separate evidence classes
+
+#### Performance/Metrics:
+- Assignment 17 reread: 10/26 sections and 600/1560 fields
+
+### Session: 2026-07-11 19:18:32Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 3: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after tradeoff, hierarchy, threat artifact, examples, and metrics review
+
+#### Current Focus:
+Assignment 17 reread group 3 complete: Sections 011-015
+
+#### Next Steps:
+- Reread Sections 016-020 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Residual risk and missing adjacent evidence remain release constraints, not footnotes
+
+#### Performance/Metrics:
+- Assignment 17 reread: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 19:18:47Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 4: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after completeness, routing, workload, reliability, and failure review
+
+#### Current Focus:
+Assignment 17 reread group 4 complete: Sections 016-020
+
+#### Next Steps:
+- Reread Sections 021-025 and byte-match the next 300 packet fields
+
+#### Context Notes:
+- Security completeness remains flow-bounded and state-explainable
+
+#### Performance/Metrics:
+- Assignment 17 reread: 20/26 sections and 1200/1560 fields
+
+### Session: 2026-07-11 19:19:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread group 5: passing - full saved rationale byte-match for 300 fields and matching reference expansions
+
+#### Implementation Progress:
+- No reconciliation edits required after retry, observability, performance, scale, and refresh review
+
+#### Current Focus:
+Assignment 17 reread group 5 complete: Sections 021-025
+
+#### Next Steps:
+- Reread Section 026, rerun final audits and whitespace, close assignment 17, then open assignment 18 only
+
+#### Context Notes:
+- Unsupported generic latency precision remains explicitly demoted
+
+#### Performance/Metrics:
+- Assignment 17 reread: 25/26 sections and 1500/1560 fields
+
+### Session: 2026-07-11 19:19:32Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier final: passing - reference 102301 vs seed 17728 chars; packet 513435 chars; 26/260/1560 exact and normalized
+- terminal artifact audit: passing - minimum expansion 2860; 12 tables; one balanced fence; ASCII-only; 115/115 frozen hashes; no placeholders or preservation mismatches
+- whitespace: passing - git diff --check exit 0 for assignment 17 artifacts and Alpha journal
+
+#### Implementation Progress:
+- Changed assignment 17 reference and packet; reread 26 sections and byte-matched 1560 fields in six groups; no reconciliation edits required
+
+#### Current Focus:
+Assignment 17 rust_backend_security_resilience final QA complete
+
+#### Next Steps:
+- Open assignment 18 rust_idioms_checklist_patterns only and establish complete Red baseline before editing
+
+#### Context Notes:
+- Hashes reference b115aa4ea3813e03408948375c4253beb631ec19e2ac42b88807322a5a45c6cc; packet 8cc9c6ef603c2275f8c22d19881a80b9e7339ba72117b73d883773b4e724bc62; seed 5988d5f58e0b71ef23a5a8ecdc7052e9c5b730d8f69e30c2580b0809aff1c258
+
+#### Performance/Metrics:
+- Assignment 17 final: 673 reference lines, 1871 packet lines, full reread complete
+
+### Session: 2026-07-11 19:20:38Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- focused verifier baseline: failing - working reference still matches archive seed
+
+#### Implementation Progress:
+- Read 207-line working and seed plus the complete 73-line local Rust idioms checklist; verified February and March source paths are byte-identical duplicates; confirmed 26 headings and absent packet
+
+#### Current Focus:
+Assignment 18 rust_idioms_checklist_patterns baseline established
+
+#### Next Steps:
+- Create and save Section 001 packet, then its reference expansion, then run prefix-stripped normalized sanity
+
+#### Context Notes:
+- Seed and working hash e204a34debadb3027f8b691504cdf755124fbd9fad5d94fb65374ea071f9476c; local hash 65be5f14e72be078ec7cdbdc7857e95696d7aefe99ee6e1830ccbc2c21df1317; 118 frozen queue rows; four external links unrefreshed
+
+#### Performance/Metrics:
+- Local corpus covers API types, errors, async concurrency, ownership, architecture, testing, tooling, docs, and observability
+
+### Session: 2026-07-11 19:21:50Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 180 of 180 normalized values unique
+- prefix heading and expansion sanity: passing - 3 packet sections, 30 questions, 180 fields, 26 reference headings, first 3 sections expanded
+
+#### Implementation Progress:
+- Added context-sensitive idiom contract, lineage and provenance limits, and non-assurance scoreboard interpretation
+
+#### Current Focus:
+Assignment 18 Sections 001-003 saved under atomic cadence
+
+#### Next Steps:
+- Complete Sections 004-006 for thesis, local routing, and external boundaries
+
+#### Context Notes:
+- Duplicate monthly copies and inaccessible upstream downloads do not add independent authority
+
+#### Performance/Metrics:
+- Assignment 18 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-11 19:22:44Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 360 of 360 normalized values unique
+- atomic prefix sanity: passing - 6 sections, 60 questions, 360 fields, first 6 reference sections expanded
+
+#### Implementation Progress:
+- Added obligation-driven idiom thesis, heading-level checklist router, and ecosystem-specific external boundaries
+
+#### Current Focus:
+Assignment 18 Sections 004-006 evidence core saved
+
+#### Next Steps:
+- Complete Sections 007-009 for anti-patterns, verification, and usage routing
+
+#### Context Notes:
+- The checklist routes review; current project evidence proves mechanisms
+
+#### Performance/Metrics:
+- Assignment 18 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-11 19:23:49Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 540 of 540 normalized values unique
+- atomic prefix sanity: passing - 9 sections, 90 questions, 540 fields, first 9 reference sections expanded
+
+#### Implementation Progress:
+- Added boundary-hiding anti-patterns, obligation-matched verification, and crate-role idiom selection
+
+#### Current Focus:
+Assignment 18 Sections 007-009 Rust misuse and routing saved
+
+#### Next Steps:
+- Complete Sections 010-012 for engineer journey, tradeoffs, and source hierarchy
+
+#### Context Notes:
+- Repository feature matrices and MSRV bound tooling commands
+
+#### Performance/Metrics:
+- Assignment 18 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-11 19:25:18Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 720 of 720 normalized values unique
+- atomic prefix sanity: passing - 12 sections, 120 questions, 720 fields, first 12 reference sections expanded
+
+#### Implementation Progress:
+- Added obligation-first engineer journey, caller-aware Rust tradeoffs, and duplicate-aware claim hierarchy
+
+#### Current Focus:
+Assignment 18 Sections 010-012 design journey and hierarchy saved
+
+#### Next Steps:
+- Complete Sections 013-015 for worked artifact, examples, and metrics
+
+#### Context Notes:
+- The right idiom minimizes total contract complexity across implementation and callers
+
+#### Performance/Metrics:
+- Assignment 18 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-11 19:27:34Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 900 of 900 normalized values unique
+- atomic prefix sanity: passing - 15 sections, 150 questions, 900 fields, first 15 reference sections expanded
+
+#### Implementation Progress:
+- Added section-specific artifact, worked-example, and feedback-loop reasoning to the packet and reference
+
+#### Current Focus:
+Assignment 18 Sections 013-015 recovered and sanity-verified after interrupted yield
+
+#### Next Steps:
+- Complete and save Assignment 18 Sections 016-018 with atomic sanity checks
+
+#### Context Notes:
+- Durable state, stored profile count, and on-disk counts agree at Section 015; no completed work was replayed
+
+#### Performance/Metrics:
+- Assignment 18 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 19:30:25Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1080 of 1080 normalized values unique
+- atomic prefix sanity: passing - 18 sections, 180 questions, 1080 fields, first 18 reference sections expanded
+
+#### Implementation Progress:
+- Replaced structural completion checks and tautological routes with obligation evidence and named handoffs; replaced unsupported fixed symbol ceiling with contract-crossing workload bounds
+
+#### Current Focus:
+Assignment 18 Sections 016-018 completion, routing, and workload model saved
+
+#### Next Steps:
+- Complete and save Assignment 18 Sections 019-021 with atomic sanity checks
+
+#### Context Notes:
+- Routing preserves evidence across executable-spec, backend, quality-gate, and resilience handoffs
+
+#### Performance/Metrics:
+- Assignment 18 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-11 19:32:07Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1260 of 1260 normalized values unique
+- atomic prefix sanity: passing - 21 sections, 210 questions, 1260 fields, first 21 reference sections expanded
+
+#### Implementation Progress:
+- Replaced unsupported accuracy precision with baseline-relative sampling; added causal Rust failure registry; separated diagnostic replay from production retries
+
+#### Current Focus:
+Assignment 18 Sections 019-021 reliability, failure classification, and backpressure saved
+
+#### Next Steps:
+- Complete and save Assignment 18 Sections 022-024 with atomic sanity checks
+
+#### Context Notes:
+- Production retry limits remain explicitly routed because the local idioms corpus lacks protocol and SLO evidence
+
+#### Performance/Metrics:
+- Assignment 18 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-11 19:33:48Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- prefix-stripped packet uniqueness: passing - 1440 of 1440 normalized values unique
+- atomic prefix sanity: passing - 24 sections, 240 questions, 1440 fields, first 24 reference sections expanded
+
+#### Implementation Progress:
+- Added obligation-linked Rust telemetry; replaced universal latency gate with reproducible benchmark protocol; reframed scale around evidence closure and rollback units
+
+#### Current Focus:
+Assignment 18 Sections 022-024 observability, performance, and scale boundaries saved
+
+#### Next Steps:
+- Complete and save Assignment 18 Sections 025-026, then run full focused and artifact verification
+
+#### Context Notes:
+- Performance and scale claims are explicitly bounded by corpus uncertainty and specialized service evidence
+
+#### Performance/Metrics:
+- Assignment 18 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-11 19:36:05Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- focused verifier: failing - section 015 expected 10 questions, found 0
+- question ownership diagnostic: failing - Sections 015-025 have zero direct questions and Section 026 has 120
+
+#### Implementation Progress:
+- Root cause traced to heading-anchored apply_patch insertion, which placed each new packet section before the prior section body
+
+#### Current Focus:
+Assignment 18 focused verifier exposed nested packet tail ordering after Section 014
+
+#### Next Steps:
+- Mechanically regenerate packet Sections 015-026 in correct order from preserved stored profiles, then rerun focused verification
+
+#### Context Notes:
+- Reference prose and all 1560 packet field texts remain intact; repair is limited to packet ordering
+
+#### Performance/Metrics:
+- Malformed tail begins at Section 015; Sections 001-014 each retain 10 questions
+
+### Session: 2026-07-11 19:36:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- focused verifier: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields
+- full artifact audit: passing - 118 frozen rows and hashes preserved, minimum expansion 2774 characters, balanced fences and valid tables
+
+#### Implementation Progress:
+- Reordered packet Sections 015-026 without changing field text; complete reference remains reconciled across all 26 sections
+
+#### Current Focus:
+Assignment 18 complete artifact passes focused verifier and frozen-row audit after packet-order repair
+
+#### Next Steps:
+- Reread Assignment 18 reference and packet in groups of five sections or fewer, checkpointing each group, then rerun final gates
+
+#### Context Notes:
+- Focused verifier output is PASS; no web browsing, shared CSV edits, commits, or pushes occurred
+
+#### Performance/Metrics:
+- Reference 107816 characters; packet 529338 characters; reference SHA-256 94e5cd783a6ca70111f6f8668f0d9932198d1a10f3921c944be6e741f70a365f; packet SHA-256 9d60fb0ea6fdab9e41283abb8a47a1dad5bb10e3e909a0343b4a8a10f5557a03
+
+### Session: 2026-07-11 19:37:02Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 001-005 each match 10 questions, 60 fields, generated decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread title, source mapping, scoreboard, thesis, and local corpus sections with exact packet-section hash checks
+
+#### Current Focus:
+Assignment 18 final reread Sections 001-005 complete
+
+#### Next Steps:
+- Reread Assignment 18 Sections 006-010 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required in the first reread group
+
+#### Performance/Metrics:
+- Assignment 18 reread progress: 5/26 sections
+
+### Session: 2026-07-11 19:37:15Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 006-010 each match 10 questions, 60 fields, generated decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread external evidence, anti-patterns, verification commands, agent decision guide, and user journey with exact packet-section hash checks
+
+#### Current Focus:
+Assignment 18 final reread Sections 006-010 complete
+
+#### Next Steps:
+- Reread Assignment 18 Sections 011-015 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required through Section 010
+
+#### Performance/Metrics:
+- Assignment 18 reread progress: 10/26 sections
+
+### Session: 2026-07-11 19:37:27Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 011-015 each match 10 questions, 60 fields, generated decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread tradeoffs, corpus hierarchy, decision artifact, examples, and outcome metrics after packet-tail repair
+
+#### Current Focus:
+Assignment 18 final reread Sections 011-015 complete
+
+#### Next Steps:
+- Reread Assignment 18 Sections 016-020 and persist the next checkpoint
+
+#### Context Notes:
+- Section 015 now directly owns its ten questions; packet ordering defect remains resolved
+
+#### Performance/Metrics:
+- Assignment 18 reread progress: 15/26 sections
+
+### Session: 2026-07-11 19:37:41Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 016-020 each match 10 questions, 60 fields, generated decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread completion, named routes, workload, reliability targets, and causal failures with exact packet-section hash checks
+
+#### Current Focus:
+Assignment 18 final reread Sections 016-020 complete
+
+#### Next Steps:
+- Reread Assignment 18 Sections 021-025 and persist the next checkpoint
+
+#### Context Notes:
+- No packet or reference reconciliation change was required in this group
+
+#### Performance/Metrics:
+- Assignment 18 reread progress: 20/26 sections
+
+### Session: 2026-07-11 19:37:55Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 021-025 each match 10 questions, 60 fields, generated decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread retry and backpressure, observability, performance, scale, and future refresh queries with exact packet-section hash checks
+
+#### Current Focus:
+Assignment 18 final reread Sections 021-025 complete
+
+#### Next Steps:
+- Reread Assignment 18 Section 026, rerun final verifier and audit, then close Refactor
+
+#### Context Notes:
+- No unsupported universal threshold or unverified web-currentness claim emerged during reread
+
+#### Performance/Metrics:
+- Assignment 18 reread progress: 25/26 sections
+
+### Session: 2026-07-11 19:38:07Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - All 26 sections each match 10 questions, 60 fields, generated decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread evidence boundaries last and confirmed local duplicate hash, no-browse status, uncertainty, and routing remain consistent
+
+#### Current Focus:
+Assignment 18 complete reference and packet reread finished through Section 026
+
+#### Next Steps:
+- Rerun Assignment 18 focused verifier, full artifact audit, and whitespace check; record final Refactor evidence before opening Assignment 19
+
+#### Context Notes:
+- Complete packet and reference required no prose reconciliation after the ordering repair
+
+#### Performance/Metrics:
+- Assignment 18 reread progress: 26/26 sections, 260/260 questions, 1560/1560 fields
+
+### Session: 2026-07-11 19:38:42Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: passing - status PASS; reference 26 sections and 107816 characters; packet 26 sections, 260 questions, 1560 exact and normalized-unique fields
+- full artifact audit: passing - 118 frozen rows, zero hash or preservation mismatches, minimum expansion 2774, balanced fences, 12 valid tables
+- complete grouped reread: passing - all reference and packet sections reread in groups of five or fewer with exact section hashes
+- git diff --check: passing - no whitespace errors in Assignment 18 reference, packet, or Alpha progress journal
+
+#### Implementation Progress:
+- Changed idiomatic-ref-202607/rust_idioms_checklist_patterns-20260710.md and idiomatic-reference-evolution-work/alpha/packets/rust_idioms_checklist_patterns-20260710-question-packets.md; appended evidence to idiomatic-reference-evolution-work/alpha/progress.md
+
+#### Current Focus:
+Assignment 18 rust_idioms_checklist_patterns is fully Refactor-complete
+
+#### Next Steps:
+- Open and complete Assignment 19 idiomatic-ref-202607/rust_legacy_coder_prompts-20260710.md and its matching Alpha packet using the same atomic cadence
+
+#### Context Notes:
+- Red packet-order regression was repaired by reordering preserved Sections 015-026; no field prose or reference reconciliation changed during repair
+- No shared CSV, master journal, other lane, commit, push, or web browsing action occurred
+
+#### Performance/Metrics:
+- Reference SHA-256 94e5cd783a6ca70111f6f8668f0d9932198d1a10f3921c944be6e741f70a365f; packet SHA-256 9d60fb0ea6fdab9e41283abb8a47a1dad5bb10e3e909a0343b4a8a10f5557a03; seed SHA-256 e204a34debadb3027f8b691504cdf755124fbd9fad5d94fb65374ea071f9476c
+
+### Session: 2026-07-11 19:43:27Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- focused verifier: failing as expected - working reference still matches archive seed
+- packet baseline: failing as expected - matching Alpha packet does not yet exist
+
+#### Implementation Progress:
+- Read all 26 seed sections and all three local sources; classified rust-coder-01 as broad duplicated legacy catalog, rust-coder-02 as reliability critique, and Rust-Coder-1000IQ-01 as rigorous supporting operator doctrine
+
+#### Current Focus:
+Assignment 19 rust_legacy_coder_prompts baseline and complete local-corpus read established
+
+#### Next Steps:
+- Create Assignment 19 packet and evolve Sections 001-003 atomically, checking normalized uniqueness after every section
+
+#### Context Notes:
+- Working and seed SHA-256 f67c3ccd567b13403900d02733e9708d65b6e3363a6ec3d01d6dff56f02c48aa; 121 frozen queue rows; no web browsing performed
+- Local source hashes: rust-coder-01 aaec85ca39103591e54cb3bc9a8535916853dd25256ac0f8eb4539b60f0bbd13; rust-coder-02 71bc70834548a7304b35a94b0de8a31135f06230446fd0d02929da2690b3af9f; Rust-Coder-1000IQ-01 9006daebdade32af945c70e82eaff6487fa1ac440677c80f4739bc5f6eee2322
+
+#### Performance/Metrics:
+- Assignment 19 baseline: 26 sections, 18497 seed characters, zero packet sections
+
+### Session: 2026-07-11 19:45:31Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 3 sections, 30 questions, 180 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added legacy-prompt reuse protocol, generation-aware evidence map, and qualitative safeguard ranking without unsupported score precision
+
+#### Current Focus:
+Assignment 19 Sections 001-003 source generations and ranking safeguards saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 004-006 with atomic sanity checks
+
+#### Context Notes:
+- Packet append now anchors on the prior section final unique field, preventing nested section ordering
+
+#### Performance/Metrics:
+- Assignment 19 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-11 19:47:02Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 6 sections, 60 questions, 360 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added causal survival thesis, progressive local-source retrieval, and version-aware external candidate status with explicit no-browse boundary
+
+#### Current Focus:
+Assignment 19 Sections 004-006 thesis and evidence maps saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 007-009 with atomic sanity checks
+
+#### Context Notes:
+- Public URLs are preserved without falsely claiming current retrieval or verification
+
+#### Performance/Metrics:
+- Assignment 19 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-11 19:48:58Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 9 sections, 90 questions, 540 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added scope-mutation anti-pattern registry, compositional verification ladder, and intent-first agent mode selection
+
+#### Current Focus:
+Assignment 19 Sections 007-009 anti-patterns, gates, and mode routing saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 010-012 with atomic sanity checks
+
+#### Context Notes:
+- Archive-wide, focused artifact, provenance, and downstream Rust gates are now explicitly separated
+
+#### Performance/Metrics:
+- Assignment 19 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-11 19:51:09Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 12 sections, 120 questions, 720 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added end-to-end evidence journey, six-way rule disposition model, and claim-specific provenance/critique/operational hierarchy
+
+#### Current Focus:
+Assignment 19 Sections 010-012 user journey, dispositions, and faceted source hierarchy saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 013-015 with atomic sanity checks
+
+#### Context Notes:
+- Assignments 21-23 are queued after Assignments 19 and 20 reach full Refactor completion
+
+#### Performance/Metrics:
+- Assignment 19 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-11 19:52:41Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 15 sections, 150 questions, 900 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added full Legacy Prompt Migration Record, causal contrast examples, and boundary-surprise metrics without unsupported productivity claims
+
+#### Current Focus:
+Assignment 19 Sections 013-015 migration artifact, examples, and feedback loops saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 016-018 with atomic sanity checks
+
+#### Context Notes:
+- Every migrated high-risk rule now has explicit provenance, disposition, verification, waiver, rollback, and refresh fields
+
+#### Performance/Metrics:
+- Assignment 19 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 19:54:07Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 18 sections, 180 questions, 1080 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added evidence-closure checklist, named specialist handoffs with return conditions, and obligation-based migration workload boundaries
+
+#### Current Focus:
+Assignment 19 Sections 016-018 completion, routing, and workload model saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 019-021 with atomic sanity checks
+
+#### Context Notes:
+- The unsupported fixed 100-symbol capacity is retained only as seed evidence and explicitly replaced
+
+#### Performance/Metrics:
+- Assignment 19 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-11 19:55:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 21 sections, 210 questions, 1260 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added deterministic versus sampled reliability targets, dual prompt/code failure registry, and evidence-gain retry policy with stop conditions
+
+#### Current Focus:
+Assignment 19 Sections 019-021 reliability, failure causality, and retry backpressure saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 022-024 with atomic sanity checks
+
+#### Context Notes:
+- Production retry behavior remains routed to protocol-specific references and evidence
+
+#### Performance/Metrics:
+- Assignment 19 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-11 19:56:58Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 24 sections, 240 questions, 1440 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added redacted decision observability, separate workflow/runtime measurement protocols, and prompt-propagation scale boundaries
+
+#### Current Focus:
+Assignment 19 Sections 022-024 observability, performance, and scale boundaries saved
+
+#### Next Steps:
+- Complete and save Assignment 19 Sections 025-026, then run focused verification and full artifact audit
+
+#### Context Notes:
+- The reference explicitly avoids chain-of-thought capture and unsupported universal performance thresholds
+
+#### Performance/Metrics:
+- Assignment 19 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-11 19:58:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- focused verifier: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields; reference 115809 characters; packet 554768 characters
+- full artifact audit: passing - 121 frozen rows and hashes preserved, minimum expansion 3495 characters, balanced fences and 12 valid tables
+
+#### Implementation Progress:
+- Completed rust_legacy_coder_prompts reference and matching Alpha packet with claim-specific provenance, migration decisions, and verification controls
+
+#### Current Focus:
+Assignment 19 complete artifact passes focused verifier and frozen-row audit
+
+#### Next Steps:
+- Reread Assignment 19 reference and packet in groups of five sections or fewer, checkpoint each group, then rerun final gates
+
+#### Context Notes:
+- No shared CSV edits, external browsing, commits, or pushes occurred
+
+#### Performance/Metrics:
+- Reference SHA-256 376c725586bec7f48e61a191433ca2bc1efc604c5611fa8fe97f6fe4e30496c1; packet SHA-256 faa557597e7e6133ed2373848ca7017977b13f2cec0cdfd707552b43f704102d
+
+### Session: 2026-07-11 19:58:34Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 001-005 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread title, source evidence, ranking, thesis, and local corpus map with exact packet-section hashes
+
+#### Current Focus:
+Assignment 19 final reread Sections 001-005 complete
+
+#### Next Steps:
+- Reread Assignment 19 Sections 006-010 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required in the first reread group
+
+#### Performance/Metrics:
+- Assignment 19 reread progress: 5/26 sections
+
+### Session: 2026-07-11 19:58:49Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 006-010 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread external evidence, anti-patterns, gates, agent modes, and user journey with exact packet-section hashes
+
+#### Current Focus:
+Assignment 19 final reread Sections 006-010 complete
+
+#### Next Steps:
+- Reread Assignment 19 Sections 011-015 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required through Section 010
+
+#### Performance/Metrics:
+- Assignment 19 reread progress: 10/26 sections
+
+### Session: 2026-07-11 19:59:08Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 011-015 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread tradeoffs, faceted hierarchy, migration record, examples, and outcome feedback with exact packet-section hashes
+
+#### Current Focus:
+Assignment 19 final reread Sections 011-015 complete
+
+#### Next Steps:
+- Reread Assignment 19 Sections 016-020 and persist the next checkpoint
+
+#### Context Notes:
+- No source hierarchy or migration-record reconciliation change was required
+
+#### Performance/Metrics:
+- Assignment 19 reread progress: 15/26 sections
+
+### Session: 2026-07-11 19:59:22Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 016-020 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread completeness, routes, workload, reliability, and failure causes with exact packet-section hashes
+
+#### Current Focus:
+Assignment 19 final reread Sections 016-020 complete
+
+#### Next Steps:
+- Reread Assignment 19 Sections 021-025 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required in this group
+
+#### Performance/Metrics:
+- Assignment 19 reread progress: 20/26 sections
+
+### Session: 2026-07-11 19:59:36Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 021-025 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread retry, observability, performance, scale, and refresh-query sections with exact packet-section hashes
+
+#### Current Focus:
+Assignment 19 final reread Sections 021-025 complete
+
+#### Next Steps:
+- Reread Assignment 19 Section 026, rerun final verifier, audit, and whitespace check, then close Refactor
+
+#### Context Notes:
+- No unsupported universal threshold or false external-currentness claim emerged during reread
+
+#### Performance/Metrics:
+- Assignment 19 reread progress: 25/26 sections
+
+### Session: 2026-07-11 19:59:50Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - All 26 sections match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread evidence boundaries last and confirmed source hashes, missing upstream inventory, no-browse status, and inference limits remain aligned
+
+#### Current Focus:
+Assignment 19 complete reference and packet reread finished through Section 026
+
+#### Next Steps:
+- Rerun Assignment 19 focused verifier, full artifact audit, and whitespace check; record final Refactor evidence before opening Assignment 20
+
+#### Context Notes:
+- Complete packet and reference required no prose reconciliation during final reread
+
+#### Performance/Metrics:
+- Assignment 19 reread progress: 26/26 sections, 260/260 questions, 1560/1560 fields
+
+### Session: 2026-07-11 20:00:23Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: passing - status PASS; reference 26 sections and 115809 characters; packet 26 sections, 260 questions, 1560 exact and normalized-unique fields
+- full artifact audit: passing - 121 frozen rows, zero hash or preservation mismatches, minimum expansion 3495, balanced fences, 12 valid tables
+- complete grouped reread: passing - all reference and packet sections reread in groups of five or fewer with exact section hashes
+- git diff --check: passing - no whitespace errors in Assignment 19 reference, packet, or Alpha progress journal
+
+#### Implementation Progress:
+- Changed idiomatic-ref-202607/rust_legacy_coder_prompts-20260710.md and idiomatic-reference-evolution-work/alpha/packets/rust_legacy_coder_prompts-20260710-question-packets.md; appended evidence to idiomatic-reference-evolution-work/alpha/progress.md
+
+#### Current Focus:
+Assignment 19 rust_legacy_coder_prompts is fully Refactor-complete
+
+#### Next Steps:
+- Open and complete Assignment 20 idiomatic-ref-202607/stripe_payment_integration_patterns-20260710.md and its matching Alpha packet using the same atomic cadence
+
+#### Context Notes:
+- No shared CSV, master journal, other lane, commit, push, or web browsing action occurred
+
+#### Performance/Metrics:
+- Reference SHA-256 376c725586bec7f48e61a191433ca2bc1efc604c5611fa8fe97f6fe4e30496c1; packet SHA-256 faa557597e7e6133ed2373848ca7017977b13f2cec0cdfd707552b43f704102d; seed SHA-256 f67c3ccd567b13403900d02733e9708d65b6e3363a6ec3d01d6dff56f02c48aa
+
+### Session: 2026-07-11 20:01:27Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- focused verifier: failing as expected - working reference still matches archive seed
+- packet baseline: failing as expected - matching Alpha packet does not yet exist
+
+#### Implementation Progress:
+- Read all 26 seed sections and the complete Stripe skill; verified both mapped local copies are byte-identical and seed external links are agent-instruction sources rather than payment authorities
+
+#### Current Focus:
+Assignment 20 stripe_payment_integration_patterns baseline and complete local-corpus read established
+
+#### Next Steps:
+- Create Assignment 20 packet and evolve Sections 001-003 atomically with conservative no-browse evidence boundaries
+
+#### Context Notes:
+- Working and seed SHA-256 0ecb091c607712b6860d352252d7416b1057c192e7ed9d1a314abeaffc7cc9dd; 116 frozen queue rows
+- Local source SHA-256 838eb4e00a22f817b8577be230600547441493bf8c7aa15b0ee7e04f71f875cf for both copies; one textual source, not independent corroboration
+
+#### Performance/Metrics:
+- Assignment 20 baseline: 26 sections, 17051 seed characters, zero packet sections
+
+### Session: 2026-07-11 20:03:07Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 3 sections, 30 questions, 180 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added distributed payment-state thesis, duplicate-aware source map, and qualitative financial-control ranking without unsupported precision
+
+#### Current Focus:
+Assignment 20 Sections 001-003 payment contract, evidence fitness, and control ranking saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 004-006 with atomic sanity checks
+
+#### Context Notes:
+- Stripe product claims remain source-reported or explicitly pending current official refresh
+
+#### Performance/Metrics:
+- Assignment 20 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-11 20:04:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 6 sections, 60 questions, 360 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added server-authoritative payment thesis, paragraph-level local skill map, and authority-partitioned external evidence plan
+
+#### Current Focus:
+Assignment 20 Sections 004-006 payment thesis and source maps saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 007-009 with atomic sanity checks
+
+#### Context Notes:
+- Unrelated agent documentation remains preserved but cannot support Stripe payment semantics
+
+#### Performance/Metrics:
+- Assignment 20 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-11 20:06:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 9 sections, 90 questions, 540 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added payment-specific anti-pattern registry, layered artifact/integration/launch gates, and funds-flow-first agent decision guide
+
+#### Current Focus:
+Assignment 20 Sections 007-009 payment failures, gate ladder, and use-case routing saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 010-012 with atomic sanity checks
+
+#### Context Notes:
+- Live account changes and compliance conclusions remain explicitly outside unverified agent authority
+
+#### Performance/Metrics:
+- Assignment 20 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-11 20:07:58Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 12 sections, 120 questions, 720 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added end-to-end merchant journey, source-reported integration option matrix, and claim-specific provider/repository/account/business authority hierarchy
+
+#### Current Focus:
+Assignment 20 Sections 010-012 payment journey, product tradeoffs, and evidence hierarchy saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 013-015 with atomic sanity checks
+
+#### Context Notes:
+- Duplicate local skill paths are counted as one textual source throughout
+
+#### Performance/Metrics:
+- Assignment 20 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-11 20:09:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 15 sections, 150 questions, 900 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added multi-owner payment state contract, adverse lifecycle examples, and explainable-divergence metrics
+
+#### Current Focus:
+Assignment 20 Sections 013-015 payment artifact, examples, and feedback loops saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 016-018 with atomic sanity checks
+
+#### Context Notes:
+- Operational signals avoid raw sensitive values and separate test from live mode
+
+#### Performance/Metrics:
+- Assignment 20 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-11 20:11:15Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 18 sections, 180 questions, 1080 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added evidence-indexed launch completeness, accountable product and domain handoffs, and lifecycle-based workload boundaries
+
+#### Current Focus:
+Assignment 20 Sections 016-018 payment completion, specialist routing, and workload model saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 019-021 with atomic sanity checks
+
+#### Context Notes:
+- Provider limits and current account capabilities remain explicit future evidence, not inferred constants
+
+#### Performance/Metrics:
+- Assignment 20 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-11 20:12:59Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 21 sections, 210 questions, 1260 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added hard payment invariants, ambiguity-preserving failure registry, and logical-command retry policy with reconciliation and overload controls
+
+#### Current Focus:
+Assignment 20 Sections 019-021 reliability, financial failures, and retry backpressure saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 022-024 with atomic sanity checks
+
+#### Context Notes:
+- Exact provider idempotency windows, retry schedules, and rate limits remain unverified current facts
+
+#### Performance/Metrics:
+- Assignment 20 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-11 20:14:44Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 24 sections, 240 questions, 1440 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added redacted lifecycle telemetry, correctness-guarded payment performance method, and funds-flow/reconciliation scale decomposition
+
+#### Current Focus:
+Assignment 20 Sections 022-024 observability, performance, and scale boundaries saved
+
+#### Next Steps:
+- Complete and save Assignment 20 Sections 025-026, then run focused verification and full artifact audit
+
+#### Context Notes:
+- No sensitive payment values or current provider limits are asserted in the evolved guidance
+
+#### Performance/Metrics:
+- Assignment 20 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-11 20:16:08Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- focused verifier: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields; reference 115557 characters; packet 558224 characters
+- full artifact audit: passing - 116 frozen rows and hashes preserved, minimum expansion 3462 characters, balanced fences and 12 valid tables
+
+#### Implementation Progress:
+- Completed stripe_payment_integration_patterns reference and matching Alpha packet with conservative payment state, evidence, and recovery controls
+
+#### Current Focus:
+Assignment 20 complete artifact passes focused verifier and frozen-row audit
+
+#### Next Steps:
+- Reread Assignment 20 reference and packet in groups of five sections or fewer, checkpoint each group, then rerun final gates
+
+#### Context Notes:
+- No official Stripe page was browsed; all current product and provider behavior remains explicitly unverified
+
+#### Performance/Metrics:
+- Reference SHA-256 dd91987973070cbd10c194c580d76b1b1441f8d7ac2e13bcba431aa8cea67b0e; packet SHA-256 6841b9e585b9d3b1ae5d0d66f521a7619d20ddd5f987dbe48fec115b396cb67b
+
+### Session: 2026-07-11 20:16:28Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 001-005 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread payment contract, evidence map, scoreboard, thesis, and local source map with exact packet-section hashes
+
+#### Current Focus:
+Assignment 20 final reread Sections 001-005 complete
+
+#### Next Steps:
+- Reread Assignment 20 Sections 006-010 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required in the first reread group
+
+#### Performance/Metrics:
+- Assignment 20 reread progress: 5/26 sections
+
+### Session: 2026-07-11 20:16:46Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 006-010 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread external evidence, payment anti-patterns, gates, agent routing, and merchant journey with exact packet-section hashes
+
+#### Current Focus:
+Assignment 20 final reread Sections 006-010 complete
+
+#### Next Steps:
+- Reread Assignment 20 Sections 011-015 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required through Section 010
+
+#### Performance/Metrics:
+- Assignment 20 reread progress: 10/26 sections
+
+### Session: 2026-07-11 20:17:18Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 011-015 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread product tradeoffs, authority hierarchy, payment state artifact, examples, and divergence metrics with exact packet-section hashes
+
+#### Current Focus:
+Assignment 20 final reread Sections 011-015 complete
+
+#### Next Steps:
+- Reread Assignment 20 Sections 016-020 and persist the next checkpoint
+
+#### Context Notes:
+- No integration-family or evidence-authority reconciliation change was required
+
+#### Performance/Metrics:
+- Assignment 20 reread progress: 15/26 sections
+
+### Session: 2026-07-11 20:17:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 016-020 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread completion, routing, workload, reliability, and financial failure sections with exact packet-section hashes
+
+#### Current Focus:
+Assignment 20 final reread Sections 016-020 complete
+
+#### Next Steps:
+- Reread Assignment 20 Sections 021-025 and persist the next checkpoint
+
+#### Context Notes:
+- No reconciliation change was required in this group
+
+#### Performance/Metrics:
+- Assignment 20 reread progress: 20/26 sections
+
+### Session: 2026-07-11 20:17:53Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - Sections 021-025 each match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread retries, redacted observability, performance, scale, and official refresh-query sections with exact packet-section hashes
+
+#### Current Focus:
+Assignment 20 final reread Sections 021-025 complete
+
+#### Next Steps:
+- Reread Assignment 20 Section 026, rerun final verifier, audit, and whitespace check, then close Refactor
+
+#### Context Notes:
+- No provider-specific unverified constant or secret-bearing telemetry emerged during reread
+
+#### Performance/Metrics:
+- Assignment 20 reread progress: 25/26 sections
+
+### Session: 2026-07-11 20:18:17Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- grouped packet/reference reread: passing - All 26 sections match 10 questions, 60 fields, decision prose, and positive seed expansion
+
+#### Implementation Progress:
+- Reread evidence boundaries last and confirmed duplicate hash, source-reported product claims, process-only external links, systems inference, and no-browse status remain aligned
+
+#### Current Focus:
+Assignment 20 complete reference and packet reread finished through Section 026
+
+#### Next Steps:
+- Rerun Assignment 20 focused verifier, full artifact audit, and whitespace check; record final Refactor evidence before opening Assignment 21
+
+#### Context Notes:
+- Complete packet and reference required no prose reconciliation during final reread
+
+#### Performance/Metrics:
+- Assignment 20 reread progress: 26/26 sections, 260/260 questions, 1560/1560 fields
+
+### Session: 2026-07-11 20:19:10Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: passing - status PASS; reference 26 sections and 115557 characters; packet 26 sections, 260 questions, 1560 exact and normalized-unique fields
+- full artifact audit: passing - 116 frozen rows, zero hash or preservation mismatches, minimum expansion 3462, balanced fences, 12 valid tables
+- complete grouped reread: passing - all reference and packet sections reread in groups of five or fewer with exact section hashes
+- git diff --check: passing - no whitespace errors in Assignment 20 reference, packet, or Alpha progress journal
+
+#### Implementation Progress:
+- Changed idiomatic-ref-202607/stripe_payment_integration_patterns-20260710.md and idiomatic-reference-evolution-work/alpha/packets/stripe_payment_integration_patterns-20260710-question-packets.md; appended evidence to idiomatic-reference-evolution-work/alpha/progress.md
+
+#### Current Focus:
+Assignment 20 stripe_payment_integration_patterns is fully Refactor-complete
+
+#### Next Steps:
+- Open and complete Assignment 21 idiomatic-ref-202607/subagent_development_execution_patterns-20260710.md and its matching Alpha packet using the same atomic cadence
+
+#### Context Notes:
+- Both local Stripe skill paths are one byte-identical source; no official Stripe page was browsed and current product behavior remains explicitly unverified
+- No shared CSV, master journal, other lane, commit, or push action occurred
+
+#### Performance/Metrics:
+- Reference SHA-256 dd91987973070cbd10c194c580d76b1b1441f8d7ac2e13bcba431aa8cea67b0e; packet SHA-256 6841b9e585b9d3b1ae5d0d66f521a7619d20ddd5f987dbe48fec115b396cb67b; seed SHA-256 0ecb091c607712b6860d352252d7416b1057c192e7ed9d1a314abeaffc7cc9dd
+
+### Session: 2026-07-11 20:20:52Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- focused verifier: failing as expected - working reference still matches archive seed
+- packet baseline: failing as expected - matching Alpha packet does not yet exist
+
+#### Implementation Progress:
+- Read all 26 seed sections and all four unique local artifacts; verified eight mapped paths are four byte-identical archive/live pairs
+
+#### Current Focus:
+Assignment 21 subagent_development_execution_patterns baseline and complete local-corpus read established
+
+#### Next Steps:
+- Create Assignment 21 packet and evolve Sections 001-003 atomically with ownership, dependency, and evidence boundaries
+
+#### Context Notes:
+- Working and seed SHA-256 3ab13a72643a8377f5874a7e43db41eed9419350227e0c0e6cabd63fa39b7b96; 134 frozen queue rows; no web browsing performed
+- Unique local hashes: workflow 994b89a5d294eadd6a1611edb51377bac748d5f5fb7f4139d3c736b616b3a46a; quality 11de35dba7990f9def49b90039f1f2d8e7f546ae42ca8e1105d308f09456803e; implementer 9740dc8e425f9e1d6dc34599e0ba82e93aad7fedbcbb27b0bd67a4fa0e15a85e; spec reviewer 631980e472eec5394de8b89b69d432e54fd3f7f523ecf9afa7eb4cda0c9b2baf
+
+#### Performance/Metrics:
+- Assignment 21 baseline: 26 sections, 22565 seed characters, zero packet sections
+
+### Session: 2026-07-11 20:22:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 3 sections, 30 questions, 180 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added controller accountability, four-content source map, and qualitative dependency-first control ranking
+
+#### Current Focus:
+Assignment 21 Sections 001-003 controller contract, duplicate-aware sources, and orchestration ranking saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 004-006 with atomic sanity checks
+
+#### Context Notes:
+- Template commit and worktree defaults are subordinate to explicit user constraints
+
+#### Performance/Metrics:
+- Assignment 21 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-11 20:23:56Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 6 sections, 60 questions, 360 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added contract-bound delegation thesis, role-interface local map, and versioned external tool-evidence boundaries
+
+#### Current Focus:
+Assignment 21 Sections 004-006 orchestration thesis and source maps saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 007-009 with atomic sanity checks
+
+#### Context Notes:
+- Public agent and Codex sources remain unbrowsed candidates
+
+#### Performance/Metrics:
+- Assignment 21 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-11 20:25:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 9 sections, 90 questions, 540 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added task-model failure registry, artifact-state review gates, and plan/dependency-aware usage routing
+
+#### Current Focus:
+Assignment 21 Sections 007-009 failure, verification, and workflow routing saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 010-012 with atomic sanity checks
+
+#### Context Notes:
+- Parallel execution is permitted only after evidence-backed independence and ownership checks
+
+#### Performance/Metrics:
+- Assignment 21 progress: 9/26 sections and 540/1560 fields

@@ -2,8 +2,8 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 18:54:16Z
-- Current Phase: Green
+- Updated: 2026-07-11 23:58:32Z
+- Current Phase: Refactor
 - Status: active
 
 ## Sessions
@@ -1759,3 +1759,1878 @@ Assignment 5 dependency_map_cli_patterns Sections 022-024 durably evolved and sa
 - Assignment 5 durable progress: 24/26 sections; 240/260 questions; 1440/1560 mandatory fields; uniqueFieldCount=1440; normalizedUniqueFieldCount=1440
 - Section 022 is 16417>706 characters, Section 023 is 15185>851, and Section 024 is 15344>759; every first-twenty-four section comparison passes
 - Current hygiene: reference headings=26 exact and ordered; ASCII pass; forbidden markers=0; fence parity=0; malformed tables=0; tabs=0; trailing whitespace=0; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
+
+### Session: 2026-07-11 19:02:26Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment_5_focused_verifier_green: PASS - status=PASS; referenceSections=26; packetSections=26; questions=260; fieldCount=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; reference 385936 characters versus seed 19470
+- assignment_5_complete_production_hygiene: PASS - Exact original heading order, all 26 sections expanded, exact questions, ASCII, forbidden-marker, table, fence, tab, trailing-whitespace, and final-newline checks pass
+- assignment_5_frozen_source_hashes_green: PASS - Archive seed and five current local source hashes remain unchanged; reference and packet Green hashes captured
+
+#### Implementation Progress:
+- Completed idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md with 26 sections, 260 exact questions, and 1560 substantive raw and normalized-unique values
+- Completed idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md with all 26 original headings in exact order and every section strictly longer than seed
+- Updated idiomatic-reference-evolution-work/delta/progress.md at complete-production Green phase boundary
+
+#### Current Focus:
+Assignment 5 dependency_map_cli_patterns complete packet and reference production; begin whole-file reread
+
+#### Next Steps:
+- Reread complete reference and packet Sections 001-005, reconcile claims against sources and packet rationale, and persist the first review checkpoint
+- Continue reread in at-most-five-section slices through Section 026, rerun final focused/shared/hygiene/hash checks, append Refactor, then open assignment 6 executable_metapattern_reference_digest only
+
+#### Context Notes:
+- Changed paths: idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md; idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md; idiomatic-reference-evolution-work/delta/progress.md
+- No browsing, target map generation, shared CSV/spec/test/archive edit, commit, push, or later-assignment read occurred
+
+#### Performance/Metrics:
+- Assignment 5 Green counts: completed files=1; sections=26; questions=260; mandatory fields=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; next assigned file=idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md
+- Green SHA-256: reference 1c314b0aa9012c36bb8dd3b8c82996575008ba44a7797d906b9a5db4fed38279; packet b0a9e3456c0d70521f99378619ae08926aa2b0e9d86d7eebab66e30f9e2740b6; unchanged seed 6ec5aeb25c4cbcad7fab880038d569a2280b5c8fd95bc0a4aca0805533bbdaa7
+- Unchanged source SHA-256: skill b20aa296d11385ccfd9e0b5e35e2653768363a9c144e2d04f2e583c3c1b19806; precedents 6225de10e11642bd9df819b33bfc01835f6af5659c0680ded4dad784929f6637; builder ea180f643cfa45edccdac825f5c4f263d0060f9edc9741a67adb8b93f7bd5ef3; reader 5c1f54948a789d67ed8cf803c3e5291156e3ccac74ac01f43b70888198b8066d; agent metadata 3cca38f60acf2bfa2e5f310301807d35e476ab4bcead18695bf101733ca2ab71
+
+### Session: 2026-07-11 19:05:58Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment_5_reread_001_005: PASS - Sections 001-005 reread completely one section at a time against packet rationale, frozen scripts, hashes, artifact contract, and evidence boundaries
+- assignment_5_reread_corrections_005: PASS - Corrected capability-versus-contribution shorthand, aligned verified_for_scope state, removed an unlabeled exact illustrative count, and refined tooling artifact questions
+- assignment_5_post_review_verifier_005: PASS - Focused verifier remains PASS with 26/260/1560 counts, uniqueFieldCount=1560, normalizedUniqueFieldCount=1560, reference 386165 characters versus seed 19470
+
+#### Implementation Progress:
+- Updated only the assignment 5 reference and packet with factual and consistency corrections found during Sections 001-005 reread
+- Updated idiomatic-reference-evolution-work/delta/progress.md at the first at-most-five-section reread checkpoint
+
+#### Current Focus:
+Assignment 5 complete-file reread finished through reference and packet Section 005
+
+#### Next Steps:
+- Reread complete reference and packet Sections 006-010, correct only evidence-backed defects, rerun the focused gate, and persist the next review checkpoint
+- Continue complete reread through Section 026 before final shared tests, hashes, and assignment 5 Refactor completion; keep assignment 6 unopened
+
+#### Context Notes:
+- The oversized initial slice output was not counted as complete; each of Sections 001-005 was subsequently reread individually without truncation
+- Changed paths remain the assignment 5 reference, packet, and Delta progress journal only
+
+#### Performance/Metrics:
+- Complete reread progress: 5/26 reference sections and 5/26 packet sections; current fields=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560
+- Next assigned file remains idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md and has not been opened
+
+### Session: 2026-07-11 19:08:03Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment_5_reread_006_010: PASS - Sections 006-010 reread completely against no-browse boundaries, script control flow, command portability, routing logic, and illustrative scenario rationale
+- assignment_5_reread_corrections_010: PASS - Aligned verified_for_scope wording, replaced capability-branch shorthand, added symbol kind/ctags output inspection, and replaced nonportable mapfile use
+- assignment_5_post_review_verifier_010: PASS - Focused verifier remains PASS with 26/260/1560 counts, uniqueFieldCount=1560, normalizedUniqueFieldCount=1560, reference 387180 characters versus seed 19470
+
+#### Implementation Progress:
+- Updated only the assignment 5 reference and packet with factual, terminology, and command-portability corrections found during Sections 006-010 reread
+- Updated idiomatic-reference-evolution-work/delta/progress.md at the second at-most-five-section reread checkpoint
+
+#### Current Focus:
+Assignment 5 complete-file reread finished through reference and packet Section 010
+
+#### Next Steps:
+- Reread complete reference and packet Sections 011-015, correct only evidence-backed defects, rerun the focused gate, and persist the Section 015 checkpoint
+- Continue through Section 026 before final tests, hashes, and assignment 5 Refactor completion; keep assignment 6 unopened
+
+#### Context Notes:
+- External pointers remain unrefreshed and the user-journey scenario remains explicitly illustrative
+- Changed paths remain the assignment 5 reference, packet, and Delta progress journal only
+
+#### Performance/Metrics:
+- Complete reread progress: 10/26 reference sections and 10/26 packet sections; current fields=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560
+- Next assigned file remains idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md and has not been opened
+
+### Session: 2026-07-11 19:11:30Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment5_sections_011_015_reread: passing - Reference and packet sections 011-015 were read completely in bounded chunks; extraction provenance wording was reconciled in Sections 013 and 015.
+- assignment5_packet_normalized_uniqueness: passing - 26 packet sections, 260 exact question headings, 1560 mandatory values, uniqueFieldCount=1560 after prefix-stripped normalization.
+- assignment5_reference_structure: passing - Exact 26 seed headings remain ordered and all 26 evolved bodies remain strictly longer than seed bodies.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md: clarified that actual extractor contribution comes from symbols.tsv kinds and ctags.jsonl state, not capability flags alone.
+- idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md: made the Section 015 measurement hazard specific to capability-versus-contribution confusion.
+- idiomatic-reference-evolution-work/delta/progress.md: persisted the required five-section Refactor reread checkpoint.
+
+#### Current Focus:
+Assignment 5 complete-file reread checkpoint through Sections 011-015.
+
+#### Next Steps:
+- Reread complete Assignment 5 reference and packet Sections 016-020 individually, apply only evidence-boundary corrections, rerun focused structure and normalized uniqueness checks, and persist the Section 020 checkpoint.
+
+#### Context Notes:
+- No target map, fixture, or external page was opened; all examples and future metrics remain explicitly illustrative or proposed.
+
+#### Performance/Metrics:
+- Reread coverage: 15 of 26 sections complete; packet sections=26; questions=260; fields=1560; raw unique=1560; normalized unique=1560; expanded sections=26 of 26.
+
+### Session: 2026-07-11 19:13:28Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment5_sections_016_020_reread: passing - Reference and packet sections 016-020 were read completely; capability metadata, actual extractor outcome, Ctags parse state, and renderer outcome are now separated consistently.
+- assignment5_packet_normalized_uniqueness: passing - 26 packet sections, 260 question headings, 1560 mandatory values, raw unique=1560, prefix-stripped normalized uniqueFieldCount=1560.
+- assignment5_reference_expansion: passing - All 26 exact ordered headings remain and Sections 016-020 remain strictly longer than their seed bodies.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md: tightened completeness, workload, reliability, and failure contracts around actual extractor and renderer outcomes.
+- idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md: replaced ambiguous branch language in Sections 018-020 with concrete capability/output evidence.
+- idiomatic-reference-evolution-work/delta/progress.md: persisted the required Section 020 reread checkpoint.
+
+#### Current Focus:
+Assignment 5 complete-file reread checkpoint through Sections 016-020.
+
+#### Next Steps:
+- Reread complete Assignment 5 reference and packet Sections 021-025 individually, correct any unsupported retry, observability, performance, scale, or research claims, rerun structure and normalized uniqueness checks, and persist the Section 025 checkpoint.
+
+#### Context Notes:
+- Current quick verifier remains clean: headings=26 ordered, expanded=26, packet sections=26, questions=260, fields=1560, normalized unique=1560, forbidden markers=0.
+
+#### Performance/Metrics:
+- Reread coverage: 20 of 26 sections complete; Section 016-020 evolved lengths all exceed seed; no external browsing or target-map production occurred.
+
+### Session: 2026-07-11 19:15:21Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment5_sections_021_025_reread: passing - Reference and packet sections 021-025 were read completely; retry, observability, performance, scale, and no-browse research boundaries were reviewed.
+- assignment5_packet_normalized_uniqueness: passing - 26 packet sections, 260 question headings, 1560 mandatory values, raw unique=1560, prefix-stripped normalized uniqueFieldCount=1560.
+- assignment5_reference_structure: passing - Exact ordered headings=26, expanded bodies=26; Sections 021-025 each remain strictly longer than seed.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md: clarified Ctags invocation state and benchmark comparability using capability flags plus actual extractor/render outcomes.
+- idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md: reconciled retry, observability, and performance rationale with actual producer evidence.
+- idiomatic-reference-evolution-work/delta/progress.md: persisted the required Section 025 reread checkpoint.
+
+#### Current Focus:
+Assignment 5 complete-file reread checkpoint through Sections 021-025.
+
+#### Next Steps:
+- Reread complete Assignment 5 reference and packet Section 026, apply any final evidence-boundary correction, persist the Section 026 review checkpoint, then run final focused verifier, shared structural tests, hygiene, hashes, and Refactor completion before opening assignment 6.
+
+#### Context Notes:
+- Future search queue remains explicitly unexecuted_no_browse; no remote page, target map, fixture campaign, or performance benchmark was used as evidence.
+
+#### Performance/Metrics:
+- Reread coverage: 25 of 26 sections complete; packet raw and normalized unique counts remain 1560; forbidden markers remain zero.
+
+### Session: 2026-07-11 19:16:14Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment5_section_026_reread: passing - Reference and packet Section 026 were read completely and evidence taxonomy wording now separates implementation possibility, capability flags, and actual extractor/render outcomes.
+- assignment5_complete_reread_coverage: passing - All 26 reference sections and all 26 packet sections were reread completely with durable checkpoints through 005, 010, 015, 020, 025, and 026.
+- assignment5_packet_normalized_uniqueness: passing - Packet sections=26, questions=260, fields=1560, raw unique=1560, prefix-stripped normalized uniqueFieldCount=1560.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md: finalized evidence taxonomy and run-artifact identity wording in Section 026.
+- idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md: finalized Section 026 implementation-path versus run-incidence distinction.
+- idiomatic-reference-evolution-work/delta/progress.md: persisted final whole-file reread checkpoint before global QA.
+
+#### Current Focus:
+Assignment 5 complete-file reread checkpoint through final Section 026.
+
+#### Next Steps:
+- Run Assignment 5 global evidence-language scan, focused verifier, relevant shared structural tests, exact heading/expansion/question/field/normalized-uniqueness checks, hygiene and diff checks, frozen hash checks, then append final Refactor completion and open assignment 6 only after PASS.
+
+#### Context Notes:
+- Complete reread found no fabricated target map, fixture result, public refresh, or performance measurement; all such content remains explicitly proposed, illustrative, or unverified.
+
+#### Performance/Metrics:
+- Reread coverage: 26 of 26 reference sections and 26 of 26 packet sections complete; all 26 evolved bodies exceed seed; forbidden markers=0.
+
+### Session: 2026-07-11 19:21:15Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment5_focused_verifier: passing - Exact seed heading text, level, and order=26; expanded sections=26; packet sections=26; exact questions=260; mandatory fields=1560; uniqueFieldCount=1560 raw and after prefix-stripped normalization; ASCII, tables, fences, whitespace, marker, and newline gates pass.
+- assignment5_shared_invariants: passing - Five shared tests pass: inventory, owner mapping, assignment manifests, global packet normalized uniqueness, and placeholder absence.
+- assignment5_full_shared_suite: expected_incomplete - Whole-corpus result is 5 passed and 3 failed because 67 files/packets remain unfinished outside this assignment and 8574 shared queue rows remain incomplete; no shared file was modified.
+- assignment5_script_and_diff_checks: passing - Both frozen dependency-map shell scripts pass bash -n; scoped git diff --check is clean.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md: final evolved reference with 26 exact ordered headings and every section strictly longer than the archive seed.
+- idiomatic-reference-evolution-work/delta/packets/dependency_map_cli_patterns-20260710-question-packets.md: final 26-section, 260-question, 1560-field packet with raw and normalized uniqueness.
+- idiomatic-reference-evolution-work/delta/progress.md: Green and Refactor evidence plus six durable whole-file reread checkpoints are recorded.
+
+#### Current Focus:
+Assignment 5 dependency_map_cli_patterns-20260710 is Refactor-complete after complete reread and final focused verification.
+
+#### Next Steps:
+- Open assignment 6 only now: idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md; read its complete seed, working reference, specification, tests, assignment rows, and Delta journal, verify frozen identity, then append the assignment-6 Red checkpoint before Section 001 production.
+
+#### Context Notes:
+- Assignment 5 final hashes: reference=5281e87822bc3710ec6d7f9fc349b756db99fe71d07ffc5ae16301b5bdc161ca; packet=fc67e571645d1582f100cd7e10cc0bb5da0093d3e179258201798083a7e008ac; seed remains 6ec5aeb25c4cbcad7fab880038d569a2280b5c8fd95bc0a4aca0805533bbdaa7.
+- Frozen local source hashes remain unchanged: skill=b20aa296d11385ccfd9e0b5e35e2653768363a9c144e2d04f2e583c3c1b19806; precedents=6225de10e11642bd9df819b33bfc01835f6af5659c0680ded4dad784929f6637; builder=ea180f643cfa45edccdac825f5c4f263d0060f9edc9741a67adb8b93f7bd5ef3; reader=5c1f54948a789d67ed8cf803c3e5291156e3ccac74ac01f43b70888198b8066d; metadata=3cca38f60acf2bfa2e5f310301807d35e476ab4bcead18695bf101733ca2ab71.
+
+#### Performance/Metrics:
+- Assignment 5 final: 26 sections, 260 exact questions, 1560 mandatory field lines, raw unique=1560, normalized uniqueFieldCount=1560, reference characters=388121, packet characters=271407, focused verifier PASS.
+
+### Session: 2026-07-11 19:23:15Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- assignment6_frozen_reference_identity: passing - Working reference and archive seed are byte-identical at fac50f5eeb78e0a2a27033297d78721f5203cc23597c957b4cf0ba2f67249b5a with 26 exact headings.
+- assignment6_frozen_span_hashes: passing - All 119 Delta-owned queue spans match source_span_sha256 and cover physical lines 1 through 208 without gaps.
+- assignment6_packet_red_state: failing_as_expected - Question-packet path does not yet exist; Section 001 has not been evolved.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: read completely and remains unchanged at Red.
+- agents-used-monthly-archive/idiomatic-references-202606/generated-references/executable_metapattern_reference_digest.md: read through byte equality with the working copy and hash-bound as immutable seed.
+- Mapped metapattern corpus: three required paths and current installed reference are one hash-equal family at 78ead044feb402432f104e37f82578f3fad5f161a4df4bec809120cd2eea7882; current skill, templates, and metadata were read as distinct current context.
+
+#### Current Focus:
+Assignment 6 executable_metapattern_reference_digest-20260710 source freeze and evidence-boundary audit complete; Section 001 packet is next.
+
+#### Next Steps:
+- Create and immediately save packet Section 001 with the ten exact questions and sixty concrete unique values, then rewrite and save reference Section 001, run the atomic heading/marker/expansion/uniqueness sanity check, and proceed only to Section 002.
+
+#### Context Notes:
+- No public URL was opened. OpenAI, GitHub Actions, and agents.md links remain unrefreshed local pointers rather than current external facts.
+- Primary claim risks to reconcile: inherited outcome percentages lack study provenance, scoreboard values are editorial priorities, fixed token and requirement-count numbers are unvalidated defaults, and current templates are examples rather than achieved measurements.
+
+#### Performance/Metrics:
+- Assignment 6 Red: sections=26; frozen queue rows=119; packet sections=0; questions=0; fields=0; uniqueFieldCount=0; seed bytes=18818.
+
+### Session: 2026-07-11 19:30:25Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_001_003: passing - Three packet sections, 30 exact questions, 180 mandatory values, raw unique=180, prefix-stripped normalized unique=180.
+- assignment6_reference_structure: passing - All 26 original headings remain exact and ordered; evolved Sections 001-003 are each strictly longer than their seed bodies.
+- assignment6_marker_gate: passing - Reference and packet contain no forbidden placeholder markers through Section 003.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: added operating contract, typed source graph, and evidence-gated pattern register.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 001-003 with concrete section/question-specific rationale.
+
+#### Current Focus:
+Assignment 6 Sections 001-003 complete with immediate packet/reference persistence and atomic sanity checks.
+
+#### Next Steps:
+- Write and save packet Section 004, then save the matching thesis section and sanity-check it; continue Sections 005-006 sequentially and journal again at six completed sections.
+
+#### Context Notes:
+- Inherited scores 95/91/88 remain historical editorial values, and the four mapped metapattern files remain one duplicate content family rather than four independent confirmations.
+
+#### Performance/Metrics:
+- Assignment 6 Green checkpoint: sections=3/26; questions=30/260; fields=180/1560; raw unique=180; normalized unique=180; evolved reference section characters=8421,10429,9122.
+
+### Session: 2026-07-11 19:36:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_004_006: passing - Packet now has 6 sections, 60 exact questions, 360 mandatory values, raw unique=360, normalized unique=360.
+- assignment6_reference_expansion: passing - Exact 26-heading order remains; each of Sections 001-006 is strictly longer than its seed section.
+- assignment6_evidence_boundary: passing - External rows are explicitly unrefreshed_no_browse and duplicate local digest paths are one content family.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: expanded thesis, complete local semantic routing, and trigger-bound external research protocol.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 004-006 with unique decision rationale.
+
+#### Current Focus:
+Assignment 6 Sections 004-006 complete and persisted; thesis, local corpus routing, and external no-browse queue are reconciled.
+
+#### Next Steps:
+- Save packet Section 007, save the matching anti-pattern registry, sanity-check immediately, then process Sections 008-009 sequentially and journal at nine completed sections.
+
+#### Context Notes:
+- Current skill guardrails govern present local workflow; fixed digest token suggestions and outcome figures remain historical observations rather than operational targets.
+
+#### Performance/Metrics:
+- Assignment 6 checkpoint: sections=6/26; questions=60/260; fields=360/1560; uniqueFieldCount=360 raw and normalized; expanded sections=6.
+
+### Session: 2026-07-11 19:44:03Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_007_009: passing - Packet has 9 sections, 90 exact questions, 540 fields, raw unique=540, normalized unique=540.
+- assignment6_atomic_structure: passing - Reference retains exact 26 heading order and Sections 001-009 all exceed seed length; no forbidden markers appear.
+- assignment6_verifier_scope_review: passing - Legacy 202606 verifier was read completely and labeled historical; current 202607 scoped and shared gates are distinguished.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: added 24-entry anti-pattern registry, gate DAG and executable commands, and agent state machine.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 007-009 before each matching reference edit.
+
+#### Current Focus:
+Assignment 6 Sections 007-009 complete: causal anti-pattern registry, layered verifier contract, and phase-aware agent usage guide.
+
+#### Next Steps:
+- Create and save packet Section 010, then the complete user journey scenario and sanity check; continue Sections 011-012 and journal at twelve sections.
+
+#### Context Notes:
+- Structural verification and target behavior verification remain separate; expected whole-corpus failures from unfinished owners will be attributed, not hidden.
+
+#### Performance/Metrics:
+- Assignment 6 checkpoint: sections=9/26; questions=90/260; fields=540/1560; uniqueFieldCount=540 raw and normalized; expanded sections=9.
+
+### Session: 2026-07-11 19:50:09Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_010_012: passing - Packet has 12 sections, 120 exact questions, 720 mandatory values, raw unique=720, normalized unique=720.
+- assignment6_reference_structure: passing - Exact 26-heading order remains and Sections 001-012 are all strictly expanded; forbidden marker scan is clean.
+- assignment6_claim_split_sanity: passing - Illustrative functional claims and unmeasured performance branch retain different evidence states and no target result is implied.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: added full webhook journey, tradeoff matrices, typed hierarchy, conflict resolution, and targeted invalidation.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 010-012 in packet-first order.
+
+#### Current Focus:
+Assignment 6 Sections 010-012 complete with split-branch journey, consequence-aware tradeoffs, and claim-specific corpus authority.
+
+#### Next Steps:
+- Save packet Section 013 and its theme-specific artifact schema, sanity-check, then complete Sections 014-015 sequentially and journal at fifteen sections.
+
+#### Context Notes:
+- The seed role labels are preserved as metadata, but their rationale is unknown because the mapped files are byte-identical.
+
+#### Performance/Metrics:
+- Assignment 6 checkpoint: sections=12/26; questions=120/260; fields=720/1560; uniqueFieldCount=720 raw and normalized; expanded sections=12.
+
+### Session: 2026-07-11 19:56:38Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_013_015: passing - Packet has 15 sections, 150 exact questions, 900 mandatory values, raw unique=900, normalized unique=900.
+- assignment6_reference_expansion: passing - Exact 26-heading order remains; Sections 001-015 all exceed seed; forbidden marker scan is clean.
+- assignment6_metric_boundary: passing - No target productivity, latency, accuracy, defect, or reliability outcome is claimed; all metrics are future definitions or deterministic gates.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: added full decision packet schema, six worked examples, metric cards, counter-metrics, and feedback routing.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 013-015 in required packet-first order.
+
+#### Current Focus:
+Assignment 6 Sections 013-015 complete: decision-packet schema, orthogonal worked examples, and bounded feedback metrics.
+
+#### Next Steps:
+- Save packet and reference Section 016 with complete prerequisite gates, sanity-check, then process Sections 017-018 and journal at eighteen sections.
+
+#### Context Notes:
+- All example repositories and outcomes remain explicitly illustrative; fixture promotion requires future authorized ownership.
+
+#### Performance/Metrics:
+- Assignment 6 checkpoint: sections=15/26; questions=150/260; fields=900/1560; uniqueFieldCount=900 raw and normalized; expanded sections=15.
+
+### Session: 2026-07-11 20:02:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_016_018: passing - Packet has 18 sections, 180 exact questions, 1080 mandatory values, raw unique=1080, normalized unique=1080.
+- assignment6_reference_structure: passing - Exact 26-heading order remains; Sections 001-018 all strictly exceed seed and marker scan remains clean.
+- assignment6_capacity_boundary: passing - Unsupported twenty-requirement capacity rule is preserved as rejected seed guidance and replaced by local workload variables and phase contracts.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: added evidence-linked completeness gates, route entry/return semantics, workload variables, modes, narrowing, sharding, and optimization ledger.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 016-018 packet-first with section-specific rationale.
+
+#### Current Focus:
+Assignment 6 Sections 016-018 complete: prerequisite completeness graph, capability routing, and measured multidimensional workload model.
+
+#### Next Steps:
+- Save packet Section 019 and the reliability objective, sanity-check, then complete Sections 020-021 and journal at twenty-one sections.
+
+#### Context Notes:
+- No universal requirement, context, reviewer, performance, or scale threshold is asserted; practical capacity remains task/environment/profile specific.
+
+#### Performance/Metrics:
+- Assignment 6 checkpoint: sections=18/26; questions=180/260; fields=1080/1560; uniqueFieldCount=1080 raw and normalized; expanded sections=18.
+
+### Session: 2026-07-11 20:08:26Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_019_021: passing - Packet has 21 sections, 210 exact questions, 1260 mandatory values, raw unique=1260, normalized unique=1260.
+- assignment6_reference_structure: passing - Exact 26-heading order remains; Sections 001-021 all exceed seed; no forbidden markers appear.
+- assignment6_reliability_boundary: passing - Hard invariants, sampled indicators, sentinel events, and owner-accepted risk remain distinct; unexplained routing sample is not generalized.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: added reliability profiles, 30 failure modes, causal chains, retry states, attempt records, and required persistence cadence.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 019-021 packet-first and checked normalized uniqueness.
+
+#### Current Focus:
+Assignment 6 Sections 019-021 complete: typed reliability model, causal failure state transitions, and changed-premise retry/backpressure.
+
+#### Next Steps:
+- Save packet/reference Section 022 observability, sanity-check, then process Sections 023-024 and journal at twenty-four sections.
+
+#### Context Notes:
+- Local one-attempt guidance is explicitly not a distributed retry constant; external systems retain their own idempotency, delay, deadline, and rate policies.
+
+#### Performance/Metrics:
+- Assignment 6 checkpoint: sections=21/26; questions=210/260; fields=1260/1560; uniqueFieldCount=1260 raw and normalized; expanded sections=21.
+
+### Session: 2026-07-11 20:17:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_sections_022_024: passing - Packet has 24 sections, 240 exact questions, 1440 mandatory values, raw unique=1440, normalized unique=1440.
+- assignment6_reference_structure: passing - Exact 26-heading order remains; Sections 001-024 all strictly exceed seed and forbidden-marker scan is clean.
+- assignment6_scale_boundary: passing - Section 024 distinguishes hard boundaries from pressure indicators and makes local, narrow, shard, federate, persistent, and operational routes verifiable.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: expanded Sections 022-024 with event schemas, evidence-throughput experiment controls, and reversible scale architecture.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: saved Sections 022-024 packet-first with section/question-specific normalized-unique rationale.
+
+#### Current Focus:
+Assignment 6 Sections 022-024 complete: observability, controlled performance verification, and measured multidimensional scale routing.
+
+#### Next Steps:
+- Save packet Section 025 before its reference rewrite, run atomic sanity, then complete Section 026 and move to Assignment 6 Green and reread phases.
+
+#### Context Notes:
+- No universal source, claim, byte, context, agent, queue, throughput, or production capacity is asserted; those limits remain environment-specific and unmeasured.
+
+#### Performance/Metrics:
+- Assignment 6 checkpoint: sections=24/26; questions=240/260; fields=1440/1560; uniqueFieldCount=1440 raw and prefix-stripped normalized; expanded sections=24.
+
+### Session: 2026-07-11 20:24:01Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment6_atomic_gate: passing - 26 packet sections, 260 exact question headings, 1560 mandatory fields, raw unique=1560, prefix-stripped normalized unique=1560.
+- assignment6_reference_expansion: passing - All 26 original headings remain in exact seed order and every evolved section is strictly longer than its matching seed section.
+- assignment6_hygiene_gate: passing - Reference and packet are ASCII, contain no tabs or trailing whitespace, and contain no forbidden placeholder markers.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: completed all 26 expanded heading-defined sections.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: completed 26 packet sections with 260 exact questions and 1560 section/question-specific field values.
+- idiomatic-reference-evolution-work/delta/progress.md: recorded assignment 6 Red and Green evidence plus three-section durable checkpoints.
+
+#### Current Focus:
+Assignment 6 packet/reference production complete; beginning checkpointed complete-file reread and Refactor QA.
+
+#### Next Steps:
+- Reread complete packet and reference Sections 001-005, persist review checkpoint, then continue in groups no larger than five through Section 026 before focused final verification.
+- After Assignment 6 Refactor PASS, open next assigned file from delta/assignments.csv: idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md.
+
+#### Context Notes:
+- No browsing occurred and no external source freshness, workflow effectiveness percentage, target performance, capacity, or production outcome was claimed as newly verified.
+
+#### Performance/Metrics:
+- Assignment 6 Green: sections=26; questions=260; fieldLines=1560; uniqueFieldCount=1560 raw; normalizedUniqueFieldCount=1560; expandedSections=26.
+
+### Session: 2026-07-11 20:25:16Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment6_reread_001_005: passing - Complete reference Sections 001-005 and packet Sections 001-005 were reread without truncated content; rationale and evolved guidance remain reconciled.
+- assignment6_early_consistency: passing - Decision scope, source authority, duplicate-family handling, inherited editorial-score limits, conversion pipeline, and local retrieval routes are mutually consistent.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: Refactor reread checkpoint covers Sections 001-005; no edit required.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: Refactor reread checkpoint covers 50 questions and 300 unique rationale values in Sections 001-005.
+
+#### Current Focus:
+Assignment 6 complete-file reread through Section 005.
+
+#### Next Steps:
+- Reread complete packet/reference Sections 006-010, inspect external-pointer boundaries, anti-pattern controls, verification commands, routing, and journey coherence, then persist the next review checkpoint.
+
+#### Context Notes:
+- A truncated first display was not counted; Sections 003-005 were reread individually before this checkpoint.
+
+#### Performance/Metrics:
+- Assignment 6 reread progress: reference sections=5/26; packet sections=5/26; questions reviewed=50/260; fields reviewed=300/1560.
+
+### Session: 2026-07-11 20:26:09Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment6_reread_006_010: passing - Complete reference and packet Sections 006-010 were reread; 50 questions and 300 rationale values remain reconciled with evolved sections.
+- assignment6_route_and_scope_review: passing - Unrefreshed external pointers, causal anti-pattern recovery, verifier population boundaries, agent state transitions, and illustrative journey outcomes remain explicit.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: Refactor reread checkpoint covers Sections 006-010; no edit required.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: Refactor rationale review now covers Sections 001-010.
+
+#### Current Focus:
+Assignment 6 complete-file reread through Section 010.
+
+#### Next Steps:
+- Reread complete packet/reference Sections 011-015 and verify tradeoffs, hierarchy, theme artifact, examples, and feedback metrics agree without unsupported outcome claims.
+
+#### Context Notes:
+- The 202606 legacy verifier is retained only as historical audit guidance; current assignment evidence comes from 202607 focused gates.
+
+#### Performance/Metrics:
+- Assignment 6 reread progress: reference sections=10/26; packet sections=10/26; questions reviewed=100/260; fields reviewed=600/1560.
+
+### Session: 2026-07-11 20:26:57Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment6_reread_011_015: passing - Complete reference and packet Sections 011-015 were reread and reconciled across tradeoffs, hierarchy, packet schema, worked examples, and outcome feedback.
+- assignment6_metric_boundary_review: passing - All examples remain illustrative and every metric is a future capture definition with cohort, counter-metric, uncertainty, and no-comparison boundaries.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: Refactor reread checkpoint covers Sections 011-015; no edit required.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: Refactor rationale review now covers Sections 001-015.
+
+#### Current Focus:
+Assignment 6 complete-file reread through Section 015.
+
+#### Next Steps:
+- Reread complete packet/reference Sections 016-020 and verify completeness, adjacent routing, workload, reliability targets, and failure-mode handling remain mutually consistent.
+
+#### Context Notes:
+- The decision packet is presented as a future authorized artifact contract, not as an artifact claimed to have been implemented in this assignment.
+
+#### Performance/Metrics:
+- Assignment 6 reread progress: reference sections=15/26; packet sections=15/26; questions reviewed=150/260; fields reviewed=900/1560.
+
+### Session: 2026-07-11 20:27:43Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment6_reread_016_020: passing - Complete reference and packet Sections 016-020 were reread and reconciled across completeness, routing, workload, reliability, and failure state transitions.
+- assignment6_capacity_and_reliability_review: passing - Unsupported fixed requirement/routing thresholds remain rejected; hard invariants, samples, sentinel events, accepted risk, and selective invalidation stay distinct.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: Refactor reread checkpoint covers Sections 016-020; no edit required.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: Refactor rationale review now covers Sections 001-020.
+
+#### Current Focus:
+Assignment 6 complete-file reread through Section 020.
+
+#### Next Steps:
+- Reread complete packet/reference Sections 021-025, checking retry/backpressure, observability, performance method, scale routing, and unexecuted refresh-query boundaries; persist the next checkpoint.
+
+#### Context Notes:
+- Reliability remains bounded error prevention, detection, containment, recovery, and learning, not an aggregate accuracy percentage.
+
+#### Performance/Metrics:
+- Assignment 6 reread progress: reference sections=20/26; packet sections=20/26; questions reviewed=200/260; fields reviewed=1200/1560.
+
+### Session: 2026-07-11 20:28:56Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment6_reread_021_025: passing - Complete reference and packet Sections 021-025 were reread across retry, observability, performance, scale, and future refresh guidance.
+- assignment6_post_reread_edit_gate: passing - After correcting one ambiguous Section 024 counterargument, headings=26, expanded=26, questions=260, fields=1560, raw unique=1560, normalized unique=1560.
+
+#### Implementation Progress:
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: corrected one Section 024 Question 02 counterargument so the monolithic-route failure condition is grammatically explicit.
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: Refactor reread checkpoint covers Sections 021-025; reference guidance required no edit.
+
+#### Current Focus:
+Assignment 6 complete-file reread through Section 025 with one packet prose correction.
+
+#### Next Steps:
+- Reread complete packet/reference Section 026, persist the final reread checkpoint, then run focused verifier, hygiene, hashes, shared tests, full current suite, and scoped diff.
+
+#### Context Notes:
+- All future refresh rows remain unexecuted_no_browse; no performance or scale result was inferred from the method sections.
+
+#### Performance/Metrics:
+- Assignment 6 reread progress: reference sections=25/26; packet sections=25/26; questions reviewed=250/260; fields reviewed=1500/1560; uniqueFieldCount remains 1560.
+
+### Session: 2026-07-11 20:29:30Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment6_reread_026: passing - Complete reference and packet Section 026 were reread; evidence classes, claim lifecycle, conflict handling, audit, and known/unknown boundaries agree.
+- assignment6_complete_reread: passing - All 26 reference sections, all 26 packet sections, all 260 questions, and all 1560 field values were reviewed in persisted groups no larger than five sections.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: complete Refactor reread finished for Sections 001-026.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: complete Refactor reread finished for Sections 001-026, including the corrected Section 024 rationale.
+
+#### Current Focus:
+Assignment 6 complete packet/reference reread finished through Section 026.
+
+#### Next Steps:
+- Run the final focused verifier, source/hash/queue-span checks, Markdown/hygiene validation, shared invariant tests, full current suite, and scoped diff; correct any owned defect before Refactor completion.
+
+#### Context Notes:
+- No external page, target performance study, production workload, or broad effectiveness experiment was used to strengthen local structural claims.
+
+#### Performance/Metrics:
+- Assignment 6 reread complete: reference sections=26/26; packet sections=26/26; questions reviewed=260/260; fields reviewed=1560/1560.
+
+### Session: 2026-07-11 20:34:05Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- assignment6_focused_verifier: passing - 26 sections, 260 exact questions, 1560 fields, raw unique=1560, prefix-stripped normalized unique=1560, all 26 sections expanded.
+- assignment6_markdown_and_sources: passing - 133 reference tables, balanced fences, ASCII/whitespace/placeholder hygiene, 119/119 queue span hashes, and 8/8 immutable source hashes passed.
+- shared_invariant_subset: passing - 5 selected shared inventory, ownership, manifest, normalized uniqueness, and placeholder tests passed in 0.51 seconds.
+- shared_full_suite: expected external red - 5 passed and 3 failed; 60 references/packets remain unfinished outside assignment 6 and 7684 shared queue rows remain incomplete.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md: completed 26 expanded sections; SHA-256 c79570ba817f2ab11984b170861d70d3c36c531e2797f9b42a1753ea8cd3d8fb.
+- idiomatic-reference-evolution-work/delta/packets/executable_metapattern_reference_digest-20260710-question-packets.md: completed 26 sections, 260 questions, and 1560 unique rationale values; SHA-256 24f5474fbae377734d34a8fe0cf954e408707c6998af20d5c261aca8b4b0efda.
+- idiomatic-reference-evolution-work/delta/progress.md: recorded Assignment 6 Red, Green, three-section production checkpoints, five-section reread checkpoints, and Refactor evidence.
+
+#### Current Focus:
+Assignment 6 Refactor complete: executable_metapattern_reference_digest-20260710 passed focused verification and complete-file QA.
+
+#### Next Steps:
+- Begin next assigned file from delta/assignments.csv only after post-journal integrity check: idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md with its matching Delta packet.
+
+#### Context Notes:
+- No shared CSV, shared spec, tests, archive, assignment manifest, master journal, commit, push, or another lane was modified.
+
+#### Performance/Metrics:
+- Assignment 6 final: sections=26; questions=260; fieldLines=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; focusedVerifier=PASS; completeReread=26/26.
+
+### Session: 2026-07-11 20:35:16Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- assignment7_seed_identity: failing as expected - Working reference is byte-identical to seed at SHA-256 ea3cd4775cda2613c9b863c3d24b0c0f18acfabcd5242ff1f4ea0b7e25cb33c5.
+- assignment7_packet_presence: failing as expected - Delta packet frontend_design_quality_patterns-20260710-question-packets.md does not yet exist.
+- assignment7_structure_and_queue: passing baseline - 26 exact headings match seed; 116/116 queue source spans match frozen hashes; queue rows remain shared pending state.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md: read completely; no section rewritten yet.
+- agents-used-monthly-archive/idiomatic-references-202606/generated-references/frontend_design_quality_patterns.md: verified byte-identical frozen seed; not modified.
+
+#### Current Focus:
+Assignment 7 Red: frontend_design_quality_patterns seed/source inventory and failure baseline established.
+
+#### Next Steps:
+- Save packet Section 001 with ten exact questions and 60 unique values, then expand reference Section 001 and run atomic sanity before Section 002.
+
+#### Context Notes:
+- Mapped archive/current frontend-design skill files are hash-identical at d39adf3a983de7dafc75991590d54f091755f7e4163d5a5ed085ecd719157184 and were read completely; no external URL was opened.
+
+#### Performance/Metrics:
+- Assignment 7 Red: sections=0/26; questions=0/260; fields=0/1560; expandedSections=0; queueSpanHashes=116/116.
+
+### Session: 2026-07-11 20:41:08Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment7_sections_001_003: passing - Packet has 3 sections, 30 exact questions, 180 mandatory values, raw unique=180, normalized unique=180.
+- assignment7_reference_structure: passing - Exact 26-heading order remains and Sections 001-003 strictly exceed seed.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md: added context-first experience contract, evidence routing, and rendered-quality pattern lifecycle.
+- idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md: saved Sections 001-003 packet-first with section-specific rationale.
+
+#### Current Focus:
+Assignment 7 Sections 001-003 complete: operating contract, typed source map, and qualitative pattern register.
+
+#### Next Steps:
+- Save packet Section 004 and its thesis rewrite, then process local/external source maps through Section 006 and journal at six sections.
+
+#### Context Notes:
+- Inherited scores 95/91/88 remain historical editorial metadata, not effectiveness percentages.
+
+#### Performance/Metrics:
+- Assignment 7 checkpoint: sections=3/26; questions=30/260; fields=180/1560; uniqueFieldCount=180 raw and normalized; expandedSections=3.
+
+### Session: 2026-07-11 20:46:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment7_sections_004_006: passing - Packet has 6 sections, 60 exact questions, 360 mandatory values, raw unique=360, normalized unique=360.
+- assignment7_source_boundaries: passing - Two local paths remain one hash-identical content family and all public pointers remain unrefreshed_no_browse.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md: added thesis pipeline, heuristic-to-operational map, and decision-bound external research protocol.
+- idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md: saved Sections 004-006 packet-first.
+
+#### Current Focus:
+Assignment 7 Sections 004-006 complete: evidence-to-experience thesis and local/external source routing.
+
+#### Next Steps:
+- Save packet/reference Section 007 anti-pattern registry, then Sections 008-009 verification and agent usage, sanity-check each, and journal at nine sections.
+
+#### Context Notes:
+- Broad local aesthetic techniques remain conditional on product mode, existing system, content, accessibility, performance, and rendered target evidence.
+
+#### Performance/Metrics:
+- Assignment 7 checkpoint: sections=6/26; questions=60/260; fields=360/1560; uniqueFieldCount=360 raw and normalized; expandedSections=6.
+
+### Session: 2026-07-11 20:52:25Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment7_sections_007_009: passing - Packet has 9 sections, 90 exact questions, 540 mandatory values, raw unique=540, normalized unique=540.
+- assignment7_frontend_gate_model: passing - Behavior blockers, contextual visual review, project commands, actual browser evidence, and route-away states remain distinct.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md: added 30-entry failure registry, frontend gate graph, and task-aware agent state machine.
+- idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md: saved Sections 007-009 packet-first.
+
+#### Current Focus:
+Assignment 7 Sections 007-009 complete: causal anti-patterns, layered verification, and agent operating states.
+
+#### Next Steps:
+- Save packet/reference Section 010 user journey, then Sections 011-012 tradeoffs and hierarchy, sanity-check each, and journal at twelve sections.
+
+#### Context Notes:
+- Source/build checks cannot promote visual claims without actual target rendering; screenshots cannot promote semantic or accessibility claims alone.
+
+#### Performance/Metrics:
+- Assignment 7 checkpoint: sections=9/26; questions=90/260; fields=540/1560; uniqueFieldCount=540 raw and normalized; expandedSections=9.
+
+### Session: 2026-07-11 20:58:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment7_sections_010_012: passing - Packet has 12 sections, 120 exact questions, 720 mandatory values, raw unique=720, normalized unique=720.
+- assignment7_journey_tradeoff_coherence: passing - Workflow states, product mode, visual direction, verification bundles, and typed authority reconcile without target-result claims.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md: added end-to-end console journey, frontend choice matrices, and versioned partial-order evidence hierarchy.
+- idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md: saved Sections 010-012 packet-first.
+
+#### Current Focus:
+Assignment 7 Sections 010-012 complete: illustrative operational journey, design tradeoffs, and claim-specific source hierarchy.
+
+#### Next Steps:
+- Save packet/reference Section 013 quality evidence artifact, Section 014 worked examples, and Section 015 metrics/feedback, then journal at fifteen sections.
+
+#### Context Notes:
+- All shipment-console identities and outcomes are illustrative; no target browser or operator study was executed.
+
+#### Performance/Metrics:
+- Assignment 7 checkpoint: sections=12/26; questions=120/260; fields=720/1560; uniqueFieldCount=720 raw and normalized; expandedSections=12.
+
+### Session: 2026-07-11 21:05:18Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- assignment7_sections_013_015: passing - Packet has 15 sections, 150 exact questions, 900 mandatory values, raw unique=900, normalized unique=900.
+- assignment7_artifact_metric_boundary: passing - Rendered manifests, behavior/accessibility blockers, qualitative visual review, and future outcome metrics remain distinct evidence classes.
+
+#### Implementation Progress:
+- idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md: added profile-aware artifact schema, six replayable examples, and deterministic/sampled/downstream feedback model.
+- idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md: saved Sections 013-015 packet-first.
+
+#### Current Focus:
+Assignment 7 Sections 013-015 complete: experience evidence packet, orthogonal worked examples, and outcome feedback definitions.
+
+#### Next Steps:
+- Save packet/reference Sections 016-018 for completeness, adjacent routing, and workload, sanity-check each, and journal at eighteen sections.
+
+#### Context Notes:
+- No frontend task, browser, user, accessibility, or performance outcome was measured during this reference evolution.
+
+#### Performance/Metrics:
+- Assignment 7 checkpoint: sections=15/26; questions=150/260; fields=900/1560; uniqueFieldCount=900 raw and normalized; expandedSections=15.
+
+### Session: 2026-07-11 21:12:34Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Section 018 atomic sanity: PASS - Packet 18 sections, 180 exact questions, 1080 fields, rawUnique=1080, normalizedUnique=1080; all 26 reference headings exact and first 18 seed sections strictly expanded; forbidden markers absent
+
+#### Implementation Progress:
+- Saved idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md through Section 018 before saving the matching reference section.
+- Saved idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md through Section 018 with a multidimensional workload model, safe narrowing, equivalence classes, sharding rules, pressure signals, and measurable impact ledger.
+
+#### Current Focus:
+Assignment 7 frontend_design_quality_patterns sections 001-018 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 019 Reliability Target packet, then rewrite/save its reference section and run atomic sanity before Section 020.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 18/26; exact questions: 180/260; mandatory fields: 1080/1560; rawUnique=1080; prefix-stripped normalizedUnique=1080.
+
+### Session: 2026-07-11 21:20:41Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Sections 019-021 atomic sanity: PASS - Packet 21 sections, 210 exact questions, 1260 fields, rawUnique=1260, normalizedUnique=1260; all 26 reference headings exact and first 21 seed sections strictly expanded; forbidden markers absent; new table widths consistent and fences balanced
+
+#### Implementation Progress:
+- Saved packet Sections 019 Reliability Target, 020 Failure Mode Table, and 021 Retry Backpressure Guidance before each matching reference rewrite.
+- Expanded idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md through Section 021 with consequence-aware reliability, layered failure diagnosis, replay-safe retry policy, product recovery, and durable agent-workflow backpressure.
+
+#### Current Focus:
+Assignment 7 frontend_design_quality_patterns sections 001-021 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 022 Observability Checklist packet, then rewrite/save its reference section and run atomic sanity before Section 023.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 21/26; exact questions: 210/260; mandatory fields: 1260/1560; rawUnique=1260; prefix-stripped normalizedUnique=1260.
+
+### Session: 2026-07-11 21:29:02Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Sections 022-024 atomic sanity: PASS - Packet 24 sections, 240 exact questions, 1440 fields, rawUnique=1440, normalizedUnique=1440; all 26 reference headings exact and first 24 seed sections strictly expanded; forbidden markers absent; tables consistent and fences balanced
+
+#### Implementation Progress:
+- Saved packet Sections 022 Observability Checklist, 023 Performance Verification Method, and 024 Scale Boundary Statement before each matching reference rewrite.
+- Expanded the reference through Section 024 with privacy-safe evidence lineage, controlled equivalent performance comparison, and multidimensional scale sufficiency/routing contracts.
+
+#### Current Focus:
+Assignment 7 frontend_design_quality_patterns sections 001-024 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 025 Future Refresh Search Queries packet, then rewrite/save its reference section and run atomic sanity before final Section 026.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 24/26; exact questions: 240/260; mandatory fields: 1440/1560; rawUnique=1440; prefix-stripped normalizedUnique=1440.
+
+### Session: 2026-07-11 21:34:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Complete atomic structural gate: PASS - 26 packet sections, 260 exact questions, 1560 mandatory fields, rawUnique=1560, prefix-stripped normalizedUnique=1560; 26 exact reference headings in seed order and every section strictly expanded
+- Immediate artifact hygiene gate: PASS - No whole-word forbidden placeholders; ASCII-only; no trailing whitespace or tabs; final newlines present; fences balanced; all Markdown table runs structurally consistent
+
+#### Implementation Progress:
+- Completed idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md with one saved ten-question rationale packet per original section.
+- Completed idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md with all 26 original headings preserved and evidence-bounded frontend design, state, accessibility, render, reliability, failure, retry, observability, performance, scale, refresh, and provenance guidance.
+
+#### Current Focus:
+Assignment 7 frontend_design_quality_patterns complete packet and evolved reference
+
+#### Next Steps:
+- Perform complete packet and reference rereads in persisted groups of at most five sections, then run focused verifier, frozen-hash, queue-span, and test evidence before Refactor; next assigned file afterward is idiomatic-ref-202607/kotlin_backend_security_resilience-20260710.md.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 26/26; exact questions: 260/260; mandatory fields: 1560/1560; rawUnique=1560; prefix-stripped normalizedUnique=1560.
+
+### Session: 2026-07-11 21:35:45Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Packet/reference complete reread 001-005: PASS - Read every packet answer and evolved reference line for operating contract, source evidence map, pattern register, thesis, and local corpus map; conclusions reconcile and no correction was required
+
+#### Implementation Progress:
+- Persisted the first five-section final review boundary after reducing reads to one section per tool output to avoid truncation.
+
+#### Current Focus:
+Assignment 7 complete reread checkpoint sections 001-005
+
+#### Next Steps:
+- Reread complete packet and reference Sections 006-010 individually, reconcile each section, and persist the next review checkpoint before Section 011.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Final reread completed: sections 5/26; checkpoint cadence satisfied at section 005.
+
+### Session: 2026-07-11 21:36:32Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Packet/reference complete reread 006-010: PASS - Read every packet answer and evolved reference line for external research, anti-patterns, verification gates, agent usage, and illustrative journey; source states, decision routes, examples, and no-result boundaries reconcile
+
+#### Implementation Progress:
+- No semantic, structural, evidence-boundary, or duplication correction was required in reread group 006-010.
+
+#### Current Focus:
+Assignment 7 complete reread checkpoint sections 006-010
+
+#### Next Steps:
+- Reread complete packet and reference Sections 011-015 individually, reconcile each section, and persist the next review checkpoint before Section 016.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Final reread completed: sections 10/26; persisted checkpoints at sections 005 and 010.
+
+### Session: 2026-07-11 21:37:15Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Packet/reference complete reread 011-015: PASS - Read every packet answer and evolved reference line for tradeoffs, corpus hierarchy, evidence packet, worked examples, and metrics; authority, proposal/result, no-claim, and invalidation boundaries reconcile
+
+#### Implementation Progress:
+- No correction was required in reread group 011-015; illustrative examples and future metrics remain explicitly unexecuted or scoped.
+
+#### Current Focus:
+Assignment 7 complete reread checkpoint sections 011-015
+
+#### Next Steps:
+- Reread complete packet and reference Sections 016-020 individually, reconcile each section, and persist the next review checkpoint before Section 021.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Final reread completed: sections 15/26; persisted checkpoints at sections 005, 010, and 015.
+
+### Session: 2026-07-11 21:38:00Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Packet/reference complete reread 016-020: PASS - Read every packet answer and evolved reference line for completeness, routing, workload, reliability, and failure modes; profile, consequence, selective invalidation, and evidence limits reconcile
+
+#### Implementation Progress:
+- No correction was required in reread group 016-020; fixed seed capacity and reliability figures remain preserved only as uncalibrated inherited metadata.
+
+#### Current Focus:
+Assignment 7 complete reread checkpoint sections 016-020
+
+#### Next Steps:
+- Reread complete packet and reference Sections 021-025 individually, reconcile each section, and persist the next review checkpoint before final Section 026.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Final reread completed: sections 20/26; persisted checkpoints at sections 005, 010, 015, and 020.
+
+### Session: 2026-07-11 21:38:44Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Packet/reference complete reread 021-025: PASS - Read every packet answer and evolved reference line for retry/backpressure, observability, performance, scale, and future queries; policy provenance, equivalence, no-results, no-browse, and operational boundaries reconcile
+
+#### Implementation Progress:
+- No correction was required in reread group 021-025; exact seed query strings remain preserved and every future query remains unexecuted.
+
+#### Current Focus:
+Assignment 7 complete reread checkpoint sections 021-025
+
+#### Next Steps:
+- Reread complete packet and reference Section 026, persist the final reread checkpoint, then run the focused verifier, frozen-hash, queue-span, scoped-diff, and test evidence.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Final reread completed: sections 25/26; persisted checkpoints at sections 005, 010, 015, 020, and 025.
+
+### Session: 2026-07-11 21:39:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Packet/reference complete reread 026: PASS - Read every final packet answer and Evidence Boundary Notes line; exact seed labels, local observations, unrefreshed external state, inference/proposal taxonomy, audit, and no-results boundary reconcile
+- Complete semantic reread 001-026: PASS - All 26 packet sections and all 26 evolved reference sections reread individually with persisted checkpoints no later than each five-section boundary; no semantic correction remained
+
+#### Implementation Progress:
+- Completed final reread checkpoints at sections 005, 010, 015, 020, 025, and 026.
+
+#### Current Focus:
+Assignment 7 complete packet and reference reread finished
+
+#### Next Steps:
+- Run final focused verifier, table/fence/ASCII/whitespace checks, immutable hash checks, queue-span checks, scoped diff, selected shared tests, and full shared suite before final Refactor checkpoint.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Final reread completed: sections 26/26; complete packet and complete evolved reference reviewed.
+
+### Session: 2026-07-11 21:42:08Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Assignment 7 focused verifier: PASS - 17/17 checks; 26 exact headings, 26 strict expansions, 26 packet sections, 260 exact questions, 1560 ordered fields, uniqueFieldCount=1560, normalizedUniqueFieldCount=1560, no forbidden markers, ASCII/whitespace/fences/tables clean
+- Assignment 7 frozen source and queue evidence: PASS - 147 reference tables, 116/116 queue seed-span hashes, assignment queue rows byte-identical to HEAD and still pending, 8/8 immutable inputs present, scoped git diff check clean
+- Shared invariant subset: PASS - 5 selected inventory, ownership, manifest, packet uniqueness, and placeholder tests passed in 0.55 seconds
+- Full shared suite: EXPECTED EXTERNAL RED - 5 passed and 3 failed in 2.61 seconds because 57 references/packets remain unfinished outside Assignment 7 and 7684 shared queue rows remain incomplete
+
+#### Implementation Progress:
+- idiomatic-ref-202607/frontend_design_quality_patterns-20260710.md: complete 26-section strict evolution; SHA-256 c38a1820b29081eaa97482c70e51712f7052dff412f1f692213aff6739283643.
+- idiomatic-reference-evolution-work/delta/packets/frontend_design_quality_patterns-20260710-question-packets.md: complete 26-section, 260-question, 1560-unique-value rationale packet; SHA-256 87bafcca6abee3a09d41a3bed97852f34b93941a6a7930f17dfcdc16d11a3c73.
+- idiomatic-reference-evolution-work/delta/progress.md: recorded Assignment 7 Red, per-three-section production checkpoints, Green, five-section reread checkpoints, and final Refactor evidence.
+
+#### Current Focus:
+Assignment 7 frontend_design_quality_patterns Refactor complete
+
+#### Next Steps:
+- Begin Assignment 8 from delta/assignments.csv only after post-journal integrity verification: idiomatic-ref-202607/kotlin_backend_security_resilience-20260710.md and its matching Delta packet.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 7 final: sections=26; questions=260; fieldLines=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; completeReread=26/26; focusedVerifier=PASS.
+
+### Session: 2026-07-11 21:43:40Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 frozen reference identity: EXPECTED RED - Working reference is byte-identical to archive seed at SHA-256 74c1872fa32c445a33abb9458634322c71e71af25b21c59cecc2fa631c53d507; no section has been evolved
+- Assignment 8 packet presence: EXPECTED RED - idiomatic-reference-evolution-work/delta/packets/kotlin_backend_security_resilience-20260710-question-packets.md is absent
+- Assignment 8 queue-span integrity: PASS - 115/115 source spans match frozen SHA-256 values, cover lines 1-205 contiguously, preserve 26 exact headings, and remain pending
+
+#### Implementation Progress:
+- Read complete working reference and archive seed; they are byte-identical and retain the exact 26-heading order.
+- Read complete mapped local source agents-used-monthly-archive/codex-skills-202606/kotlin-backend-delivery-01/references/kotlin-backend-security-and-resilience.md at SHA-256 8a07eb77e27a3b508224db76c60e20508b8b3d13b81fce86e87ea052be7d14a5.
+- Re-read the complete shared evolution specification and test implementation; no external URL was opened.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience frozen source and evidence audit complete
+
+#### Next Steps:
+- Create and immediately save Section 001 Kotlin Backend Security Resilience packet with ten exact questions and sixty unique concrete values, then rewrite/save Section 001 and run atomic sanity before Section 002.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 8 baseline: sections=26; queueRows=115; packetSections=0; questions=0; fieldLines=0.
+
+### Session: 2026-07-11 21:50:05Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 001-003 atomic sanity: PASS - 3 packet sections, 30 exact questions, 180 fields, rawUnique=180, normalizedUnique=180; 26 reference headings exact and first 3 seed sections strictly expanded; forbidden markers absent; ASCII and table widths clean
+
+#### Implementation Progress:
+- Saved packet Sections 001-003 before each matching reference rewrite.
+- Expanded the operating contract, claim-specific evidence map, and inherited-score pattern register with trust, authority, cancellation, side-effect, retry/idempotency, durability, and negative-evidence boundaries.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-003 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 004 Idiomatic Thesis Synthesis Statement packet, then rewrite/save its reference section and run atomic sanity before Section 005.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 3/26; exact questions: 30/260; mandatory fields: 180/1560; rawUnique=180; prefix-stripped normalizedUnique=180.
+
+### Session: 2026-07-11 21:56:02Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 004-006 atomic sanity: PASS - 6 packet sections, 60 exact questions, 360 fields, rawUnique=360, normalizedUnique=360; first 6 seed sections strictly expanded; exact headings, ASCII, markers, and tables clean
+
+#### Implementation Progress:
+- Saved packet Sections 004-006 before each matching reference rewrite.
+- Expanded the protected-transition thesis, complete local-source routing, and four-lane unrefreshed external research queue with target negative-path closure.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-006 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 007 Anti Pattern Registry Table packet, then rewrite/save its reference section and run atomic sanity before Section 008.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 6/26; exact questions: 60/260; mandatory fields: 360/1560; rawUnique=360; prefix-stripped normalizedUnique=360.
+
+### Session: 2026-07-11 22:04:40Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 007-009 atomic sanity: PASS - 9 packet sections, 90 exact questions, 540 mandatory fields, rawUnique=540, normalizedUnique=540; exact 26-heading reference order and first 9 seed sections strictly expanded; forbidden markers absent; ASCII and fences clean
+
+#### Implementation Progress:
+- Saved each Section 007-009 packet before its matching reference rewrite and ran immediate sanity after every section.
+- Expanded the anti-pattern registry, layered verification gate set, and bounded agent state/routing guide with explicit negative, fault, replay, authority, and invalidation controls.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-009 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 010 User Journey Scenario packet, then rewrite/save its reference section and run atomic sanity before Section 011.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 9/26; exact questions: 90/260; mandatory fields: 540/1560; rawUnique=540; prefix-stripped normalizedUnique=540.
+
+### Session: 2026-07-11 22:11:47Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 010-012 atomic sanity: PASS - 12 packet sections, 120 exact questions, 720 mandatory fields, rawUnique=720, normalizedUnique=720; exact 26-heading order and first 12 sections strictly expanded; markers, ASCII, fences, and table widths clean
+
+#### Implementation Progress:
+- Saved each Section 010-012 packet before its matching reference rewrite and ran immediate sanity after every section.
+- Expanded an end-to-end signed callback journey, a cross-boundary architecture tradeoff matrix, and a claim-level local corpus hierarchy with selective refresh and conflict rules.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-012 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 013 Theme Specific Artifact packet, then rewrite/save its reference section and run atomic sanity before Section 014.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 12/26; exact questions: 120/260; mandatory fields: 720/1560; rawUnique=720; prefix-stripped normalizedUnique=720.
+
+### Session: 2026-07-11 22:19:02Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 013-015 atomic sanity: PASS - 15 packet sections, 150 exact questions, 900 mandatory fields, rawUnique=900, normalizedUnique=900; exact 26-heading order and first 15 strict expansions; markers, ASCII, fences, and table widths clean
+
+#### Implementation Progress:
+- Saved each Section 013-015 packet before its matching reference rewrite and ran immediate sanity after every section.
+- Expanded the protected-transition artifact schema with a populated example, causal good/unsafe/borderline implementation examples, and claim-linked metrics plus feedback loops without invented universal targets.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-015 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 016 Completeness Checklist packet, then rewrite/save its reference section and run atomic sanity before Section 017.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 15/26; exact questions: 150/260; mandatory fields: 900/1560; rawUnique=900; prefix-stripped normalizedUnique=900.
+
+### Session: 2026-07-11 22:25:34Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 016-018 atomic sanity: PASS - 18 packet sections, 180 exact questions, 1080 mandatory fields, rawUnique=1080, normalizedUnique=1080; exact 26-heading order and first 18 strict expansions; markers, ASCII, fences, and table widths clean
+
+#### Implementation Progress:
+- Saved each Section 016-018 packet before its matching reference rewrite and ran immediate sanity after every section.
+- Expanded two-layer completeness gates, exact-path adjacent routing with claim ownership, and a target-owned workload envelope that removes unsupported fixed endpoint/request capacities.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-018 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 019 Reliability Target packet, then rewrite/save its reference section and run atomic sanity before Section 020.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 18/26; exact questions: 180/260; mandatory fields: 1080/1560; rawUnique=1080; prefix-stripped normalizedUnique=1080.
+
+### Session: 2026-07-11 22:32:56Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 019-021 atomic sanity: PASS - 21 packet sections, 210 exact questions, 1260 mandatory fields, rawUnique=1260, normalizedUnique=1260; exact 26-heading order and first 21 strict expansions; markers, ASCII, fences, and table widths clean
+
+#### Implementation Progress:
+- Saved each Section 019-021 packet before its matching reference rewrite and ran immediate sanity after every section.
+- Replaced invented reliability precision with target-owned contracts, expanded causal and compound failure modes, and rebuilt retry/backpressure as a classified end-to-end control loop.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-021 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 022 Observability Checklist packet, then rewrite/save its reference section and run atomic sanity before Section 023.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 21/26; exact questions: 210/260; mandatory fields: 1260/1560; rawUnique=1260; prefix-stripped normalizedUnique=1260.
+
+### Session: 2026-07-11 22:39:53Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 8 Sections 022-024 atomic sanity: PASS - 24 packet sections, 240 exact questions, 1440 mandatory fields, rawUnique=1440, normalizedUnique=1440; exact 26-heading order and first 24 strict expansions; markers, ASCII, fences, and table widths clean
+
+#### Implementation Progress:
+- Saved each Section 022-024 packet before its matching reference rewrite and ran immediate sanity after every section.
+- Expanded privacy-safe observability, correctness-first JVM/Kotlin performance verification without inherited latency targets, and authority/commit/topology-based scale boundaries with cross-transition coordination.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience sections 001-024 durable evolution
+
+#### Next Steps:
+- Create and immediately save Section 025 Future Refresh Search Queries packet, then rewrite/save its reference section and run atomic sanity before Section 026.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Completed sections: 24/26; exact questions: 240/260; mandatory fields: 1440/1560; rawUnique=1440; prefix-stripped normalizedUnique=1440.
+
+### Session: 2026-07-11 22:44:25Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 8 complete production gate: PASS - 26/26 exact packet sections, 260/260 exact questions, 1560/1560 mandatory fields, rawUnique=1560, prefix-stripped normalizedUnique=1560
+- Assignment 8 complete reference structure: PASS - 26/26 original headings preserve exact text/order; every section strictly exceeds matching seed; minimum character expansion delta is 9892
+- Assignment 8 quick hygiene gate: PASS - forbidden whole-word markers absent; ASCII clean; code fences balanced; Markdown table widths clean; trailing whitespace absent
+
+#### Implementation Progress:
+- Completed idiomatic-ref-202607/kotlin_backend_security_resilience-20260710.md with 26 strictly expanded security/resilience decision sections.
+- Completed idiomatic-reference-evolution-work/delta/packets/kotlin_backend_security_resilience-20260710-question-packets.md with 26 sections, 260 exact questions, and 1560 concrete unique mandatory values.
+- Updated idiomatic-reference-evolution-work/delta/progress.md at Red three-section boundaries and the Green phase boundary.
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience packet and reference production complete; full reread pending
+
+#### Next Steps:
+- Reread complete packet and reference Sections 001-005, persist a review checkpoint, and continue in groups no larger than five through Section 026 before focused verification.
+- After Assignment 8 Refactor completion, begin next assigned file from delta/assignments.csv: idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md with its matching Delta packet.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 8 Green: sections=26; questions=260; fieldLines=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; strictExpansions=26; currentFocusedAtomicGate=PASS.
+
+### Session: 2026-07-11 22:45:50Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 8 reread 001-005: PASS - Complete evolved reference and complete ten-question packet sections reread without truncation; decisions, evidence limits, counterarguments, and implemented content remain aligned
+
+#### Implementation Progress:
+- Reviewed opening operating contract, claim-specific evidence map, inherited-score qualitative register, protected-transition thesis, and complete local corpus map against their packets.
+
+#### Current Focus:
+Assignment 8 complete packet/reference reread Sections 001-005
+
+#### Next Steps:
+- Reread complete packet and reference Sections 006-010, then persist the next review checkpoint before Section 011.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Complete reread progress: 5/26 reference sections and 5/26 packet sections; normalizedUniqueFieldCount remains 1560 from Green gate.
+
+### Session: 2026-07-11 22:46:41Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 8 reread 006-010: PASS - Complete external research map, anti-pattern registry, verification gate set, agent usage guide, callback journey, and matching packets reread; no unsupported external promotion or semantic mismatch found
+
+#### Implementation Progress:
+- Confirmed all external routes remain unrefreshed, target commands remain discovery-bound, state/routing logic is operational, and callback/provider specifics are explicitly illustrative.
+
+#### Current Focus:
+Assignment 8 complete packet/reference reread Sections 006-010
+
+#### Next Steps:
+- Reread complete packet and reference Sections 011-015, then persist the next review checkpoint before Section 016.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Complete reread progress: 10/26 reference sections and 10/26 packet sections; normalizedUniqueFieldCount remains 1560 from Green gate.
+
+### Session: 2026-07-11 22:48:00Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 8 reread 011-015: PASS - Complete tradeoff, source hierarchy, protected-transition artifact, worked examples, metrics/feedback sections and matching packets reread; one ambiguous packet phrase corrected and reread
+- Assignment 8 post-reread uniqueness check: PASS - 26 packet sections, 260 exact questions, 1560 fields, rawUnique=1560, prefix-stripped normalizedUnique=1560; exact headings and 26 strict expansions preserved
+
+#### Implementation Progress:
+- Clarified Packet Section 015 so missing telemetry is explicitly distinguished from an observed zero-event state; reference behavior already expressed the same boundary.
+
+#### Current Focus:
+Assignment 8 complete packet/reference reread Sections 011-015
+
+#### Next Steps:
+- Reread complete packet and reference Sections 016-020, then persist the next review checkpoint before Section 021.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Complete reread progress: 15/26 reference sections and 15/26 packet sections; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560.
+
+### Session: 2026-07-11 22:49:19Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 8 reread 016-020: PASS - Complete completeness, routing, workload, reliability, failure-mode sections and matching packets reread; one ambiguous missing-data sentence corrected and reread
+- Assignment 8 post-reread structural check: PASS - 26 exact headings, 26 strict expansions, 1560 raw-unique and normalized-unique packet values, forbidden markers absent, ASCII clean
+
+#### Implementation Progress:
+- Clarified Reference Section 018 so missing telemetry cannot be mistaken for a measured healthy zero; surrounding workload and metric semantics remain unchanged.
+
+#### Current Focus:
+Assignment 8 complete packet/reference reread Sections 016-020
+
+#### Next Steps:
+- Reread complete packet and reference Sections 021-025, then persist the next review checkpoint before Section 026.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Complete reread progress: 20/26 reference sections and 20/26 packet sections; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560.
+
+### Session: 2026-07-11 22:50:23Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 8 reread 021-025: PASS - Complete retry/backpressure, observability, performance method, scale boundary, future query sections and matching packets reread; semantics and no-browse status remain aligned
+
+#### Implementation Progress:
+- Confirmed semantic/load retry gates, privacy-safe telemetry, correctness-first performance evidence, authority/commit scale boundaries, and exact preserved seed queries with unexecuted status.
+
+#### Current Focus:
+Assignment 8 complete packet/reference reread Sections 021-025
+
+#### Next Steps:
+- Reread complete packet and reference Section 026, persist the final reread checkpoint, then run focused verifier, hashes, frozen-span integrity, scoped diff, and shared tests.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Complete reread progress: 25/26 reference sections and 25/26 packet sections; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560.
+
+### Session: 2026-07-11 22:50:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 8 reread 026: PASS - Complete evidence-boundary reference section and ten-question packet section reread; labels, knowns, prohibited inferences, reuse, and uncertainty align
+- Assignment 8 whole-artifact semantic reread: PASS - 26/26 reference sections and 26/26 packet sections reread in persisted groups of at most five; two wording defects corrected and reread
+
+#### Implementation Progress:
+- Completed bounded reread checkpoints for 001-005, 006-010, 011-015, 016-020, 021-025, and 026.
+
+#### Current Focus:
+Assignment 8 complete packet/reference reread Section 026 and full 26-section semantic review complete
+
+#### Next Steps:
+- Run the assignment-focused verifier and hygiene checks, freeze final reference/packet hashes, verify 115 frozen queue spans and immutable inputs, run scoped diff and shared selected/full tests, then record Refactor.
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Complete reread progress: 26/26 reference sections and 26/26 packet sections; current field count=1560; current normalized unique count=1560.
+
+### Session: 2026-07-11 22:56:57Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Assignment 8 focused verifier: PASS - status PASS; reference sections=26 and evolvedCharacters=361917; packet sections=26, questions=260, fields=1560, raw unique=1560, prefix-stripped normalized unique=1560
+- Assignment 8 focused artifact audit: PASS - 17/17 checks pass: exact heading identity/order, strict expansion 26/26 with minimum section delta 9892 characters, exact questions and ordered fields, marker/ASCII/whitespace/fence/table/source-preservation/no-browse checks clean
+- Assignment 8 frozen source and queue evidence: PASS - 115/115 frozen source-span SHA-256 hashes pass with contiguous seed coverage; 8/8 immutable inputs present; assignment rows remain semantically identical to HEAD and pending
+- Assignment 8 scoped diff hygiene: PASS - git diff --check exits 0 for the reference, packet, and Delta journal
+- Shared invariant subset: PASS - 5 selected invariant tests passed in 1.64s
+- Full shared evolution suite: EXPECTED EXTERNAL RED - 5 passed and 3 failed in 1.33s: 54 repository-wide packets/references remain pending and 7684 shared queue rows remain incomplete; these cross-lane gates are outside Delta exclusive write boundaries
+
+#### Implementation Progress:
+- idiomatic-ref-202607/kotlin_backend_security_resilience-20260710.md: complete 26-section evolved reference; SHA-256 700f90f8208a696ebebe2373df4c4cf7e7cb414dd1babaf7fe97b0842e3b10b5
+- idiomatic-reference-evolution-work/delta/packets/kotlin_backend_security_resilience-20260710-question-packets.md: complete 26-section packet; SHA-256 b6306b8b0df8eeb809963275c6ae7203e825c94e26bbe6f34a399e8c79d9b984
+- idiomatic-reference-evolution-work/delta/progress.md: Assignment 8 Green production, six persisted reread checkpoints, and final Refactor evidence recorded
+
+#### Current Focus:
+Assignment 8 kotlin_backend_security_resilience Refactor complete; Assignment 9 is the next authorized file
+
+#### Next Steps:
+- Begin Assignment 9 Red by reading the complete shared spec, tests, idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md, its archive seed, all mapped source evidence, and the latest Delta journal before editing.
+- Verify Assignment 9 frozen queue spans and hashes, exact 26-heading baseline, packet state, and forbidden-marker baseline; record Red before Section 001.
+- For Assignment 9, persist each ten-question packet section first, then the matching expanded reference section, run immediate sanity checks, and journal no later than each three-section boundary.
+
+#### Context Notes:
+- Complete packet/reference reread covered all 26 sections in persisted groups 001-005, 006-010, 011-015, 016-020, 021-025, and 026; two wording corrections were rechecked before final verification.
+- No browsing occurred. Shared CSV, shared queue, tests, archive seeds, assignment manifest, and other lanes were not edited.
+
+#### Performance/Metrics:
+- Assignment 8 final counts: sections=26/26; questions=260/260; mandatory fields=1560/1560; raw unique=1560; normalized unique=1560; complete reread=26/26.
+- Assignment 8 hashes: reference=700f90f8208a696ebebe2373df4c4cf7e7cb414dd1babaf7fe97b0842e3b10b5; packet=b6306b8b0df8eeb809963275c6ae7203e825c94e26bbe6f34a399e8c79d9b984; seed=74c1872fa32c445a33abb9458634322c71e71af25b21c59cecc2fa631c53d507; mapped source=8a07eb77e27a3b508224db76c60e20508b8b3d13b81fce86e87ea052be7d14a5
+- Next assigned file from delta/assignments.csv: idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md; packet: idiomatic-reference-evolution-work/delta/packets/kotlin_quality_antipattern_gates-20260710-question-packets.md.
+
+### Session: 2026-07-11 23:00:06Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 focused baseline: EXPECTED RED - Focused verifier fails because working reference still matches archive seed; packet is absent
+- Assignment 9 frozen span integrity: PASS - 115/115 queue source spans match SHA-256 anchors, cover seed lines 1-205 contiguously, and preserve all 26 exact headings
+- Assignment 9 ownership and queue baseline: PASS - Owner is evolve_reference_sections_delta, agent file order is 9, all rows remain pending with empty completion notes, and target rows are semantically identical to HEAD
+- Assignment 9 placeholder baseline: PASS - Working reference contains zero forbidden whole-word markers
+
+#### Implementation Progress:
+- Read complete working reference idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md and byte-identical archive seed before editing; SHA-256 2d5de11b9ddf670d8a3328864fdb8dfb5a68aca630c06138cce486c84c636c8f
+- Read complete mapped local source agents-used-monthly-archive/codex-skills-202606/kotlin-coder-01/references/kotlin-quality-gates-and-anti-patterns.md; SHA-256 1b393027a06d8a4ca7790822c9c29485bd3e8d59d77d7dfc310a8a761cb44400
+- Re-read the complete shared evolution specification, complete shared test implementation, and complete Delta progress journal before Assignment 9 editing
+
+#### Current Focus:
+Assignment 9 kotlin_quality_antipattern_gates frozen baseline and complete source read; Section 001 packet is next
+
+#### Next Steps:
+- Create and immediately save packet Section 001 with the exact heading, ten exact questions, and sixty concrete raw and prefix-stripped normalized-unique values.
+- Rewrite and save reference Section 001 from its packet conclusions, then run immediate exact-heading, expansion, marker, ASCII, table/fence, and packet-shape sanity before Section 002.
+- Continue packet-first/reference-second one section at a time and append the next journal checkpoint no later than completed Section 003; stop after Assignment 9 Refactor completion.
+
+#### Context Notes:
+- No external URL was opened. Kotlin documentation, kotlinx.coroutines, Spring guide, and Ktor links remain unrefreshed pointers, not current verified evidence.
+- The local source establishes ten Kotlin anti-patterns, an eight-item reliability stack, repository-native Gradle/Maven gate discovery, and a six-axis review pass.
+
+#### Performance/Metrics:
+- Assignment 9 Red counts: sections=0/26; packetSections=0/26; questions=0/260; mandatoryFields=0/1560; queueSpanHashes=115/115.
+- Frozen inputs: spec=b6d129b47863ae90db6c40d3fb7d3cae75f895efe65410862c4e404e1e7805c9; tests=c74fcf964a69a2222a7514c3f2356bbc557e661d332f41f8c2aafef8b25d48b6; focusedVerifier=eaa499505f99954f6443a26d01d053d89d4680f70d1e85ed0711d7ddc89fa429; queue=05bba10f009669d210aee862b172da835020ba1fae971b4b78121778e567e67c; assignments=97095c9fa2bcf9cb8ab0fd20df37e96134c98889ebbeb021764d5324e5fd81c2.
+
+### Session: 2026-07-11 23:06:14Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 001-003 atomic sanity: PASS - Each complete packet section was saved before its matching reference rewrite; exact heading order, strict expansion, packet shape, ASCII, marker, table, fence, and whitespace checks pass
+- Assignment 9 normalized uniqueness through 003: PASS - 3 packet sections, 30 exact questions, 180 mandatory values, raw unique=180, prefix-stripped normalized unique=180
+
+#### Implementation Progress:
+- idiomatic-reference-evolution-work/delta/packets/kotlin_quality_antipattern_gates-20260710-question-packets.md: Sections 001-003 saved with operating-contract, evidence-map, and pattern-register rationale
+- idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md: Sections 001-003 expanded with Kotlin-specific quality scope, claim-level evidence lifecycle, and qualitative adoption controls
+
+#### Current Focus:
+Assignment 9 kotlin_quality_antipattern_gates Sections 001-003 durably evolved and atomically verified
+
+#### Next Steps:
+- Create and immediately save Section 004 packet, then rewrite and save the thesis section and run its atomic sanity check.
+- Continue Sections 005-006 in packet-first/reference-second order and append the next journal checkpoint no later than Section 006.
+
+#### Context Notes:
+- Inherited pattern values 95, 91, and 88 remain preserved as historical editorial metadata, not effectiveness percentages or calibrated confidence.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=3/26; questions=30/260; fields=180/1560; rawUnique=180; normalizedUnique=180; strictExpansions=3.
+
+### Session: 2026-07-11 23:10:58Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 004-006 atomic sanity: PASS - Packet-first/reference-second persistence and immediate heading, expansion, question, field, marker, ASCII, table, fence, and whitespace checks pass
+- Assignment 9 normalized uniqueness through 006: PASS - 6 packet sections, 60 exact questions, 360 fields, raw unique=360, prefix-stripped normalized unique=360
+
+#### Implementation Progress:
+- Expanded thesis into an information/ownership preservation pipeline with explicit refusal, verification, learning, and invalidation states
+- Expanded local source map with complete heading-level contributions and source hash; expanded external map into four decision-triggered unrefreshed_no_browse queues with zero current results
+
+#### Current Focus:
+Assignment 9 kotlin_quality_antipattern_gates Sections 004-006 durably evolved and verified
+
+#### Next Steps:
+- Create and save Section 007 anti-pattern packet, then save its Kotlin-specific causal registry and run immediate sanity.
+- Complete Sections 008-009 atomically and journal again at nine sections.
+
+#### Context Notes:
+- The sole local source is treated as one canonical inherited content source, not multiple independent confirmations; all command examples remain discovery-bound.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=6/26; questions=60/260; fields=360/1560; rawUnique=360; normalizedUnique=360; strictExpansions=6.
+
+### Session: 2026-07-11 23:16:27Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 007-009 atomic sanity: PASS - Packet-first/reference-second saves; exact headings/order, strict expansion, question/field counts, raw and normalized uniqueness, markers, ASCII, tables, fences, and whitespace pass
+- Assignment 9 normalized uniqueness through 009: PASS - 9 packet sections, 90 exact questions, 540 fields, raw unique=540, prefix-stripped normalized unique=540
+
+#### Implementation Progress:
+- Expanded anti-pattern registry with Kotlin contract loss, exception evidence, finding dispositions, compound failure chains, and population-aware detection
+- Expanded verification into discovery, focused behavior, build, configured analysis, semantic review, regression, runtime, and current reference gates; expanded agent use into permission-aware states and modes
+
+#### Current Focus:
+Assignment 9 Sections 007-009 Kotlin hazard registry, gate DAG, and agent state guide complete
+
+#### Next Steps:
+- Create and save Section 010 user-journey packet, then save its end-to-end reference scenario and run immediate sanity.
+- Complete Sections 011-012 atomically and append the twelve-section checkpoint.
+
+#### Context Notes:
+- Legacy 202606 verifier is preserved as historical provenance; current 202607 focused verifier and target Kotlin behavior gates are kept distinct.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=9/26; questions=90/260; fields=540/1560; rawUnique=540; normalizedUnique=540; strictExpansions=9.
+
+### Session: 2026-07-11 23:21:44Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 010-012 atomic sanity: PASS - Packet-first/reference-second saves and immediate exact-heading, expansion, packet, uniqueness, marker, ASCII, table, fence, and whitespace gates pass
+- Assignment 9 normalized uniqueness through 012: PASS - 12 packet sections, 120 exact questions, 720 fields, raw unique=720, prefix-stripped normalized unique=720
+
+#### Implementation Progress:
+- Added an explicitly illustrative Java-client adapter journey with null, typed outcome, cancellation, blocking, state, gate, no-capacity-claim, and rollback paths
+- Added state/identity/coroutine/blocking/state-scope/repair tradeoff matrices and a partial-order local authority model separating inherited guidance, target fact, target behavior, and owner policy
+
+#### Current Focus:
+Assignment 9 Sections 010-012 illustrative journey, choice matrices, and claim-specific hierarchy complete
+
+#### Next Steps:
+- Create and save Section 013 theme-artifact packet, then save the quality review artifact schema and run immediate sanity.
+- Complete Sections 014-015 atomically and append the fifteen-section checkpoint.
+
+#### Context Notes:
+- Scenario names, code, and outcomes are illustrative; no real target repository or runtime result is claimed.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=12/26; questions=120/260; fields=720/1560; rawUnique=720; normalizedUnique=720; strictExpansions=12.
+
+### Session: 2026-07-11 23:26:38Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 013-015 atomic sanity: PASS - Packet-first/reference-second saves; exact headings/order, strict expansion, question and field counts, raw/normalized uniqueness, marker, ASCII, table, fence, and whitespace checks pass
+- Assignment 9 normalized uniqueness through 015: PASS - 15 packet sections, 150 exact questions, 900 fields, raw unique=900, prefix-stripped normalized unique=900
+
+#### Implementation Progress:
+- Added compact/standard/migration Kotlin Quality Evidence Packet schema with claim records, blockers, exceptions, acceptance, and illustrative population
+- Added six orthogonal Kotlin fixtures and proposed deterministic/workflow/downstream metric cards with no target baseline or outcome claim
+
+#### Current Focus:
+Assignment 9 Sections 013-015 quality evidence packet, worked fixtures, and bounded feedback model complete
+
+#### Next Steps:
+- Create and save Section 016 completeness packet, then save prerequisite-aware completion profiles and run immediate sanity.
+- Complete Sections 017-018 atomically and append the eighteen-section checkpoint.
+
+#### Context Notes:
+- The seed one-session target was removed as unsupported; metric definitions remain proposed and unbaselined.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=15/26; questions=150/260; fields=900/1560; rawUnique=900; normalizedUnique=900; strictExpansions=15.
+
+### Session: 2026-07-11 23:31:32Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 016-018 atomic sanity: PASS - Packet-first/reference-second saves; exact headings, strict expansion, question/field counts, raw/normalized uniqueness, marker, ASCII, table, fence, and whitespace checks pass
+- Assignment 9 normalized uniqueness through 018: PASS - 18 packet sections, 180 exact questions, 1080 fields, raw unique=1080, prefix-stripped normalized unique=1080
+
+#### Implementation Progress:
+- Added packet-integrity and target-closure completion layers with split semantic/integration/operational states and selective reopen rules
+- Added capability-based exact candidate routes with handoff/return contracts, plus uncertainty/caller/lifecycle/persistence/evidence/owner workload dimensions and safe narrowing
+
+#### Current Focus:
+Assignment 9 Sections 016-018 completion profiles, exact routing, and multidimensional workload model complete
+
+#### Next Steps:
+- Create and save Section 019 reliability packet, then save its bounded target model and run immediate sanity.
+- Complete Sections 020-021 atomically and append the twenty-one-section checkpoint.
+
+#### Context Notes:
+- Fixed seed capacity of twenty requirement IDs is preserved only as rejected uncalibrated historical guidance; no target capacity was measured.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=18/26; questions=180/260; fields=1080/1560; rawUnique=1080; normalizedUnique=1080; strictExpansions=18.
+
+### Session: 2026-07-11 23:36:53Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 019-021 atomic sanity: PASS - Packet-first/reference-second saves; exact headings/order, strict expansion, question/field counts, raw/normalized uniqueness, marker, ASCII, table, fence, and whitespace checks pass
+- Assignment 9 normalized uniqueness through 021: PASS - 21 packet sections, 210 exact questions, 1260 fields, raw unique=1260, prefix-stripped normalized unique=1260
+
+#### Implementation Progress:
+- Separated hard finite-population invariants, sampled indicators, sentinel events, control layers, and target lifecycle without claiming achieved reliability
+- Added 25 stage-indexed failure trajectories and separated application, verification, research, and agent retry domains with no invented universal budget
+
+#### Current Focus:
+Assignment 9 Sections 019-021 bounded reliability, causal failures, and domain-separated retry/backpressure complete
+
+#### Next Steps:
+- Create and save Section 022 observability packet, then save privacy-safe claim/finding/gate/attempt event guidance and run immediate sanity.
+- Complete Sections 023-024 atomically and append the twenty-four-section checkpoint.
+
+#### Context Notes:
+- Inherited 18-of-20 route value is retained only as an illustrative bounded fixture gate, not a production probability or measured result.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=21/26; questions=210/260; fields=1260/1560; rawUnique=1260; normalizedUnique=1260; strictExpansions=21.
+
+### Session: 2026-07-11 23:41:50Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- Assignment 9 Sections 022-024 atomic sanity: PASS - Packet-first/reference-second saves; exact headings/order, strict expansion, question/field counts, raw/normalized uniqueness, marker, ASCII, table, fence, and whitespace checks pass
+- Assignment 9 normalized uniqueness through 024: PASS - 24 packet sections, 240 exact questions, 1440 fields, raw unique=1440, prefix-stripped normalized unique=1440
+
+#### Implementation Progress:
+- Added common evidence envelope, workflow/runtime event schemas, missing-versus-zero states, privacy/cardinality rules, and observability verification
+- Added correctness-first runtime/build/workflow performance protocols and evidence-triggered local/narrow/shard/federate/durable/specialist scale routes with no universal thresholds
+
+#### Current Focus:
+Assignment 9 Sections 022-024 privacy-safe observability, controlled performance method, and scale routing complete
+
+#### Next Steps:
+- Create and save Section 025 future-refresh packet, then save its unexecuted query protocol and run immediate sanity.
+- Create and save final Section 026 evidence-boundary packet, save its reference ledger, run complete production checks, and append Green before reread.
+
+#### Context Notes:
+- No benchmark, runtime telemetry, workload, reviewer study, scale capacity, or public refresh was executed or claimed.
+
+#### Performance/Metrics:
+- Assignment 9 progress: sections=24/26; questions=240/260; fields=1440/1560; rawUnique=1440; normalizedUnique=1440; strictExpansions=24.
+
+### Session: 2026-07-11 23:45:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- Assignment 9 canonical focused verifier: PASS - status PASS; reference sections=26 and evolvedCharacters=221447 versus seedCharacters=17456; packet sections=26, questions=260, fields=1560, raw unique=1560, normalized unique=1560
+- Assignment 9 complete production audit: PASS - Exact 26 heading identity/order, all 26 strict expansions with minimum delta 5918 characters, exact packet shape, three seed queries preserved, markers/ASCII/whitespace/tables/fences clean
+
+#### Implementation Progress:
+- Completed idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md across all 26 original sections with Kotlin-specific boundary, type, identity, coroutine, blocking, state, gate, reliability, and evidence guidance
+- Completed idiomatic-reference-evolution-work/delta/packets/kotlin_quality_antipattern_gates-20260710-question-packets.md with 26 sections, 260 exact questions, and 1560 concrete raw and prefix-stripped normalized-unique values
+
+#### Current Focus:
+Assignment 9 kotlin_quality_antipattern_gates packet and reference production complete; complete reread pending
+
+#### Next Steps:
+- Reread complete packet and reference Sections 001-005, reconcile every packet conclusion with evolved guidance, correct only evidence-backed defects, and persist the first review checkpoint.
+- Continue reread checkpoints through 006-010, 011-015, 016-020, 021-025, and 026, rerunning uniqueness after any packet edit.
+- Run final focused verifier, comprehensive hygiene/source/queue/hash/scoped-diff/shared-test evidence, append Refactor, and stop after Assignment 9.
+
+#### Context Notes:
+- No external URL or future query was opened; no target Kotlin repository, runtime, benchmark, review cohort, or production outcome was claimed.
+
+#### Performance/Metrics:
+- Assignment 9 Green: sections=26/26; questions=260/260; fields=1560/1560; rawUnique=1560; normalizedUnique=1560; strictExpansions=26; referenceCharacters=221447; packetCharacters=219855.
+
+### Session: 2026-07-11 23:47:11Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Assignment 9 reread 001-005: PASS - Complete packet and reference sections reread one pair at a time; operating contract, evidence map, qualitative register, thesis, and local source map reconcile after two bounded label corrections
+- Assignment 9 post-reread verifier 005: PASS - Focused verifier remains PASS with 26 sections, 260 questions, 1560 fields, raw unique=1560, normalized unique=1560; markers absent
+
+#### Implementation Progress:
+- Corrected Reference Sections 001 and 004 from external_research_sourced_fact to external_pointer_unrefreshed where the sentence explicitly records that no public content was observed
+
+#### Current Focus:
+Assignment 9 complete packet/reference reread Sections 001-005
+
+#### Next Steps:
+- Reread complete packet and reference Sections 006-010 individually, apply only evidence-backed corrections, rerun focused uniqueness if edited, and persist the Section 010 checkpoint.
+
+#### Context Notes:
+- No packet edit was required; all packet conclusions through Section 005 are represented in the reference and remain unique.
+
+#### Performance/Metrics:
+- Complete reread progress: 5/26 reference sections and 5/26 packet sections; normalizedUniqueFieldCount=1560.
+
+### Session: 2026-07-11 23:48:39Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Assignment 9 reread 006-010: PASS - Complete external map, anti-pattern registry, verification gate set, agent state guide, illustrative journey, and packets reread; evidence boundaries and decisions reconcile after bounded corrections
+- Assignment 9 post-reread verifier 010: PASS - Focused verifier PASS; 26/260/1560 counts; raw and normalized unique=1560; forbidden markers absent
+
+#### Implementation Progress:
+- Section 008 catch-search candidate now accepts any Kotlin identifier before Exception rather than only e; incomplete/non-semantic search warning remains
+- Section 010 now observes rather than assumes prompt return from a non-cooperative blocking call and uses object Missing instead of version-sensitive data object
+
+#### Current Focus:
+Assignment 9 complete packet/reference reread Sections 006-010
+
+#### Next Steps:
+- Reread complete packet and reference Sections 011-015 individually, apply only evidence-backed corrections, rerun focused gates if edited, and persist the Section 015 checkpoint.
+
+#### Context Notes:
+- No packet edit was required; complete reread coverage is now 10/26 for both artifacts.
+
+#### Performance/Metrics:
+- Complete reread progress: 10/26 reference sections and 10/26 packet sections; normalizedUniqueFieldCount=1560.
+
+### Session: 2026-07-11 23:51:08Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Complete packet/reference reread 011-015: PASS - Each packet and matching evolved reference section read completely in bounded slices; no truncated section counted and no new correction required.
+
+#### Implementation Progress:
+- Durable Assignment 9 reread coverage is now 15/26 sections; production remains complete at 26 sections, 260 questions, and 1,560 mandatory field values.
+- Reviewed Decision Tradeoff Guide, Local Corpus Hierarchy, Theme Specific Artifact, Worked Example Set, and Outcome Metrics and Feedback Loops against their explicit packet rationales.
+
+#### Current Focus:
+Assignment 9 complete-file reread checkpoint: Sections 011-015 of kotlin_quality_antipattern_gates
+
+#### Next Steps:
+- Reread complete packet/reference pairs for Assignment 9 Sections 016-020, make only evidence-backed corrections if needed, rerun focused verification after any edit, and persist the next five-section review checkpoint.
+
+#### Context Notes:
+- Only the authorized Assignment 9 reference, packet, and Delta progress journal remain in scope; no shared artifact was edited.
+
+#### Performance/Metrics:
+- Reread checkpoint persisted after five additional sections as required; last canonical verifier state remains PASS with uniqueFieldCount=1560 and normalizedUniqueFieldCount=1560.
+
+### Session: 2026-07-11 23:52:19Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Complete packet/reference reread 016-020: PASS - Each packet and matching evolved reference section read completely; no correction required.
+
+#### Implementation Progress:
+- Durable Assignment 9 reread coverage is now 20/26 sections; reviewed completeness, adjacent routing, workload, reliability, and failure handling against packet decisions.
+- Confirmed candidate adjacent references remain candidate-only unless independently opened; no unopened file content or universal workload/reliability threshold is asserted.
+
+#### Current Focus:
+Assignment 9 complete-file reread checkpoint: Sections 016-020 of kotlin_quality_antipattern_gates
+
+#### Next Steps:
+- Reread complete packet/reference pairs for Assignment 9 Sections 021-025, make only evidence-backed corrections if needed, rerun focused verification after any edit, and persist the next five-section review checkpoint.
+
+#### Context Notes:
+- No Assignment 9 output edit occurred in this review block, so the last canonical focused verifier PASS remains the applicable content state.
+
+#### Performance/Metrics:
+- Reread checkpoint persisted after exactly five additional sections; production counts remain 26 sections, 260 questions, and 1,560 mandatory field values.
+
+### Session: 2026-07-11 23:53:35Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Complete packet/reference reread 021-025: PASS - Each packet and matching evolved reference section read completely; no correction required.
+
+#### Implementation Progress:
+- Durable Assignment 9 reread coverage is now 25/26 sections; reviewed retry/backpressure, observability, performance verification, scale boundaries, and future refresh queries.
+- Confirmed all three exact seed query strings remain present with unexecuted_no_browse state and zero promoted external results or claims.
+
+#### Current Focus:
+Assignment 9 complete-file reread checkpoint: Sections 021-025 of kotlin_quality_antipattern_gates
+
+#### Next Steps:
+- Reread the complete Assignment 9 Section 026 packet/reference pair, persist the final reread checkpoint, then run comprehensive focused and shared verification before recording the Refactor-complete boundary.
+
+#### Context Notes:
+- No content edit occurred in this review block; performance, scale, and research claims retain explicit target and evidence limits.
+
+#### Performance/Metrics:
+- Reread checkpoint persisted after five additional sections; production counts remain 26 sections, 260 questions, and 1,560 mandatory field values.
+
+### Session: 2026-07-11 23:54:35Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Complete packet/reference reread 026: PASS - Evidence Boundary Notes and its ten-question packet were read completely; one observed-state wording correction was saved.
+- Canonical focused verifier after reread correction: PASS - 26 packet sections, 260 questions, 1,560 fields, uniqueFieldCount=1560, normalizedUniqueFieldCount=1560; 26 evolved sections and all strict expansion checks pass.
+
+#### Implementation Progress:
+- Changed idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md so the known ledger states the completed packet contains ten exact questions and six populated fields per question, replacing the obsolete intended-state wording.
+- Complete Assignment 9 packet/reference reread coverage is now 26/26 with checkpoints persisted at no more than five-section intervals.
+
+#### Current Focus:
+Assignment 9 complete-file reread checkpoint: Section 026 and full 26/26 coverage
+
+#### Next Steps:
+- Run comprehensive Assignment 9 final QA: focused verifier, exact heading/order and strict expansion audit, packet structure and uniqueness audit, placeholder/ASCII/whitespace/table/fence/query checks, frozen queue/input integrity, scoped diff check, selected shared tests, and the full shared suite; then record Refactor-complete and stop.
+
+#### Context Notes:
+- No packet edit was needed during the reread; normalized uniqueness remains fully preserved after the reference-only wording correction.
+
+#### Performance/Metrics:
+- Focused verifier reports evolvedCharacters=221572, seedCharacters=17456, packetCharacters=219855, status=PASS.
+
+### Session: 2026-07-11 23:58:32Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- Canonical focused verifier, Assignment 9 final: PASS - 26 reference sections; 26 packet sections; 260 exact questions; 1,560 mandatory fields; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; evolvedCharacters=221572; seedCharacters=17456; packetCharacters=219855.
+- Canonical focused verifier drift pass, Assignments 2-9: PASS - All eight authorized references independently pass 26 sections, 260 questions, 1,560 fields, raw uniqueness 1,560, and prefix-stripped normalized uniqueness 1,560.
+- Assignment 9 comprehensive custom audit: PASS - 1,464 named assertions; exact heading marker/text order; 26/26 strict expansions with minimum +5,918 characters; exact ordered packet fields; no placeholders; ASCII/whitespace/fence/table/query checks clean; 115/115 frozen span hashes cover seed lines 1-205; seven immutable inputs match frozen hashes.
+- Selected shared invariant tests: PASS - 5 passed in 0.60s: inventory, unique owner mapping, assignment manifests, packet content uniqueness, and placeholder absence.
+- Complete shared evolution suite: EXTERNAL RED - 5 passed, 3 failed in 1.39s because 52 other corpus references/packets remain unfinished and 7,684 shared queue rows remain incomplete; Assignment 9 is not implicated and shared artifacts are outside Delta write authority.
+- Scoped whitespace diff check: PASS - git diff --check clean for all 17 authorized Delta paths covering Assignments 2-9 references, packets, and delta/progress.md.
+
+#### Implementation Progress:
+- Completed and final-reread idiomatic-ref-202607/kotlin_quality_antipattern_gates-20260710.md; SHA-256 3cbb4cd7d0feea6dde0a107b8a48de4ad447e5d47a24b7e31f8449d6a44844af.
+- Completed and final-reread idiomatic-reference-evolution-work/delta/packets/kotlin_quality_antipattern_gates-20260710-question-packets.md; SHA-256 a8937f3a87233cb219e1c0d1ac7e30b8a340052464810491575f7e181d8bfadb.
+- Updated idiomatic-reference-evolution-work/delta/progress.md at every required production and reread boundary; full packet/reference reread is 26/26 with checkpoints no more than five sections apart.
+
+#### Current Focus:
+Assignment 9 Refactor complete: kotlin_quality_antipattern_gates; authorized Delta sequence 2-9 complete and stopping
+
+#### Next Steps:
+- Stop after Assignment 9 and report the completed Assignments 2-9 batch; do not open or edit manifest Assignment 10 without new user authorization.
+
+#### Context Notes:
+- No blocker remains within the authorized Assignment 9 scope. No shared CSV, shared spec, tests, archive, assignment manifest, master journal, or other lane was edited; no commit or push was performed.
+- The next manifest entry is Assignment 10, idiomatic-ref-202607/minto_pyramid_writing_patterns-20260710.md, but the user authorized only Assignments 2-9 and explicitly required stopping after Assignment 9.
+
+#### Performance/Metrics:
+- Assignment 9 final counts: referenceSections=26; packetSections=26; questions=260; fields=1560; uniqueFieldCount=1560; normalizedUniqueFieldCount=1560; queue span hashes=115/115.
+- Artifact hygiene: no whole-word TODO/TBD/FIXME/STUB, ASCII-only, no tabs or trailing whitespace, final newlines present, balanced fences, consistent table widths, and all three exact seed queries preserved with unexecuted_no_browse status.
