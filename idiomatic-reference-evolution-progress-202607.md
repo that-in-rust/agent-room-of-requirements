@@ -2,7 +2,7 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:43:42Z
+- Updated: 2026-07-12 05:52:38Z
 - Current Phase: Refactor
 - Status: active
 
@@ -1064,3 +1064,26 @@ Alpha assignment 25 writing_skills_validation_patterns accepted
 
 #### Performance/Metrics:
 - Corpus: 52/99 files, 6307/11961 rows complete, 5654 pending
+
+### Session: 2026-07-12 05:52:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560 unique fields
+- update_idiomatic_evolution_queue.py: passing - 126 rows accepted
+
+#### Implementation Progress:
+- Alpha queue rows fully complete; work continued into gamma-lane files in queue order; image_generation_prompt_patterns evolved with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+image_generation_prompt_patterns evolution complete via gamma lane
+
+#### Next Steps:
+- Continue with kotlin_backend_skill_entrypoint-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 53/99 references, 6433/11961 queue rows complete

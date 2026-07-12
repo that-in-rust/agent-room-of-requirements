@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 00:58:45Z
+- Updated: 2026-07-12 05:52:38Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4176,3 +4176,28 @@ Assignment 9 html_explainer_page_patterns Refactor complete after complete rerea
 #### Performance/Metrics:
 - Final counts: 26 sections, 260 questions, 1560 fields, exact unique 1560, prefix-stripped normalized unique 1560
 - Minimum section growth over seed: 2251 characters and 335 words
+
+### Session: 2026-07-12 05:52:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - 1560/1560 unique fields, 26/26 sections, status PASS
+- test_packet_content_uniqueness: passing - Ran 1 test OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 53/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved from six local imagegen sources (SKILL.md 279, cli.md 160, codex-network.md 33, image-api.md 49, prompting.md 98, sample-prompts.md 376); two-mode boundary, specificity policy, edit invariants, save-path rules synthesized; external URLs kept unretrieved candidates; queue accepted 126 rows; packet placed under gamma/packets per verifier owner
+
+#### Current Focus:
+Assignment 26 image_generation_prompt_patterns complete (gamma-lane file; Alpha queue rows exhausted)
+
+#### Next Steps:
+- Next pending file: idiomatic-ref-202607/kotlin_backend_skill_entrypoint-20260710.md (gamma lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 53/99 references, 6433/11961 queue rows complete

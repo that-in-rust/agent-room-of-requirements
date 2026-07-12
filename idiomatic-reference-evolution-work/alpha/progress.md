@@ -2,8 +2,8 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 05:43:42Z
-- Current Phase: Refactor
+- Updated: 2026-07-12 05:50:25Z
+- Current Phase: Green
 - Status: active
 
 ## Sessions
@@ -8438,3 +8438,91 @@ Assignment 25 complete: writing_skills_validation_patterns-20260710.md
 
 #### Performance/Metrics:
 - Corpus: 52/99 files complete, 6307/11961 queue rows complete, 5654 pending
+
+### Session: 2026-07-12 05:49:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 3/26 sections, 180/180 unique fields, packet-before-reference order held
+
+#### Implementation Progress:
+- Sections 1-3 evolved: two-mode boundary framing, source map annotated shared vs fallback-only, scoreboard rekeyed to spec/invariant/iteration practices; all six local imagegen sources read in full
+
+#### Current Focus:
+Assignment 26 image_generation_prompt_patterns in progress
+
+#### Next Steps:
+- Generate sections 4-6 with gen_a26.py then rerun sanity_a26.py
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-12 05:49:58Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Sections 4-9: thesis restated as spec-plus-specificity-discipline, source map role split with fallback quarantine, external rows downgraded to unretrieved candidates, anti-pattern registry gains skill-documented failures, gates split mechanical (--dry-run) vs visual inspection, usage guide keyed to generate/edit/batch events
+
+#### Current Focus:
+Assignment 26 sections 4-9 saved
+
+#### Next Steps:
+- Generate sections 10-12
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 05:50:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 15/26 sections, 900/900 unique fields
+
+#### Implementation Progress:
+- Sections 10-15: journey extended through spec-to-workspace delivery, tradeoffs rekeyed to specificity/intent/destination, hierarchy made mode-conditional, artifact redefined as labeled-spec instance, examples graded by augmentation and invariant conduct, metrics recentered on iterations and stranded assets
+
+#### Current Focus:
+Assignment 26 sections 10-15 saved
+
+#### Next Steps:
+- Generate sections 16-18
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-12 05:50:25Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 21/26 sections, 1260/1260 unique fields
+
+#### Implementation Progress:
+- Sections 16-21: checklist gains mode/tree/specificity/save-path coverage, routing to local_vision_media_patterns and tdd_progress_journal_schema, workload rebounded around calls and batch concurrency, reliability adds text-verbatim and invariant targets, failure table gains drift/text/stranded/mode rows, retry semantics keyed to single-change deltas
+
+#### Current Focus:
+Assignment 26 sections 16-21 saved
+
+#### Next Steps:
+- Generate sections 22-26
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 21/26 sections, 1260/1560 fields
