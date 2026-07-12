@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:13:13Z
+- Updated: 2026-07-12 06:26:28Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4364,3 +4364,50 @@ Assignment 29 local_vision_media_patterns complete
 
 #### Performance/Metrics:
 - Corpus: 56/99 references, 6776/11961 queue rows complete
+
+### Session: 2026-07-12 06:25:52Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a31 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Grounded in four read-in-full local sources (SKILL.md + 3 references, 701 lines): MCP-first tool order, docs-win rule, three upgrade classes, no-code compatibility gate, selective prompt blocks, phase guidance
+
+#### Current Focus:
+Assignment 31 openai_api_documentation_patterns sections 1-9 saved
+
+#### Next Steps:
+- Generate sections 10-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 31 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 06:26:28Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 58/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved from four read-in-full local sources (701 lines); volatile model IDs flagged archive-dated with docs-win caveat; external URLs kept as unretrieved candidates; queue accepted 122 rows
+
+#### Current Focus:
+Assignment 31 openai_api_documentation_patterns complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/parallel_agent_dispatch_patterns-20260710.md (beta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 58/99 references, 7020/11961 queue rows complete
