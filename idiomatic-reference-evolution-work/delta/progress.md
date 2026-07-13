@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:19:47Z
+- Updated: 2026-07-13 18:12:01Z
 - Current Phase: Refactor
 - Status: active
 
@@ -3681,3 +3681,50 @@ Assignment 30 minto_pyramid_writing_patterns complete
 
 #### Performance/Metrics:
 - Corpus: 57/99 references, 6898/11961 queue rows complete
+
+### Session: 2026-07-13 18:11:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a36 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Grounded in six mapped paths read in full forming three texts (SKILL 544, parsing-techniques 549, real-world-examples 395 lines; archive/live pairs byte-identical): .local.md pattern, frontmatter parsing, fail-safe defaults, atomic updates
+
+#### Current Focus:
+Assignment 36 plugin_settings_configuration_patterns sections 1-9 saved
+
+#### Next Steps:
+- Generate sections 10-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 36 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-13 18:12:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 63/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved; .local.md lifecycle claims labeled archive-local convention; off-theme external MCP rows flagged unretrieved; queue accepted 128 rows
+
+#### Current Focus:
+Assignment 36 plugin_settings_configuration_patterns complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/polyglot_idiomatic_reference_patterns-20260710.md (beta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 63/99 references, 7672/11961 queue rows complete

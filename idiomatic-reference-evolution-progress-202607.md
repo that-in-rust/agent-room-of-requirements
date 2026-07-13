@@ -2,7 +2,7 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:53:37Z
+- Updated: 2026-07-13 18:12:01Z
 - Current Phase: Refactor
 - Status: active
 
@@ -1294,3 +1294,26 @@ plugin_mcp_integration_patterns evolution complete via beta lane
 
 #### Performance/Metrics:
 - Corpus: 62/99 references, 7544/11961 queue rows complete
+
+### Session: 2026-07-13 18:12:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 128 rows accepted
+
+#### Implementation Progress:
+- Assignment 36 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+plugin_settings_configuration_patterns evolution complete via delta lane
+
+#### Next Steps:
+- Continue with polyglot_idiomatic_reference_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 63/99 references, 7672/11961 queue rows complete
