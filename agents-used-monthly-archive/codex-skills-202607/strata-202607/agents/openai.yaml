@@ -1,0 +1,15 @@
+interface:
+  display_name: "Strata MCP"
+  short_description: "Create, update, and diagnose Strata visual specs over local MCP"
+  default_prompt: "Use $strata-202607 to create, update, validate, or debug a Strata visual spec for this feature."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "strata"
+      description: "Local Strata MCP server"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:7337/mcp"
+
+policy:
+  allow_implicit_invocation: true
