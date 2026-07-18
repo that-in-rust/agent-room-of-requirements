@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-13 18:28:38Z
+- Updated: 2026-07-18 18:51:37Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4299,3 +4299,223 @@ Assignment 37 polyglot_idiomatic_reference_patterns complete
 
 #### Performance/Metrics:
 - Assignment 37: 26/26 sections, 260 questions, 1560/1560 fields
+
+### Session: 2026-07-18 18:49:29Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 3 sections, 180/180 unique fields exact+normalized, headings preserved
+
+#### Implementation Progress:
+- Sections 001-003 packet-then-reference saved; both mapped sources (reference-map.md, sources-and-research-brief.md) read in full
+
+#### Current Focus:
+Assignment 40 python_reference_routing_sources sections 001-003
+
+#### Next Steps:
+- Generate sections 004-006
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-18 18:49:38Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 6 sections, 360/360 unique fields exact+normalized
+
+#### Implementation Progress:
+- Ration-and-disclose thesis, question-class file routing, and brief-as-retrieval-queue external map evolved
+
+#### Current Focus:
+Assignment 40 sections 004-006
+
+#### Next Steps:
+- Generate sections 007-009
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 6/26 sections, 360/1560 fields
+
+### Session: 2026-07-18 18:49:45Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 9 sections, 540/540 unique fields exact+normalized
+
+#### Implementation Progress:
+- Four routing anti-pattern rows, rg-based router freshness gate, and four-step agent script evolved
+
+#### Current Focus:
+Assignment 40 sections 007-009
+
+#### Next Steps:
+- Generate sections 010-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-18 18:49:53Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 12 sections, 720/720 unique fields exact+normalized
+
+#### Implementation Progress:
+- Pre-reading/provenance-challenge journey, overhead-versus-waste tiering, and axis-scoped precedence hierarchy evolved
+
+#### Current Focus:
+Assignment 40 sections 010-012
+
+#### Next Steps:
+- Generate sections 013-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 12/26 sections, 720/1560 fields
+
+### Session: 2026-07-18 18:50:01Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 15 sections, 900/900 unique fields exact+normalized
+
+#### Implementation Progress:
+- Dated routing card artifact, hit-and-miss walkthrough pair, and routing tally loop evolved
+
+#### Current Focus:
+Assignment 40 sections 013-015
+
+#### Next Steps:
+- Generate sections 016-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-18 18:50:08Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 18 sections, 1080/1080 unique fields exact+normalized
+
+#### Implementation Progress:
+- Count-plus-role fidelity checklist, question-class adjacency routing, and per-decision workload model evolved
+
+#### Current Focus:
+Assignment 40 sections 016-018
+
+#### Next Steps:
+- Generate sections 019-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 18/26 sections, 1080/1560 fields
+
+### Session: 2026-07-18 18:50:16Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 21 sections, 1260/1260 unique fields exact+normalized
+
+#### Implementation Progress:
+- Misroute-and-pointer reliability targets, three router decay modes, and capped routing retry ladder evolved
+
+#### Current Focus:
+Assignment 40 sections 019-021
+
+#### Next Steps:
+- Generate sections 022-024
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-18 18:50:24Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 24 sections, 1440/1440 unique fields exact+normalized
+
+#### Implementation Progress:
+- Minimal routing record schema, footprint-plus-latency method, and jump-list/date scale seams evolved
+
+#### Current Focus:
+Assignment 40 sections 022-024
+
+#### Next Steps:
+- Generate sections 025-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 24/26 sections, 1440/1560 fields
+
+### Session: 2026-07-18 18:50:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Volatility-ordered refresh probes and fact-inference split boundary notes evolved; all 26 sections saved packet-then-reference
+
+#### Current Focus:
+Assignment 40 sections 025-026
+
+#### Next Steps:
+- Refactor: bounded rereads, marker scan, focused verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 40 progress: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 18:51:37Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier + packet uniqueness + full suite: passing - PASS; OK; only 3 expected incomplete-corpus failures; git diff --check clean
+
+#### Implementation Progress:
+- 26/26 sections, 260 questions, 1560/1560 unique fields exact+normalized; evolved 98208 chars over 17704 seed; queue accepted 118 rows
+
+#### Current Focus:
+Assignment 40 python_reference_routing_sources complete and accepted
+
+#### Next Steps:
+- Next pending: react_typescript_reliability_patterns-20260710.md (delta lane, REF-059-SEC-001-BLOCK-001)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 67/99 references complete, 8142/11961 queue rows complete

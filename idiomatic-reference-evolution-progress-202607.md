@@ -2,7 +2,7 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 16:45:25Z
+- Updated: 2026-07-18 18:51:37Z
 - Current Phase: Refactor
 - Status: active
 
@@ -1450,3 +1450,47 @@ Assignment 39 python quality antipattern gates accepted (gamma lane)
 
 #### Performance/Metrics:
 - Corpus: 66/99 references complete, 8024/11961 queue rows complete
+
+### Session: 2026-07-18 18:49:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- python_reference_routing_sources sections 001-003 evolved
+
+#### Current Focus:
+Assignment 40 python reference routing sources underway (beta lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 66/99 references complete plus assignment 40 in progress
+
+### Session: 2026-07-18 18:51:37Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; full suite shows only 3 expected incomplete-corpus failures
+
+#### Implementation Progress:
+- python_reference_routing_sources-20260710.md fully evolved; queue updater accepted 118 rows
+
+#### Current Focus:
+Assignment 40 python reference routing sources accepted (beta lane)
+
+#### Next Steps:
+- Next pending: react_typescript_reliability_patterns-20260710.md (delta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 67/99 references complete, 8142/11961 queue rows complete
