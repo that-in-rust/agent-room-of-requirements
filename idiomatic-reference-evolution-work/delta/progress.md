@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 20:00:35Z
+- Updated: 2026-07-18 20:08:59Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4520,3 +4520,113 @@ Assignment 48 rust_conventions_quality_gates complete
 
 #### Performance/Metrics:
 - Assignment 48 complete
+
+### Session: 2026-07-18 20:08:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a49.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Two-shape router-plus-merge framing, byte-identical duplicate finding, mode-first dispatch ranking, route-then-load thesis, division-of-labor source map, relational external surface evolved
+
+#### Current Focus:
+Assignment 49 rust_executable_reference_maps sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 49 progress: 6/26 sections
+
+### Session: 2026-07-18 20:08:15Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a49.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Eleven-item merge rejection list with divergence note, matrix-plus-battery verification pairing, seven-part agent output contract, three-traveler journeys, context-resolution tradeoffs, situational-authority hierarchy evolved
+
+#### Current Focus:
+Assignment 49 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 49 progress: 12/26 sections
+
+### Session: 2026-07-18 20:08:23Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a49.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Routing manifest artifact, contrast rehearsal with broken-path drill, three routing metrics, count-and-diff fidelity audit, self-similar routing rule, per-consultation workload units evolved
+
+#### Current Focus:
+Assignment 49 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 49 progress: 18/26 sections
+
+### Session: 2026-07-18 20:08:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a49.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Four routing invariants with age-bounded re-diff, four relational decay probes, contract-based retry specification, two-level observability, conditional performance pair, cross-bundle scale seams, mechanical relational probes, dated-measurement evidence strata; all packet-then-reference
+
+#### Current Focus:
+Assignment 49 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 49: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 20:08:59Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; diff check clean
+
+#### Implementation Progress:
+- Rereads and scans clean, no duplicate phrases or forbidden markers; queue rows accepted
+
+#### Current Focus:
+Assignment 49 rust_executable_reference_maps complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 49 complete
