@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-13 18:12:01Z
+- Updated: 2026-07-18 16:05:39Z
 - Current Phase: Refactor
 - Status: active
 
@@ -3728,3 +3728,223 @@ Assignment 36 plugin_settings_configuration_patterns complete
 
 #### Performance/Metrics:
 - Corpus: 63/99 references, 7672/11961 queue rows complete
+
+### Session: 2026-07-18 16:02:57Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 3 sections, 180/180 unique fields exact+normalized, headings preserved
+
+#### Implementation Progress:
+- Sections 001-003 packet-then-reference saved; SKILL.md plus four sibling reference files (392 lines) read in full
+
+#### Current Focus:
+Assignment 38 python_language_skill_entrypoint sections 001-003
+
+#### Next Steps:
+- Generate sections 004-006
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-18 16:03:05Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 6 sections, 360/360 unique fields exact+normalized
+
+#### Implementation Progress:
+- Thesis, local map, and external map evolved; URL quartet downgraded to unretrieved candidates
+
+#### Current Focus:
+Assignment 38 sections 004-006
+
+#### Next Steps:
+- Generate sections 007-009
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 6/26 sections, 360/1560 fields
+
+### Session: 2026-07-18 16:03:17Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 9 sections, 540/540 unique fields exact+normalized
+
+#### Implementation Progress:
+- Eleven-row anti-pattern import, repo-native gate battery, and agent protocol evolved
+
+#### Current Focus:
+Assignment 38 sections 007-009
+
+#### Next Steps:
+- Generate sections 010-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-18 16:03:27Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 12 sections, 720/720 unique fields exact+normalized
+
+#### Implementation Progress:
+- Loose-to-reliable journey, strictness-vs-preservation axis, and bundle-level hierarchy evolved
+
+#### Current Focus:
+Assignment 38 sections 010-012
+
+#### Next Steps:
+- Generate sections 013-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 12/26 sections, 720/1560 fields
+
+### Session: 2026-07-18 16:03:41Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 15 sections, 900/900 unique fields exact+normalized
+
+#### Implementation Progress:
+- Mode-requirements-traceability artifact, embedded listings worked spine, and two-loop metrics evolved
+
+#### Current Focus:
+Assignment 38 sections 013-015
+
+#### Next Steps:
+- Generate sections 016-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-18 16:03:49Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 18 sections, 1080/1080 unique fields exact+normalized
+
+#### Implementation Progress:
+- Claim-level checklist, real adjacency routing, and telescopic bundle workload budget evolved
+
+#### Current Focus:
+Assignment 38 sections 016-018
+
+#### Next Steps:
+- Generate sections 019-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 18/26 sections, 1080/1560 fields
+
+### Session: 2026-07-18 16:04:00Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 21 sections, 1260/1260 unique fields exact+normalized
+
+#### Implementation Progress:
+- Fail-safe reliability bar, activation-mismatch failure rows, and dual retry/cancellation loops evolved
+
+#### Current Focus:
+Assignment 38 sections 019-021
+
+#### Next Steps:
+- Generate sections 022-024
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-18 16:04:07Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 24 sections, 1440/1440 unique fields exact+normalized
+
+#### Implementation Progress:
+- Boundary-placed logging ledger, structural performance gates, and process-local scale seams evolved
+
+#### Current Focus:
+Assignment 38 sections 022-024
+
+#### Next Steps:
+- Generate sections 025-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 24/26 sections, 1440/1560 fields
+
+### Session: 2026-07-18 16:04:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Versioned refresh probes and read-ledger evidence boundaries evolved; all 26 sections saved packet-then-reference
+
+#### Current Focus:
+Assignment 38 sections 025-026
+
+#### Next Steps:
+- Refactor: bounded rereads, marker scan, focused verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38 progress: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 16:05:39Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields exact+normalized, 89493 evolved chars vs 17106 seed
+
+#### Implementation Progress:
+- Bounded rereads in 5 chunks clean; no TODO/TBD/FIXME/STUB or doubled words; packet uniqueness OK; full suite shows only 3 expected incomplete-corpus failures; git diff --check clean; queue updater accepted 115 rows
+
+#### Current Focus:
+Assignment 38 complete and accepted
+
+#### Next Steps:
+- Next pending: python_quality_antipattern_gates-20260710.md (gamma lane, REF-056-SEC-001-BLOCK-001)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 38: 26/26 sections, 1560/1560 fields, queue rows accepted
