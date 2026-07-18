@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:46:21Z
+- Updated: 2026-07-18 16:45:25Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4458,3 +4458,223 @@ Assignment 34 plugin_hook_development_patterns complete
 
 #### Performance/Metrics:
 - Corpus: 61/99 references, 7404/11961 queue rows complete
+
+### Session: 2026-07-18 16:42:51Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 3 sections, 180/180 unique fields exact+normalized, headings preserved
+
+#### Implementation Progress:
+- Sections 001-003 packet-then-reference saved; mapped gates file (66 lines) plus four sibling bundle files read in full
+
+#### Current Focus:
+Assignment 39 python_quality_antipattern_gates sections 001-003
+
+#### Next Steps:
+- Generate sections 004-006
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-18 16:43:00Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 6 sections, 360/360 unique fields exact+normalized
+
+#### Implementation Progress:
+- Enumerate-then-verify thesis, heading-to-question source map key, and command-invalidated external row annotations evolved
+
+#### Current Focus:
+Assignment 39 sections 004-006
+
+#### Next Steps:
+- Generate sections 007-009
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 6/26 sections, 360/1560 fields
+
+### Session: 2026-07-18 16:43:08Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 9 sections, 540/540 unique fields exact+normalized
+
+#### Implementation Progress:
+- Eleven-row registry adoption, discovery-first command battery, and eight-prompt agent script evolved
+
+#### Current Focus:
+Assignment 39 sections 007-009
+
+#### Next Steps:
+- Generate sections 010-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-18 16:43:16Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 12 sections, 720/720 unique fields exact+normalized
+
+#### Implementation Progress:
+- Believed-done journey moment, strictness-throughput tiering, and three-altitude precedence hierarchy evolved
+
+#### Current Focus:
+Assignment 39 sections 010-012
+
+#### Next Steps:
+- Generate sections 013-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 12/26 sections, 720/1560 fields
+
+### Session: 2026-07-18 16:43:23Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 15 sections, 900/900 unique fields exact+normalized
+
+#### Implementation Progress:
+- Instantiated gate-card artifact, composite sweep walkthrough, and row-level tally loop evolved
+
+#### Current Focus:
+Assignment 39 sections 013-015
+
+#### Next Steps:
+- Generate sections 016-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-18 16:43:31Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 18 sections, 1080/1080 unique fields exact+normalized
+
+#### Implementation Progress:
+- Fidelity-count checklist, real adjacency routes, and gate-cycle workload model evolved
+
+#### Current Focus:
+Assignment 39 sections 016-018
+
+#### Next Steps:
+- Generate sections 019-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 18/26 sections, 1080/1560 fields
+
+### Session: 2026-07-18 16:43:38Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 21 sections, 1260/1260 unique fields exact+normalized
+
+#### Implementation Progress:
+- Escape-triage reliability target, gate-decay failure rows, and bounce-convergence retry policy evolved
+
+#### Current Focus:
+Assignment 39 sections 019-021
+
+#### Next Steps:
+- Generate sections 022-024
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-18 16:43:47Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 24 sections, 1440/1440 unique fields exact+normalized
+
+#### Implementation Progress:
+- Replayable gate-record schema, wait-versus-work latency method, and calibration scale seams evolved
+
+#### Current Focus:
+Assignment 39 sections 022-024
+
+#### Next Steps:
+- Generate sections 025-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 24/26 sections, 1440/1560 fields
+
+### Session: 2026-07-18 16:43:58Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Per-row refresh probes and fact-inference split boundary notes evolved; all 26 sections saved packet-then-reference
+
+#### Current Focus:
+Assignment 39 sections 025-026
+
+#### Next Steps:
+- Refactor: bounded rereads, marker scan, focused verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 39 progress: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 16:45:25Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier + packet uniqueness + full suite: passing - PASS; OK; only 3 expected incomplete-corpus failures; git diff --check clean
+
+#### Implementation Progress:
+- 26/26 sections, 260 questions, 1560/1560 unique fields exact+normalized; evolved 90047 chars over 17274 seed; queue accepted 115 rows
+
+#### Current Focus:
+Assignment 39 python_quality_antipattern_gates complete and accepted
+
+#### Next Steps:
+- Next pending: python_reference_routing_sources-20260710.md (beta lane, REF-057-SEC-001-BLOCK-001)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 66/99 references complete, 8024/11961 queue rows complete
