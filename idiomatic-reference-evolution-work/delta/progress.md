@@ -2,8 +2,8 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 16:05:39Z
-- Current Phase: Refactor
+- Updated: 2026-07-18 19:02:56Z
+- Current Phase: Green
 - Status: active
 
 ## Sessions
@@ -3948,3 +3948,245 @@ Assignment 38 complete and accepted
 
 #### Performance/Metrics:
 - Assignment 38: 26/26 sections, 1560/1560 fields, queue rows accepted
+
+### Session: 2026-07-18 18:59:28Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 3 sections, 180/180 unique fields exact+normalized, headings preserved
+
+#### Implementation Progress:
+- All six mapped sources read in full; copy identity confirmed by diff; typed-state-machine thesis and twelve-row scoreboard evolved
+
+#### Current Focus:
+Assignment 41 react_typescript_reliability_patterns sections 001-003
+
+#### Next Steps:
+- Generate sections 004-006
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-18 18:59:37Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 6 sections, 360/360 unique fields exact+normalized
+
+#### Implementation Progress:
+- Two-half thesis, question-class document routing, and sibling-theme external inheritance evolved
+
+#### Current Focus:
+Assignment 41 sections 004-006
+
+#### Next Steps:
+- Generate sections 007-009
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 6/26 sections, 360/1560 fields
+
+### Session: 2026-07-18 18:59:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 9 sections, 540/540 unique fields exact+normalized
+
+#### Implementation Progress:
+- Sixteen combined anti-pattern rows, four-layer test pyramid gates, and five-step agent workflow evolved
+
+#### Current Focus:
+Assignment 41 sections 007-009
+
+#### Next Steps:
+- Generate sections 010-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-18 18:59:53Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 12 sections, 720/720 unique fields exact+normalized
+
+#### Implementation Progress:
+- Build/review journey pair, three tension axes with defaults, and lineage-based hierarchy evolved
+
+#### Current Focus:
+Assignment 41 sections 010-012
+
+#### Next Steps:
+- Generate sections 013-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 12/26 sections, 720/1560 fields
+
+### Session: 2026-07-18 19:00:05Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 15 sections, 900/900 unique fields exact+normalized
+
+#### Implementation Progress:
+- Ownership-map artifact columns, composed feature walkthrough, and registry-classified tally loop evolved
+
+#### Current Focus:
+Assignment 41 sections 013-015
+
+#### Next Steps:
+- Generate sections 016-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-18 19:00:14Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 18 sections, 1080/1080 unique fields exact+normalized
+
+#### Implementation Progress:
+- Count-plus-identity fidelity checklist, language/canvas/design adjacency routing, and feature-boundary workload model evolved
+
+#### Current Focus:
+Assignment 41 sections 016-018
+
+#### Next Steps:
+- Generate sections 019-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 18/26 sections, 1080/1560 fields
+
+### Session: 2026-07-18 19:00:22Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 21 sections, 1260/1260 unique fields exact+normalized
+
+#### Implementation Progress:
+- Pattern-derived reliability targets, three discipline decay modes, and UI retry ladder evolved
+
+#### Current Focus:
+Assignment 41 sections 019-021
+
+#### Next Steps:
+- Generate sections 022-024
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-18 19:00:31Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 24 sections, 1440/1440 unique fields exact+normalized
+
+#### Implementation Progress:
+- Reliability record schema, mechanism-first performance method, and subscription-breadth scale seams evolved
+
+#### Current Focus:
+Assignment 41 sections 022-024
+
+#### Next Steps:
+- Generate sections 025-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 24/26 sections, 1440/1560 fields
+
+### Session: 2026-07-18 19:00:41Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Version-anchored refresh probes and fact-inference split boundary notes evolved; all 26 sections saved packet-then-reference
+
+#### Current Focus:
+Assignment 41 sections 025-026
+
+#### Next Steps:
+- Refactor: bounded rereads, marker scan, focused verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41 progress: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 19:01:57Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- reread+scan: passing - bounded rereads in 5-section groups done; duplicate 'seed seed' phrase found and fixed in cores, reference, and packet; no TODO/TBD/FIXME/STUB; headings and seed content preserved
+
+#### Implementation Progress:
+- Fixed 22 reference and 22 packet duplicate-word instances; sanity re-verified 1560/1560 unique
+
+#### Current Focus:
+Assignment 41 rereads and scans
+
+#### Next Steps:
+- Run focused verifier, uniqueness, full suite, queue acceptance
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 41: 26/26 sections, 1560/1560 fields, dedup clean
+
+### Session: 2026-07-18 19:02:56Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique exact+normalized; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; git diff --check clean
+
+#### Implementation Progress:
+- Queue accepted 134 rows for react_typescript_reliability_patterns (delta lane)
+
+#### Current Focus:
+Assignment 41 accepted
+
+#### Next Steps:
+- Assignment 42: rust_backend_playbook_reference-20260710.md (beta lane, REF-060-SEC-001-BLOCK-001)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 8276/11961 rows, 68/99 references
