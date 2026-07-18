@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 19:35:33Z
+- Updated: 2026-07-18 20:00:35Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4410,3 +4410,113 @@ Assignment 45 rust_backend_skill_entrypoint complete
 
 #### Performance/Metrics:
 - Assignment 45 complete
+
+### Session: 2026-07-18 19:59:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a48.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- End-stage gate framing, bundle-chained provenance, hard-soft command split, two-authority thesis, staged consultation map, toolchain-focused external gap evolved
+
+#### Current Focus:
+Assignment 48 rust_conventions_quality_gates sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 48 progress: 6/26 sections
+
+### Session: 2026-07-18 19:59:52Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a48.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Seven-rejection registry with detection routes, verbatim command-floor gate, agent completion contract, three staged journeys, mechanism-shaped tradeoffs, two-axis hierarchy evolved
+
+#### Current Focus:
+Assignment 48 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 48 progress: 12/26 sections
+
+### Session: 2026-07-18 20:00:00Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a48.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Four-block gate record artifact, full-close walkthrough with seeded-rejection drill, three closing metrics, count-and-token fidelity audit, verdict-versus-repair routing, per-close workload units evolved
+
+#### Current Focus:
+Assignment 48 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 48 progress: 18/26 sections
+
+### Session: 2026-07-18 20:00:10Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a48.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Four closing invariants, four gate-decay probes, zero-retry deterministic-gate regime, secret-logging observability pairing, threshold-method claim gate, three scale seams, dry-run freshness probe, stratum ledger; all packet-then-reference
+
+#### Current Focus:
+Assignment 48 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 48: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 20:00:35Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; diff check clean
+
+#### Implementation Progress:
+- Rereads and scans clean, no duplicate phrases or forbidden markers; queue rows accepted
+
+#### Current Focus:
+Assignment 48 rust_conventions_quality_gates complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 48 complete
