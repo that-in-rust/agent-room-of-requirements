@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 19:52:37Z
+- Updated: 2026-07-18 20:34:14Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4871,3 +4871,113 @@ Assignment 47 rust_coder_reliability_patterns complete
 
 #### Performance/Metrics:
 - Assignment 47 complete
+
+### Session: 2026-07-18 20:33:19Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a52.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Template-lineage framing (141-line frozen ancestor pair plus 253-line playbook successor), lineage-role mapping, leverage-ordered template ranking, executable-doctrine thesis, section correspondence map, skeleton-compilability external surface evolved
+
+#### Current Focus:
+Assignment 52 rust_executable_template_patterns sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 52 progress: 6/26 sections
+
+### Session: 2026-07-18 20:33:27Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a52.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Template failure catalogue (regression, hollow completion, bit-rot), three-form gate duplication with sync rule, packet-shape agent contract with review-question self-check, three intent journeys, growth/concreteness/quota tradeoffs, temporal two-axis hierarchy evolved
+
+#### Current Focus:
+Assignment 52 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 52 progress: 12/26 sections
+
+### Session: 2026-07-18 20:33:41Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a52.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Lineage changelog artifact, chain rehearsal with id-threading grading, integrity/compilability/currency metrics, genealogical completeness audit, shape-content routing split with bundle closure, revision-recognition workload unit evolved
+
+#### Current Focus:
+Assignment 52 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 52 progress: 18/26 sections
+
+### Session: 2026-07-18 20:33:50Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a52.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Four lineage invariants with self-referential changelog probe, four compounding failure modes, retry bracketing rule with loom-vs-stress succession, work-level observability with metric-column risk profiles, four-part performance claim grammar, id-namespace scale limits, successor-scan refresh probe, read-but-unrun evidence stratum; all packet-then-reference
+
+#### Current Focus:
+Assignment 52 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 52: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 20:34:14Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; diff check clean
+
+#### Implementation Progress:
+- Rereads and scans clean, no duplicate phrases or forbidden markers; queue rows accepted
+
+#### Current Focus:
+Assignment 52 rust_executable_template_patterns complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 52 complete
