@@ -2,7 +2,7 @@
 
 - Task: Gamma lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 22:21:48Z
+- Updated: 2026-07-18 22:36:52Z
 - Current Phase: Refactor
 - Status: active
 
@@ -5338,3 +5338,113 @@ Assignment 63 acceptance: tauri_legacy_coder_patterns (gamma)
 
 #### Performance/Metrics:
 - Corpus after A63: pending recount
+
+### Session: 2026-07-18 22:35:52Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a65.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Three-generation family trajectory (persona to orchestrator to evidence-hardened retainer), no-twins three-witness evidence base with dialect-vs-generation comparisons, contract-genome ranking, evidence-over-memory thesis hardening, question-to-law anatomy mapping, Pensieve contamination quarantine evolved
+
+#### Current Focus:
+Assignment 65 tdd_context_retainer_skills sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 65 progress: 6/26 sections
+
+### Session: 2026-07-18 22:36:02Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a65.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Per-consumer anti-pattern registry with append-only keystone, two-gate write/read verification with restatement-as-comprehension-proof, script-mediated agent consumption, succession user journey from this session's own origin, persona-then-script trade-off resolution, family tree with shared reference library evolved
+
+#### Current Focus:
+Assignment 65 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 65 progress: 12/26 sections
+
+### Session: 2026-07-18 22:36:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a65.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Generation resolution guide artifact, feature-a lifecycle worked example with pipe-triple micro-contract, succession-depth metrics, forward-scanning completeness checklist, extraction-history routing paired with cadence theme, lookup/command/comprehension-priced workload model evolved
+
+#### Current Focus:
+Assignment 65 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 65 progress: 18/26 sections
+
+### Session: 2026-07-18 22:36:21Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a65.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Five reliability invariants including living-designation currency, adoption-clustered failure probes, forward-only repair backpressure, contract-as-telemetry-schema observability, memory-not-gate performance doctrine, two-tier journal composition scale model, fingerprint-based refresh probes, entangled-usage evidence strata; all packet-then-reference
+
+#### Current Focus:
+Assignment 65 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 65: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 22:36:52Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: PASS - 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; no markers, no adjacent duplicates; git diff --check clean
+
+#### Implementation Progress:
+- Queue accepted rows for REF-090 blocks; rereads clean
+
+#### Current Focus:
+Assignment 65 acceptance: tdd_context_retainer_skills (gamma)
+
+#### Next Steps:
+- Identify next pending reference and continue
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus after A65: pending recount
