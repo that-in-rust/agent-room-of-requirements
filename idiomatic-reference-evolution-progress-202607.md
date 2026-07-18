@@ -2,7 +2,7 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 21:32:27Z
+- Updated: 2026-07-18 21:42:01Z
 - Current Phase: Refactor
 - Status: active
 
@@ -1890,3 +1890,25 @@ Assignment 57 skill_installer_distribution_patterns-20260710.md (beta lane) comp
 
 #### Performance/Metrics:
 - Corpus progress after assignment 57 queue acceptance
+
+### Session: 2026-07-18 21:42:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized; full suite 3 expected failures only
+
+#### Implementation Progress:
+- Evolved all 26 sections from the 3907-line Idiom97 system design concatenation; three-guide seam map, conditionality thesis, corroboration ranking, decay-class labeling, four-layer provenance strata; queue accepted 113 rows
+
+#### Current Focus:
+Assignment 58 complete: system_design_architecture_patterns-20260710.md (delta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 58: 26 sections, 260 questions, 1560 fields, 113 queue rows

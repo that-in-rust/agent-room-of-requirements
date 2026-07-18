@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 21:24:46Z
+- Updated: 2026-07-18 21:42:01Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4850,3 +4850,113 @@ Assignment 56 skill_development_reference_patterns complete
 
 #### Performance/Metrics:
 - Assignment 56 complete
+
+### Session: 2026-07-18 21:40:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a58.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Three-compendia concatenation anatomy (3907 lines, seams at 1269/2646), two-hop provenance discipline, corroboration-ranked failure-handling core, conditionality thesis from the source's own closing line, tri-guide seam navigation map, decay-class external surface evolved
+
+#### Current Focus:
+Assignment 58 system_design_architecture_patterns sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 58 progress: 6/26 sections
+
+### Session: 2026-07-18 21:40:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a58.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Native anti-pattern registry (omission vs adoption families), lifecycle-staged verification gates, four consumption modes with estimation gating, three-journey map with worked-design validation, five master trade-off axes bound to business facts, internal three-guide precedence rules evolved
+
+#### Current Focus:
+Assignment 58 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 58 progress: 12/26 sections
+
+### Session: 2026-07-18 21:40:29Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a58.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Estimate-position-select-verify worksheet artifact, nine worked designs as graded drill set, error-budget feedback loop closing the conditionality thesis, sampled-audit regime for compendium scale, altitude-based routing, four-unit workload model bracketing the corpus spectrum evolved
+
+#### Current Focus:
+Assignment 58 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 58 progress: 18/26 sections
+
+### Session: 2026-07-18 21:41:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a58.py: passing - 26 sections, 1560/1560 unique fields exact+normalized after evidence-collision fix in section 022
+
+#### Implementation Progress:
+- Condition-attachment invariant, condition-stripping probes, five-element retry doctrine, join-key observability, latency-ladder budgets, envelope-successor scale doctrine, product-quantity refresh inventory, four-layer provenance strata; normalized-duplicate collision between sections 015 and 022 evidence fields corrected in cores and outputs
+
+#### Current Focus:
+Assignment 58 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 58: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 21:42:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: PASS - 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only the 3 expected incomplete-corpus failures; git diff --check clean
+
+#### Implementation Progress:
+- Queue accepted 113 rows for REF-081 blocks; bounded rereads of sections 001 and 022 clean; no markers, no adjacent duplicates
+
+#### Current Focus:
+Assignment 58 acceptance: system_design_architecture_patterns (delta)
+
+#### Next Steps:
+- Identify next pending reference and continue
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus after A58: pending recount
