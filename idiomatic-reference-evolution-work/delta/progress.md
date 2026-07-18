@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 22:05:27Z
+- Updated: 2026-07-18 22:13:48Z
 - Current Phase: Refactor
 - Status: active
 
@@ -5070,3 +5070,113 @@ Assignment 61 acceptance: tauri_doctrine_source_review (delta)
 
 #### Performance/Metrics:
 - Corpus after A61: pending recount
+
+### Session: 2026-07-18 22:12:05Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a62.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Two-dialect portability framing with twin-copy topology, two-document effective evidence count, mode-gate pattern ranking, three-question triage thesis, prompt-versus-procedure dialect maps, dead and resolvable path inventory evolved
+
+#### Current Focus:
+Assignment 62 tauri_executable_skill_patterns sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 62 progress: 6/26 sections
+
+### Session: 2026-07-18 22:12:15Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a62.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Process-altitude anti-pattern registry with skeptic's list, seven-option verification mix with performance qualifier, worn-identity versus executed-procedure consumption, vague-to-executable journey with open-questions valve, five condition-then-choice trade-offs, family-complete dual ranking evolved
+
+#### Current Focus:
+Assignment 62 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 62 progress: 12/26 sections
+
+### Session: 2026-07-18 22:12:24Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a62.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Dialect diff ledger with fork detection, three transformation drills, adjective-escape metrics loop, cross-theme family-completeness audit, converged corpus-and-archive routing, vagueness-scaled workload model evolved
+
+#### Current Focus:
+Assignment 62 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 62 progress: 18/26 sections
+
+### Session: 2026-07-18 22:12:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a62.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Dual-witness invariants, contract-rot decay probes, renegotiate-not-reword backpressure with step-addressed rework, documentary observability surfaces, performance-admission forcing function, one-packet-per-request scale bound, mechanical twin-equality refresh probes, corroboration-strata evidence notes; all packet-then-reference
+
+#### Current Focus:
+Assignment 62 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 62: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 22:13:48Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: PASS - 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; adjacent-duplicate scan corrected one template collision in section 014 gotchas (cores+packet+reference updated together); git diff --check clean
+
+#### Implementation Progress:
+- Queue accepted 119 rows for REF-087 blocks; rereads clean; no markers, no adjacent duplicates
+
+#### Current Focus:
+Assignment 62 acceptance: tauri_executable_skill_patterns (delta)
+
+#### Next Steps:
+- Identify next pending reference and continue
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus after A62: pending recount
