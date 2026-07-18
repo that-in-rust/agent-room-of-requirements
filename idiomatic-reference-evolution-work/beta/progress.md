@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 23:00:39Z
+- Updated: 2026-07-18 23:23:34Z
 - Current Phase: Refactor
 - Status: active
 
@@ -5531,3 +5531,113 @@ Assignment 68 acceptance: threejs_react_visualization_patterns (beta)
 
 #### Performance/Metrics:
 - Corpus after A68: pending recount
+
+### Session: 2026-07-18 23:22:35Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a71.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Twins-plus-two-line-variant topology (1211-line doctrine x3, link-repair diff measured), guardrail-not-costume thesis, 22-row tiered scoreboard with published rubric, front-patterns back-process navigation, compiler-version-pinned external surface evolved
+
+#### Current Focus:
+Assignment 71 typescript_language_reliability_patterns sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 71 progress: 6/26 sections
+
+### Session: 2026-07-18 23:22:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a71.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Native twelve-row registry with false-evidence gateway pair and proof escalation ladder, two-layer pre-commit ritual gate, classification-first agent guide with hygiene ratchet, library-hardening journey, rubric-weighted tradeoffs, two-axis hierarchy with hub family topology evolved
+
+#### Current Focus:
+Assignment 71 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 71 progress: 12/26 sections
+
+### Session: 2026-07-18 23:22:54Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a71.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Strictness ratchet ledger artifact with cast inventory, tier-ordered pedagogy with 4WNC name expansion, five erosion-trend gauges with gate-bypass culture metric, hash-and-diff completeness audit, family-inheritance routing with both arrow ends in corpus, tier-distributed workload model evolved
+
+#### Current Focus:
+Assignment 71 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 71 progress: 18/26 sections
+
+### Session: 2026-07-18 23:23:04Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a71.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Five invariants including unique rubric-methodology guard, four decay modes with compiler-drift-as-upgrade-channel, mechanism-policy cancellation split with theater-row boundary test, shift-left observability ending at cast boundary, developer-loop performance reading, publish-horizon scale bounds, family-unit refresh doctrine, methodology-transparent evidence strata; all packet-then-reference
+
+#### Current Focus:
+Assignment 71 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 71: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 23:23:34Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: PASS - 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; no markers, no adjacent duplicates; git diff --check clean
+
+#### Implementation Progress:
+- Queue accepted rows for REF-097 blocks; rereads clean
+
+#### Current Focus:
+Assignment 71 acceptance: typescript_language_reliability_patterns (beta)
+
+#### Next Steps:
+- Identify next pending reference and continue
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus after A71: pending recount
