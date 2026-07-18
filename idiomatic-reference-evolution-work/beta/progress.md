@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 21:08:10Z
+- Updated: 2026-07-18 21:32:27Z
 - Current Phase: Refactor
 - Status: active
 
@@ -5091,3 +5091,113 @@ Assignment 54 rust_quality_gate_patterns complete
 
 #### Performance/Metrics:
 - Assignment 54 complete
+
+### Session: 2026-07-18 21:31:27Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a57.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Registry-from-GitHub framing (58-line single-source system skill), single-source evidence discipline, robustness pattern ranking with fallback ladder, conversation-wrapped-copy thesis, five-section anatomy map, five-seam external surface evolved
+
+#### Current Focus:
+Assignment 57 skill_installer_distribution_patterns sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 57 progress: 6/26 sections
+
+### Session: 2026-07-18 21:31:36Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a57.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Preventive failure registry (five rules against five failures), two-script gate surface with method-pinning diagnosability, three-intent router with listing default, three-arrival journeys, method/tier/batch tradeoff axes, internal single-source hierarchy evolved
+
+#### Current Focus:
+Assignment 57 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 57 progress: 12/26 sections
+
+### Session: 2026-07-18 21:31:47Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a57.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Installation decision runbook with failure-meaning column, five-scenario drill with composite certification, prospective rung-distribution metrics as labeled inference, total-reverification audit standard, lifecycle-stage routing, workload-floor model evolved
+
+#### Current Focus:
+Assignment 57 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 57 progress: 18/26 sections
+
+### Session: 2026-07-18 21:31:57Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a57.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Verbatim-template invariant, inference-laundering decay probes, fallback-shaped retry doctrine with hard stops, directory-ground-truth observability, sparse-transfer performance principle, conversational-envelope scale bounds, external-first refresh probes, smallest-source evidence strata; all packet-then-reference
+
+#### Current Focus:
+Assignment 57 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 57: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 21:32:27Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; diff check clean
+
+#### Implementation Progress:
+- Rereads and scans clean; no duplicate phrases or forbidden markers; queue rows accepted
+
+#### Current Focus:
+Assignment 57 skill_installer_distribution_patterns complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 57 complete
