@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 19:42:56Z
+- Updated: 2026-07-18 19:52:37Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4761,3 +4761,113 @@ Assignment 46 rust_backend_testing_fixtures complete
 
 #### Performance/Metrics:
 - Assignment 46 complete
+
+### Session: 2026-07-18 19:51:08Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a47.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Corrective-identity opening, three-layer funnel evidence, real sixty-row scoreboard with rubric, bracketing theses, use-order navigation, crate-vocabulary external gap evolved
+
+#### Current Focus:
+Assignment 47 rust_coder_reliability_patterns sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 47 progress: 6/26 sections
+
+### Session: 2026-07-18 19:51:36Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a47.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Twelve-rejection registry, boundary-matched gates, seven-rung ladder for agents, three journeys, avoid-when tradeoff axes, wrapper-vs-reference hierarchy correction evolved
+
+#### Current Focus:
+Assignment 47 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 47 progress: 12/26 sections
+
+### Session: 2026-07-18 19:51:44Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a47.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Boundary ledger artifact, seven-rung walkthrough with rejection drill, three adoption metrics, count-and-value audit, bundle-border routing, surface-unit workload model evolved
+
+#### Current Focus:
+Assignment 47 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 47 progress: 18/26 sections
+
+### Session: 2026-07-18 19:51:54Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a47.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Four code invariants, doctrine decay probes, cancel-safe retry regime, tracing-secrecy-diagnostics floor, correctness-preserving performance audit, coverage-claim boundary, crate-stack probes, two-hop provenance strata; all packet-then-reference
+
+#### Current Focus:
+Assignment 47 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 47: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 19:52:37Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; diff check clean
+
+#### Implementation Progress:
+- Fixed six seed-seed duplicate openings across sections 018-024; rereads and scans clean; queue rows accepted
+
+#### Current Focus:
+Assignment 47 rust_coder_reliability_patterns complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 47 complete
