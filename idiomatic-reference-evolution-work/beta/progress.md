@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 21:50:09Z
+- Updated: 2026-07-18 22:52:07Z
 - Current Phase: Refactor
 - Status: active
 
@@ -5311,3 +5311,113 @@ Assignment 59 acceptance: systematic_debugging_method_patterns (beta)
 
 #### Performance/Metrics:
 - Corpus after A59: pending recount
+
+### Session: 2026-07-18 22:51:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a67.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Five-template prompt sheet with byte-identical 202602/202604 twins, protocol-to-utterance framing, embedded step-one rule ranking, explicitness thesis, two-by-two-plus-one grid map, null external surface evolved
+
+#### Current Focus:
+Assignment 67 tdd_resume_handoff_prompts sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 67 progress: 6/26 sections
+
+### Session: 2026-07-18 22:51:19Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a67.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Template-negation anti-pattern registry with optimistic-handoff row, quality-check-as-executable-audit gate, agent-to-agent machine-succession contract, full-circuit weekly journey, parameterization-not-legislation trade-offs, family load-order hierarchy evolved
+
+#### Current Focus:
+Assignment 67 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 67 progress: 12/26 sections
+
+### Session: 2026-07-18 22:51:28Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a67.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Transition-log artifact closing the audit-cadence question, verbatim-invocation pedagogy with template-as-rubric, four-measure metrics with declining audit yield, mechanizable completeness checklist, family-switchboard routing, too-cheap-to-respect workload inversion evolved
+
+#### Current Focus:
+Assignment 67 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 67 progress: 18/26 sections
+
+### Session: 2026-07-18 22:51:38Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a67.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Five reliability invariants with rule-presence grep tripwire, four-mode failure table with resume-side ritual probe, journal-side repair rules with handoff-correction urgency, free-instrumentation observability, metrics-question enforcement with signed N/A, composition-over-genre scale bounds, mechanizable refresh probes, evidence strata closing the retainer family; all packet-then-reference
+
+#### Current Focus:
+Assignment 67 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 67: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 22:52:07Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: PASS - 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; no markers, no adjacent duplicates; git diff --check clean
+
+#### Implementation Progress:
+- Queue accepted rows for REF-093 blocks; rereads clean
+
+#### Current Focus:
+Assignment 67 acceptance: tdd_resume_handoff_prompts (beta)
+
+#### Next Steps:
+- Identify next pending reference and continue
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus after A67: pending recount
