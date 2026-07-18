@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 21:42:01Z
+- Updated: 2026-07-18 22:05:27Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4960,3 +4960,113 @@ Assignment 58 acceptance: system_design_architecture_patterns (delta)
 
 #### Performance/Metrics:
 - Corpus after A58: pending recount
+
+### Session: 2026-07-18 22:04:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a61.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Corrective-origin framing with premise check and dual predecessors, declared-not-verified pedigree strata, rubric-weighted 29-row scoreboard with boundary-control top tier, conditional specificity-first thesis, ten-zone anatomy with detail gradient and missing Pattern 22, fourteen-topic refresh checklist evolved
+
+#### Current Focus:
+Assignment 61 tauri_doctrine_source_review sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 61 progress: 6/26 sections
+
+### Session: 2026-07-18 22:04:39Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a61.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Pattern-paired anti-pattern registry, TDD-first ratchet checks, non-negotiables-as-cache usage economy, design-time consultation journey, graded-cost trade-off rulings, rationale-root hierarchy with propagating irregularities evolved
+
+#### Current Focus:
+Assignment 61 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 61 progress: 12/26 sections
+
+### Session: 2026-07-18 22:04:49Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a61.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- 29-row pattern citation index with empty-row census, Pattern 1 four-layer exemplar drills, citation-crossed violation diagnostics, irregularity-fingerprint audit regime, bidirectional sibling routing, map-as-load-bearing workload model evolved
+
+#### Current Focus:
+Assignment 61 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 61 progress: 18/26 sections
+
+### Session: 2026-07-18 22:04:59Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a61.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Score-quotation and pedigree-label invariants, address-space decay probes with live Pattern-22 test case, rubric-valve dispute routing, supervision-shaped observability with log caps, payload-lane performance gradient, exclusion-bounded scale, author-written refresh plan, four-strata evidence ledger; all packet-then-reference
+
+#### Current Focus:
+Assignment 61 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 61: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 22:05:27Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: PASS - 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only the 3 expected incomplete-corpus failures; git diff --check clean
+
+#### Implementation Progress:
+- Queue accepted 119 rows for REF-084 blocks; rereads clean; no markers, no adjacent duplicates
+
+#### Current Focus:
+Assignment 61 acceptance: tauri_doctrine_source_review (delta)
+
+#### Next Steps:
+- Identify next pending reference and continue
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus after A61: pending recount
