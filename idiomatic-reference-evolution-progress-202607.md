@@ -2,7 +2,7 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-13 18:12:01Z
+- Updated: 2026-07-18 16:45:25Z
 - Current Phase: Refactor
 - Status: active
 
@@ -1317,3 +1317,136 @@ plugin_settings_configuration_patterns evolution complete via delta lane
 
 #### Performance/Metrics:
 - Corpus: 63/99 references, 7672/11961 queue rows complete
+
+### Session: 2026-07-13 18:24:42Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- polyglot_idiomatic_reference_patterns sections 001-003 evolved
+
+#### Current Focus:
+Assignment 37 polyglot theme underway (beta lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 63/99 references complete plus assignment 37 in progress
+
+### Session: 2026-07-13 18:28:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 122 rows accepted
+
+#### Implementation Progress:
+- Assignment 37 complete with packet-before-reference ordering, bounded rereads, and marker scans
+
+#### Current Focus:
+polyglot_idiomatic_reference_patterns evolution complete via beta lane
+
+#### Next Steps:
+- Continue with python_language_skill_entrypoint-20260710.md (delta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 64/99 references, 7794/11961 queue rows complete
+
+### Session: 2026-07-18 16:02:57Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- python_language_skill_entrypoint sections 001-003 evolved
+
+#### Current Focus:
+Assignment 38 python skill entrypoint underway (delta lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 64/99 references complete plus assignment 38 in progress
+
+### Session: 2026-07-18 16:05:39Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- full suite: expected-failures-only - Ran 8 tests, only test_question_packets_complete, test_queue_rows_complete, test_reference_files_evolved fail on incomplete corpus
+
+#### Implementation Progress:
+- python_language_skill_entrypoint-20260710.md evolved and verified; 115 queue rows accepted
+
+#### Current Focus:
+Assignment 38 python_language_skill_entrypoint accepted (delta lane)
+
+#### Next Steps:
+- Assignment 39: python_quality_antipattern_gates-20260710.md (gamma lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 65/99 references complete, 7909/11961 queue rows complete
+
+### Session: 2026-07-18 16:42:51Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- python_quality_antipattern_gates sections 001-003 evolved
+
+#### Current Focus:
+Assignment 39 python quality antipattern gates underway (gamma lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 65/99 references complete plus assignment 39 in progress
+
+### Session: 2026-07-18 16:45:25Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; full suite shows only 3 expected incomplete-corpus failures
+
+#### Implementation Progress:
+- python_quality_antipattern_gates-20260710.md fully evolved; queue updater accepted 115 rows
+
+#### Current Focus:
+Assignment 39 python quality antipattern gates accepted (gamma lane)
+
+#### Next Steps:
+- Next pending: python_reference_routing_sources-20260710.md (beta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 66/99 references complete, 8024/11961 queue rows complete

@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 06:53:37Z
+- Updated: 2026-07-13 18:28:38Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4076,3 +4076,226 @@ Assignment 35 plugin_mcp_integration_patterns complete
 
 #### Performance/Metrics:
 - Corpus: 62/99 references, 7544/11961 queue rows complete
+
+### Session: 2026-07-13 18:24:42Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 3 sections, 180/180 unique fields exact+normalized, headings preserved
+
+#### Implementation Progress:
+- Sections 001-003 packet-then-reference saved; all four mapped sources (12,917 lines) read in full
+
+#### Current Focus:
+Assignment 37 polyglot_idiomatic_reference_patterns sections 001-003
+
+#### Next Steps:
+- Generate sections 004-006
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-13 18:25:01Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 6 sections, 360/360 unique fields exact+normalized
+
+#### Implementation Progress:
+- Thesis, local map, and external map sections evolved; external URL trio downgraded to unretrieved candidates
+
+#### Current Focus:
+Assignment 37 sections 004-006
+
+#### Next Steps:
+- Generate sections 007-009
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 6/26 sections, 360/1560 fields
+
+### Session: 2026-07-13 18:25:10Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 9 sections, 540/540 unique fields exact+normalized
+
+#### Implementation Progress:
+- Anti-pattern registry, verification gates, and agent guide evolved with per-stack pairings
+
+#### Current Focus:
+Assignment 37 sections 007-009
+
+#### Next Steps:
+- Generate sections 010-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-13 18:25:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 12 sections, 720/720 unique fields exact+normalized
+
+#### Implementation Progress:
+- User journey, decision tradeoff, and corpus hierarchy evolved; Idiom98 re-roled canonical for workflow depth
+
+#### Current Focus:
+Assignment 37 sections 010-012
+
+#### Next Steps:
+- Generate sections 013-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 12/26 sections, 720/1560 fields
+
+### Session: 2026-07-13 18:25:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 15 sections, 900/900 unique fields exact+normalized
+
+#### Implementation Progress:
+- Idiom card artifact, order-service worked spine, and two-loop metrics evolved
+
+#### Current Focus:
+Assignment 37 sections 013-015
+
+#### Next Steps:
+- Generate sections 016-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-13 18:25:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 18 sections, 1080/1080 unique fields exact+normalized
+
+#### Implementation Progress:
+- Claim-level checklist, real adjacency routing, and section-family workload budget evolved
+
+#### Current Focus:
+Assignment 37 sections 016-018
+
+#### Next Steps:
+- Generate sections 019-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 18/26 sections, 1080/1560 fields
+
+### Session: 2026-07-13 18:25:51Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 21 sections, 1260/1260 unique fields exact+normalized
+
+#### Implementation Progress:
+- Fail-safe reliability bar, cross-stack blending failure rows, and dual retry loops evolved
+
+#### Current Focus:
+Assignment 37 sections 019-021
+
+#### Next Steps:
+- Generate sections 022-024
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-13 18:26:01Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 24 sections, 1440/1440 unique fields exact+normalized
+
+#### Implementation Progress:
+- Correlation-ID observability, structural performance gates, and bounded scale seams evolved
+
+#### Current Focus:
+Assignment 37 sections 022-024
+
+#### Next Steps:
+- Generate sections 025-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 24/26 sections, 1440/1560 fields
+
+### Session: 2026-07-13 18:26:13Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Versioned refresh probes and read-ledger evidence boundaries evolved; all 26 sections saved packet-then-reference
+
+#### Current Focus:
+Assignment 37 sections 025-026
+
+#### Next Steps:
+- Refactor: bounded rereads, marker scan, focused verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37 progress: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-13 18:28:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560/1560 unique fields, 260 questions, 26/26 sections
+- test_packet_content_uniqueness: passing - OK
+- git diff --check: passing - DIFF_OK
+- full unittest suite: failing - 3 expected incomplete-corpus failures, 64/99 references complete
+
+#### Implementation Progress:
+- 26 sections evolved packet-then-reference; external URL trio downgraded to unretrieved candidates; hierarchy re-roled; no TODO/TBD/FIXME markers; queue accepted 122 rows
+
+#### Current Focus:
+Assignment 37 polyglot_idiomatic_reference_patterns complete
+
+#### Next Steps:
+- Next pending: idiomatic-ref-202607/python_language_skill_entrypoint-20260710.md (delta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 37: 26/26 sections, 260 questions, 1560/1560 fields
