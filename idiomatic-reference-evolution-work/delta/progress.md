@@ -2,7 +2,7 @@
 
 - Task: Delta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 19:19:29Z
+- Updated: 2026-07-18 19:35:33Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4300,3 +4300,113 @@ Assignment 43 rust_backend_reference_routing complete
 
 #### Performance/Metrics:
 - Assignment 43 complete
+
+### Session: 2026-07-18 19:34:18Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a45.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Two-door entry model, genre-split evidence, workflow-sequence ranking, four-clause thesis, dispatcher-vs-leaf shapes, one-layer-down externals evolved
+
+#### Current Focus:
+Assignment 45 rust_backend_skill_entrypoint sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 45 progress: 6/26 sections
+
+### Session: 2026-07-18 19:34:27Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a45.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Nine-guardrail registry, three gate layers with traceability, description-driven agent dispatch, three journeys, three tradeoff axes, genre-partitioned hierarchy correcting seed role inversion evolved
+
+#### Current Focus:
+Assignment 45 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 45 progress: 12/26 sections
+
+### Session: 2026-07-18 19:34:40Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a45.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Dispatch card artifact, dual walkthrough with rejection-rule demo, three dispatch ratios, count-and-order audit, funnel routing, three-unit workload model with mode-count multiplier evolved
+
+#### Current Focus:
+Assignment 45 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 45 progress: 18/26 sections
+
+### Session: 2026-07-18 19:34:49Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a45.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Four entry invariants, behavioral decay probes with mode-freeze anomaly, two-regime retry with self-locating gates, four-record emission floor, three ceremony surfaces, three stack seams, stack-topology probes, hidden-provenance stratum; all packet-then-reference
+
+#### Current Focus:
+Assignment 45 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 45: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 19:35:33Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; diff check clean
+
+#### Implementation Progress:
+- Fixed one seed-seed duplicate phrase in section 012; rereads and scans clean; queue rows accepted
+
+#### Current Focus:
+Assignment 45 rust_backend_skill_entrypoint complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 45 complete
