@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 19:11:14Z
+- Updated: 2026-07-18 19:42:56Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4651,3 +4651,113 @@ Assignment 42 rust_backend_playbook_reference complete
 
 #### Performance/Metrics:
 - Assignment 42 complete: 26/26 sections, 1560/1560 fields, queue rows accepted
+
+### Session: 2026-07-18 19:42:03Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a46.py: passing - 6 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Integration-first inversion, consumption-chain evidence, dependency-chain ranking, three-clause suite thesis, universal-vs-selective split, missing wiremock anchor evolved
+
+#### Current Focus:
+Assignment 46 rust_backend_testing_fixtures sections 001-006
+
+#### Next Steps:
+- Generate sections 007-012
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 46 progress: 6/26 sections
+
+### Session: 2026-07-18 19:42:12Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a46.py: passing - 12 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Six flake-factory rejections, matrix-as-gate, agent concern-classification, three journeys, three trust-vs-cost axes, consumption-chain hierarchy evolved
+
+#### Current Focus:
+Assignment 46 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-018
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 46 progress: 12/26 sections
+
+### Session: 2026-07-18 19:42:21Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a46.py: passing - 18 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Suite manifest artifact, endpoint walkthrough with manufactured-flake drill, three suite ratios, cell-level matrix audit, technique-vs-content routing, three-unit amortization model evolved
+
+#### Current Focus:
+Assignment 46 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 46 progress: 18/26 sections
+
+### Session: 2026-07-18 19:42:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a46.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Four suite invariants, growth-edge decay probes, no-retry-as-acceptance regime, four-record emission floor, setup-vs-assertion split, three scale seams, wiremock probes, blast-radius fact labeling; all packet-then-reference
+
+#### Current Focus:
+Assignment 46 sections 019-026
+
+#### Next Steps:
+- Refactor: rereads, scans, verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 46: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 19:42:56Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields; full suite only 3 expected incomplete-corpus failures; diff check clean
+
+#### Implementation Progress:
+- Rereads, dup-phrase and marker scans clean; queue rows accepted
+
+#### Current Focus:
+Assignment 46 rust_backend_testing_fixtures complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 46 complete
