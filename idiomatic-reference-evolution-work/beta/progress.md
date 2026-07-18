@@ -2,7 +2,7 @@
 
 - Task: Beta lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-18 18:51:37Z
+- Updated: 2026-07-18 19:11:14Z
 - Current Phase: Refactor
 - Status: active
 
@@ -4519,3 +4519,135 @@ Assignment 40 python_reference_routing_sources complete and accepted
 
 #### Performance/Metrics:
 - Corpus: 67/99 references complete, 8142/11961 queue rows complete
+
+### Session: 2026-07-18 19:09:51Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a42.py: passing - 3 sections, 180/180 unique fields; seed-seed dup pre-fixed in cores
+
+#### Implementation Progress:
+- Playbook and four sibling bundle files read in full; five-layer anatomy and flow-ordered doctrine evolved
+
+#### Current Focus:
+Assignment 42 rust_backend_playbook_reference sections 001-003
+
+#### Next Steps:
+- Generate sections 004-006
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 42 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-18 19:10:01Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a42.py: passing - 9 sections, 540/540 unique fields exact+normalized
+
+#### Implementation Progress:
+- Three-clause thesis, bundle routing map, candidate-only external rows, backend anti-pattern registry, gate stack, six-step agent workflow evolved
+
+#### Current Focus:
+Assignment 42 sections 004-009
+
+#### Next Steps:
+- Generate sections 010-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 42 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-18 19:10:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a42.py: passing - 15 sections, 900/900 unique fields exact+normalized
+
+#### Implementation Progress:
+- Mode-shaped journeys, three tension axes, per-question-class hierarchy, lifecycle-diagram artifact, composed endpoint walkthrough, layer-attributed tally loop evolved
+
+#### Current Focus:
+Assignment 42 sections 010-015
+
+#### Next Steps:
+- Generate sections 016-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 42 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-18 19:10:22Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a42.py: passing - 21 sections, 1260/1260 unique fields exact+normalized
+
+#### Implementation Progress:
+- Count-audit checklist, guardrail-named routing, slice workload model, rule-derived targets, three decay modes, failure-class retry ladder evolved
+
+#### Current Focus:
+Assignment 42 sections 016-021
+
+#### Next Steps:
+- Generate sections 022-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 42 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-18 19:10:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a42.py: passing - 26 sections, 1560/1560 unique fields exact+normalized
+
+#### Implementation Progress:
+- Correlation-first observability, mechanism-first performance, growth-event seams, crate-release probes, fact-inference split evolved; all sections saved packet-then-reference
+
+#### Current Focus:
+Assignment 42 sections 022-026
+
+#### Next Steps:
+- Refactor: rereads, marker scan, focused verifier, uniqueness, full suite
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 42: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-18 19:11:14Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS: 26 sections, 260 questions, 1560/1560 unique fields exact+normalized; packet uniqueness OK; full suite only 3 expected incomplete-corpus failures; git diff --check clean
+
+#### Implementation Progress:
+- Bounded rereads done, no dup phrases or forbidden markers, seed content preserved, queue rows accepted
+
+#### Current Focus:
+Assignment 42 rust_backend_playbook_reference complete
+
+#### Next Steps:
+- Identify next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 42 complete: 26/26 sections, 1560/1560 fields, queue rows accepted
