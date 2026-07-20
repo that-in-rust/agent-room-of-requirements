@@ -2,8 +2,8 @@
 
 - Task: Evolve 99 idiomatic references with ten-question section reasoning
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-12 03:35:16Z
-- Current Phase: Red
+- Updated: 2026-07-18 23:31:02Z
+- Current Phase: Refactor
 - Status: active
 
 ## Sessions
@@ -947,3 +947,1276 @@ Create continuation handoff document
 
 #### Performance/Metrics:
 - accepted_files=47; completed_rows=5703; pending_rows=6258; handoff_document=IDIOMATIC_REFERENCE_EVOLUTION_HANDOFF_202607.md
+
+### Session: 2026-07-12 05:02:10Z
+
+#### Current Phase: Red
+
+#### Tests Written:
+- verify_idiomatic_reference_file subagent_development_execution_patterns: passing - 26 sections, 260 questions, 1560 fields, normalized uniqueness 1560
+- test_queue_rows_complete: failing - 5837 of 11961 rows complete; remaining failures are unfinished corpus work
+
+#### Implementation Progress:
+- Accepted subagent_development_execution_patterns-20260710.md into shared queue (134 rows complete)
+
+#### Current Focus:
+Accept subagent_development_execution_patterns-20260710.md and continue first-pass corpus evolution
+
+#### Next Steps:
+- Continue the next assigned Alpha file: tauri_executable_playbook_templates-20260710.md
+
+#### Context Notes:
+- Full suite remains red only because the corpus is incomplete
+
+#### Performance/Metrics:
+- accepted_files=48; completed_rows=5837; pending_rows=6124; active_lanes=4
+
+### Session: 2026-07-12 05:14:11Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused reference verifier: passing - PASS: 26/260/1560 with exact and normalized uniqueness
+- packet content uniqueness suite test: passing - OK
+- full evolution unittest suite: failing - expected red while 50 first-pass references remain
+
+#### Implementation Progress:
+- Assignment 22 packet and evolved reference completed with packet-before-reference saves and journal cadence
+
+#### Current Focus:
+Alpha assignment 22 (tauri_executable_playbook_templates-20260710.md) accepted through focused verification and queue update
+
+#### Next Steps:
+- Alpha continues with the next pending first-pass reference from the queue
+
+#### Context Notes:
+- External Tauri URLs were not refreshed; external claims remain labeled unrefreshed candidates
+
+#### Performance/Metrics:
+- Corpus: 49/99 files complete; queue rows 5950 complete, 6011 pending; assignment 22 updated 113 rows
+
+### Session: 2026-07-12 05:25:16Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier tauri_executable_reference_maps: passing - PASS with 1560/1560 unique packet fields
+- full suite tests.test_idiomatic_reference_evolution: failing - 3 expected failures while corpus incomplete (50/99 files)
+
+#### Implementation Progress:
+- Assignment 23 completed by Alpha: 26 sections evolved, packet saved before reference per section, queue updater accepted 119 rows
+
+#### Current Focus:
+Alpha assignment 23 tauri_executable_reference_maps accepted
+
+#### Next Steps:
+- Alpha continues with tdd_progress_journal_schema-20260710.md; pass two remains blocked until all first-pass references and queue rows complete
+
+#### Context Notes:
+- External Tauri URLs not retrieved; all external claims remain labeled unrefreshed
+
+#### Performance/Metrics:
+- Queue: 6069/11961 rows complete, 5892 pending; assignment 23 added 119 rows
+
+### Session: 2026-07-12 05:34:02Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier tdd_progress_journal_schema: passing - PASS with 1560/1560 unique packet fields
+- full suite tests.test_idiomatic_reference_evolution: failing - 3 expected failures while corpus incomplete (51/99 files)
+
+#### Implementation Progress:
+- Assignment 24 completed by Alpha: 26 sections evolved packet-before-reference, queue updater accepted 116 rows
+
+#### Current Focus:
+Alpha assignment 24 tdd_progress_journal_schema accepted
+
+#### Next Steps:
+- Alpha continues with writing_skills_validation_patterns-20260710.md; pass two remains blocked until first pass completes
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Queue: 6185/11961 rows complete, 5776 pending; assignment 24 added 116 rows
+
+### Session: 2026-07-12 05:43:42Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: passing - status PASS, 1560/1560 unique fields
+- queue acceptance: passing - 122 rows complete
+- full suite: failing - 3 expected incomplete-corpus failures
+
+#### Implementation Progress:
+- Alpha lane completed writing_skills_validation_patterns-20260710.md first-pass evolution; external rows downgraded to unretrieved candidates; packet-before-reference ordering held throughout
+
+#### Current Focus:
+Alpha assignment 25 writing_skills_validation_patterns accepted
+
+#### Next Steps:
+- Alpha continues with image_generation_prompt_patterns-20260710.md; pass two remains blocked until all 99 references and 11961 rows are complete
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 52/99 files, 6307/11961 rows complete, 5654 pending
+
+### Session: 2026-07-12 05:52:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS, 1560 unique fields
+- update_idiomatic_evolution_queue.py: passing - 126 rows accepted
+
+#### Implementation Progress:
+- Alpha queue rows fully complete; work continued into gamma-lane files in queue order; image_generation_prompt_patterns evolved with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+image_generation_prompt_patterns evolution complete via gamma lane
+
+#### Next Steps:
+- Continue with kotlin_backend_skill_entrypoint-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 53/99 references, 6433/11961 queue rows complete
+
+### Session: 2026-07-12 05:59:33Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 115 rows accepted
+
+#### Implementation Progress:
+- Assignment 27 complete with packet-before-reference ordering, bounded rereads, and unread-local evidence discipline for bundled skill references
+
+#### Current Focus:
+kotlin_backend_skill_entrypoint evolution complete via gamma lane
+
+#### Next Steps:
+- Continue with kotlin_reliability_reference_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 54/99 references, 6548/11961 queue rows complete
+
+### Session: 2026-07-12 06:06:44Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 115 rows accepted
+
+#### Implementation Progress:
+- Assignment 28 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+kotlin_reliability_reference_patterns evolution complete via gamma lane
+
+#### Next Steps:
+- Continue with local_vision_media_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 55/99 references, 6663/11961 queue rows complete
+
+### Session: 2026-07-12 06:13:13Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 113 rows accepted
+
+#### Implementation Progress:
+- Assignment 29 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+local_vision_media_patterns evolution complete via gamma lane
+
+#### Next Steps:
+- Continue with minto_pyramid_writing_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 56/99 references, 6776/11961 queue rows complete
+
+### Session: 2026-07-12 06:19:47Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 122 rows accepted
+
+#### Implementation Progress:
+- Assignment 30 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+minto_pyramid_writing_patterns evolution complete via delta lane
+
+#### Next Steps:
+- Continue with openai_api_documentation_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 57/99 references, 6898/11961 queue rows complete
+
+### Session: 2026-07-12 06:26:28Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 122 rows accepted
+
+#### Implementation Progress:
+- Assignment 31 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+openai_api_documentation_patterns evolution complete via gamma lane
+
+#### Next Steps:
+- Continue with parallel_agent_dispatch_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 58/99 references, 7020/11961 queue rows complete
+
+### Session: 2026-07-12 06:32:10Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 116 rows accepted
+
+#### Implementation Progress:
+- Assignment 32 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+parallel_agent_dispatch_patterns evolution complete via beta lane
+
+#### Next Steps:
+- Continue with planning_execution_workflow_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 59/99 references, 7136/11961 queue rows complete
+
+### Session: 2026-07-12 06:38:22Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 128 rows accepted
+
+#### Implementation Progress:
+- Assignment 33 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+planning_execution_workflow_patterns evolution complete via beta lane
+
+#### Next Steps:
+- Continue with plugin_hook_development_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 60/99 references, 7264/11961 queue rows complete
+
+### Session: 2026-07-12 06:46:21Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 140 rows accepted
+
+#### Implementation Progress:
+- Assignment 34 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+plugin_hook_development_patterns evolution complete via gamma lane
+
+#### Next Steps:
+- Continue with plugin_mcp_integration_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 61/99 references, 7404/11961 queue rows complete
+
+### Session: 2026-07-12 06:53:37Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 140 rows accepted
+
+#### Implementation Progress:
+- Assignment 35 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+plugin_mcp_integration_patterns evolution complete via beta lane
+
+#### Next Steps:
+- Continue with plugin_settings_configuration_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 62/99 references, 7544/11961 queue rows complete
+
+### Session: 2026-07-13 18:12:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 128 rows accepted
+
+#### Implementation Progress:
+- Assignment 36 complete with packet-before-reference ordering and bounded rereads
+
+#### Current Focus:
+plugin_settings_configuration_patterns evolution complete via delta lane
+
+#### Next Steps:
+- Continue with polyglot_idiomatic_reference_patterns-20260710.md
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 63/99 references, 7672/11961 queue rows complete
+
+### Session: 2026-07-13 18:24:42Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a37.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- polyglot_idiomatic_reference_patterns sections 001-003 evolved
+
+#### Current Focus:
+Assignment 37 polyglot theme underway (beta lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 63/99 references complete plus assignment 37 in progress
+
+### Session: 2026-07-13 18:28:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - status PASS
+- update_idiomatic_evolution_queue.py: passing - 122 rows accepted
+
+#### Implementation Progress:
+- Assignment 37 complete with packet-before-reference ordering, bounded rereads, and marker scans
+
+#### Current Focus:
+polyglot_idiomatic_reference_patterns evolution complete via beta lane
+
+#### Next Steps:
+- Continue with python_language_skill_entrypoint-20260710.md (delta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 64/99 references, 7794/11961 queue rows complete
+
+### Session: 2026-07-18 16:02:57Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a38.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- python_language_skill_entrypoint sections 001-003 evolved
+
+#### Current Focus:
+Assignment 38 python skill entrypoint underway (delta lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 64/99 references complete plus assignment 38 in progress
+
+### Session: 2026-07-18 16:05:39Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- full suite: expected-failures-only - Ran 8 tests, only test_question_packets_complete, test_queue_rows_complete, test_reference_files_evolved fail on incomplete corpus
+
+#### Implementation Progress:
+- python_language_skill_entrypoint-20260710.md evolved and verified; 115 queue rows accepted
+
+#### Current Focus:
+Assignment 38 python_language_skill_entrypoint accepted (delta lane)
+
+#### Next Steps:
+- Assignment 39: python_quality_antipattern_gates-20260710.md (gamma lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 65/99 references complete, 7909/11961 queue rows complete
+
+### Session: 2026-07-18 16:42:51Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a39.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- python_quality_antipattern_gates sections 001-003 evolved
+
+#### Current Focus:
+Assignment 39 python quality antipattern gates underway (gamma lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 65/99 references complete plus assignment 39 in progress
+
+### Session: 2026-07-18 16:45:25Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; full suite shows only 3 expected incomplete-corpus failures
+
+#### Implementation Progress:
+- python_quality_antipattern_gates-20260710.md fully evolved; queue updater accepted 115 rows
+
+#### Current Focus:
+Assignment 39 python quality antipattern gates accepted (gamma lane)
+
+#### Next Steps:
+- Next pending: python_reference_routing_sources-20260710.md (beta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 66/99 references complete, 8024/11961 queue rows complete
+
+### Session: 2026-07-18 18:49:30Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a40.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- python_reference_routing_sources sections 001-003 evolved
+
+#### Current Focus:
+Assignment 40 python reference routing sources underway (beta lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 66/99 references complete plus assignment 40 in progress
+
+### Session: 2026-07-18 18:51:37Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; full suite shows only 3 expected incomplete-corpus failures
+
+#### Implementation Progress:
+- python_reference_routing_sources-20260710.md fully evolved; queue updater accepted 118 rows
+
+#### Current Focus:
+Assignment 40 python reference routing sources accepted (beta lane)
+
+#### Next Steps:
+- Next pending: react_typescript_reliability_patterns-20260710.md (delta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 67/99 references complete, 8142/11961 queue rows complete
+
+### Session: 2026-07-18 18:59:28Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a41.py: passing - sections 001-003 verified
+
+#### Implementation Progress:
+- react_typescript_reliability_patterns sections 001-003 evolved
+
+#### Current Focus:
+Assignment 41 react typescript reliability patterns underway (delta lane)
+
+#### Next Steps:
+- Continue sections 004-026
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 67/99 references complete plus assignment 41 in progress
+
+### Session: 2026-07-18 19:02:56Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- focused verifier + packet uniqueness: passing - PASS with 1560/1560 unique fields; 134 queue rows accepted
+
+#### Implementation Progress:
+- react_typescript_reliability_patterns-20260710.md evolved to 26/26 sections with typed-state-machine thesis, twelve-row scoreboard, sixteen anti-pattern rows, five-step agent workflow
+
+#### Current Focus:
+Assignment 41 complete: react typescript reliability patterns (delta lane)
+
+#### Next Steps:
+- Assignment 42: rust_backend_playbook_reference-20260710.md (beta lane)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 8276/11961 rows, 68/99 references
+
+### Session: 2026-07-18 19:11:14Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; full suite shows only 3 expected incomplete-corpus failures
+
+#### Implementation Progress:
+- Evolved from rust-web-backend-delivery-01 bundle (playbook + 4 siblings read fully); external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 42 rust_backend_playbook_reference-20260710.md (beta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference in queue
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 42 queue acceptance
+
+### Session: 2026-07-18 19:19:29Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved from reference-map.md router with bundle siblings cited by name; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 43 rust_backend_reference_routing-20260710.md (delta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 43 queue acceptance
+
+### Session: 2026-07-18 19:27:37Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved from rust-backend-runtime-and-ops.md with bundle siblings cited by name; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 44 rust_backend_runtime_operations-20260710.md (gamma lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 44 queue acceptance
+
+### Session: 2026-07-18 19:35:33Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved from two mapped SKILL.md entry files (explainer + delivery) with bundle siblings cited by name; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 45 rust_backend_skill_entrypoint-20260710.md (delta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 45 queue acceptance
+
+### Session: 2026-07-18 19:42:56Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved from rust-backend-testing-and-fixtures.md with bundle siblings cited by name; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 46 rust_backend_testing_fixtures-20260710.md (beta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 46 queue acceptance
+
+### Session: 2026-07-18 19:52:38Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved from rust-coder-02 bundle (SKILL.md, reference-map, 1541-line scored reliability reference) read in full; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 47 rust_coder_reliability_patterns-20260710.md (beta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 47 queue acceptance
+
+### Session: 2026-07-18 20:00:35Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved from the 74-line rust-conventions-and-gates.md (rust-executable-specs-01 bundle) read in full; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 48 rust_conventions_quality_gates-20260710.md (delta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 48 queue acceptance
+
+### Session: 2026-07-18 20:08:59Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved from the 91-line router and 246-line standalone merge (byte-identical unclassified duplicate verified by diff); external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 49 rust_executable_reference_maps-20260710.md (delta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 49 queue acceptance
+
+### Session: 2026-07-18 20:17:14Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as a verbatim-transplant theme: mapped 202604 copy verified byte-identical to the assignment-47 rust-coder-02 reference by diff; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 50 rust_executable_reliability_reference-20260710.md (gamma lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 50 queue acceptance
+
+### Session: 2026-07-18 20:25:25Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as a sibling-entrypoint pair theme: Claude and Codex variants read in full, unclassified duplicate verified byte-identical by diff; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 51 rust_executable_skill_patterns-20260710.md (gamma lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 51 queue acceptance
+
+### Session: 2026-07-18 20:34:14Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as a template-lineage theme: identical 202602/202603 ancestor sheets verified by diff, 202604 playbook successor read in full; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 52 rust_executable_template_patterns-20260710.md (beta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 52 queue acceptance
+
+### Session: 2026-07-18 20:42:36Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as a minimal-revision lineage theme: 202602/202603 idiomatic-rust-coder-01 entrypoints read in full, one-line naming-scope delta verified by diff; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 53 rust_idiomatic_skill_patterns-20260710.md (gamma lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 53 queue acceptance
+
+### Session: 2026-07-18 21:08:10Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as a frozen gate-checklist pair theme: identical 202602/202603 rust-quality-gates-anti-patterns copies verified by diff and read in full; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 54 rust_quality_gate_patterns-20260710.md (beta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 54 queue acceptance
+
+### Session: 2026-07-18 21:17:11Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as a two-platform skill-creator theme: six unique documents (2024 lines) read in full, five archive-live identity diffs run; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 55 skill_creator_evaluation_patterns-20260710.md (delta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 55 queue acceptance
+
+### Session: 2026-07-18 21:24:46Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as a derivative-with-embedded-ancestor theme: two unique documents (846 lines) read in full, two archive-live identity diffs run; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 56 skill_development_reference_patterns-20260710.md (delta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 56 queue acceptance
+
+### Session: 2026-07-18 21:32:27Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- verify_idiomatic_reference_file.py: passing - PASS with 1560/1560 unique fields; 3 expected incomplete-corpus failures remain
+
+#### Implementation Progress:
+- Evolved as the corpus's smallest single-source theme: one 58-line Codex system skill read in full, sibling-absence scan run; external URLs remain unretrieved candidates
+
+#### Current Focus:
+Assignment 57 skill_installer_distribution_patterns-20260710.md (beta lane) complete
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus progress after assignment 57 queue acceptance
+
+### Session: 2026-07-18 21:42:01Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized; full suite 3 expected failures only
+
+#### Implementation Progress:
+- Evolved all 26 sections from the 3907-line Idiom97 system design concatenation; three-guide seam map, conditionality thesis, corroboration ranking, decay-class labeling, four-layer provenance strata; queue accepted 113 rows
+
+#### Current Focus:
+Assignment 58 complete: system_design_architecture_patterns-20260710.md (delta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 58: 26 sections, 260 questions, 1560 fields, 113 queue rows
+
+### Session: 2026-07-18 21:50:09Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized; full suite 3 expected failures only
+
+#### Implementation Progress:
+- Evolved all 26 sections from the checksum-deduplicated superpowers systematic-debugging directory (SKILL.md 296 lines plus eight companions, 962 lines total); Iron Law gates, four-phase pipeline, three-strike escalation, boundary instrumentation, condition-based waiting; queue accepted 116 rows
+
+#### Current Focus:
+Assignment 59 complete: systematic_debugging_method_patterns-20260710.md (beta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 59: 26 sections, 260 questions, 1560 fields, 116 queue rows
+
+### Session: 2026-07-18 21:57:56Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized; full suite 3 expected failures only
+
+#### Implementation Progress:
+- Evolved all 26 sections from the 83-line tauri-conventions-and-gates.md terminal gate file with its skill-directory context (spine, routing map); least-privilege ranking, two-family command gate, dual anti-pattern registries, section-7 anti-universalization; queue accepted 113 rows
+
+#### Current Focus:
+Assignment 60 complete: tauri_conventions_quality_gates-20260710.md (gamma lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 60: 26 sections, 260 questions, 1560 fields, 113 queue rows
+
+### Session: 2026-07-18 22:05:27Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized; full suite 3 expected failures only
+
+#### Implementation Progress:
+- Evolved all 26 sections from the 470-line tauri-doctrine.md rationale root: rubric-scored 29-pattern board, non-negotiables, pattern-paired anti-patterns, TDD-first checks, documented irregularities (missing Pattern 22 heading, dual predecessor names); queue accepted 119 rows
+
+#### Current Focus:
+Assignment 61 complete: tauri_doctrine_source_review-20260710.md (delta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 61: 26 sections, 260 questions, 1560 fields, 119 queue rows
+
+### Session: 2026-07-18 22:13:48Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the two-dialect tauri-executable-specs-01 entrypoint pair (126-line Claude variant twin-copied byte-identically in unclassified-yet, 84-line Codex SKILL.md), completing the full tauri-executable-specs-01 family across four corpus themes; queue accepted 119 rows
+
+#### Current Focus:
+Assignment 62 complete: tauri_executable_skill_patterns-20260710.md (delta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 62: 26 sections, 260 questions, 1560 fields, 119 queue rows
+
+### Session: 2026-07-18 22:21:48Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the legacy tauri-coder-01 family (1406-line doctrine twin-copied across 202602/202603 sweeps, 42-line SKILL.md, 26-line reference map), documenting the succession lineage to tauri-executable-specs-01 and closing the corpus's two-generation Tauri coverage; queue accepted 122 rows
+
+#### Current Focus:
+Assignment 63 complete: tauri_legacy_coder_patterns-20260710.md (gamma lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 63: 26 sections, 260 questions, 1560 fields, 122 queue rows
+
+### Session: 2026-07-18 22:29:12Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the byte-identical twin 61-line cadence playbook carried across the 202602 orchestrator and 202604 retainer skills, including the self-instance relationship to this corpus's own journaling practice; queue accepted rows
+
+#### Current Focus:
+Assignment 64 complete: tdd_checkpoint_cadence_playbook-20260710.md (delta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 64: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 22:36:52Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the three distinct generations of the tdd context retainer family (112-line Claude persona, 93-line 202602 orchestrator, 100-line 202604 retainer with the added resume-from-evidence step), including this corpus's own operation of the 202604 script as documented entangled usage; queue accepted rows
+
+#### Current Focus:
+Assignment 65 complete: tdd_context_retainer_skills-20260710.md (gamma lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 65: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 22:44:42Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the byte-identical archive-live twin 371-line superpowers TDD skill (Iron Law, mandatory verify gates, eleven-row rationalization registry, thirteen red flags, human-partner exception valve), the corpus's first live-tree source; queue accepted rows
+
+#### Current Focus:
+Assignment 66 complete: tdd_cycle_skill_patterns-20260710.md (gamma lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 66: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 22:52:07Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the byte-identical 63-line resume-handoff prompt sheet carried across both Codex retainer generations (five templates: quick/detailed resume, developer/agent handoff, quality check audit), completing the retainer family's four-theme documentation; queue accepted rows
+
+#### Current Focus:
+Assignment 67 complete: tdd_resume_handoff_prompts-20260710.md (beta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 67: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 23:00:39Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the three-generation react-threejs lineage (2196-line Idiom anchor, 709-line Parseltongue coder agent, 66-line 202604 skill with two satellite references): lane model, ownership split, output contract, force-graph checklist; queue accepted rows
+
+#### Current Focus:
+Assignment 68 complete: threejs_react_visualization_patterns-20260710.md (beta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 68: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 23:08:03Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the 116-line timeline-traverser package (anti-vibe doctrine, 3-5 timelines, lived-experience layer, six-part output contract, three-question decision filter, comparison template); queue accepted rows
+
+#### Current Focus:
+Assignment 69 complete: timeline_decision_simulation_patterns-20260710.md (delta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 69: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 23:15:41Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the five-path typescript-backend-coder-01 family (418-line scored doctrine in three byte-identical copies plus 38-line SKILL and 22-line reference map): IO-lies thesis, 12-row scoreboard, 11 coded patterns, 7 anti-patterns, 5-habit synthesis; queue accepted rows
+
+#### Current Focus:
+Assignment 70 complete: typescript_backend_reliability_patterns-20260710.md (gamma lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 70: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 23:23:34Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: PASS - 1560/1560 fields unique exact+normalized
+
+#### Implementation Progress:
+- Evolved all 26 sections from the five-path typescript-coder-01 family root (1211-line doctrine: twins plus two-line link-repair variant, 22-pattern tiered scoreboard, published rubric, 9-rule SOP, 12 anti-patterns, pre-commit ritual); queue accepted rows
+
+#### Current Focus:
+Assignment 71 complete: typescript_language_reliability_patterns-20260710.md (beta lane)
+
+#### Next Steps:
+- Continue with next pending reference
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 71: 26 sections, 260 questions, 1560 fields
+
+### Session: 2026-07-18 23:31:02Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- full suite: OK 8/8 including test_question_packets_complete, test_queue_rows_complete, test_reference_files_evolved - first fully green run
+
+#### Implementation Progress:
+- Evolved all 26 sections from the single-source 168-line visual-explainer personal skill (five-stage pipeline, act-arc pedagogy, ten-gate checklist, off-archive template dependency verified absent); queue accepted 113 rows
+
+#### Current Focus:
+Assignment 72 complete: visual_explainer_skill_patterns-20260710.md (beta lane) - corpus COMPLETE
+
+#### Next Steps:
+- None - all 99 references and 11961 queue rows complete
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus COMPLETE: 99/99 references, 11961/11961 rows

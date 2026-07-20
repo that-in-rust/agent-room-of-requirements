@@ -2,7 +2,7 @@
 
 - Task: Alpha lane idiomatic reference evolution
 - Created: 2026-07-11 12:40:23Z
-- Updated: 2026-07-11 20:25:35Z
+- Updated: 2026-07-12 05:50:25Z
 - Current Phase: Green
 - Status: active
 
@@ -7569,3 +7569,960 @@ Assignment 21 Sections 007-009 failure, verification, and workflow routing saved
 
 #### Performance/Metrics:
 - Assignment 21 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-12 05:00:09Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 13 sections, 130 questions, 780 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Added task-property tradeoff keys, duplicate-aware corpus hierarchy, and instantiated-episode artifact requirements
+
+#### Current Focus:
+Assignment 21 Sections 011-013 tradeoff, hierarchy, and artifact guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 014-016 with atomic sanity checks
+
+#### Context Notes:
+- Evidence-agreement adoption keys replaced with observable task properties
+
+#### Performance/Metrics:
+- Assignment 21 progress: 13/26 sections and 780/1560 fields
+
+### Session: 2026-07-12 05:00:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 16 sections, 160 questions, 960 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Anchored examples in observable delegation events, bound metrics to breach actions and owners, and added content-level checklist gates
+
+#### Current Focus:
+Assignment 21 Sections 014-016 examples, metrics, and checklist guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 017-019 with atomic sanity checks
+
+#### Context Notes:
+- Structural checklist passes are no longer read as content endorsement
+
+#### Performance/Metrics:
+- Assignment 21 progress: 16/26 sections and 960/1560 fields
+
+### Session: 2026-07-12 05:00:28Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 19 sections, 190 questions, 1140 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Replaced keyword route stubs with condition-destination pairs, rederived workload caps from review bandwidth, and grounded reliability targets in feasible measurements
+
+#### Current Focus:
+Assignment 21 Sections 017-019 routing, workload, and reliability guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 020-022 with atomic sanity checks
+
+#### Context Notes:
+- Unbaselined reliability thresholds are labeled aspirations, not achievements
+
+#### Performance/Metrics:
+- Assignment 21 progress: 19/26 sections and 1140/1560 fields
+
+### Session: 2026-07-12 05:00:38Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 22 sections, 220 questions, 1320 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Merged delegation-native failures into the failure table, added classification-before-retry and evidence-based halt release, and staged journal-bound observability
+
+#### Current Focus:
+Assignment 21 Sections 020-022 failure, retry, and observability guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 21 Sections 023-026 with atomic sanity checks
+
+#### Context Notes:
+- Backpressure halts must record their cause to avoid permanent context loss
+
+#### Performance/Metrics:
+- Assignment 21 progress: 22/26 sections and 1320/1560 fields
+
+### Session: 2026-07-12 05:00:49Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields, valid per-section grouping
+
+#### Implementation Progress:
+- Recentered performance verification on decision quality, added scale approach indicators, rewrote refresh queries in ecosystem vocabulary, and qualified evidence labels with checkability requirements
+
+#### Current Focus:
+Assignment 21 Sections 023-026 performance, scale, refresh, and evidence guidance saved
+
+#### Next Steps:
+- Perform bounded rereads in groups of five sections, then run the focused verifier
+
+#### Context Notes:
+- Section drafting is complete; acceptance still requires rereads and focused verification
+
+#### Performance/Metrics:
+- Assignment 21 progress: 26/26 sections drafted and 1560/1560 fields
+
+### Session: 2026-07-12 05:11:26Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 3 sections, 30 questions, 180 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Framed spec-first work-packet thesis, marked external rows unrefreshed, and reranked scoreboard around contract, design, matrix, and capability patterns
+
+#### Current Focus:
+Assignment 22 Sections 001-003 thesis, source map, and scoreboard guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 22 Sections 004-006 with atomic sanity checks
+
+#### Context Notes:
+- Single local source playbook read in full before drafting
+
+#### Performance/Metrics:
+- Assignment 22 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-12 05:11:36Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 6 sections, 60 questions, 360 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Restated the combined-inference thesis around executable contracts, added per-section playbook routing, and bound external sources to dated retrieval expectations
+
+#### Current Focus:
+Assignment 22 Sections 004-006 thesis statement, local routing, and external freshness guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 22 Sections 007-009 with atomic sanity checks
+
+#### Context Notes:
+- External URLs remain unrefreshed candidates and are labeled as such
+
+#### Performance/Metrics:
+- Assignment 22 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-12 05:11:47Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 9 sections, 90 questions, 540 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Added desktop-specific anti-pattern rows, the playbook six-gate quality set with recording obligations, and task-shape admission criteria with a reading order
+
+#### Current Focus:
+Assignment 22 Sections 007-009 anti-patterns, gates, and usage guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 22 Sections 010-012 with atomic sanity checks
+
+#### Context Notes:
+- Gate section now distinguishes document verification from Tauri work verification
+
+#### Performance/Metrics:
+- Assignment 22 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-12 05:11:57Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 12 sections, 120 questions, 720 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Extended the journey through packet, matrix, loop, and gate stages, rekeyed tradeoffs to boundary crossings and permission impact, and reframed single-source canon as provisional
+
+#### Current Focus:
+Assignment 22 Sections 010-012 journey, tradeoff, and hierarchy guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 22 Sections 013-015 with atomic sanity checks
+
+#### Context Notes:
+- Confidence warning kept adjacent to canonical status in the hierarchy
+
+#### Performance/Metrics:
+- Assignment 22 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-12 05:12:06Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 15 sections, 150 questions, 900 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Extended the artifact into a full packet-instance record, grounded examples in the rewrite table, and bound metrics to owners and section-level corrective actions
+
+#### Current Focus:
+Assignment 22 Sections 013-015 artifact, examples, and metrics guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 22 Sections 016-018 with atomic sanity checks
+
+#### Context Notes:
+- Examples now draw on the playbook's vague-to-executable rewrites
+
+#### Performance/Metrics:
+- Assignment 22 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-12 05:12:15Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 18 sections, 180 questions, 1080 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Added cited content-level checklist items, replaced keyword route stubs with named-destination routes, and rederived workload caps from contract count and layer spread
+
+#### Current Focus:
+Assignment 22 Sections 016-018 checklist, routing, and workload guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 22 Sections 019-021 with atomic sanity checks
+
+#### Context Notes:
+- Workload model now counts boundaries crossed rather than symbols written
+
+#### Performance/Metrics:
+- Assignment 22 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-12 05:12:28Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 21 sections, 210 questions, 1260 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Marked reliability thresholds unbaselined with owners, added capability, IPC-drift, sidecar, and lifecycle failure rows, and bound retries to recorded classification and evidence-based halt release
+
+#### Current Focus:
+Assignment 22 Sections 019-021 reliability, failure, and retry guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 22 Sections 022-026 with atomic sanity checks
+
+#### Context Notes:
+- Failure table now covers the desktop boundary failures the theme exists to prevent
+
+#### Performance/Metrics:
+- Assignment 22 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-12 05:12:39Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Staged packet-bound observability, recentered performance on decision quality, added scale approach indicators, rewrote refresh queries in ecosystem vocabulary, and added claim-level evidence labeling rules
+
+#### Current Focus:
+Assignment 22 Sections 022-026 observability, performance, scale, refresh, and evidence guidance saved
+
+#### Next Steps:
+- Perform bounded rereads in groups of five sections, then run the focused verifier
+
+#### Context Notes:
+- Section drafting complete; acceptance still requires rereads and focused verification
+
+#### Performance/Metrics:
+- Assignment 22 progress: 26/26 sections drafted and 1560/1560 fields
+
+### Session: 2026-07-12 05:14:11Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused reference verifier: passing - PASS with 26 sections, 260 questions, 1560 exact and normalized-unique fields
+- packet content uniqueness suite test: passing - OK across all full packets
+
+#### Implementation Progress:
+- Bounded rereads in groups of five confirmed section-specific guidance; queue updater marked 113 rows complete for assignment 22
+
+#### Current Focus:
+Assignment 22 accepted: tauri_executable_playbook_templates-20260710.md verified and queued
+
+#### Next Steps:
+- Begin next pending Alpha assignment from the queue
+
+#### Context Notes:
+- Full evolution suite remains red by design while corpus is incomplete
+
+#### Performance/Metrics:
+- Corpus: 49/99 files complete; queue 5950 complete, 6011 pending
+
+### Session: 2026-07-12 05:21:50Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 3 sections, 30 questions, 180 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Framed the theme as mode-first routing discipline, recorded the byte-identical mirror between legacy and unclassified specs references, and ranked routing practices above hygiene rows
+
+#### Current Focus:
+Assignment 23 Sections 001-003 routing thesis, deduplicated source map, and reranked scoreboard saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 004-006 with atomic sanity checks
+
+#### Context Notes:
+- All three local sources read; two confirmed identical by diff; external URLs not retrieved
+
+#### Performance/Metrics:
+- Assignment 23 progress: 3/26 sections and 180/1560 fields
+
+### Session: 2026-07-12 05:22:02Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 6 sections, 60 questions, 360 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Restated the thesis as classify-then-read, added routing to the map's four parts, and bound external rows to dated retrieval expectations
+
+#### Current Focus:
+Assignment 23 Sections 004-006 thesis restatement, per-part local routing, and external freshness guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 007-009 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-12 05:22:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 9 sections, 90 questions, 540 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Added map-skipping and stale-route anti-pattern rows, a route-resolution gate beside the document verifier, and use-then-leave admission criteria
+
+#### Current Focus:
+Assignment 23 Sections 007-009 routing anti-patterns, route-resolution gates, and junction usage guidance saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 010-012 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 9/26 sections and 540/1560 fields
+
+### Session: 2026-07-12 05:22:20Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 12 sections, 120 questions, 720 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Extended the journey through classification and ordered reading, rekeyed adopt-adapt-avoid to corpus familiarity, and collapsed the duplicate hierarchy rows into one mirrored content source
+
+#### Current Focus:
+Assignment 23 Sections 010-012 completed journey, familiarity-keyed tradeoffs, and mirror-aware hierarchy saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 013-015 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-12 05:22:31Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 15 sections, 150 questions, 900 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Extended the artifact into a route-trace record, grounded examples in classification events, and replaced inherited content metrics with misroute and dangling-route signals
+
+#### Current Focus:
+Assignment 23 Sections 013-015 route-trace artifact, routing-grounded examples, and misroute metrics saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 016-018 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 15/26 sections and 900/1560 fields
+
+### Session: 2026-07-12 05:22:44Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 18 sections, 180 questions, 1080 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Added route-resolution checklist items, replaced keyword route stubs with condition-keyed destinations, and rederived workload boundaries from modes straddled and files opened
+
+#### Current Focus:
+Assignment 23 Sections 016-018 resolution checklist, condition-keyed routing, and mode-based workload model saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 019-021 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-12 05:22:54Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 21 sections, 210 questions, 1260 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Marked reliability thresholds unbaselined with sampling owners, added dangling-route and stale-order failure rows, and bounded routing retries to one reclassification plus one re-resolution
+
+#### Current Focus:
+Assignment 23 Sections 019-021 grounded reliability targets, routing failure rows, and bounded reroute semantics saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 022-024 with atomic sanity checks
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 21/26 sections and 1260/1560 fields
+
+### Session: 2026-07-12 05:23:05Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 24 sections, 240 questions, 1440 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Bound recorded signals to routing stages, recentered performance on time-to-correct-file with answer keys, and added straddle-rate approach signals ahead of hard scale limits
+
+#### Current Focus:
+Assignment 23 Sections 022-024 stage-bound observability, routing performance method, and classification-confidence scale signals saved
+
+#### Next Steps:
+- Complete and save Assignment 23 Sections 025-026, then reread and verify
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-12 05:23:19Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic packet/reference sanity: passing - 26 sections, 260 questions, 1560 exact and normalized-unique fields
+
+#### Implementation Progress:
+- Rephrased refresh queries in Tauri ecosystem vocabulary with section bindings and added claim-level labeling rules that count mirrored files as one source
+
+#### Current Focus:
+Assignment 23 Sections 025-026 ecosystem-vocabulary refresh queries and duplicate-aware evidence labeling saved; all 26 sections drafted
+
+#### Next Steps:
+- Reread evolved reference in groups of at most five sections, then run focused verifier
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 23 progress: 26/26 sections and 1560/1560 fields
+
+### Session: 2026-07-12 05:25:16Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier tauri_executable_reference_maps: passing - 26 sections, 260 questions, 1560/1560 exact and normalized-unique fields
+- packet uniqueness (test_packet_content_uniqueness): passing - corpus-wide normalized uniqueness holds
+- queue acceptance updater: passing - 119 rows marked complete
+- git diff --check: passing - no whitespace errors
+
+#### Implementation Progress:
+- Evolved all 26 sections around mode-first routing discipline grounded in the local reference map and merged specs reference; mirrored duplicate sources recorded; external URLs left labeled unrefreshed
+
+#### Current Focus:
+Assignment 23 tauri_executable_reference_maps complete: verified, accepted, and reconciled
+
+#### Next Steps:
+- Begin Alpha assignment 24: idiomatic-ref-202607/tdd_progress_journal_schema-20260710.md (116 pending rows)
+
+#### Context Notes:
+- Bounded rereads done in groups of at most five sections; local sources read in full; unclassified-yet copy confirmed byte-identical to legacy specs reference
+
+#### Performance/Metrics:
+- Corpus: 50/99 files fully complete; queue rows 6069/11961 complete, 5892 pending
+
+### Session: 2026-07-12 05:31:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-6: passing - 360/360 exact and normalized-unique fields, 6/26 sections evolved
+
+#### Implementation Progress:
+- Evolved title through external research map: successor-reader contract thesis, mirror-pair source identity (byte-identical 80-line copies confirmed), analogue-not-source framing for the three unretrieved URLs
+
+#### Current Focus:
+Assignment 24 tdd_progress_journal_schema sections 001-006
+
+#### Next Steps:
+- Generate sections 007-009
+
+#### Context Notes:
+- Both local schema copies read in full; external URLs remain unretrieved and labeled
+
+#### Performance/Metrics:
+- Assignment 24 progress: 6/26 sections and 360/1560 fields
+
+### Session: 2026-07-12 05:31:54Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-12: passing - 720/720 exact and normalized-unique fields, 12/26 sections evolved
+
+#### Implementation Progress:
+- Anti-pattern registry gained phaseless-entry and prose-drift rows; gates added entry-completeness scan; usage guide keyed to task shape; journey extended through a resume event; tradeoffs rekeyed to interruption risk; hierarchy records mirror identity preferring 202604 copy
+
+#### Current Focus:
+Assignment 24 sections 007-012
+
+#### Next Steps:
+- Generate sections 013-015
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 12/26 sections and 720/1560 fields
+
+### Session: 2026-07-12 05:32:03Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-18: passing - 1080/1080 exact and normalized-unique fields, 18/26 sections evolved
+
+#### Implementation Progress:
+- Artifact adopts the schema's own dedupe example entry; worked examples recast around entry quality; metrics recentered on resume success and checkpoint staleness; checklist gains field-coverage items; routing replaced keyword stubs with named corpus neighbors; workload rederived as batch-per-entry cadence
+
+#### Current Focus:
+Assignment 24 sections 013-018
+
+#### Next Steps:
+- Generate sections 019-021
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 18/26 sections and 1080/1560 fields
+
+### Session: 2026-07-12 05:32:23Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity sections 1-24: passing - 1440/1440 exact and normalized-unique fields, 24/26 sections evolved
+
+#### Implementation Progress:
+- Reliability adds unbaselined resumability target; failure table gains stale-checkpoint, phase-drift, divergence, and abandoned-journal rows; retry semantics halt on unwritable entries with one reconstruction; observability treats the journal as the instrument; performance measures resume speed vs checkpoint overhead; scale prescribes per-lane sharding
+
+#### Current Focus:
+Assignment 24 sections 019-024
+
+#### Next Steps:
+- Generate sections 025-026, then bounded reread
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 24/26 sections and 1440/1560 fields
+
+### Session: 2026-07-12 05:32:36Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- atomic sanity all 26 sections: passing - 1560/1560 exact and normalized-unique fields, 26/26 sections evolved
+
+#### Implementation Progress:
+- Refresh queries rephrased to agent session-persistence vocabulary; evidence notes add mirror-as-one-source and analogue-downgrade rules
+
+#### Current Focus:
+Assignment 24 sections 025-026 complete; drafting finished
+
+#### Next Steps:
+- Reread evolved reference in groups of at most five sections, then run focused verifier
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 24 progress: 26/26 sections and 1560/1560 fields
+
+### Session: 2026-07-12 05:34:02Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier tdd_progress_journal_schema: passing - PASS: 26 sections, 260 questions, 1560/1560 exact and normalized-unique fields
+- packet uniqueness: passing - corpus-wide uniqueness holds
+- queue acceptance updater: passing - 116 rows marked complete
+- git diff --check: passing - clean
+
+#### Implementation Progress:
+- Evolved all 26 sections around resumability-contract framing grounded in the mirrored 80-line progress-journal-schema source; bounded rereads done in five-section groups
+
+#### Current Focus:
+Assignment 24 tdd_progress_journal_schema complete: verified, accepted, reconciled
+
+#### Next Steps:
+- Begin Alpha assignment 25: idiomatic-ref-202607/writing_skills_validation_patterns-20260710.md (122 pending rows)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 51/99 files fully complete; queue rows 6185/11961 complete, 5776 pending
+
+### Session: 2026-07-12 05:40:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 3/26 sections, 180/180 unique fields, packet-before-reference order held
+
+#### Implementation Progress:
+- Sections 1-3 evolved: TDD-for-skills framing, mirror-aware source mapping, scoreboard rekeyed to baseline/pressure/counter practices
+
+#### Current Focus:
+Assignment 25 writing_skills_validation_patterns in progress
+
+#### Next Steps:
+- Generate sections 4-6 with gen_a25.py then rerun sanity_a25.py
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-12 05:40:56Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 6/26 sections, 360/360 unique fields
+
+#### Implementation Progress:
+- Sections 4-6: thesis restated as observed-behavior-change, source map role split, external rows downgraded to unretrieved analogues
+
+#### Current Focus:
+Assignment 25 sections 4-6 saved
+
+#### Next Steps:
+- Generate sections 7-9
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 6/26 sections, 360/1560 fields
+
+### Session: 2026-07-12 05:41:04Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Sections 7-9: anti-pattern registry gains source-documented failures, verification gates split mechanical vs behavioral, usage guide triggered on skill create/edit/deploy events
+
+#### Current Focus:
+Assignment 25 sections 7-9 saved
+
+#### Next Steps:
+- Generate sections 10-12
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 05:41:13Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 12/26 sections, 720/720 unique fields
+
+#### Implementation Progress:
+- Sections 10-12: journey extended through full baseline-to-bulletproof campaign, tradeoffs rekeyed to skill-type test matrix, hierarchy corrected to co-canonical mirrored pairs
+
+#### Current Focus:
+Assignment 25 sections 10-12 saved
+
+#### Next Steps:
+- Generate sections 13-15
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 12/26 sections, 720/1560 fields
+
+### Session: 2026-07-12 05:41:22Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 15/26 sections, 900/900 unique fields
+
+#### Implementation Progress:
+- Sections 13-15: artifact redefined as campaign record, examples graded by observed-behavior question, metrics recentered on baseline coverage and rationalization recurrence
+
+#### Current Focus:
+Assignment 25 sections 13-15 saved
+
+#### Next Steps:
+- Generate sections 16-18
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-12 05:41:33Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 18/26 sections, 1080/1080 unique fields
+
+#### Implementation Progress:
+- Sections 16-18: checklist gains cycle/pressure/type coverage items, routing rekeyed to real corpus neighbors, workload rebounded around campaigns and convergence
+
+#### Current Focus:
+Assignment 25 sections 16-18 saved
+
+#### Next Steps:
+- Generate sections 19-21
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 18/26 sections, 1080/1560 fields
+
+### Session: 2026-07-12 05:41:43Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 21/26 sections, 1260/1260 unique fields
+
+#### Implementation Progress:
+- Sections 19-21: reliability adds bulletproof-rate target, failure table gains skipped-baseline and reopened-loophole rows, retry semantics keyed to meta-testing on stagnation
+
+#### Current Focus:
+Assignment 25 sections 19-21 saved
+
+#### Next Steps:
+- Generate sections 22-24
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 21/26 sections, 1260/1560 fields
+
+### Session: 2026-07-12 05:41:57Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a25 atomic check: passing - 26/26 sections, 1560/1560 exact and normalized-unique fields, final newlines held
+
+#### Implementation Progress:
+- Sections 22-26: observability recentered on verbatim campaign transcripts, performance on campaign cost vs loopholes caught plus wc -w budgets, scale on sampled re-testing under model churn, refresh queries rephrased to prompt-evaluation vocabulary, evidence notes count mirror pairs as one source
+
+#### Current Focus:
+Assignment 25 drafted: all 26 sections saved
+
+#### Next Steps:
+- Reread evolved reference in groups of at most five sections, then run focused verifier
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 25 progress: 26/26 sections, 1560/1560 fields
+
+### Session: 2026-07-12 05:43:42Z
+
+#### Current Phase: Refactor
+
+#### Tests Written:
+- focused verifier: passing - 26 sections, 260 questions, 1560/1560 exact and normalized unique fields, status PASS
+- test_packet_content_uniqueness: passing - OK across corpus packets
+- queue acceptance: passing - 122 rows updated to complete
+- git diff --check: passing - no whitespace errors
+- full unittest suite: failing - 8 tests, 3 expected incomplete-corpus failures (52/99 files, 6307/11961 rows complete)
+
+#### Implementation Progress:
+- All 26 sections evolved with TDD-for-documentation synthesis from local writing-skills sources; mirror pairs counted as one logical source; external URLs kept unretrieved candidate-only; seed content, tables, and code fences preserved
+
+#### Current Focus:
+Assignment 25 complete: writing_skills_validation_patterns-20260710.md
+
+#### Next Steps:
+- Next Alpha assignment 26: idiomatic-ref-202607/image_generation_prompt_patterns-20260710.md (first pending file in queue order)
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Corpus: 52/99 files complete, 6307/11961 queue rows complete, 5654 pending
+
+### Session: 2026-07-12 05:49:46Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 3/26 sections, 180/180 unique fields, packet-before-reference order held
+
+#### Implementation Progress:
+- Sections 1-3 evolved: two-mode boundary framing, source map annotated shared vs fallback-only, scoreboard rekeyed to spec/invariant/iteration practices; all six local imagegen sources read in full
+
+#### Current Focus:
+Assignment 26 image_generation_prompt_patterns in progress
+
+#### Next Steps:
+- Generate sections 4-6 with gen_a26.py then rerun sanity_a26.py
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 3/26 sections, 180/1560 fields
+
+### Session: 2026-07-12 05:49:58Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 9/26 sections, 540/540 unique fields
+
+#### Implementation Progress:
+- Sections 4-9: thesis restated as spec-plus-specificity-discipline, source map role split with fallback quarantine, external rows downgraded to unretrieved candidates, anti-pattern registry gains skill-documented failures, gates split mechanical (--dry-run) vs visual inspection, usage guide keyed to generate/edit/batch events
+
+#### Current Focus:
+Assignment 26 sections 4-9 saved
+
+#### Next Steps:
+- Generate sections 10-12
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 9/26 sections, 540/1560 fields
+
+### Session: 2026-07-12 05:50:11Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 15/26 sections, 900/900 unique fields
+
+#### Implementation Progress:
+- Sections 10-15: journey extended through spec-to-workspace delivery, tradeoffs rekeyed to specificity/intent/destination, hierarchy made mode-conditional, artifact redefined as labeled-spec instance, examples graded by augmentation and invariant conduct, metrics recentered on iterations and stranded assets
+
+#### Current Focus:
+Assignment 26 sections 10-15 saved
+
+#### Next Steps:
+- Generate sections 16-18
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 15/26 sections, 900/1560 fields
+
+### Session: 2026-07-12 05:50:25Z
+
+#### Current Phase: Green
+
+#### Tests Written:
+- sanity_a26 atomic check: passing - 21/26 sections, 1260/1260 unique fields
+
+#### Implementation Progress:
+- Sections 16-21: checklist gains mode/tree/specificity/save-path coverage, routing to local_vision_media_patterns and tdd_progress_journal_schema, workload rebounded around calls and batch concurrency, reliability adds text-verbatim and invariant targets, failure table gains drift/text/stranded/mode rows, retry semantics keyed to single-change deltas
+
+#### Current Focus:
+Assignment 26 sections 16-21 saved
+
+#### Next Steps:
+- Generate sections 22-26
+
+#### Context Notes:
+- (none recorded)
+
+#### Performance/Metrics:
+- Assignment 26 progress: 21/26 sections, 1260/1560 fields
