@@ -2394,6 +2394,10 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - **Minimal service record.** One correlation identifier propagated through every layer and into worker handoffs; worker state transitions visible to operators; readiness separate from liveness; a secret-redaction check in review; error, timeout, retry and saturation counts. Trace sampling is acceptable on high-volume reads; keep mutations unsampled.
 - **Performance: audit four mechanisms before reading latency numbers.** Pool and client reuse, transaction scope, inline-or-worker placement, and fan-out. Per-request client construction adds connection setup to every call; a transaction spanning a remote call serializes the pool; inline fan-out holds connections open. Then measure p95 and p99 on representative handlers against the SLO.
 
+- **Fix the mechanism, not the symptom.** Do not add a cache over an endpoint whose pool is exhausted by held transactions; move the remote call after the commit. Averages hide the tail: one blocking credential hash on the async executor stalls every request sharing that worker thread.
+- **Latency gate.** Require a service-specific SLO before deployment. Without one, hold representative handlers to p95 under 200 ms and p99 under 500 ms locally, or document why latency does not apply.
+- **Scale seams are design events.** Traffic growth re-triggers the worker-split question. A second instance or a rolling deploy makes multi-step schema evolution mandatory: never ship a strict-constraint migration in one step. Moving work behind a worker adds queue tables whose schema changes then need sequencing. Several independent services are beyond single-service rules.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
