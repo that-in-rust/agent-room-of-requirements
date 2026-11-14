@@ -479,6 +479,48 @@ Fatal anti-patterns; do not ship code with these:
 
 ## 14. Rust web backends
 
+This section applies to Rust HTTP backends and APIs (Actix, Axum or similar). For generic libraries, CLIs, parsers, protocol crates and FFI boundaries use sections 1 to 13 instead.
+
+### Backend work modes
+
+| Mode | Use for |
+| --- | --- |
+| Spec Mode | Vague backend requests, missing acceptance criteria, or greenfield service work that needs `REQ-WEB-*` contracts first |
+| Delivery Mode | Endpoints, app state, persistence, external integrations and implementation sequencing |
+| Operations Mode | Configuration, secrets, tracing, CI, Docker, deployment, migrations and rollout safety |
+| Security Mode | Validation, credentials, password handling, session and cookie flows, reset flows and anti-enumeration behavior |
+| Resilience Mode | Retries, idempotency, timeout handling, transactions, external API failures and background workers |
+| Review Mode | Backend reviews where the question is production readiness, not generic Rust style |
+
+Default combinations:
+
+- new endpoint or feature: Spec + Delivery
+- auth or session work: Spec + Security
+- migration or deployment work: Delivery + Operations
+- external integration or idempotent workflow: Delivery + Resilience
+- backend review: Review + one or more of Security, Operations, Resilience
+
+### Backend workflow
+
+1. **Classify the task and choose modes.** Name the service slice first: endpoint, auth flow, external API client, migration, deployment, worker flow, or review. Decide whether the main risk is ambiguity, delivery sequencing, operational safety, security or resilience.
+2. **Write executable requirements** as `REQ-WEB-<NNN>.<REV>` in `WHEN ... THEN ... SHALL` form. Reject "faster", "safer" or "more reliable" without a threshold or an observable outcome.
+3. **Design the service boundaries before coding.** Separate the request handler, application state, domain types, persistence boundary and external integration boundary. Prefer typed inputs and typed domain objects over raw strings or loosely shaped payloads crossing several layers. Decide early which work stays inline in the request and which is handed to durable background processing.
+4. **Choose the verification mix:** unit, integration, spawned-app tests, database-backed tests, HTTP mock tests, property tests, migration tests and rollout checks. Prefer integration-first coverage for endpoint behavior, wiring and persistence side effects.
+5. **Apply the backend delivery rules** (below).
+6. **Run delivery and operational gates before handoff:** format, lint, tests and build pass; every requirement is covered; non-functional claims have measurable evidence; migration and rollout safety is reviewed whenever schema or deployment behavior changes.
+
+Output order: Backend Work Mode, Executable Requirements, Service Design, Verification Matrix, Implementation Plan, Quality Gates, Open Questions. Traceability table columns: `req_id | test_id | test_type | assertion | target`.
+
+### Backend delivery rules
+
+- Keep domain validation out of transport-only types. Transport validation is not the whole validation story; keep domain invariants explicit.
+- Keep secrets redacted and configuration layered by environment.
+- Treat tracing, request correlation, health checks and failure classification as design concerns, not polish.
+- Treat idempotency, retries and transaction scope as correctness problems whenever external systems are involved.
+- Do not handle work synchronously in the request when it needs durable retries, deduplication or long-running external calls, unless the tradeoff is stated.
+- Do not design password or session flows without addressing storage, failure behavior and async-safe verification boundaries.
+- Do not treat deployment and migrations as postscript tasks when schema or background workflow behavior changes.
+
 ## 15. Tauri desktop apps
 
 Tauri work is neither only frontend work nor only Rust work. Decide what must be specified, what must be designed across the frontend, command, Rust core and desktop boundaries, and what must be verified. Where Tauri-specific security or lifecycle guidance conflicts with a generic Rust default, the Tauri guidance wins.
