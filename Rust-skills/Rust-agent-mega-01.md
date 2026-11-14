@@ -167,6 +167,8 @@ pub trait EntityProcessorBehavior {
 }
 ```
 
+- Keep domain logic testable without network, database or runtime dependencies.
+
 ## 5. Verification and test-first delivery
 
 ### Verification selection matrix
@@ -199,6 +201,8 @@ STUB -> RED -> GREEN -> REFACTOR -> VERIFY
 Cover unit, integration, error-path and concurrency cases. Add performance tests only when a metric is specified.
 
 In STUB, write one or more tests per requirement id and define the interface signatures and fixtures.
+
+For each requirement cover the happy path, the error path and the edge path. Add property-based tests for invariant-heavy logic and integration tests for cross-module workflows.
 
 ### Test matrix example
 
@@ -273,9 +277,18 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
 - Accept `&[T]`, `&str` or `AsRef` in public APIs, not `&Vec<T>` or `&String`.
 - Use newtypes for domain identifiers and invariants.
 
+- Use `AsRef<T>` where ergonomic conversions improve call sites.
+- Use `From` for infallible conversions and `TryFrom` for fallible ones.
+- Model domain states with enums and domain types so invalid states cannot be built.
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
+
+- Prefer borrowing over cloning in hot paths.
+- Use iterator pipelines for data transforms when they improve clarity.
+- Keep lock scope small and explicit.
+- Use `Arc` for shared ownership across threads and `Rc` for single-threaded sharing.
 
 ## 8. Errors and recovery
 
@@ -284,10 +297,18 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
 - Use `thiserror` for library error enums and `anyhow` at application composition boundaries.
 - No `unwrap` or `expect` in production paths.
 
+- Propagate errors with `?` and attach context at I/O and boundary operations.
+
 ## 9. Async and concurrency
 
 - Never block inside async code, and never hold a lock guard across `.await`.
 - Prefer bounded concurrency and cancellation-aware code.
+
+- Move CPU-bound or blocking work off the executor with `spawn_blocking`.
+- Do not hold `Mutex` or `RwLock` guards across `.await`.
+- Use bounded channels for backpressure.
+- Give long-running async operations a cancellation path.
+- Validate shared-state behavior with concurrent stress tests.
 
 ## 10. Unsafe and FFI
 
@@ -305,6 +326,10 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
 
 - Apply the same naming clarity to new crates, folders and top-level commands when creating or renaming them is practical.
 - When an existing public API cannot be renamed, keep it and add an adapter.
+
+- Keep rustdoc examples executable and aligned with current behavior.
+- Use structured tracing at system boundaries in async services.
+- Never log secrets or sensitive payloads.
 
 ## 13. Anti-patterns
 
@@ -467,3 +492,9 @@ Questions to answer in any review or before handoff:
 - Which types and invariants belong in L1 instead of leaking into adapters?
 - Which risk deserves doctest, compile-fail, property, fuzz, `loom` or `Miri` coverage?
 - Which public names must stay stable even if a cleaner new alias exists?
+
+- Does this API expose concrete containers unnecessarily?
+- Are error variants actionable and contextualized?
+- Are any locks or borrows held too long?
+- Does async code block the runtime?
+- Do tests prove every major claim in the implementation?
