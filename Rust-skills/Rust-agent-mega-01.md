@@ -1632,6 +1632,146 @@ pub fn run() {
 - A second launch should focus or route to the existing main window.
 - The plugin has no JavaScript API; drive it from Rust lifecycle code.
 
+**Deep links with single instance**
+
+```rust
+use tauri_plugin_deep_link::DeepLinkExt;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|_app, argv, _cwd| {
+            println!("new instance argv: {argv:?}");
+        }));
+    }
+
+    builder
+        .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            #[cfg(any(windows, target_os = "linux"))]
+            {
+                app.deep_link().register_all()?;
+            }
+
+            if let Some(urls) = app.deep_link().get_current()? {
+                println!("startup deep links: {urls:?}");
+            }
+
+            app.deep_link().on_open_url(|event| {
+                println!("deep link URLs: {:?}", event.urls());
+            });
+
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+```json
+{
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["my-tauri-app"]
+      }
+    }
+  }
+}
+```
+
+- When combining with deep links, register single-instance first.
+- On Linux and Windows, `register_all()` is useful in development and for AppImage-style environments.
+- Validate the deep-link format even after scheme matching; users can pass fake-looking arguments manually.
+- Runtime-registered schemes require manual argument inspection for safety.
+- If the frontend listens for deep-link events, capabilities usually need `core:event:default` plus `deep-link:default`.
+
+**CLI contract**
+
+```json
+{
+  "plugins": {
+    "cli": {
+      "description": "My app CLI",
+      "args": [
+        {
+          "short": "v",
+          "name": "verbose",
+          "description": "Verbosity level"
+        }
+      ],
+      "subcommands": {
+        "run": {
+          "description": "Run the application",
+          "args": [
+            { "name": "debug", "description": "Run in debug mode" },
+            { "name": "release", "description": "Run in release mode" }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+```rust
+use tauri_plugin_cli::CliExt;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_cli::init())
+        .setup(|app| {
+            if let Ok(matches) = app.cli().matches() {
+                println!("{matches:?}");
+            }
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+- Define root args and subcommands under `plugins.cli` and read them through the plugin API; do not invent ad hoc argument parsing.
+- Use `app.cli().matches()` in Rust or `getMatches()` in JavaScript.
+- Add the `cli:default` capability if the frontend needs the CLI matches.
+- On Windows, production apps cannot reliably write text back to the calling console by default, so do not design critical flows around stdout output.
+
+**Window-state restore**
+
+```rust
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .setup(|app| {
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_window_state::Builder::default().build());
+
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+```typescript
+import { saveWindowState, StateFlags } from '@tauri-apps/plugin-window-state';
+
+await saveWindowState(StateFlags.ALL);
+```
+
+- Initialize the window-state plugin on desktop targets.
+- Add the `window-state:default` capability when using its guest APIs.
+- To avoid a visual flash during restore, create the window with `visible: false` and let restoration show it.
+- Use explicit save and restore when window persistence is part of workflow correctness, not just convenience.
+
+**The five boundaries**
+
+Tauri reliability mostly comes from getting these boundaries right: the Rust command boundary, the window capability boundary, the filesystem scope boundary, the sidecar process boundary and the persistence size boundary. Make each explicit, typed and least-privilege.
+
 ### Tauri TDD-first checks
 
 - Write or update typed boundary tests before widening the command surface.
