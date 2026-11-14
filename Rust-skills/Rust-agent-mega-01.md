@@ -2384,6 +2384,11 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - **Delivery speed is not the measure.** An inline remote call demos faster than a worker split until the first duplicated payment. When a layer keeps collecting incidents, its boundary is drawn in the wrong place.
 - **Routing.** Libraries, CLIs, parsers, protocol crates and FFI follow the general Rust rules, not the backend rules. The costly misroute is the reverse: a web service reviewed as a generic library, so sessions, migrations and idempotency go unexamined. Worker and queue questions are backend questions.
 
+- **Backend reliability targets, audited per release:** zero unowned transactions; zero repeatable writes without an idempotency definition; zero unclassified remote failure paths; a working rollback after every rollout step. All four are reviewable before deployment. High unit coverage does not show any of them. A waiver for an additive-only schema change is recorded against the sequencing rule.
+- **Ambiguity is not caught by deterministic tests.** A timeout or crash that leaves a workflow in an undefined state passes every test and fails only under production timing. Kill a worker mid-workflow on staging and check the observable state transitions.
+- **Three ways backend discipline decays.** Boundary erosion: business rules drift back into handlers; catch it with a lint for SQL in handlers and review. Split debt: an inline call that was correct at ten requests a day duplicates side effects at ten thousand though the diff never changed; re-check the worker-split criteria as traffic grows. Sequencing violations: schema and code shipped in an order that works on one instance and fails in a rolling deploy; require a sequencing plan with every migration. A slow call kept inline needs its tradeoff note, or it is indistinguishable from debt.
+- **Before rollout, plan for a request surge:** rate limits, queue bounds, cancellation and a rollback procedure for when traffic exceeds handler or pool limits.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
