@@ -32,16 +32,39 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - Do not recommend unsafe, lock-free or proc-macro-heavy designs as defaults; use them only when the task truly requires them.
 - Stay skeptical about: malformed input, non-UTF-8 boundaries, backpressure, cancellation, semver surface changes, and detached task lifecycles.
 
+### Priorities by task type
+
+| Task type | Prioritize |
+| --- | --- |
+| Library or public API | Borrowed inputs and explicit conversions; newtypes and invalid-states-unrepresentable design; typed library errors; semver-safe surface design; doctest and compile-fail coverage for misuse contracts |
+| CLI or binary | Explicit requirement contracts for user-visible behavior; actionable diagnostics; `ExitCode` or equivalent boundary behavior; integration tests and release gates |
+| Async service or backend | L1/L2/L3 separation; typed boundary parsing and context layering; no blocking and no lock guards across `.await`; bounded concurrency, cancellation and shutdown behavior; stress, property or `loom` coverage when shared state is involved |
+| Parser or protocol boundary | Panic-free parsing and slicing; binary-safe diagnostics for non-UTF-8 paths; property tests, fuzzing and round-trip guarantees; explicit ownership and allocation choices |
+| FFI or unsafe boundary | Minimal unsafe surface; explicit invariant documentation; layout, nullability and unwind boundary discipline; `Miri` or equivalent verification when possible |
+| Review or hardening pass | Misuse resistance; error surface clarity; cancellation and lifecycle ownership; anti-pattern detection; final gate completeness |
+
+### Default reliability stack
+
+If you do not know what to prioritize, work down this list:
+
+1. Model invariants with newtypes, enums and explicit conversions.
+2. Keep library errors typed and application errors contextual.
+3. Make async code cancel-safe, bounded and non-blocking.
+4. Remove panic edges from parsing, slicing and boundary arithmetic.
+5. Turn examples, invariants and misuse cases into tests.
+6. Keep unsafe small, justified and verified.
+7. Make observability and secret discipline part of the design.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
 
 | Mode | Use when |
 | --- | --- |
-| Spec Mode | The request is vague, acceptance criteria are missing, success is not measurable yet, or the work needs `REQ-RUST-*` contracts first |
+| Spec Mode | The request is vague, acceptance criteria are missing, success is not measurable yet, or the work needs `REQ-RUST-*` contracts first. Emphasis: requirement contracts, acceptance criteria, traceability |
 | Delivery Mode | The task needs layer boundaries, trait seams, TDD order, decomposition and implementation sequencing |
-| Reliability Mode | The main risk is public API design, error surfaces, async and cancellation, concurrency, diagnostics, unsafe, FFI or release hardening |
-| Review Mode | The task is a code or design review, and the question is whether the Rust will stay safe, diagnosable and maintainable under change |
+| Reliability Mode | The main risk is correctness under stress or change: public API design, error surfaces, async and cancellation, concurrency, diagnostics, unsafe, FFI or release gates |
+| Review Mode | The task is a code or design review or a hardening pass. Emphasis: anti-patterns, diagnostics, semver, misuse resistance |
 
 Default combinations:
 
@@ -73,15 +96,80 @@ Trace every requirement to a test in a concise table:
 - Express behavior as `WHEN ... THEN ... SHALL`.
 - A requirement without a measurable threshold or an observable effect is not a requirement yet; send it back.
 
+### Requirement contract template
+
+```markdown
+### REQ-RUST-001.0: <short title>
+
+**WHEN** <trigger or input condition>
+**THEN** the system SHALL <primary behavior>
+**AND** SHALL <secondary measurable behavior>
+**SHALL** <edge-case or default behavior>
+```
+
+- Keep each `SHALL` independently testable.
+- Use explicit units for latency, memory, throughput, retries and concurrency limits.
+- Split requirements; do not stack unrelated behavior into one clause.
+
 ## 4. Architecture and boundaries
 
-- Separate code into three layers: **L1 core** (pure domain logic), **L2 std** (standard-library facilities), **L3 external** (third-party crates and the outside world).
+Plan the design before coding.
+
+| Layer | Role | Question to ask |
+| --- | --- | --- |
+| L1 Core | Invariants, types, traits, protocol and state rules | What must stay runtime-agnostic and easy to trust? |
+| L2 Std | Collections, ownership orchestration, iterator and sync composition | What belongs in Rust std without framework coupling? |
+| L3 External | Runtime, database, HTTP, serialization, tracing, FFI adapters | What touches the outside world and should stay behind traits or adapters? |
+
 - Keep L3 dependencies out of L1.
-- Define trait seams before concrete adapters when substitution or testability matters.
+- Push validated types and invariants as low in the stack as practical.
+- Add trait seams around time, randomness, storage, transport and runtime integration when substitution matters.
+
+### Trait-first design
+
+Define the trait before the concrete adapter when the task needs test doubles or integration seams, when public behavior should be settled before storage or transport details, or when infrastructure dependencies would otherwise leak into core logic.
+
+```rust
+pub trait EntityStoreBehavior {
+    fn load_entity_by_id(
+        &self,
+        entity_id: EntityId,
+    ) -> Result<Option<StoredEntity>, EntityStoreError>;
+}
+
+pub struct EntityProcessorService<S: EntityStoreBehavior> {
+    store: std::sync::Arc<S>,
+}
+```
 
 ## 5. Verification and test-first delivery
 
-Pick the verification mix from: unit, integration, doctest, compile-fail, property, fuzz, `loom`, `Miri`, performance, and coverage gates. Choose by risk surface.
+### Verification selection matrix
+
+| Verification type | Choose it when |
+| --- | --- |
+| unit | Behavior is local and deterministic |
+| integration | Behavior crosses module or adapter boundaries |
+| doctest | Public examples are part of the contract |
+| compile-fail | Misuse contracts should fail at compile time |
+| property | Invariants or round trips matter more than examples |
+| fuzz | A parser, decoder, protocol or input frontier is risky |
+| `loom` | Small concurrent state models need interleaving exploration |
+| `Miri` | Unsafe, aliasing or UB-risking logic needs extra scrutiny |
+| performance | Latency or memory thresholds were explicitly stated |
+| coverage | Higher-risk changes need stronger release confidence |
+
+### TDD loop
+
+```text
+STUB -> RED -> GREEN -> REFACTOR -> VERIFY
+```
+
+- **STUB:** write the tests and the expected interface first.
+- **RED:** confirm the failure matches the missing behavior.
+- **GREEN:** implement the minimum code that satisfies the test.
+- **REFACTOR:** improve decomposition, ownership and naming while staying green.
+- **VERIFY:** run all chosen gates and confirm requirement traceability.
 
 ## 6. Types and API design
 
@@ -110,7 +198,23 @@ Pick the verification mix from: unit, integration, doctest, compile-fail, proper
 - Preserve public API compatibility when a rename is risky.
 - Keep modules cohesive and docs synchronized with behavior.
 
+- Treat Mermaid diagrams as a documentation convention only when the project already expects them.
+
 ## 13. Anti-patterns
+
+Reject these by default:
+
+- vague requirements with no measurable assertions
+- public APIs that accept `&Vec<T>` or `&String`
+- library APIs that return `anyhow::Error`
+- `unwrap()` or `expect()` in production paths without an invariant story
+- blocking work directly on async executors
+- holding locks or mutable borrows across `.await`
+- unbounded channels in high-throughput or long-lived paths
+- byte-processing code that assumes all input is UTF-8
+- detached tasks with no lifecycle ownership
+- concurrency code that has never been stress-tested or modeled
+- L3 dependencies leaking into L1 core
 
 ## 14. Rust web backends
 
@@ -160,4 +264,28 @@ Output order: Tauri Work Mode, Executable Requirements, Tauri Design (Frontend/I
 
 ## 16. Quality gates and commands
 
+Required command gates:
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-targets --all-features
+cargo build --all-targets --all-features
+```
+
+Optional advanced gates:
+
+```bash
+cargo test --release
+cargo llvm-cov --workspace --branch --fail-under-lines 75
+```
+
 ## 17. Review checklist
+
+Questions to answer in any review or before handoff:
+
+- Which mode or combination of modes is active?
+- What is the smallest set of `REQ-RUST-*` contracts that makes the work testable?
+- Which types and invariants belong in L1 instead of leaking into adapters?
+- Which risk deserves doctest, compile-fail, property, fuzz, `loom` or `Miri` coverage?
+- Which public names must stay stable even if a cleaner new alias exists?
