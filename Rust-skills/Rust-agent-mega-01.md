@@ -2402,6 +2402,8 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 
 - **Re-classify mid-task.** When a delivery task uncovers an auth or durability question, treat it as a new risk and apply that risk's rules before continuing. Risk rules consulted after the code is written arrive too late. Checking too much wastes minutes; checking too little ships unexamined risk, so when unsure check more.
 
+- **A task that resists quick classification is compound.** Split it into slices that each classify cleanly (for example a migration-plus-worker ticket becomes two). When the guidance you applied did not answer the task, re-classify with the new information before re-reading the same material.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
