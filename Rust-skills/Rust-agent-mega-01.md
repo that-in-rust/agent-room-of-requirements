@@ -1045,6 +1045,17 @@ serde = ["dep:serde"]
 fast = []
 ```
 
+- **Explicit patterns under the 2024 edition:**
+
+```rust
+// Before (implicit, may lint under 2024)
+match &opt { Some(x) => {/*...*/}, _ => {} }
+// After (explicit)
+match opt.as_ref() { Some(x) => {/*...*/}, None => {} }
+```
+
+- **Associated types.** Prefer `type Output;` to an extra generic parameter when the output is fixed by the implementor.
+
 ### Macros and build scripts
 
 - **Choose the flavor.** Derive to generate impls from type structure; attribute macros to transform or wrap items; function-like macros for DSLs. Do not write a proc macro where `macro_rules!` suffices, or heavy proc-macro logic that could run in `build.rs`.
@@ -1082,6 +1093,17 @@ fn main() {
 // lib.rs
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 ```
+
+- **Build-script directives.** Narrow rebuilds with `cargo::rerun-if-changed` and `cargo::rerun-if-env-changed`, link with `cargo::rustc-link-lib` and `cargo::rustc-link-search`, and declare custom cfgs with `cargo::rustc-check-cfg`.
+
+```rust
+// build.rs
+println!("cargo::rerun-if-changed=wrapper.h");
+println!("cargo::rustc-link-lib=static=foo");
+println!("cargo::rustc-check-cfg=cfg(has_foo)");
+```
+
+- **Proc-macro crates** set `proc-macro = true` under `[lib]`.
 
 ## 7. Ownership, borrowing and data handling
 
@@ -1170,6 +1192,14 @@ write.insert("k", 1);
 write.refresh();
 assert_eq!(read.get_and("k", |v| v.iter().copied().collect::<Vec<_>>()), Some(vec![1]));
 ```
+
+```rust
+let mut v = Vec::with_capacity(1024);
+use indexmap::IndexMap; let mut im = IndexMap::new();
+use std::collections::BinaryHeap; let h = BinaryHeap::from(vec![3,1,4]);
+```
+
+Repeatedly pushing ascending values into a `BinaryHeap` is its slow path; build it from a `Vec`.
 
 ### Smart pointer decision matrix
 
@@ -1623,6 +1653,35 @@ trait Sub: Super {}
 fn take_super(x: &dyn Sub) -> &dyn Super { x }
 ```
 
+- **Nullability at the boundary.** A `&T` or `&mut T` is never null. Keep `unsafe` at the boundary and wrap it in safe APIs.
+
+```rust
+use core::ptr::NonNull;
+#[no_mangle]
+pub extern "C" fn api(cb: Option<extern "C" fn(i32)>) -> i32 { if let Some(f) = cb { f(1); } 0 }
+// Nullable pointer field
+type MaybeBuf = Option<NonNull<u8>>;
+```
+
+- **Alignment and packing.** `#[repr(align(N))]` raises alignment, for cache lines for example. `#[repr(packed(n))]` creates unaligned fields: access them through raw pointers only, never take a reference to one, and do not combine `align` with `packed`.
+
+```rust
+#[repr(align(64))]
+struct CacheLine([u8; 64]);
+```
+
+- **Enum discriminants.** Use `#[repr(u8)]` for C-like enums in FFI or wire formats, and inspect discriminants with `mem::discriminant`.
+- **The `-sys` crate pattern.** Put raw bindings in `foo-sys` with `package.links = "foo"` and link metadata from its build script; a separate crate depends on it and exposes the safe API. Do not mix raw FFI and the safe wrapper in one crate.
+
+```toml
+# Cargo.toml
+[package]
+links = "foo"
+
+[build-dependencies]
+cc = "*"
+```
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -1676,6 +1735,23 @@ command_matcher! {
 }
 ```
 
+### Allocator and build-time optimization
+
+- **Global allocator.** Switch to jemalloc or mimalloc only when allocator behavior is a measured bottleneck; measure throughput, latency and RSS.
+
+```rust
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+```
+
+- **LTO, PGO and inlining.** Enable ThinLTO or fat LTO in release after measuring compile time and size; use `cargo-pgo` for profile-guided optimization; put `#[inline]` on tiny hot wrappers only, never blanket `inline(always)`.
+
+```toml
+[profile.release]
+lto = "thin"
+codegen-units = 1
+```
+
 ### Caching and data processing
 
 - **Caches.** `moka::Cache` for concurrent TTL/LRU caching; `cached` macros for function memoization. Bound the size and TTL; never cache non-deterministic results.
@@ -1702,6 +1778,8 @@ let out = df.lazy()
     .agg([col("b").sum()])
     .collect()?;
 ```
+
+- **In-memory analytics.** Arrow with DataFusion gives columnar, vectorized SQL; do not convert Arrow data to row structs early.
 
 ### Benchmark harness (criterion)
 
@@ -1980,6 +2058,68 @@ async fn create_user(
     Ok(ResponseJson(user))
 }
 ```
+
+### Configuration, storage and messaging choices
+
+- **Layered configuration.** Defaults, then files, then environment, deserialized into one typed struct through a central builder (`config`, `dotenvy` in development, `envy`). Document precedence; do not hand-parse env or scatter config reads.
+
+```rust
+#[derive(serde::Deserialize)]
+struct Settings { db_url: String, workers: usize }
+let mut cfg = config::Config::builder()
+    .set_default("workers", 4)?
+    .add_source(config::File::with_name("Config").required(false))
+    .add_source(config::Environment::default())
+    .build()?;
+let s: Settings = cfg.try_deserialize()?;
+```
+
+- **Diesel.** Compile-time checked queries with `diesel_cli` migrations; keep the generated `schema.rs` in sync and do not fall back to string queries.
+- **Embedded key-value stores.** RocksDB: LSM, high write throughput, needs tuning. Sled: pure Rust, single process, may use more space. LMDB: memory-mapped, strong read throughput, multi-process, one writer at a time. Measure space and write amplification before choosing.
+- **Messaging.** NATS for simple pub/sub, with JetStream for at-least-once; Kafka (`rdkafka`) for partitions and consumer groups; Pulsar for topic partitioning with an async API. Bound consumers, make handlers idempotent with dedupe keys, and do not assume exactly-once.
+- **JetStream.** Durable consumers with explicit acks, sized ack waits and bounded pull batches.
+
+```rust
+// sync nats crate example (JetStream)
+let nc = nats::connect("nats://127.0.0.1:4222")?;
+let js = nats::jetstream::new(nc);
+js.add_stream(nats::jetstream::StreamConfig {
+    name: "events".into(), subjects: vec!["events.*".into()], ..Default::default()
+})?;
+let mut sub = js.subscribe("events.foo")?; // durable can be configured via consumer APIs
+js.publish("events.foo", "hello")?;
+if let Some(msg) = sub.next() { msg.ack()?; }
+```
+
+- **Kafka.** Use `StreamConsumer` with async and `FutureProducer` for backpressure-aware sends; choose manual or auto commit explicitly; handle rebalances; no synchronous commits on the hot path.
+
+```rust
+use rdkafka::{ClientConfig, consumer::{CommitMode, StreamConsumer}, message::BorrowedMessage};
+use futures::StreamExt;
+let consumer: StreamConsumer = ClientConfig::new()
+  .set("group.id", "g1").set("bootstrap.servers", "localhost:9092")
+  .create()?;
+consumer.subscribe(&["input"])?;
+let mut stream = consumer.stream();
+while let Some(Ok(m)) = stream.next().await {
+    handle(&m.payload().unwrap_or(&[]));
+    consumer.commit_message(&m, CommitMode::Async)?;
+}
+```
+
+- **Redis.** Pool connections with `deadpool-redis`; take short-lived connections, set timeouts and a maximum size, and do not hold one across long await chains.
+
+```rust
+use deadpool_redis::{Config, Runtime};
+use redis::AsyncCommands;
+let cfg = Config::from_url("redis://127.0.0.1/");
+let pool = cfg.create_pool(Some(Runtime::Tokio1))?;
+let mut conn = pool.get().await?;
+conn.set::<_, _, ()>("k", "v").await?;
+let v: String = conn.get("k").await?;
+```
+
+- **Search.** Use the official OpenSearch or Elasticsearch client with typed bodies or `serde_json::json!`; handle 429 with backoff, set timeouts, and chunk bulk requests.
 
 ## 15. Tauri desktop apps
 
@@ -3427,6 +3567,37 @@ SQLx migrations and offline mode: manage schema with the CLI, and prepare offlin
 ```sh
 sqlx migrate add init
 sqlx migrate run --database-url=${DATABASE_URL}
+```
+
+Pin the toolchain per project:
+
+```toml
+# rust-toolchain.toml
+[toolchain]
+channel = "1.80.1"
+components = ["rustfmt", "clippy"]
+```
+
+Workspaces share one `Cargo.lock` and `target`; keep profiles at the root, and put aliases and offline mode in `.cargo/config.toml`:
+
+```toml
+# .cargo/config.toml
+[alias]
+c = "check --workspace"
+[net]
+offline = true
+```
+
+Coverage in CI: emit lcov or JSON, and exclude generated and build directories with `--ignore-filename-regex`.
+
+```sh
+cargo llvm-cov --all-features --workspace --branch --fail-under-lines 75
+```
+
+Fuzzing setup; seed RNGs for determinism in CI and minimize failing inputs:
+
+```sh
+cargo fuzz init && cargo fuzz add parse && cargo fuzz run parse
 ```
 # deny.toml
 [licenses]
