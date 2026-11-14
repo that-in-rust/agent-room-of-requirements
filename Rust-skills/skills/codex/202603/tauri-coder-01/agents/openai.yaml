@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tauri Reliability"
+  short_description: "Reliability-first Tauri coding guide"
+  default_prompt: "Use $tauri-coder-01 to implement or refactor reliable Tauri code with least-privilege capabilities, serializable command errors, and safe desktop lifecycle patterns."

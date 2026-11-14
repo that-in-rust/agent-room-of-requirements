@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tauri Executable Specs"
+  short_description: "Spec-first Tauri delivery and security"
+  default_prompt: "Use $tauri-executable-specs-01 to turn this Tauri request into executable requirements, a Tauri design, and a reliability-aware implementation plan."
