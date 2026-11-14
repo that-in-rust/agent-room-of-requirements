@@ -658,6 +658,8 @@ let round: My = from_bytes(written)?;
 - **Transport, domain, persistence separation.** Transport DTOs, then domain commands and values, then persistence rows and queries. Convert at the edge, enforce invariants in domain types, isolate storage specifics in adapters. Costs more conversion code; buys stronger invariants and clearer failure location.
 - **Workspace layering by change boundary.** Core domain crates, adapter crates, binary or command crates, optional proc-macro or tooling crates. Split by stable responsibility and dependency direction, not by file count or chronology. Check the workspace graph and dependency direction.
 - **Stable external API over composed internals.** Callers depend on a narrow contract while internal modules compose interchangeable engines or strategies chosen by the implementation. Fits parser engines, search and index systems, storage adapters, planners and performance-critical libraries. Buys optimization freedom and lower SemVer pressure.
+
+- **Tauri split.** Frontend UI, then a typed IPC contract, then Rust core and workflows, then the capability and sidecar boundary. Use typed command modules, managed state, explicit permissions and explicit sidecar ownership. Verify with command tests, a permission review, sidecar lifecycle tests and startup and restore checks.
 # .cargo/config.toml
 [build]
 target = "thumbv7em-none-eabihf"
@@ -1513,6 +1515,27 @@ struct ParseErr {
 fn parse(_s: &str) -> Result<()> { Err(ParseErr { src: "x+y".into(), span: (2..3).into() }.into()) }
 ```
 
+### Error and recovery taxonomy
+
+| Error class | Typical boundary | Recovery | Representation | Required tests |
+| --- | --- | --- | --- | --- |
+| validation | parse or input edge | reject with explicit reason | typed parse or domain validation error | malformed input cases |
+| business rule | domain workflow | reject with precise outcome | named domain error or outcome enum | behavior tests |
+| transient external | network, storage, subprocess, queue | retry, degrade or reschedule | retryable metadata or dedicated variant | retry behavior |
+| permanent external | auth, contract or schema mismatch | fail fast, escalate or surface a repair action | typed permanent error | non-retry behavior |
+| internal invariant breach | core domain | impossible by construction, or fail fast | impossible state or tightly scoped panic | invariant tests |
+| timeout | async orchestration | fail, retry or cancel explicitly | timeout-aware typed error | timeout tests |
+| cancellation | task or workflow boundary | cooperative stop with clear ownership | explicit cancel-aware path | cancel tests |
+| backpressure or overload | queue, worker pool, stream | reject, shed, buffer or bounded wait | explicit saturation result | overload tests |
+| FFI or unsafe boundary | ABI or memory ownership boundary | convert, abort or isolate | safe wrapper error contract | harness and invariant tests |
+| cleanup or teardown | close or shutdown boundary | explicit close, best-effort drop, or escalate | typed close error or shutdown result | close-path and teardown tests |
+| dependency leakage | public library surface | wrap, translate or deliberately re-export | local facade type | SemVer and downstream compile review |
+
+- An error message answers what failed, where, and what the caller or operator should do next.
+- If the caller must branch on an error, expose stable structured information. If the caller mostly propagates it, prefer an opaque error with context.
+- Binary or non-UTF-8 input boundaries stay diagnosable without assuming text.
+- Box or layer large cold-path error payloads so they do not bloat hot-path `Result` values.
+
 ## 9. Async and concurrency
 
 - Never block inside async code, and never hold a lock guard across `.await`.
@@ -1841,6 +1864,34 @@ loom::model(|| {
     assert_eq!(n.load(Relaxed), 2);
 });
 ```
+
+### Cancellation, backpressure and primitive choice
+
+Primitive choice:
+
+| Concern | Primitive | Use when | Avoid when |
+| --- | --- | --- | --- |
+| producer to workers | bounded `mpsc` | buffering must be explicit and backpressure matters | consumers need replay or state snapshots |
+| latest state | `watch` | only the latest value matters | every event or history matters |
+| every subscriber gets events | `broadcast` | bounded fan-out is needed | slow consumers or message loss cannot be tolerated |
+| shared mutable state | `Mutex` or `RwLock` | shared mutation is simpler than message passing | ownership can be localized |
+| one-time global state | `OnceLock` or `LazyLock` | initialization is one-shot | reset or a mutable lifecycle is required |
+| task orchestration | `JoinSet` or a task scope | the parent owns task lifecycle | never use it to excuse detached long-lived work |
+| concurrency limit | `Semaphore` | parallel work count must be bounded | work is sequential or bounded elsewhere |
+
+Cancellation:
+
+- Cancellation normally happens by dropping a future. Assume any `.await` may be the cut line.
+- State for each long-running operation whether it is cancel-safe, restartable, resumable or lossy under cancellation.
+- A branch that loses a `select!` race is dropped. Design branch-local state and cleanup for drop-as-cancellation, and watch for partially consumed state.
+- If partial progress matters, persist intent or structure the workflow so an interruption cannot corrupt state silently.
+- Prefer cancellation tokens or shutdown channels to boolean flags once several tasks or ownership domains are involved.
+
+Backpressure:
+
+- If producers can outpace consumers, define the saturation policy: reject, wait, shed, batch or durable offload. "The queue should stay small" is not a policy.
+- No concurrency claim without reasoning, stress evidence or model checking in proportion to the risk.
+- Prefer message passing when it settles correctness questions better than shared mutation.
 
 ## 10. Unsafe and FFI
 
