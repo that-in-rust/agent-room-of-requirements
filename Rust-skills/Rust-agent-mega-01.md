@@ -471,6 +471,42 @@ fn test_complex_generic_parsing() {
 }
 ```
 
+### Embedded template (Embassy, no_std)
+
+```rust
+#![no_std]
+#![no_main]
+
+use embassy_executor::Spawner;
+use embassy_time::{Duration, Timer};
+use {defmt_rtt as _, panic_probe as _};
+
+#[embassy_executor::main]
+async fn main(spawner: Spawner) {
+    let p = embassy_stm32::init(Default::default());
+    
+    // Spawn concurrent tasks
+    spawner.spawn(blink_task(p.PA5)).unwrap();
+    spawner.spawn(sensor_task(p.PA0)).unwrap();
+    
+    // Main loop
+    loop {
+        Timer::after(Duration::from_secs(1)).await;
+    }
+}
+
+#[embassy_executor::task]
+async fn blink_task(pin: embassy_stm32::gpio::AnyPin) {
+    let mut led = Output::new(pin, Level::Low, Speed::Low);
+    loop {
+        led.set_high();
+        Timer::after_millis(500).await;
+        led.set_low();
+        Timer::after_millis(500).await;
+    }
+}
+```
+
 ## 5. Verification and test-first delivery
 
 ### Verification selection matrix
@@ -787,6 +823,36 @@ mod mutation_tests {
 - **Snapshot tests (`expect-test`) where textual output is the contract.** Good for parsers, formatters, diagnostics and macro expansions whose whole output shape matters. Do not let snapshots become golden files reviewers stop reading.
 - **Test infrastructure that optimizes failure readability and isolation.** A suite is only as fast as its failure-diagnosis loop. Use dedicated temp dirs, diff-friendly assertions, explicit command wrappers and retries for flaky OS operations in integration tests that touch real filesystems, commands or multi-line output.
 
+Doctest as contract (keep examples small, and make them assert something):
+
+```rust
+/// Adds two numbers.
+/// ```
+/// assert_eq!(my_crate::add(2, 2), 4);
+/// ```
+pub fn add(a: i32, b: i32) -> i32 { a + b }
+```
+
+Compile-fail UI tests with `trybuild`, cases under `tests/ui/*.rs`:
+
+```rust
+#[test]
+fn ui() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/ui/*.rs");
+}
+```
+
+Fuzz target for `cargo-fuzz`. Keep the harness minimal, run it in nightly CI, keep and minimize the corpus:
+
+```rust
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+fuzz_target!(|data: &[u8]| { let _ = my_crate::parse(data); });
+```
+
+For property tests, record failing seeds for reproducibility and let the framework shrink to a minimal counterexample.
+
 ## 6. Types and API design
 
 - Prefer newtypes, explicit conversions, and designs that make invalid states unrepresentable.
@@ -813,6 +879,30 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - **Flat public API facades with `pub use`.** Internal file layout and public API shape should not be welded together; re-exports let a crate reorganize internals without breaking callers. Use when a crate has several internal modules and wants one stable import surface. Avoid when it only hides useful structure.
 - **`PhantomData<fn() -> T>` invariance for typed handles.** Handle types, arena indices and lifetime-sensitive tokens can be unsound if variance is too permissive. Use when the type parameter carries lifetime or aliasing implications that must not be coerced. Avoid when ordinary covariance is correct.
 - **Type-state plus a drop bomb for must-complete protocols.** Some APIs are wrong if partially used. Type-state makes legal transitions explicit, and a debug-time bomb in `Drop` catches "forgot to complete or abandon" immediately. Use for parser markers, staged builders, transactions and protocol objects that must be finalized. Avoid when the state machine is trivial and the extra types would outweigh the gain.
+
+### Core idioms with code
+
+- **Expression-oriented code.** When a function computes a value, return the last expression. Use `if/else` and `match` as expressions and `let` bindings for clarity. Avoid `mut` accumulators where `map`/`fold` suffice, and stray semicolons that turn an expression into `()`.
+- **Slices and traits in public APIs.** Over-generic bounds hurt inference; keep them simple.
+
+```rust
+fn process<S: AsRef<str>>(s: S) {
+    let s: &str = s.as_ref();
+    // ...
+}
+```
+
+- **`Cow<'_, str>` / `Cow<'_, [u8]>`.** Use when data is usually borrowed and sometimes modified: config, cache keys, deserialized data. Do not use it when data is always owned or always borrowed, and watch for hidden `.to_string()` in tight loops.
+- **Conversions.** Do not return `Result` for an infallible conversion. To implement a conversion for a foreign type, wrap it in a newtype (orphan rule).
+- **Newtypes.** A `type` alias does not create a distinct type. Add `#[repr(transparent)]` when the newtype crosses FFI.
+
+```rust
+#[repr(transparent)]
+struct UserId(String);
+impl UserId { fn parse(s: &str) -> Option<Self> { (!s.is_empty()).then(|| Self(s.to_owned())) } }
+```
+
+- **Trait objects versus generics.** Use `Box<dyn Trait>` for heterogeneous collections and at API boundaries, where flexibility and smaller code size matter. Use generics on hot paths. Avoid trait objects in tight loops and over-generic public APIs that cause monomorphization bloat.
 
 ### Trait, async and macro boundary discipline
 
@@ -895,6 +985,27 @@ pub async fn process_request(req: Request) -> anyhow::Result<Response> {
         .with_context(|| "Data processing failed")?;
 
     Ok(Response::new(result))
+}
+```
+
+Adding context while propagating:
+
+```rust
+use anyhow::Context;
+fn load(path: &str) -> anyhow::Result<String> {
+    std::fs::read_to_string(path).with_context(|| format!("reading {}", path))
+}
+```
+
+In libraries, use `thiserror` with `#[from]` and `map_err`; never swallow the source error.
+
+Rich reports in binaries only: install a global reporter at startup.
+
+```rust
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+    // ...
+    Ok(())
 }
 ```
 
@@ -999,6 +1110,48 @@ where
 }
 ```
 
+### Short async examples
+
+Release the lock before awaiting:
+
+```rust
+let data = Arc::new(Mutex::new(vec![]));
+// Anti-pattern:
+// let mut guard = data.lock().unwrap();
+// async_call().await; // lock held across await
+// Correct:
+{
+    let mut guard = data.lock().unwrap();
+    guard.push(1);
+}
+async_call().await;
+```
+
+Bounded channel with a timeout. Use `tokio_util::sync::CancellationToken` for cooperative cancellation, not ad-hoc boolean flags:
+
+```rust
+use tokio::{sync::mpsc, time::{timeout, Duration}};
+let (tx, mut rx) = mpsc::channel(1024);
+let send = async move { tx.send(item).await.ok(); };
+let recv = async move { while let Some(v) = rx.recv().await { /* ... */ } };
+let _ = timeout(Duration::from_secs(1), recv).await; // apply backpressure/timeouts
+```
+
+Cancellation-safe `select!`: the stream owns its buffered state outside the branch futures, and no branch does blocking I/O:
+
+```rust
+use tokio::select;
+async fn run(mut stream: BufferedStream) {
+    loop {
+        select! {
+            biased;
+            maybe = stream.next() => { if maybe.is_none() { break; } },
+            _ = shutdown_token.cancelled() => { break; }
+        }
+    }
+}
+```
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
@@ -1060,6 +1213,36 @@ command_matcher! {
     "/quit" => CommandResult::Quit,
     "/status" => CommandResult::Status,
 }
+```
+
+### Benchmark harness (criterion)
+
+```rust
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
+
+fn benchmark_message_processing(c: &mut Criterion) {
+    let messages = generate_test_messages(1000);
+    
+    c.bench_function("process_messages", |b| {
+        b.iter(|| {
+            for message in &messages {
+                black_box(process_message(black_box(message)));
+            }
+        })
+    });
+}
+
+criterion_group!(benches, benchmark_message_processing);
+criterion_main!(benches);
+```
+
+### Panic strategy
+
+Use `panic = "abort"` in release binaries (CLIs, embedded) where unwinding is undesirable, to fail fast and reduce binary size. Keep unwinding in debug builds for backtraces. Never set it in a library, and never abort in tests.
+
+```toml
+[profile.release]
+panic = "abort"
 ```
 
 ## 12. Naming, modules and documentation
@@ -1261,6 +1444,52 @@ impl Database {
         .fetch_optional(&self.pool)
         .await
     }
+}
+```
+
+### Axum service template
+
+```rust
+use axum::{
+    extract::{State, Path, Json},
+    response::Json as ResponseJson,
+    routing::{get, post},
+    Router,
+};
+use tower::{ServiceBuilder, timeout::TimeoutLayer};
+use tower_http::{trace::TraceLayer, cors::CorsLayer};
+
+#[derive(Clone)]
+pub struct AppState {
+    db: Database,
+    config: AppConfig,
+}
+
+pub fn create_app(state: AppState) -> Router {
+    Router::new()
+        .route("/api/health", get(health_check))
+        .route("/api/users", post(create_user))
+        .route("/api/users/:id", get(get_user))
+        .layer(
+            ServiceBuilder::new()
+                .layer(TimeoutLayer::new(Duration::from_secs(30)))
+                .layer(TraceLayer::new_for_http())
+                .layer(CorsLayer::permissive())
+        )
+        .with_state(state)
+}
+
+async fn health_check() -> &'static str {
+    "OK"
+}
+
+async fn create_user(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateUserRequest>,
+) -> Result<ResponseJson<User>, AppError> {
+    payload.validate()?;
+    let user = state.db.create_user(payload).await?;
+    Ok(ResponseJson(user))
 }
 ```
 
@@ -2683,6 +2912,55 @@ Reject work that lacks requirement coverage, measurable performance evidence, or
 
 - **Coverage as a gate with `cargo-llvm-cov`.** A coverage floor on critical modules guards against silent test regressions; branch coverage helps where line coverage gives false confidence. Do not chase 100 percent in place of meaningful test depth.
 - **Workspace, toolchain and additive-feature discipline.** In multi-crate repos, keep workspace layering clear, the toolchain pinned and features additive, so a change does not introduce build drift. Workspace configuration must not be tribal knowledge.
+
+MSRV in `Cargo.toml`; test on that toolchain, and do not depend on nightly-only features in libraries:
+
+```toml
+[package]
+rust-version = "1.76"
+```
+
+License and advisory policy in `deny.toml`; run the advisory check as a scheduled job:
+
+```toml
+# deny.toml
+[licenses]
+allow = ["MIT", "Apache-2.0"]
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+```
+
+Instrument service boundaries and propagate span fields such as `trace_id` and `user_id`. No `println!`-style logging in libraries:
+
+```rust
+#[tracing::instrument(skip(req))]
+pub async fn handle(req: Request) -> Result<Response, Error> {
+    tracing::info!(method = %req.method(), path = %req.uri().path());
+    // ...
+    Ok(resp)
+}
+```
+
+Keep secrets in `SecretString`/`SecretVec`, which have no `Display`/`Debug` output, and do not clone them widely:
+
+```rust
+use secrecy::{ExposeSecret, SecretString};
+let api_key = SecretString::new(load_key());
+// tracing::info!(key = %api_key); // anti-pattern
+tracing::info!(has_key = api_key.expose_secret().len() > 0);
+```
+
+SQLx: use `query!`/`query_as!` with offline mode, and set timeouts and a connection maximum on the pool:
+
+```rust
+#[derive(sqlx::FromRow)]
+struct User { id: i64, name: String }
+let row = sqlx::query_as!(User, "SELECT id, name FROM users WHERE id = $1", id)
+    .fetch_one(&pool).await?;
+```
+
+Run Clippy and coverage across all targets and features, not a subset. Exclude generated code from coverage.
 
 ## 17. Review checklist
 
