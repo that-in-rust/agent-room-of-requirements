@@ -507,6 +507,28 @@ async fn blink_task(pin: embassy_stm32::gpio::AnyPin) {
 }
 ```
 
+In `no_std` binaries define one `#[panic_handler]`: minimal, non-allocating, no unwinding.
+
+```rust
+#![no_std]
+use core::panic::PanicInfo;
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    // signal fault, then halt
+    loop {}
+}
+```
+
+For serde in `no_std`, use `postcard` with fixed buffers; validate sizes, do not trust unverified input, and do not allocate in interrupt paths.
+
+```rust
+#![no_std]
+use postcard::{to_slice, from_bytes};
+let mut buf = [0u8; 64];
+let written: &mut [u8] = to_slice(&my_struct, &mut buf)?;
+let round: My = from_bytes(written)?;
+```
+
 ## 5. Verification and test-first delivery
 
 ### Verification selection matrix
@@ -928,6 +950,43 @@ impl UserId { fn parse(s: &str) -> Option<Self> { (!s.is_empty()).then(|| Self(s
 
 - **Trait objects versus generics.** Use `Box<dyn Trait>` for heterogeneous collections and at API boundaries, where flexibility and smaller code size matter. Use generics on hot paths. Avoid trait objects in tight loops and over-generic public APIs that cause monomorphization bloat.
 
+- **Function pointers.** When a callable never captures, take `fn(T) -> U`; it avoids an extra monomorphization.
+
+```rust
+fn apply<T,U>(x: T, f: fn(T) -> U) -> U { f(x) }
+fn double(n: i32) -> i32 { n*2 }
+let y = apply(21, double);
+```
+
+- **Monomorphization bloat.** If generics inflate compile time or binary size, use `dyn Trait` at API boundaries and on rarely used paths, and measure the effect.
+- **Do not clone to satisfy the borrow checker.** Borrow where possible; use `Rc`/`Arc` when several owners are really required, and design ownership instead of applying `Arc` everywhere.
+- **Visibility.** Scope items with `pub(crate)`, `pub(super)` and `pub(in path)`; do not default to `pub`. Use `#![no_implicit_prelude]` in modules that need explicit paths, such as macro internals.
+
+```rust
+pub mod outer { 
+    pub(in crate::outer) fn only_outer() {}
+}
+```
+
+- **Explicit collection construction.** `FromIterator::from_iter` names the target type without a turbofish:
+
+```rust
+use std::iter::FromIterator;
+let it = [1,2,3].into_iter().map(|x| x * 2);
+let v = Vec::<i32>::from_iter(it);
+```
+
+- **`#[non_exhaustive]` in use.** Outside the defining crate, matches need a wildcard arm and the type cannot be constructed directly:
+
+```rust
+#[non_exhaustive]
+pub enum Error { Io(std::io::Error), Parse }
+
+fn handle(e: Error) {
+    match e { Error::Io(_)| Error::Parse | _ => {} }
+}
+```
+
 ### Trait, async and macro boundary discipline
 
 - **Pin, pin projection and async trait boundaries.** Pinned values carry movement invariants; violating them is not an ordinary logic bug. Use safe projection helpers when implementing custom futures, self-referential state machines or pinned wrappers. Do not hand-project pinned fields or call `Pin::new_unchecked` without a proof. Understand the object-safety and allocation tradeoffs before choosing `async-trait` or async fn in traits.
@@ -1207,6 +1266,23 @@ pub enum ParseError {
 
 - **CLI termination.** Return `Result<(), E>` from `main` or use `std::process::ExitCode`. Do not panic on expected user errors, and keep nonzero codes consistent.
 
+Span-labeled diagnostics with `miette`, in binaries only:
+
+```rust
+use miette::{Diagnostic, Result, SourceSpan};
+use thiserror::Error;
+
+#[derive(Debug, Error, Diagnostic)]
+#[error("parse error")]
+struct ParseErr {
+  #[source_code]
+  src: String,
+  #[label("here")] span: SourceSpan,
+}
+
+fn parse(_s: &str) -> Result<()> { Err(ParseErr { src: "x+y".into(), span: (2..3).into() }.into()) }
+```
+
 ## 9. Async and concurrency
 
 - Never block inside async code, and never hold a lock guard across `.await`.
@@ -1396,6 +1472,99 @@ trait FetchDyn {
 }
 ```
 
+### Threads, locks, atomics and channels
+
+- **`parking_lot`.** Smaller and faster locks than std on contended paths, with optional deadlock detection. Poisoning and fairness differ from std. Do not mix `std::sync` and `parking_lot` guards.
+
+```rust
+use parking_lot::{Mutex, RwLock};
+static DATA: Mutex<Vec<u8>> = Mutex::new(Vec::new());
+let mut g = DATA.lock();
+g.push(1);
+```
+
+- **Scoped threads.** `std::thread::scope` lets threads borrow from the parent without `'static`; all are joined when the scope exits. Do not wrap data in `Arc<Mutex<_>>` only to satisfy `'static`.
+
+```rust
+use std::thread;
+let mut v = vec![1, 2, 3];
+thread::scope(|s| {
+    s.spawn(|| { /* read-only borrow is fine */ });
+    s.spawn(|| { /* can borrow &mut v in disjoint regions via interior logic */ });
+    s.spawn(|| println!("len = {}", v.len()));
+}); // all threads joined here; v is still valid
+```
+
+- **Thread naming and joining.** Name threads with `thread::Builder`, keep the `JoinHandle` and join it. Do not rely on process exit to clean up work.
+
+```rust
+use std::thread;
+let h = thread::Builder::new().name("worker-1".into()).spawn(|| { /* work */ })?;
+let res = h.join();
+```
+
+- **MPMC channels.** `crossbeam-channel` gives multi-producer multi-consumer channels and `select!` over receivers and timers. Handle disconnection. Do not use `std::sync::mpsc` for complex topologies.
+
+```rust
+use crossbeam_channel::{bounded, select, tick};
+let (tx, rx) = bounded::<u32>(1024);
+let ticker = tick(std::time::Duration::from_millis(10));
+loop {
+    select! {
+        recv(rx) -> msg => if let Ok(x) = msg { /* handle */ } else { break },
+        recv(ticker) -> _ => { /* periodic work */ },
+        default(Duration::from_millis(1)) => { /* do other work */ }
+    }
+}
+```
+
+- **Rendezvous.** `std::sync::mpsc::sync_channel(0)` blocks the producer until the consumer receives; a small capacity throttles producers. Do not busy-wait where blocking is wanted.
+
+```rust
+use std::sync::mpsc;
+let (tx, rx) = mpsc::sync_channel::<String>(0); // rendezvous
+std::thread::spawn(move || { tx.send("hello".into()).ok(); });
+let msg = rx.recv().unwrap();
+```
+
+- **One-time initialization.** Prefer `std::sync::OnceLock`/`LazyLock`; use `once_cell` only for an older MSRV. Do not use `lazy_static!` where these suffice.
+
+```rust
+use std::sync::OnceLock;
+static CONFIG: OnceLock<String> = OnceLock::new();
+fn config() -> &'static str { CONFIG.get_or_init(|| "default".to_string()) }
+```
+
+- **Atomic orderings.** Default to `Acquire`/`Release` for hand-off patterns; use `Relaxed` only with a proven invariant; use fences sparingly. Model with `loom`, which treats `SeqCst` operations as `AcqRel`. Keep `loom` tests deterministic.
+
+```rust
+use loom::{sync::{Arc, atomic::{AtomicUsize, Ordering::*}}, thread};
+loom::model(|| {
+  let n = Arc::new(AtomicUsize::new(0));
+  let a = n.clone(); thread::spawn(move || { let cur = a.load(Acquire); a.store(cur+1, Release); });
+  let b = n.clone(); thread::spawn(move || { let cur = b.load(Acquire); b.store(cur+1, Release); });
+});
+```
+
+- **Fences order only atomic operations.** A fence does not make plain memory accesses visible across threads; never share non-atomic mutable state on the strength of one.
+
+```rust
+use std::sync::atomic::{AtomicBool, Ordering, fence};
+static LOCK: AtomicBool = AtomicBool::new(false);
+fn lock() { while LOCK.swap(true, Ordering::Acquire) {} }
+fn unlock() { fence(Ordering::Release); LOCK.store(false, Ordering::Release); }
+```
+
+- **Lock-free building blocks.** Use `crossbeam-epoch` for deferred reclamation and `AtomicCell<T: Copy>` for simple shared slots. No hand-rolled hazard pointers or ad-hoc reclamation.
+- **CPU data parallelism.** Replace hot sequential loops over large collections with Rayon's `into_par_iter()`. Keep work items independent, hold no locks inside, do not parallelize tiny tasks, and measure the speedup.
+
+```rust
+use rayon::prelude::*;
+let sum: i64 = (0..1_000_000i64).into_par_iter().sum();
+```
+
+- **io_uring runtimes.** `monoio` (thread-per-core, non-`Send` tasks) and `tokio-uring` suit high-throughput I/O-bound Linux servers on kernel 5.11 or later. Benchmark on the real workload, gate behind a feature, and do not use them where epoll/kqueue suffices.
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
@@ -1434,6 +1603,25 @@ let arr = unsafe { buf.assume_init() };
 - **Drop check.** When implementing `Drop` for a generic type, generic parameters must outlive `self`; do not hold references into shorter-lived data in a struct with `Drop`.
 - **Fat pointers.** Never construct an invalid fat pointer or transmute between unrelated `dyn` types.
 - **Public surface.** Keep unsafe internals private and do not expose raw pointers in public APIs. An `unsafe fn` contract must be sound and documented.
+
+- **Representation choices.** `repr(C)` for FFI structs and enums; `repr(transparent)` for newtypes crossing FFI; primitive enum reprs such as `repr(u8)` only when required. Default `repr(Rust)` optimizes best. Do not read discriminants of enums without a `repr`, and avoid `repr(packed)`, which creates unaligned references.
+
+```rust
+#[repr(C)]
+struct CTimeSpec { tv_sec: i64, tv_nsec: i64 }
+#[repr(transparent)]
+struct Fd(i32);
+#[repr(u8)]
+enum Kind { A, B(u32) }
+```
+
+- **dyn upcasting (Rust 1.86+).** `&dyn Sub` coerces to `&dyn Super`, also through `Box`, `Arc` and raw pointers. Remove `as_super()` helpers; never upcast by transmute.
+
+```rust
+trait Super {}
+trait Sub: Super {}
+fn take_super(x: &dyn Sub) -> &dyn Super { x }
+```
 
 ## 11. Performance
 
@@ -1486,6 +1674,33 @@ command_matcher! {
     "/quit" => CommandResult::Quit,
     "/status" => CommandResult::Status,
 }
+```
+
+### Caching and data processing
+
+- **Caches.** `moka::Cache` for concurrent TTL/LRU caching; `cached` macros for function memoization. Bound the size and TTL; never cache non-deterministic results.
+
+```rust
+use moka::sync::Cache;
+let cache = Cache::builder().max_capacity(10_000).build();
+cache.insert("k", 1);
+if let Some(v) = cache.get("k") { /* ... */ }
+```
+
+```rust
+#[cached::cached(size=128)]
+fn fib(n: u64) -> u64 { /* ... */ n }
+```
+
+- **Columnar analytics.** With Polars, prefer the lazy API for query planning and parallel execution, and streaming when memory-bound. Fix the query plan before tuning environment knobs.
+
+```rust
+use polars::prelude::*;
+let df = df!("a" => &[1,2,3], "b" => &[4,5,6])?;
+let out = df.lazy()
+    .groupby([col("a")])
+    .agg([col("b").sum()])
+    .collect()?;
 ```
 
 ### Benchmark harness (criterion)
@@ -3203,6 +3418,15 @@ Commit `rustfmt.toml` so style is project-wide and diffs stay stable:
 edition = "2024"
 max_width = 100
 group_imports = "StdExternalCrate"
+```
+
+CI gates: `cargo fmt --check`, `cargo clippy -D warnings`, doctests, `nextest`, coverage (`llvm-cov` or `grcov`), `cargo-deny` and a SemVer check.
+
+SQLx migrations and offline mode: manage schema with the CLI, and prepare offline query data so hermetic CI builds need no database.
+
+```sh
+sqlx migrate add init
+sqlx migrate run --database-url=${DATABASE_URL}
 ```
 # deny.toml
 [licenses]
