@@ -187,6 +187,16 @@ What the compiler does not prove:
 - No data race does not mean no logical race, starvation, dropped work or stale state.
 - Unsafe code must stay sound even if the surrounding safe code is logically wrong. Each unsafe block maps to one narrow proof obligation that can be explained locally. Delete an unsafe optimization that does not buy measurable gain.
 
+Working terms:
+
+- **Boundary:** a place where unchecked data, control or side effects enter or leave a component.
+- **Soundness:** safe Rust cannot trigger undefined behavior.
+- **Minimal exception safety:** code stays memory-safe if unwinding happens at an awkward moment. **Maximal exception safety:** the program also stays semantically correct.
+- **Cancel-safe:** safe under interruption, with no silent corruption or lost invariant. **Cancellation point:** a place where a future may be dropped, typically an `.await`.
+- **Backpressure:** the explicit policy limiting producer pressure against slower consumers.
+- **Opaque error:** an error meant for propagation and display, not detailed matching.
+- **Generated surface:** code produced from a schema or tool whose source of truth lives elsewhere.
+
 ### Doctrine for core and standard-library code
 
 - **Lifetimes.** Annotations express real relationships between inputs and outputs. If lifetime reasoning gets harder than the logic, rethink the API shape instead of adding annotations. Prefer scoped borrows to long-lived shared mutable access.
@@ -3990,6 +4000,26 @@ Workspace hygiene:
 - **Before any completion claim:** identify which command proves the claim, run it fresh and in full, inspect the output and exit status, report the actual result, and only then claim success or incompleteness.
 - **No completion claim survives if:** requirement coverage is missing; failure paths that matter are untested; a performance claim lacks evidence; concurrency assumptions are hand-waved; cancellation or shutdown is unspecified for a long-running task; or a public API changed without a compatibility review.
 - **API, unsafe and generated-code gates:** review public API changes for leaked dependency types, error surfaces and re-exports; unsafe changes carry `SAFETY` reasoning and targeted invariant tests; regenerate or diff-check generated sources from their true inputs; treat each Clippy suppression as a design decision with a stated reason.
+
+Rule to test to gate:
+
+| Rule | Test type | Gate |
+| --- | --- | --- |
+| newtypes at boundaries | unit + conversion, valid and invalid parsing | `cargo test` |
+| typestate | compile-fail on illegal state transition misuse | compile-fail suite |
+| recovery-aware errors | unit: retryable versus permanent branch | `cargo test` |
+| iterator pipelines | property: transformation correctness and order | `cargo test` |
+| workspace and features | integration: root build and feature matrix | `cargo build --workspace` |
+| no blocking, no lock across await | stress | `cargo test` |
+| bounded concurrency and cancellation | integration + timeout + cancellation | `cargo test` |
+| task ownership | teardown + failure propagation | `cargo test`, optional `loom` |
+| transport to domain at the edge | integration: conversion and error shaping | `cargo test --all-targets` |
+| unsafe containment | harness, wrapper invariants | `cargo test`, optional `cargo miri test` |
+| explicit close | integration + teardown | `cargo test` |
+| shutdown fan-out | integration + signal + timeout | `cargo test` with shutdown scenarios |
+| dependency exposure | downstream compile + doctest | API review, optional SemVer tooling |
+| measure first | benchmark + profile | benchmark gate |
+| all rules | format and lint | `cargo fmt --all -- --check`, `cargo clippy --all-targets --all-features -- -D warnings` |
 # rust-toolchain.toml
 [toolchain]
 channel = "1.80.1"
@@ -4134,3 +4164,8 @@ Before finishing a design, check whether one of these applies:
 - **Types and invariants.** Which invariant is carried only by comments, not types or tests? Which primitives stand for distinct domain concepts? Where would a newtype, enum or `TryFrom` remove a whole bug class?
 - **Ownership and API surface.** Where does ownership look accidental? Which function takes ownership only because that was convenient? Which borrows only because the author avoided moving, though ownership is semantically correct? Which public API leaks internal storage or adapter shape and will be painful to evolve?
 - **Errors and recovery.** Which error path makes callers guess the recovery strategy? Are typed and dynamic errors at the right layer? Where is error context too vague to diagnose quickly? Are non-UTF-8 or binary boundaries handled safely? Which public error or type has committed the crate to a dependency's SemVer?
+
+- **Async and concurrency.** Where is behavior unspecified under cancellation or timeout? Which queue, channel or task fan-out lacks a bound or saturation policy? Which clone, allocation or lock hides a boundary mistake? Is any task spawned without ownership, shutdown and error visibility? Does any cleanup path need awaiting, blocking or remote coordination without an explicit shutdown API? Where could a logical race exist although the code is data-race-free?
+- **Architecture and boundaries.** Are transport, domain and persistence shapes separated? Does a framework type leak inward? Are trait seams at real external boundaries and absent elsewhere? Could a fresh contributor or agent build and test from the workspace root without hidden knowledge? Is any generated surface being edited as if hand-written?
+- **Verification honesty.** Does each important claim have fresh evidence? Is each bug fix backed by a failing-then-passing regression test? Does the test mix match the risk surface, or only the easiest unit cases? Which performance claim lacks a threshold or profile?
+- **Abstraction skepticism.** Which abstraction is not yet justified by reuse, invariants or compatibility pressure? Where is unsafe, proc-macro, lock-free or typestate complexity used for show? Would a simpler boundary give clearer guarantees?
