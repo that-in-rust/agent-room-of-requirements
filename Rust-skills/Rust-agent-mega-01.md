@@ -628,6 +628,39 @@ If you do not know what to prioritize, work down this list:
 - Package sidecars deterministically.
 - This guidance targets Tauri 2.
 
+- Keep shared mutable state in Tauri-managed state with the narrowest mutex that fits the access pattern.
+- Scope filesystem, plugin and sidecar permissions exactly, not broadly.
+- Use the plugin store for small structured state, not large blobs.
+- Use channels or binary responses for long-running or high-volume payloads; do not spam events.
+- Supervise sidecars with startup checks, bounded waits, explicit restart rules and explicit binary packaging declarations.
+- Keep docs, examples, tests and capability and config files synchronized with behavior changes.
+
+### Tauri runtime and safety gates
+
+- No blocking work runs directly in an async command context.
+- No lock guard or mutable access pattern crosses `.await` unless the chosen async mutex model explicitly requires it.
+- No `unwrap()` or `expect()` remains in user-reachable command or lifecycle paths.
+- No secret or sensitive payload is logged.
+- Updater, sidecar, filesystem and plugin boundaries stay least-privilege.
+- Lifecycle ownership is verified for tray, deep links, single-instance handoff, sidecars and startup/setup work.
+
+Alongside the Rust command gates, run the repo's frontend and Tauri checks for the changed boundary. Use the repo's actual package manager and scripts; for example:
+
+```bash
+pnpm test
+pnpm build
+pnpm tauri build
+```
+
+### Tauri release readiness checklist
+
+- [ ] Requirements are executable and measurable.
+- [ ] Each `REQ-TAURI-*` has at least one linked test.
+- [ ] Command, IPC and UI-state behavior are covered at the right boundary.
+- [ ] Capability, filesystem, plugin, sidecar and lifecycle choices are explicit.
+- [ ] Rust quality gates pass.
+- [ ] Repo-normal frontend or desktop checks pass for the changed surface.
+
 ### Tauri anti-patterns
 
 Reject these by default:
@@ -641,6 +674,11 @@ Reject these by default:
 - the plugin store used as a blob sink
 - unchecked sidecar spawning with no lifecycle ownership
 - updater, tray or deep-link behavior treated as post-hoc polish
+
+- broad shell permissions used as a convenience default
+- sidecar spawning without bounded startup, permission scoping or packaging declarations
+- command surfaces that panic or return opaque, unserializable failures
+- four-word naming applied where it would break stable command, API or window compatibility
 
 ## 16. Quality gates and commands
 
