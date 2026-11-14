@@ -97,6 +97,40 @@ If you do not know what to prioritize, work down this list:
 6. Keep unsafe small, justified and verified.
 7. Make observability and secret discipline part of the design.
 
+### The vital 20 percent
+
+About 20 percent of Rust patterns cover almost all production code:
+
+- **L1:** ownership and borrowing, RAII, `Result`/`Option`, newtypes.
+- **L2:** iterator patterns, smart pointers (`Arc`/`Rc`), error propagation with `?`.
+- **L3:** async/await, derive macros, established crate patterns.
+
+Compile-first strategy: use idioms that lean on the type system, make invalid states unrepresentable, and let the compiler catch errors before runtime.
+
+### MVP-first rigor
+
+Proven architectures beat theoretical abstractions for MVP delivery.
+
+1. Model the architecture against the real constraints before implementing.
+2. Use battle-tested libraries with known performance characteristics, and validate library choices with micro-benchmarks.
+3. Back every timing and memory constraint with an automated test, written before the implementation.
+4. Keep locking single-responsibility; avoid coordination between multiple locks.
+5. Implement concretely for the MVP; add abstractions later.
+
+Apply it when performance constraints are non-negotiable, the system must handle real-world complexity from day one, concurrent access patterns are well defined, memory or CPU is constrained, or behavior must be predictable and measurable. Do not apply it to prototypes, flexible performance requirements, genuinely simple systems or exploration work.
+
+Every performance-critical operation gets a contract test:
+
+```rust
+#[test]
+fn test_operation_performance_contract() {
+    // Setup: Create realistic test conditions
+    // Action: Execute the operation under test
+    // Assert: Verify timing constraint + correctness
+    // Document: Why this constraint matters
+}
+```
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
@@ -666,6 +700,87 @@ async fn test_concurrent_read_write_safety() {
 }
 ```
 
+Property tests for round trips and validation:
+
+```rust
+use proptest::prelude::*;
+
+proptest! {
+    #[test]
+    fn user_id_roundtrip(id in any::<u64>()) {
+        let user_id = UserId(id);
+        let serialized = serde_json::to_string(&user_id)?;
+        let deserialized: UserId = serde_json::from_str(&serialized)?;
+        prop_assert_eq!(user_id, deserialized);
+    }
+    
+    #[test]
+    fn message_content_validation(
+        content in ".*",
+        max_len in 1usize..10000
+    ) {
+        let result = validate_message_content(&content, max_len);
+        if content.len() <= max_len && !content.trim().is_empty() {
+            prop_assert!(result.is_ok());
+        } else {
+            prop_assert!(result.is_err());
+        }
+    }
+}
+```
+```
+
+A complete `loom` model:
+
+```rust
+#[cfg(loom)]
+mod loom_tests {
+    use loom::sync::{Arc, Mutex};
+    use loom::thread;
+    
+    #[test]
+    fn concurrent_counter() {
+        loom::model(|| {
+            let counter = Arc::new(Mutex::new(0));
+            
+            let handles: Vec<_> = (0..2).map(|_| {
+                let counter = counter.clone();
+                thread::spawn(move || {
+                    let mut guard = counter.lock().unwrap();
+                    *guard += 1;
+                })
+            }).collect();
+            
+            for handle in handles {
+                handle.join().unwrap();
+            }
+            
+            assert_eq!(*counter.lock().unwrap(), 2);
+        });
+    }
+}
+```
+```
+
+Mutation testing with `cargo-mutants` checks test quality by introducing bugs; write tests that cover each boundary so every mutation is caught:
+
+```rust
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+    
+    #[test]
+    fn test_user_validation_comprehensive() {
+        // Test should catch all possible mutations
+        assert!(validate_user("").is_err());           // Empty name
+        assert!(validate_user("a").is_err());          // Too short  
+        assert!(validate_user("a".repeat(101)).is_err()); // Too long
+        assert!(validate_user("valid_user").is_ok());  // Valid case
+    }
+}
+```
+```
+
 ### Testing and contract verification patterns
 
 - **Doctests as executable contracts.** Examples rot when they are not executed; a doctest turns API explanation into a regression boundary. Use when the example communicates expected behavior, not just syntax. Move very large examples to integration tests.
@@ -725,6 +840,15 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - **Borrow-checker-friendly API design.** Many awkward APIs are awkward because their shape prolongs borrows. Smaller scopes, temporaries and methods that separate read and write phases remove E0502-class friction without cloning everything. Do not rely on subtle two-phase-borrow behavior where clear structure would do.
 - **Iterator contracts and fallible pipelines.** Support owned and borrowed iteration correctly and keep error short-circuiting. `size_hint`, `ExactSizeIterator`, `try_fold`, `try_for_each` and `FromIterator` define what consumers may assume. Do not claim exact iterator properties you cannot uphold, and do not `unwrap` inside a chain that should short-circuit with `Result`.
 - **Collection choice.** `Vec`, `VecDeque`, `HashMap`, `BTreeMap`, `IndexMap` and `BinaryHeap` make different operational promises: dense append-heavy storage, queue, hashed lookup, ordered map, stable iteration order, priority scheduling. The wrong default causes performance or determinism bugs. Do not use `LinkedList` as a default, and never treat `HashMap` iteration order as meaningful.
+
+### Smart pointer decision matrix
+
+| Scenario | Single-Threaded | Multi-Threaded | Use Case |
+|----------|------------------|----------------|----------|
+| **Unique Ownership** | `Box<T>` | `Box<T>` | Heap allocation, trait objects |
+| **Shared Ownership** | `Rc<T>` | `Arc<T>` | Multiple owners, reference counting |
+| **Interior Mutability** | `RefCell<T>` | `Mutex<T>` / `RwLock<T>` | Modify through shared reference |
+| **Combined** | `Rc<RefCell<T>>` | `Arc<Mutex<T>>` | Shared mutable state |
 
 ## 8. Errors and recovery
 
@@ -801,6 +925,84 @@ pub async fn process_request(req: Request) -> anyhow::Result<Response> {
 
 - **Channel and synchronization choice.** `std::sync::mpsc`, `crossbeam-channel`, `flume`, Tokio channels, `Mutex`, `RwLock` and `parking_lot` are not interchangeable defaults; concurrency bugs often start at primitive selection. Do not mix channel ecosystems casually, and do not use the std channel where MPMC, select, deadlines or rendezvous semantics are needed.
 
+### Async runtime discipline, in code
+
+```rust
+// Offload blocking work
+pub async fn process_heavy_computation(data: Vec<u8>) -> Result<ProcessedData> {
+    tokio::task::spawn_blocking(move || {
+        // CPU-intensive work that would block the runtime
+        expensive_computation(data)
+    }).await?
+}
+
+// Use timeouts for all external calls
+pub async fn fetch_external_data(url: &str) -> Result<Data> {
+    tokio::time::timeout(
+        Duration::from_secs(30),
+        reqwest::get(url)
+    ).await??
+}
+
+// Structured concurrency with JoinSet
+pub async fn process_batch(items: Vec<Item>) -> Vec<Result<ProcessedItem>> {
+    let mut tasks = JoinSet::new();
+    
+    for item in items {
+        tasks.spawn(async move { process_item(item).await });
+    }
+    
+    let mut results = Vec::new();
+    while let Some(result) = tasks.join_next().await {
+        results.push(result.unwrap_or_else(|e| Err(ProcessError::TaskPanic(e.to_string()))));
+    }
+    results
+}
+```
+
+### Actor pattern for state
+
+Message-passing concurrency: one task owns the state and other tasks send it messages.
+
+```rust
+use tokio::sync::{mpsc, oneshot};
+
+pub struct StateActor<T> {
+    state: T,
+    receiver: mpsc::Receiver<StateMessage<T>>,
+}
+
+pub enum StateMessage<T> {
+    Get { 
+        respond_to: oneshot::Sender<T> 
+    },
+    Update { 
+        updater: Box<dyn FnOnce(&mut T) + Send>,
+        respond_to: oneshot::Sender<Result<(), StateError>>
+    },
+}
+
+impl<T> StateActor<T> 
+where 
+    T: Clone + Send + 'static 
+{
+    pub async fn run(mut self) {
+        while let Some(msg) = self.receiver.recv().await {
+            match msg {
+                StateMessage::Get { respond_to } => {
+                    let _ = respond_to.send(self.state.clone());
+                }
+                StateMessage::Update { updater, respond_to } => {
+                    updater(&mut self.state);
+                    let _ = respond_to.send(Ok(()));
+                }
+            }
+        }
+    }
+}
+```
+```
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
@@ -819,6 +1021,50 @@ pub async fn process_request(req: Request) -> anyhow::Result<Response> {
 - **Builder plus frozen config struct.** Configuration is mutable during construction and immutable during execution; a builder that produces a cheap frozen config makes the split explicit. Use when a component has many orthogonal knobs and a stable execution phase. Keep runtime state and expensive artifacts out of the builder.
 - **Accumulate, then build, collecting errors as you go.** Some structures (pattern sets, registries, ignore lists, aggregated configuration) can only be optimized once the whole batch is known. Collect non-fatal build-time errors separately from final construction. Do not force eager construction on every incremental addition.
 - **Prepare once, query many.** Precompute a normalized or derived view once as a named value type, then reuse it across many checks: matching, routing, filtering, repeated comparison against one input. Avoid when precomputation costs more than the reuse saves or hides a freshness requirement.
+
+### Memory-efficiency examples
+
+```rust
+use std::borrow::Cow;
+
+// Conditional ownership with Cow
+pub fn normalize_content(content: &str) -> Cow<str> {
+    if content.contains('\r') {
+        Cow::Owned(content.replace('\r', ""))
+    } else {
+        Cow::Borrowed(content)
+    }
+}
+
+// Zero-allocation string processing
+pub fn extract_mentions(content: &str) -> impl Iterator<Item = &str> {
+    content
+        .split_whitespace()
+        .filter_map(|word| word.strip_prefix('@'))
+}
+```
+
+Compile-time string matching with a macro:
+
+```rust
+// Compile-time string matching
+macro_rules! command_matcher {
+    ($($pattern:literal => $handler:expr),* $(,)?) => {
+        pub fn handle_command(input: &str) -> Option<CommandResult> {
+            match input {
+                $($pattern => Some($handler),)*
+                _ => None,
+            }
+        }
+    };
+}
+
+command_matcher! {
+    "/help" => CommandResult::Help,
+    "/quit" => CommandResult::Quit,
+    "/status" => CommandResult::Status,
+}
+```
 
 ## 12. Naming, modules and documentation
 
@@ -893,6 +1139,46 @@ Fatal anti-patterns; do not ship code with these:
 - textual diagnostics that discard the exact failure location
 - tests that cover examples but not invariants
 
+### The eight fatal anti-patterns, in code
+
+```rust
+// Bad: "As a user, I want better performance"
+// Good: Performance Contract with measurable test
+#[test]
+fn test_query_performance_contract() {
+    // Query execution must complete within 500us
+}
+
+// Bad: Monolithic component with 20+ fields
+pub struct SystemManager { /* everything */ }
+
+// Bad: "This operation takes 5us" - no test to verify
+
+// Bad: Cannot be tested in isolation
+pub struct Component {
+    db: SqliteConnection, // Hard dependency
+}
+
+// Bad: No cleanup strategy
+pub struct FileProcessor {
+    files: Vec<File>, // Never closed
+}
+
+// Bad: Won't handle real code
+pub struct Function {
+    name: String, // What about generics? Visibility? Async?
+}
+
+// Bad: L3 async code in L1 core
+pub struct CoreProcessor {
+    runtime: tokio::Runtime, // Mixing layers
+}
+
+// Bad: Shared mutable state without stress tests
+```
+
+Premature abstraction is a ninth: "make it generic so we can swap implementations later" is wrong; make it work correctly and fast first, then abstract if needed.
+
 ## 14. Rust web backends
 
 This section applies to Rust HTTP backends and APIs (Actix, Axum or similar). For generic libraries, CLIs, parsers, protocol crates and FFI boundaries use sections 1 to 13 instead.
@@ -936,6 +1222,52 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - Do not handle work synchronously in the request when it needs durable retries, deduplication or long-running external calls, unless the tradeoff is stated.
 - Do not design password or session flows without addressing storage, failure behavior and async-safe verification boundaries.
 - Do not treat deployment and migrations as postscript tasks when schema or background workflow behavior changes.
+
+### Backend security hardening checklist
+
+DoS mitigation:
+
+- [ ] `TimeoutLayer` prevents slow-client attacks
+- [ ] `tower_governor` provides rate limiting
+- [ ] `DefaultBodyLimit` prevents memory exhaustion
+- [ ] Bounded channels prevent unbounded queues
+
+Data protection:
+
+- [ ] Input validation with `serde` + `validator`
+- [ ] TLS enforcement with `rustls`
+- [ ] Memory wiping with `zeroize` for sensitive data
+- [ ] Constant-time comparison with `subtle` for crypto
+
+### Database pool and compile-time checked queries
+
+```rust
+// Shared pool with proper error handling
+#[derive(Clone)]
+pub struct Database {
+    pool: sqlx::PgPool,
+}
+
+impl Database {
+    pub async fn new(database_url: &str) -> Result<Self, sqlx::Error> {
+        let pool = sqlx::PgPool::connect(database_url).await?;
+        sqlx::migrate!("./migrations").run(&pool).await?;
+        Ok(Self { pool })
+    }
+    
+    // Compile-time query validation
+    pub async fn get_user(&self, id: UserId) -> Result<Option<User>, sqlx::Error> {
+        sqlx::query_as!(
+            User,
+            "SELECT id, name, email FROM users WHERE id = $1",
+            id.0
+        )
+        .fetch_optional(&self.pool)
+        .await
+    }
+}
+```
+```
 
 ## 15. Tauri desktop apps
 
@@ -2372,3 +2704,24 @@ Questions to answer in any review or before handoff:
 - Are any locks or borrows held too long?
 - Does async code block the runtime?
 - Do tests prove every major claim in the implementation?
+
+### Architecture sign-off checklist
+
+Before finalizing a design, verify:
+
+- **Executable specifications:** requirements are in WHEN/THEN/SHALL form; every acceptance criterion has an automated test; the design states preconditions, postconditions and error conditions; performance claims have measurable contracts.
+- **Testability:** components are trait-based with mock implementations; dependency injection allows isolated testing; no hard dependency on external systems; interfaces between components are clear.
+- **Layering:** L1 is isolated (no_std compatible where applicable); L2 follows std idioms; L3 dependencies are justified and minimal; there is a clear path from the simple version to the complex one.
+- **Resources:** every resource-holding type implements `Drop`; no possible leaks; graceful shutdown under all conditions.
+- **Performance:** claims and memory layout are validated by tests; critical paths have benchmarks; regression detection is in place.
+- **Errors:** a structured hierarchy with `thiserror`; application context with `anyhow`; clear error boundaries; actionable messages.
+- **Domain complexity:** data models handle real-world cases, not simplified examples.
+- **Concurrency:** thread safety is validated by tests; stress tests run under concurrent load; no possible deadlocks or races.
+- **Workflow:** requirements reference acceptance-criteria ids; each interface has a test plan; tasks follow STUB, RED, GREEN, REFACTOR; each feature has a one-command verification.
+
+### Rules by phase
+
+- **Requirements:** write executable acceptance criteria; assign ids for requirement-to-test mapping; replace "better", "faster", "easier" with measurable criteria.
+- **Design:** start with traits; include test contracts; respect L1, L2, L3; design for real complexity.
+- **Implementation:** write tests first; give every performance assertion a test; use RAII consistently; structure errors with context; stress-test concurrency.
+- **Maintenance:** keep docs synchronized with code by automation; provide one command that validates a whole feature; run the full suite in CI.
