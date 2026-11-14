@@ -147,6 +147,86 @@ Trace every requirement to a test in a concise table:
 - Split functional from non-functional requirements when they would otherwise blur together.
 - Use `REQ-RUST-*` identifiers for Rust work even when the user starts with a generic request.
 
+### Contracts on the function itself
+
+User stories are written for human conversation; an agent cannot ask clarifying questions, so it needs an explicit contract. Put preconditions, postconditions and error conditions on the function, and validate every claim with an automated test.
+
+```rust
+// Bad: "As a user, I want to send messages"
+// Good: executable specification with contracts
+
+/// Message creation with deduplication contract
+///
+/// # Preconditions
+/// - User authenticated with room access
+/// - Content: 1-10000 chars, sanitized HTML
+/// - client_message_id: valid UUID
+///
+/// # Postconditions
+/// - Returns Ok(Message<Persisted>) on success
+/// - Inserts row into 'messages' table
+/// - Updates room.last_message_at timestamp
+/// - Broadcasts to room subscribers via WebSocket
+/// - Deduplication: returns existing if client_message_id exists
+///
+/// # Error Conditions
+/// - MessageError::Authorization if user lacks room access
+/// - MessageError::InvalidContent if content violates constraints
+/// - MessageError::Database on persistence failure
+pub async fn create_message_with_deduplication(
+    &self,
+    content: String,
+    room_id: RoomId,
+    user_id: UserId,
+    client_message_id: Uuid,
+) -> Result<Message<Persisted>, MessageError>;
+```
+
+Specification levels, from widest to narrowest:
+
+- **Constraints:** system-wide invariants and architectural rules.
+- **Architecture:** complete data models, error hierarchies and interface contracts.
+- **Modules:** method-level contracts, built with STUB, RED, GREEN, REFACTOR.
+- **User journeys:** end-to-end behavioral confirmation.
+
+Acceptance criteria name the command, the input and the bound:
+
+```markdown
+1. WHEN I run `parseltongue ingest <file>` THEN the system SHALL parse separated dump format with FILE: markers and extract all Rust interface signatures using `syn` crate
+2. WHEN processing a 2.1MB Rust code dump THEN the system SHALL complete ISG construction in less than 5 seconds
+```
+
+In the design phase, write the test plan next to the interface:
+
+```rust
+/// Test Plan for MessageService
+///
+/// Scenario 1: Successful Message Creation
+/// Given: valid user in room and valid content
+/// When: create_message_with_deduplication is called
+/// Then: returns Ok(Message<Persisted>) and broadcasts via WebSocket
+///
+/// Scenario 2: Deduplication
+/// Given: message with client_message_id X already exists
+/// When: new message with same client ID X is created
+/// Then: returns Ok(existing Message) - no duplicate created
+```
+
+Keep code and documentation tied together: test names carry the requirement id, and doc examples are executable.
+
+```rust
+#[test]
+fn test_blast_radius_performance_req_mvp_003() { // References REQ-MVP-003.0
+    // Test validates <500us execution time requirement
+}
+
+/// # Example
+/// ```rust
+/// let result = storage.calculate_blast_radius(start_hash, 3).await?;
+/// assert!(result.len() <= 1000); // Bounded result size
+/// ```
+```
+
 ### Vague-to-executable rewrites
 
 | Vague statement | Executable rewrite |
@@ -250,6 +330,112 @@ pub trait EntityProcessorBehavior {
 ```
 
 - Keep domain logic testable without network, database or runtime dependencies.
+
+### Layer and dependency examples
+
+```rust
+// L1: Core Language Features (no_std compatible)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SigHash(pub u128); // Newtype for type safety
+
+// L2: Standard Library Idioms
+use std::sync::Arc;
+use std::collections::HashMap;
+
+// L3: External Ecosystem
+use tokio::sync::RwLock;
+use serde::{Serialize, Deserialize};
+```
+
+- **L1 Core:** ownership, lifetimes, traits, `Result`/`Option`, RAII, newtypes.
+- **L2 Standard:** collections, iterators, smart pointers, thread safety (`Send`/`Sync`).
+- **L3 External:** async runtime (Tokio), serialization (Serde), databases (SQLx).
+
+Depend on traits, not concrete types:
+
+```rust
+// Bad: hard dependencies
+pub struct SystemComponent {
+    database: SqliteConnection,
+    file_watcher: NotifyWatcher,
+}
+
+// Good: trait-based dependencies
+pub struct SystemComponent<D, F>
+where
+    D: DatabaseProvider + Send + Sync,
+    F: FileWatchProvider + Send + Sync,
+{
+    database: Arc<D>,
+    file_watcher: Arc<F>,
+}
+
+// Production and test implementations
+pub type ProductionSystem = SystemComponent<SqliteDatabase, NotifyFileWatcher>;
+pub type TestSystem = SystemComponent<MockDatabase, MockFileWatcher>;
+```
+
+Manage every resource with RAII, releasing it in `Drop`:
+
+```rust
+pub struct ResourceManager {
+    connection: Option<Connection>,
+    watcher: Option<FileWatcher>,
+    _cleanup: CleanupGuard,
+}
+
+impl Drop for ResourceManager {
+    fn drop(&mut self) {
+        if let Some(conn) = self.connection.take() {
+            if let Err(e) = conn.close() {
+                eprintln!("Failed to close connection: {}", e);
+            }
+        }
+    }
+}
+```
+
+Model real-world complexity, not a simplified example:
+
+```rust
+// Bad: oversimplified
+pub struct Function {
+    pub name: String,
+    pub signature: String,
+}
+
+// Good: handles real complexity
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RustFunction {
+    pub name: InternedString,
+    pub signature: RustSignature,
+    pub generics: Option<GenericParams>,
+    pub where_clause: Option<WhereClause>,
+    pub visibility: Visibility,
+    pub async_kind: AsyncKind,
+}
+
+// Test with real-world complexity
+#[test]
+fn test_complex_generic_parsing() {
+    let code = r#"
+        impl<H, S> ErasedIntoRoute<S, Infallible> for MakeErasedHandler<H, S>
+        where
+            H: Clone + Send + Sync + 'static,
+            S: 'static,
+        {
+            fn into_route(self) -> Route { todo!() }
+        }
+    "#;
+
+    let parsed = parse_rust_code(code).unwrap();
+    let impl_node = parsed.find_impl_node().unwrap();
+
+    assert!(impl_node.generics.is_some());
+    assert!(impl_node.where_clause.is_some());
+    assert_eq!(impl_node.generics.unwrap().params.len(), 2); // H, S
+}
+```
 
 ## 5. Verification and test-first delivery
 
@@ -409,6 +595,77 @@ fn test_req_rust_005_shared_state_loom_model() {
 }
 ```
 
+Performance and memory-layout claims as tests:
+
+```rust
+#[tokio::test]
+async fn test_query_performance_contract() {
+    let system = create_test_system().await;
+
+    for i in 0..10_000 {
+        system.add_node(create_test_node(i)).await.unwrap();
+    }
+
+    let start = Instant::now();
+    let result = system.execute_query(test_query()).await.unwrap();
+    let elapsed = start.elapsed();
+
+    assert!(elapsed < Duration::from_micros(500),
+            "Query took {:?}, expected <500us", elapsed);
+}
+
+#[test]
+fn test_memory_layout_validation() {
+    assert_eq!(mem::size_of::<NodeData>(), 72);
+    assert_eq!(mem::align_of::<NodeData>(), 8);
+
+    // Same pointer means the string was interned
+    let str1 = InternedString::new("common_name");
+    let str2 = InternedString::new("common_name");
+    assert_eq!(str1.as_ptr(), str2.as_ptr());
+}
+```
+
+Concurrency stress test with a final consistency check:
+
+```rust
+#[tokio::test]
+async fn test_concurrent_read_write_safety() {
+    let storage = Arc::new(create_concurrent_storage().await);
+    let mut join_set = JoinSet::new();
+
+    // Spawn multiple writers
+    for i in 0..10 {
+        let storage_clone = Arc::clone(&storage);
+        join_set.spawn(async move {
+            for j in 0..100 {
+                let node = create_test_node(i * 100 + j);
+                storage_clone.add_node(node).await.unwrap();
+            }
+        });
+    }
+
+    // Spawn multiple readers
+    for _ in 0..20 {
+        let storage_clone = Arc::clone(&storage);
+        join_set.spawn(async move {
+            for _ in 0..50 {
+                let _ = storage_clone.get_random_node().await;
+            }
+        });
+    }
+
+    // Wait for all tasks; panic if any task failed
+    while let Some(result) = join_set.join_next().await {
+        result.unwrap();
+    }
+
+    // Verify data consistency: 10 writers * 100 nodes each
+    let final_count = storage.node_count().await.unwrap();
+    assert_eq!(final_count, 1000);
+}
+```
+
 ### Testing and contract verification patterns
 
 - **Doctests as executable contracts.** Examples rot when they are not executed; a doctest turns API explanation into a regression boundary. Use when the example communicates expected behavior, not just syntax. Move very large examples to integration tests.
@@ -491,6 +748,35 @@ Each pattern: why it matters, when to use it, when to avoid it.
 
 - **Source-annotated diagnostics with `miette` or `color-eyre`.** Some failures are best explained with a context snippet and labeled spans. Use in binaries and CLIs for end-user parse or config errors. Do not leak rich diagnostic types into library APIs that callers need lightweight and stable.
 
+Library error enum and application context, side by side:
+
+```rust
+// Library errors: structured with thiserror
+#[derive(Error, Debug)]
+pub enum SystemError {
+    #[error("Database error: {0}")]
+    Database(#[from] DatabaseError),
+
+    #[error("Query failed: {query} - {cause}")]
+    QueryFailed { query: String, cause: String },
+
+    #[error("Timeout after {elapsed:?} (limit: {limit:?})")]
+    Timeout { elapsed: Duration, limit: Duration },
+}
+
+// Application errors: anyhow for context
+pub async fn process_request(req: Request) -> anyhow::Result<Response> {
+    let data = fetch_data(&req.id)
+        .await
+        .with_context(|| format!("Failed to fetch data for request {}", req.id))?;
+
+    let result = process_data(data)
+        .with_context(|| "Data processing failed")?;
+
+    Ok(Response::new(result))
+}
+```
+
 ## 9. Async and concurrency
 
 - Never block inside async code, and never hold a lock guard across `.await`.
@@ -558,6 +844,23 @@ Do not treat these as default Rust quality rules:
 - Four-word naming when it would break a stable API or make a name materially worse.
 - Mermaid-only documentation as a universal requirement.
 - "MVP" used as cover for skipping tests, contracts or verification.
+
+### Four-word naming pattern (local convention)
+
+Where a repository adopts four-word names, the shape is `verb_constraint_target_qualifier()`: functions use underscores, crates, folders and commands use hyphens.
+
+- Verb: `filter`, `render`, `detect`, `save`, `create`, `process`
+- Constraint: `implementation`, `box_with_title`, `visualization_output`
+- Target: `entities`, `unicode`, `file`, `database`
+- Qualifier: `only`, `to`, `in`, `from`, `with`
+
+```text
+good: filter_implementation_entities_only()
+good: render_box_with_title_unicode()
+good: create_database_connection_pool_async()
+bad:  filter_entities()                    (2 words)
+bad:  detect_cycles_in_dependency_graph()  (5 words)
+```
 
 ## 13. Anti-patterns
 
