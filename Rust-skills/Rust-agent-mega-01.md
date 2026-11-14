@@ -116,6 +116,48 @@ Pick the verification mix from: unit, integration, doctest, compile-fail, proper
 
 ## 15. Tauri desktop apps
 
+Tauri work is neither only frontend work nor only Rust work. Decide what must be specified, what must be designed across the frontend, command, Rust core and desktop boundaries, and what must be verified. Where Tauri-specific security or lifecycle guidance conflicts with a generic Rust default, the Tauri guidance wins.
+
+### Tauri work modes
+
+| Mode | Use when |
+| --- | --- |
+| Spec Mode | The request is vague, acceptance criteria are missing, or the work needs `REQ-TAURI-*` contracts first |
+| App Architecture Mode | The task needs command boundaries, managed state, IPC shape, frontend/backend contracts, module structure or build seam decisions |
+| Desktop Security Mode | The main risk is capabilities, permission scoping, filesystem or plugin access, CSP, sidecars or updater trust boundaries |
+| Lifecycle Mode | The main risk is tray, single-instance, deep links, window state, startup/setup, external binary packaging or platform config drift |
+| Review Mode | The question is whether the app will stay safe, reliable and operable under change |
+
+Default combinations:
+
+- vague feature request: Spec + App Architecture
+- command, state or frontend IPC work: Spec + App Architecture
+- filesystem, plugin, capability or sidecar work: App Architecture + Desktop Security
+- updater, tray, deep-link, single-instance or window-state work: Desktop Security + Lifecycle
+- review or hardening pass: Review + one or more of the above
+
+### Tauri workflow
+
+1. **Classify the task and choose modes.** Name the component type first: feature request, command or IPC surface, permission boundary, sidecar or external binary, lifecycle path, or review.
+2. **Write executable requirements** as `REQ-TAURI-<NNN>.<REV>` in `WHEN ... THEN ... SHALL` form. Reject "safer" or "more reliable" without a threshold or an explicit boundary effect.
+3. **Define the design before coding.** Split it across the frontend contract, the command layer, the Rust core, and the desktop capability and lifecycle boundaries. Keep the frontend invoke contract explicit. Keep command functions thin so the deeper Rust logic stays testable.
+4. **Choose the verification mix:** Rust unit, Rust integration, frontend tests, typed invoke contract checks, mocked Tauri boundary tests, desktop boundary tests; performance tests only when a metric is stated. Do not default to one layer only.
+5. **Apply the Tauri reliability rules** (below).
+6. **Apply local conventions selectively:** four-word names for new functions and commands when feasible; preserve API, window, command and event compatibility when a rename is risky; keep modules cohesive and the registration structure explicit.
+7. **Run quality gates and anti-pattern checks before handoff.**
+
+Output order: Tauri Work Mode, Executable Requirements, Tauri Design (Frontend/IPC/Rust Core + Permissions/Lifecycle), Verification Matrix, Implementation Plan, Quality Gate Results, Open Questions. Use the same traceability table as section 2.
+
+### Tauri reliability and security rules
+
+- Command errors are serializable and visible to the frontend. Never panic in a command.
+- Keep managed state disciplined.
+- Capabilities are least-privilege by default. Scope filesystem, plugin, sidecar and updater permissions.
+- Bound the sidecar lifecycle; keep binary packaging and lifecycle ownership explicit.
+- Async command inputs are owned values.
+- Treat tray, deep links, single-instance and startup/setup behavior as correctness concerns, not polish.
+- Stay skeptical about: malformed input, permission creep, event spam, detached sidecars, updater trust, and lifecycle drift across platforms.
+
 ## 16. Quality gates and commands
 
 ## 17. Review checklist
