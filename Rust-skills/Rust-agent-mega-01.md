@@ -213,6 +213,11 @@ What the compiler does not prove:
 - **No blocking, no locks across await (must).** No `std::thread::sleep`, sync file I/O or `MutexGuard` held into a `select!` or network await. One passing run proves nothing about fairness or contention: use stress, timeout or latency tests, and `loom` when race behavior matters.
 - **Bounded concurrency and explicit cancellation (must).** Worker pools, pipelines, retries and supervisors state their concurrency bound, backpressure and cancellation behavior. Throughput without defined overload and shutdown behavior is not reliability.
 
+- **Shutdown fan-out (must).** A multi-task system has a single shutdown trigger, explicit fan-out to every owned task (a cancellation token or shutdown channel cloned into workers), and a bounded join phase with timeout or escalation. A main task that exits and hopes spawned tasks disappear is the anti-pattern. Test shutdown, signal handling, cancel-during-work and teardown time.
+- **Structured task ownership.** A `JoinSet` or supervisor owns spawned tasks, so lifecycle and failure propagation are visible in control flow. If no one owns a task, no one owns its failure. If work can accumulate, the system already has a queue, so bound it. Detached work is acceptable only for telemetry-like tasks with bounded, acceptable loss.
+- **Structured observability.** At request handlers, jobs, external calls, supervisors and queue consumers, emit `tracing` spans with request IDs, resource IDs, attempt counts and outcome fields. No free-form string logs with unstable wording. Skip tight inner loops when a higher boundary already gives the context.
+- **Transport to domain at the edge (must).** Request DTO, then `TryFrom`, then domain command, then workflow, then persistence. Shape validation is not invariant validation. Handlers, services and database calls must not share raw strings and optional fields.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
