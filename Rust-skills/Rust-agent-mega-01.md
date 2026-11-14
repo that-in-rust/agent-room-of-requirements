@@ -623,6 +623,11 @@ If you do not know what to prioritize, work down this list:
 
 - When a rename is risky, keep command IDs, event names and window labels stable. Keep command registration centralized.
 
+- Make I/O-heavy commands async.
+- Return `Result<T, AppError>` or an equivalent serializable shape from every fallible command.
+- Package sidecars deterministically.
+- This guidance targets Tauri 2.
+
 ### Tauri anti-patterns
 
 Reject these by default:
