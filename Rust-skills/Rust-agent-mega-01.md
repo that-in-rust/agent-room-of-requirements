@@ -49,6 +49,31 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - Tell repo-local conventions (four-word naming, the executable requirements format, one feature per version, Mermaid-only docs) apart from general Rust practice (typed boundaries and newtypes, typed library errors, no blocking in async, cancel-safe `select!`, `loom`, `proptest`, doctests, compile-fail tests, `#[non_exhaustive]`, `Cow`, `OnceLock`, `ExitCode`, `tracing`). The general practice applies everywhere.
 - This file covers libraries, CLIs, async services, application backends, moderately low-level systems code and FFI wrappers with contained unsafe. It is not a specialist manual for compiler internals, kernel-grade lock-free systems, deeply embedded no-std firmware or advanced proc-macro internals.
 
+### Decision ladder for any Rust task
+
+Work down this ladder; do not pick patterns at random.
+
+1. Classify the code: library, binary, async service, FFI wrapper, proc-macro or low-level systems component.
+2. Choose the ownership surface: borrowing, owned values, shared ownership or type-state.
+3. Choose the error surface: typed library error, app-level aggregation or rich binary diagnostics.
+4. Choose the concurrency surface: sync, async, channels, cancellation or structured task ownership.
+5. Choose the public API stability surface: `#[non_exhaustive]`, additive features, sealed traits, coherence-safe extension points.
+6. Choose the verification mix: unit, doctest, compile-fail, property, fuzz, `loom`, coverage gates.
+7. If unsafe remains necessary: minimize the block, document the invariant, and verify with Miri or an equivalent.
+
+Reach for the simplest pattern that preserves correctness boundaries, not the most impressive one.
+
+Powerful techniques that are not first bets, because they are niche or easy to misapply:
+
+- allocator overrides as a general default
+- `ManuallyDrop` for compile-time or micro-optimization purposes
+- proc-macro internals beyond hygiene, spans and diagnostics
+- lock-free building blocks without a verification plan
+- pinning tricks beyond safe projection and clear containment
+- specialization-related designs in public crates
+
+Correctness is won or lost in public API commitments, error boundary design, async cancellation and concurrency semantics, executable verification, and operational behavior after the code ships.
+
 ### Priorities by task type
 
 | Task type | Prioritize |
@@ -420,6 +445,14 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - **`PhantomData<fn() -> T>` invariance for typed handles.** Handle types, arena indices and lifetime-sensitive tokens can be unsound if variance is too permissive. Use when the type parameter carries lifetime or aliasing implications that must not be coerced. Avoid when ordinary covariance is correct.
 - **Type-state plus a drop bomb for must-complete protocols.** Some APIs are wrong if partially used. Type-state makes legal transitions explicit, and a debug-time bomb in `Drop` catches "forgot to complete or abandon" immediately. Use for parser markers, staged builders, transactions and protocol objects that must be finalized. Avoid when the state machine is trivial and the extra types would outweigh the gain.
 
+### Trait, async and macro boundary discipline
+
+- **Pin, pin projection and async trait boundaries.** Pinned values carry movement invariants; violating them is not an ordinary logic bug. Use safe projection helpers when implementing custom futures, self-referential state machines or pinned wrappers. Do not hand-project pinned fields or call `Pin::new_unchecked` without a proof. Understand the object-safety and allocation tradeoffs before choosing `async-trait` or async fn in traits.
+- **HRTBs, GATs and object safety.** Use them when ordinary trait methods cannot express borrowed output or a callback valid for any lifetime (lending-style iteration, for example). Do not add them where simple ownership is clearer, and do not publish a trait that looks dyn-friendly but is not object-safe.
+- **Additive features, sealed traits and coherence.** API stability also depends on whether features compose and whether downstream crates can safely implement your traits. Keep features additive, never mutually exclusive. Seal a trait when you still need freedom to evolve it.
+- **Macro and proc-macro hygiene.** A macro bug repeats at every expansion site. Use absolute paths in expansions, disciplined spans and compile-time diagnostics. Do not panic inside a proc macro on user error, and do not rely on the caller's imports.
+- **`NonZero` niches, ZSTs and uninhabited types.** Use `NonZero*` and `Option<NonZero*>` when the niche is real and semantically clean, zero-sized marker types with `PhantomData` for compile-time state that costs nothing at runtime, and uninhabited types for impossible states in place of sentinel values. Use them because the model is clearer, not because the layout looks clever.
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
@@ -428,6 +461,13 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - Use iterator pipelines for data transforms when they improve clarity.
 - Keep lock scope small and explicit.
 - Use `Arc` for shared ownership across threads and `Rc` for single-threaded sharing.
+
+### Ownership, borrowing and iterator sharp edges
+
+- **Interior mutability versus synchronization.** `Cell` and `RefCell` solve single-thread logical mutability; `Mutex` and `RwLock` solve cross-thread synchronization. Do not use a mutex in single-threaded code to quiet the borrow checker, and do not carry `RefCell` borrows or lock guards across async suspension points.
+- **Borrow-checker-friendly API design.** Many awkward APIs are awkward because their shape prolongs borrows. Smaller scopes, temporaries and methods that separate read and write phases remove E0502-class friction without cloning everything. Do not rely on subtle two-phase-borrow behavior where clear structure would do.
+- **Iterator contracts and fallible pipelines.** Support owned and borrowed iteration correctly and keep error short-circuiting. `size_hint`, `ExactSizeIterator`, `try_fold`, `try_for_each` and `FromIterator` define what consumers may assume. Do not claim exact iterator properties you cannot uphold, and do not `unwrap` inside a chain that should short-circuit with `Result`.
+- **Collection choice.** `Vec`, `VecDeque`, `HashMap`, `BTreeMap`, `IndexMap` and `BinaryHeap` make different operational promises: dense append-heavy storage, queue, hashed lookup, ordered map, stable iteration order, priority scheduling. The wrong default causes performance or determinism bugs. Do not use `LinkedList` as a default, and never treat `HashMap` iteration order as meaningful.
 
 ## 8. Errors and recovery
 
@@ -448,6 +488,8 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - **Context at I/O and orchestration boundaries.** `?` preserves propagation but not local meaning; add context where the operation is still understandable: opening files, issuing requests, decoding payloads, crossing service boundaries. Avoid adding it at every small helper layer, which repeats the same message.
 - **`ExitCode` and error-chain inspection at CLI boundaries.** CLIs need semantically correct exit behavior, not "print error and die". Broken pipes and other wrapped I/O failures often need special handling, and returning `ExitCode` keeps destructors running. A library must never own process exit semantics.
 - **FFI unwind boundaries with `catch_unwind` and explicit contracts.** A panic crossing an FFI boundary can be undefined behavior. Handle it explicitly whenever exporting or importing C-facing APIs; never assume the other side handles it.
+
+- **Source-annotated diagnostics with `miette` or `color-eyre`.** Some failures are best explained with a context snippet and labeled spans. Use in binaries and CLIs for end-user parse or config errors. Do not leak rich diagnostic types into library APIs that callers need lightweight and stable.
 
 ## 9. Async and concurrency
 
@@ -471,9 +513,17 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - **Thread naming, join discipline and `move` closures.** Name threads so their purpose is visible, join them so their lifecycle is explicit, and use `move` closures so ownership across the boundary is clear. Do not leak threads or rely on implicit shutdown.
 - **`OnceLock` and `LazyLock` for one-time initialization.** Use for expensive shared configuration, lookup tables, regexes and lazily initialized global state; they replace hand-rolled synchronization. Do not reach for global mutable state where plain ownership is simpler.
 
+- **Channel and synchronization choice.** `std::sync::mpsc`, `crossbeam-channel`, `flume`, Tokio channels, `Mutex`, `RwLock` and `parking_lot` are not interchangeable defaults; concurrency bugs often start at primitive selection. Do not mix channel ecosystems casually, and do not use the std channel where MPMC, select, deadlines or rendezvous semantics are needed.
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
+
+### Unsafe and FFI containment patterns
+
+- **Encapsulate unsafe behind a minimal surface, with SAFETY docs and Miri.** Unsafe is not wrong by default; undocumented unsafe is. Keep it small and private where possible, justify each block with a `SAFETY` comment and test it with Miri. Use it only where raw pointers, FFI, aliasing-sensitive optimization or manual memory invariants are truly required. Do not spread it across a wide public surface without one owned invariant boundary.
+- **`MaybeUninit`, aliasing invariants and RAII guards.** Memory-safety mistakes cluster around manual initialization and raw-pointer writes. Separate "allocated but uninitialized", "safely initialized" and "resource must be released" into explicit phases and guards. Never create a reference to uninitialized memory. `&mut` implies uniqueness.
+- **FFI layout, wide pointers and explicit nullability.** `&str`, `&[u8]` and `&dyn Trait` are not FFI-safe. Use explicit `repr` choices, `(ptr, len)` structs and `Option<NonNull<T>>` for nullability. Never export Rust fat pointers over FFI or assume default Rust layout is stable for external consumers.
 
 ## 11. Performance
 
@@ -535,6 +585,10 @@ Fatal anti-patterns; do not ship code with these:
 6. Oversimplified domain models that ignore real constraints.
 7. Layer violations: L3 dependencies leaking into L1 core.
 8. Async or concurrency logic with no stress or race validation.
+
+- public enums likely to grow but missing `#[non_exhaustive]`
+- textual diagnostics that discard the exact failure location
+- tests that cover examples but not invariants
 
 ## 14. Rust web backends
 
@@ -1996,6 +2050,9 @@ Reject work that lacks requirement coverage, measurable performance evidence, or
 - **Structured observability with `tracing`.** Spans, fields and correlation IDs make async and concurrent failures reconstructable. Never log secrets or dump whole payloads unfiltered.
 - **Secret handling with `secrecy`.** Wrap API keys, tokens and passwords in types that resist accidental display. Do not pass secrets as plain `String` because the code is internal.
 - **SQLx compile-time query checking and pool discipline.** Compile-time verified queries stop SQL strings and schemas drifting apart. Do not hold pooled connections across unnecessary `.await`s. Dynamic SQL generation loses the benefit.
+
+- **Coverage as a gate with `cargo-llvm-cov`.** A coverage floor on critical modules guards against silent test regressions; branch coverage helps where line coverage gives false confidence. Do not chase 100 percent in place of meaningful test depth.
+- **Workspace, toolchain and additive-feature discipline.** In multi-crate repos, keep workspace layering clear, the toolchain pinned and features additive, so a change does not introduce build drift. Workspace configuration must not be tribal knowledge.
 
 ## 17. Review checklist
 
