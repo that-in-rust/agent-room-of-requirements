@@ -987,6 +987,22 @@ fn handle(e: Error) {
 }
 ```
 
+- **Refutable and irrefutable patterns.** `match` for exhaustive handling, `if let` for one case, `while let` for loops that run until the pattern fails, irrefutable patterns in `let`. Do not use `if let` where several cases need handling.
+
+```rust
+// if let: handle one case
+if let Some(x) = maybe { use_x(x); }
+
+// while let: drain until pattern fails
+while let Some(item) = iter.next() { process(item); }
+
+// match: exhaustive handling
+match res {
+    Ok(v) => use_v(v),
+    Err(e) => handle(e),
+}
+```
+
 ### Trait, async and macro boundary discipline
 
 - **Pin, pin projection and async trait boundaries.** Pinned values carry movement invariants; violating them is not an ordinary logic bug. Use safe projection helpers when implementing custom futures, self-referential state machines or pinned wrappers. Do not hand-project pinned fields or call `Pin::new_unchecked` without a proof. Understand the object-safety and allocation tradeoffs before choosing `async-trait` or async fn in traits.
@@ -2120,6 +2136,26 @@ let v: String = conn.get("k").await?;
 ```
 
 - **Search.** Use the official OpenSearch or Elasticsearch client with typed bodies or `serde_json::json!`; handle 429 with backoff, set timeouts, and chunk bulk requests.
+
+```rust
+use opensearch::{OpenSearch, http::transport::Transport};
+use serde_json::json;
+let transport = Transport::single_node("http://localhost:9200")?;
+let client = OpenSearch::new(transport);
+let resp = client.index(opensearch::IndexParts::IndexId("logs", "1"))
+  .body(json!({"msg":"hello","ts":123}))
+  .send().await?;
+```
+
+- **MessagePack.** Use `rmp-serde` for compact binary serialization. Cap message sizes, validate input, add a schema or version field, do not assume map key order, and do not deserialize untrusted data into unbounded nested structures.
+
+```rust
+use rmp_serde::{encode::to_vec_named, decode::from_slice};
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Event { id: u64, msg: String }
+let bytes = to_vec_named(&Event { id: 1, msg: "hi".into() })?;
+let evt: Event = from_slice(&bytes)?;
+```
 
 ## 15. Tauri desktop apps
 
