@@ -32,6 +32,13 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - Do not recommend unsafe, lock-free or proc-macro-heavy designs as defaults; use them only when the task truly requires them.
 - Stay skeptical about: malformed input, non-UTF-8 boundaries, backpressure, cancellation, semver surface changes, and detached task lifecycles.
 
+- Prefer APIs that make misuse harder than correct use.
+- Parse, don't validate: turn raw input into a validated newtype once, at the boundary.
+- Keep error surfaces actionable and boundary-aware.
+- Fence unsafe code tightly and document the invariants it relies on.
+- Ask throughout: what fails here under malformed input, cancellation, backpressure, non-UTF-8 data, concurrency, or API evolution?
+- Before handoff, reread the anti-patterns (section 13) and the default reliability stack.
+
 ### Priorities by task type
 
 | Task type | Prioritize |
