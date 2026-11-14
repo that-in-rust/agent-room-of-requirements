@@ -1060,6 +1060,26 @@ Document `# Errors`, `# Panics` and `# Safety` on public items; an undocumented 
 pub fn parse(_s: &str) -> Result<(), Error> { Ok(()) }
 ```
 
+### Verification rules by risk
+
+- **Bug-fix rule.** Reproduce the bug, write or strengthen a regression test, see it fail on the broken state, apply the fix, then see the regression test and the broader suite pass. Do not claim a regression test exists if it was never observed failing.
+- **Checkpoints for long sessions.** Record the current red, green or refactor state, the exact failing tests or pending gates, the files touched, and open design or verification questions. A checkpoint guards against context drift; it does not replace tests.
+- **Differential and adversarial tests.** Use malformed corpora and adversarial inputs at parser, codec and protocol edges, not only golden happy paths. Use differential tests when an old and a new implementation can check each other cheaply. Test generated-code wrappers at the wrapper seam.
+- **Benchmarks need thresholds.** Track a named metric: latency, throughput, memory, binary size or compile time. Use realistic input sizes and worst-case pressure. A benchmark without an acceptance threshold does not show that a performance contract is met.
+- **Tests by risk surface:**
+
+| Risk surface | Preferred tests |
+| --- | --- |
+| pure logic | unit + property |
+| public API contract | unit + doctest + misuse cases |
+| persistence or I/O | integration |
+| async orchestration | integration + timeout + cancellation |
+| concurrency | stress, and `loom` where justified |
+| parsing or protocol | corpus + malformed input + property + fuzz |
+| compile-time misuse | compile-fail UI tests |
+| performance claim | benchmark with threshold |
+| unsafe or FFI boundary | harness + Miri or sanitizer |
+
 ## 6. Types and API design
 
 - Prefer newtypes, explicit conversions, and designs that make invalid states unrepresentable.
@@ -1892,6 +1912,13 @@ Backpressure:
 - If producers can outpace consumers, define the saturation policy: reject, wait, shed, batch or durable offload. "The queue should stay small" is not a policy.
 - No concurrency claim without reasoning, stress evidence or model checking in proportion to the risk.
 - Prefer message passing when it settles correctness questions better than shared mutation.
+
+Shutdown and cleanup:
+
+- **No async destructors.** Rust has none, so a design that needs awaited cleanup exposes an explicit async cleanup method. Do not rely on cancellation alone for soundness or business invariants. Cleanup required for protocol correctness belongs in the API contract and the test plan.
+- **Shutdown contract.** Define who initiates shutdown, how the signal fans out and how completion is awaited. Make shutdown idempotent or document repeated-call behavior. If teardown can block on I/O or task completion, that path is explicit in control flow and tested.
+- **Snapshots over contention.** Prefer immutable snapshots or owned work packets when lock contention would otherwise dominate the reasoning.
+- **Concurrency evidence.** A single green CI run proves almost nothing about concurrency. High-risk interleavings get `loom` or equivalent model checking; lower-risk code still gets stress, timeout, teardown and cancellation tests.
 
 ## 10. Unsafe and FFI
 
@@ -3936,6 +3963,12 @@ Workspace hygiene:
 - Keep optional dependencies behind features, grouped by feature set.
 - Re-export the public API from `lib.rs`.
 - Run `cargo clean` after a major dependency or workspace-configuration change, or when build errors make no sense, before trusting a critical test run.
+
+### Gate discipline
+
+- **Before any completion claim:** identify which command proves the claim, run it fresh and in full, inspect the output and exit status, report the actual result, and only then claim success or incompleteness.
+- **No completion claim survives if:** requirement coverage is missing; failure paths that matter are untested; a performance claim lacks evidence; concurrency assumptions are hand-waved; cancellation or shutdown is unspecified for a long-running task; or a public API changed without a compatibility review.
+- **API, unsafe and generated-code gates:** review public API changes for leaked dependency types, error surfaces and re-exports; unsafe changes carry `SAFETY` reasoning and targeted invariant tests; regenerate or diff-check generated sources from their true inputs; treat each Clippy suppression as a design decision with a stated reason.
 # rust-toolchain.toml
 [toolchain]
 channel = "1.80.1"
