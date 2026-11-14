@@ -143,6 +143,16 @@ fn test_operation_performance_contract() {
   - P3: polish or clarity issue with limited correctness risk.
 - **Confidence in a rule:** high when backed by language guarantees, std behavior or broad production precedent; medium for strong but context-sensitive ecosystem precedent; low for a heuristic or local convention.
 
+Waiver rules:
+
+- A waiver names the exact rule waived, with minimal and concrete scope.
+- The compensating control addresses the specific risk the rule prevented.
+- Verification added by a waiver is stricter than the baseline for that area.
+- A waiver expires at the next relevant refactor, release or architecture review.
+- Waivers around unsafe, shutdown semantics or public API leakage name the owner and the review trigger.
+- A waiver never turns hidden cleanup, hidden background ownership or a hidden dependency commitment into a "temporary" default without a replacement plan.
+- Also invalid as reasons: "we know this is safe", "we will test later", "the compiler is annoying", "the framework makes this awkward".
+
 ### First principles
 
 1. Make invalid states unrepresentable where practical.
@@ -660,6 +670,17 @@ let round: My = from_bytes(written)?;
 - **Stable external API over composed internals.** Callers depend on a narrow contract while internal modules compose interchangeable engines or strategies chosen by the implementation. Fits parser engines, search and index systems, storage adapters, planners and performance-critical libraries. Buys optimization freedom and lower SemVer pressure.
 
 - **Tauri split.** Frontend UI, then a typed IPC contract, then Rust core and workflows, then the capability and sidecar boundary. Use typed command modules, managed state, explicit permissions and explicit sidecar ownership. Verify with command tests, a permission review, sidecar lifecycle tests and startup and restore checks.
+
+### Domain context packs
+
+- **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
+- **Backend services.** Path: DTO to domain conversion at the edge, typed state and services, explicit timeout and retry policy, `tracing`, pooled database access (`axum`, `tokio`, `tower`, `sqlx`). Stretch: idempotency keys, durable intent plus background processing, compile-time query checks, overload control. Risks: DTO leakage inward, hidden retries, timeout ambiguity, auth leakage, transactions coupled to remote side effects. Verify: handler integration tests, malformed input, timeout and retry behavior, transaction boundaries.
+- **Libraries and SDKs.** Path: curated facade, typed errors, minimal dependency leakage, doctests for caller stories, additive features. Stretch: SemVer-aware layering, feature-matrix verification, optional zero-copy or `no_std` surfaces. Tools: `thiserror`, `proptest`, `criterion`, `cargo-semver-checks`. Risks: public dependency exposure, kitchen-sink errors, re-export sprawl, undocumented feature interactions.
+- **Parsers and protocols.** Path: explicit frontier types, corpus tests, malformed-input handling, binary-safe diagnostics, round-trip property tests. Stretch: zero-copy where justified, fuzzing, typestate-assisted protocol handling. Tools: `nom` or a hand-written parser, `proptest`, `arbitrary`, `cargo-fuzz`. Risks: partial parse treated as success, UTF-8 assumptions, panic on bad input, protocol state corruption.
+- **Tauri desktop.** Path: owned async commands, explicit managed state, narrow capabilities, exact sidecar scoping, typed IPC contracts. Risks: broad permissions, borrowed async inputs, hidden sidecar lifecycle, large payloads in JSON IPC, overlapping high-privilege windows. Verify: command tests, capability review, startup timeout, sidecar health checks, restore and first-paint behavior, deep-link handoff.
+- **FFI and unsafe.** Path: smallest safe wrapper, explicit ownership and nullability, layout discipline, private unsafe core. Tools: `libc`, `bindgen`, `cxx`, Miri. Risks: layout mismatch, aliasing violations, panic crossing FFI, invalid lifetimes. Verify: harness tests, ABI shape review, ownership-transfer tests, Miri or sanitizers.
+- **Performance work.** Path: representative benchmark cases, profile first, algorithmic wins and boundary simplification before unsafe or lock-free code. Stretch: worst-case complexity guards, cache-aware layout, allocation budgets. Tools: `criterion`, `iai-callgrind`, `cargo-bloat`, flamegraphs. Risks: optimizing the wrong metric, overfitting microbenchmarks, freezing internals into the public API.
+- **When Rust is the wrong tool.** Ultra-short scripts; deadline prototypes that do not need a typed service; one-off binaries with no reusable contract; integration surfaces so dynamic that safe boundary modeling is out of proportion; cases where the dominant latency is outside the process.
 # .cargo/config.toml
 [build]
 target = "thumbv7em-none-eabihf"
@@ -4107,3 +4128,9 @@ Before finishing a design, check whether one of these applies:
 - **Long-lived state:** model it as an explicit state machine with validated transitions; persist snapshots with a version tag, migrate old versions on load, and test recovery from each persisted version.
 - **Async tests:** use `#[tokio::test]`; control time with `tokio::time::pause` or `start_paused = true` instead of sleeping; mock services behind traits; inject faults (timeouts, dropped connections, partial writes); test races with `loom` or repeated stress runs.
 - **Library releases:** follow SemVer, check each release with `cargo semver-checks`, deprecate before removing, and record breaking changes in a changelog.
+
+### Review questions
+
+- **Types and invariants.** Which invariant is carried only by comments, not types or tests? Which primitives stand for distinct domain concepts? Where would a newtype, enum or `TryFrom` remove a whole bug class?
+- **Ownership and API surface.** Where does ownership look accidental? Which function takes ownership only because that was convenient? Which borrows only because the author avoided moving, though ownership is semantically correct? Which public API leaks internal storage or adapter shape and will be painful to evolve?
+- **Errors and recovery.** Which error path makes callers guess the recovery strategy? Are typed and dynamic errors at the right layer? Where is error context too vague to diagnose quickly? Are non-UTF-8 or binary boundaries handled safely? Which public error or type has committed the crate to a dependency's SemVer?
