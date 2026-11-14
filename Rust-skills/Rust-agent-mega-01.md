@@ -2189,6 +2189,15 @@ Each card gives the smell and the preferred alternative.
 - **Stringly recovery logic.** Retry, fallback or escalation branches keyed on substrings of an error message. Message drift and wrapper layers break them silently. Use typed variants or retryability metadata.
 - **Kitchen-sink public error enum.** One giant enum with a variant per crate, subsystem and transport failure plus catch-all strings. Callers cannot tell what is actionable and every internal refactor becomes an API change. Use typed local errors at meaningful boundaries and translate dependency failures into local concepts.
 
+- **Accidental public dependency leakage.** Public functions, structs or error variants that name third-party types by convenience, so a dependency upgrade becomes a breaking change. Use local facade types and conversion layers. Exception: a crate whose purpose is to re-export the upstream contract.
+- **Trait and module sprawl.** Many tiny traits, wrappers or modules that exist only to look abstract. Add seams only at real external or semantic boundaries.
+- **Imperative accumulator soup.** Nested loops with repeated `push`, temporary flags and branch-specific accumulation. Use an iterator pipeline or small named helpers, unless the loop is control-heavy and a chain would be less clear.
+- **Mutable config blob at runtime.** Partially filled config structs patched by many call sites before use, so validity depends on timing. Validate once in a builder and hand out a frozen config.
+- **Implicit workspace and feature coupling.** The repo builds only because developers remember undocumented features, toolchains or root-only commands. Make workspace config explicit, pin conventions, keep features additive and run gates from the root. Verify with a root workspace build and a feature-matrix check.
+- **Fire-and-forget task architecture.** Spawned tasks with no join path, shutdown path or failure observation, which leads to leaks, partial shutdown, hidden panics and stale state. Use a `JoinSet` or supervisor, bounded channels and cancellation tokens.
+- **Transport types leaking inward.** Handlers, services and persistence share the same DTO struct, so every layer re-decides what is valid. Convert DTOs to domain commands at the edge.
+- **Broad desktop privilege and unchecked sidecars.** Wide filesystem grants, generic shell authority, or sidecars with no health check or owner. Use granular capabilities, exact sidecar scoping, startup bounds and a supervised lifecycle. No exception for software running on a user's machine.
+
 ## 14. Rust web backends
 
 This section applies to Rust HTTP backends and APIs (Actix, Axum or similar). For generic libraries, CLIs, parsers, protocol crates and FFI boundaries use sections 1 to 13 instead.
