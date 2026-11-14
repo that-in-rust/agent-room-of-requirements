@@ -779,6 +779,92 @@ If you do not know what to prioritize, work down this list:
 - Supervise sidecars with startup checks, bounded waits, explicit restart rules and explicit binary packaging declarations.
 - Keep docs, examples, tests and capability and config files synchronized with behavior changes.
 
+### Tauri non-negotiables
+
+- All fallible commands return `Result<T, AppError>`.
+- Async commands use owned inputs.
+- Shared mutable state lives in Tauri-managed mutexes, not ad hoc globals.
+- Capabilities are window-scoped and least-privilege.
+- `plugin-store` is for small structured state, not binary payloads.
+- Large or streaming IPC uses channels or binary responses, not event spam.
+- Sidecars get health checks, bounded startup waits, explicit restart rules and log caps.
+- No `unwrap()` or `expect()` in command paths that users can hit.
+
+### Tauri pattern catalog
+
+Scope: Tauri 2 app-layer work. It does not cover plugin-author internals, mobile-only APIs or non-Tauri desktop shells.
+
+**Commands and state**
+
+- **Async command handlers.** Use an async command for anything that touches disk, network, process spawning or can otherwise stall the UI. Use owned inputs (`String`, not `&str`). Never call `std::thread::sleep` inside one. Keep `generate_handler!` registration in one place.
+
+  ```rust
+  use serde::Serialize;
+
+  #[derive(Serialize)]
+  struct GreetResponse {
+      message: String,
+  }
+
+  #[tauri::command]
+  async fn greet_user(name: String) -> Result<GreetResponse, AppError> {
+      tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+      Ok(GreetResponse {
+          message: format!("Hello, {name}!"),
+      })
+  }
+  ```
+
+- **Managed state.** Let Tauri manage global state and add interior mutability only where needed. Use `std::sync::Mutex` for short synchronous access. Use `tauri::async_runtime::Mutex` only when the lock must live across `.await`. Do not wrap state in `Arc` before `.manage(...)`; Tauri already shares it. Use dedicated state types and aliases so command signatures stay consistent.
+- **Serializable errors.** Make every frontend-visible failure explicit and serializable (a `thiserror` enum that implements `Serialize`). Preserve a readable structured error; do not panic and do not collapse to an opaque string late.
+- **Command module structure.** Keep command modules and registration explicit so naming and handler wiring are easy to audit. Avoid hidden command sprawl.
+- **Typed frontend invoke.** Wrap `invoke` in centralized typed functions; do not scatter stringly-typed calls. Normalize error and result shapes at that boundary.
+
+**Security**
+
+- **Minimal capabilities.** Capabilities are the primary Tauri 2 security boundary. Scope them by window label, platform and permission set. Grant the minimum command and plugin access each window needs. Treat broad filesystem or shell permissions as security decisions.
+- **Window labels.** Labels, not titles, are the security boundary. Scope capability differences between windows intentionally.
+- **Path scopes.** Resolve paths through scope-aware APIs. Keep path decisions close to capability definitions. Reject over-broad path assumptions and unchecked traversal.
+- **Official plugins.** Prefer official plugins over custom OS bridging, and match each with explicit permission scope; the permission scope is the safety story, not the plugin choice.
+- **CSP.** Keep the content security policy explicit, and do not widen it to unblock convenience code.
+- **Updater.** Treat signatures, channels and artifact provenance as part of correctness.
+- **Raw requests.** Drop to raw request handling only when JSON helpers are not enough. Validate early and keep the parsing logic narrow and auditable.
+
+**IPC shape**
+
+- **Channels** for sustained streams and long-running or high-volume progress; keep payloads bounded and explicit.
+- **Events** for sparse notifications and coarse progress only.
+- **Binary responses** for binary payloads; do not degrade them into giant JSON blobs.
+
+**Persistence**
+
+- **Bound store payload sizes.** Keep large data out of store-backed persistence.
+- **Blobs out of band.** Keep metadata in structured state and large binary or document payloads in files with explicit path and lifecycle handling.
+
+**Sidecars**
+
+- **Supervise the lifecycle.** Health checks, bounded and observable startup, explicit restart rules, log caps, and a named owner for the child process.
+- **Scope permissions exactly.** Whitelist the executable and its expected arguments. Avoid generic shell escape hatches.
+- **Declare external binaries explicitly.** Packaging must be exact about names, target triples and ownership.
+
+**Lifecycle and build**
+
+- **Setup.** Keep setup logic bounded: initialize just enough state, and hand long-running work to owned, supervised paths.
+- **Tray.** Keep tray behavior lifecycle-aware with deterministic state transitions; avoid duplicate or conflicting event wiring.
+- **Single instance.** Route a second launch deterministically to the primary instance.
+- **Deep links.** Handle them together with single-instance handoff; they mix OS integration, IPC and a trust boundary.
+- **CLI contracts.** Model desktop launch semantics explicitly.
+- **Window state.** Restore window state without a visible flash.
+- **Build hooks.** Treat the frontend/backend build seam as part of the design.
+- **Platform configs.** Put platform differences in explicit config, not scattered runtime branches.
+
+### Tauri TDD-first checks
+
+- Write or update typed boundary tests before widening the command surface.
+- Validate serializable error shapes before UI handling depends on them.
+- Test lifecycle-sensitive behavior wherever tray, updater, single-instance or deep links are involved.
+- Prefer mocked desktop-boundary tests when full runtime integration is heavier than necessary.
+
 ### Tauri runtime and safety gates
 
 - No blocking work runs directly in an async command context.
@@ -823,6 +909,10 @@ Reject these by default:
 - sidecar spawning without bounded startup, permission scoping or packaging declarations
 - command surfaces that panic or return opaque, unserializable failures
 - four-word naming applied where it would break stable command, API or window compatibility
+
+- blocking inside an async command handler
+- an unnecessary `Arc` around state Tauri already manages
+- filesystem access wider than the actual paths and windows involved
 
 ## 16. Quality gates and commands
 
