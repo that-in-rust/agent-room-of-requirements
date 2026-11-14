@@ -111,6 +111,8 @@ Trace every requirement to a test in a concise table:
 ### Requirement contract template
 
 ```markdown
+
+- Give non-functional claims explicit units (`us`, `ms`, `MB`, `ops/s`).
 ### REQ-RUST-001.0: <short title>
 
 **WHEN** <trigger or input condition>
@@ -154,6 +156,17 @@ pub struct EntityProcessorService<S: EntityStoreBehavior> {
 }
 ```
 
+A behavior trait over borrowed input:
+
+```rust
+pub trait EntityProcessorBehavior {
+    fn process_domain_entities_only(
+        &self,
+        input: &[DomainEntity],
+    ) -> Result<Vec<ProcessedEntity>, ProcessingError>;
+}
+```
+
 ## 5. Verification and test-first delivery
 
 ### Verification selection matrix
@@ -184,6 +197,74 @@ STUB -> RED -> GREEN -> REFACTOR -> VERIFY
 - **VERIFY:** run all chosen gates and confirm requirement traceability.
 
 Cover unit, integration, error-path and concurrency cases. Add performance tests only when a metric is specified.
+
+In STUB, write one or more tests per requirement id and define the interface signatures and fixtures.
+
+### Test matrix example
+
+| req_id | test_id | test_type | assertion | metric |
+| --- | --- | --- | --- | --- |
+| REQ-RUST-001.0 | TEST-UNIT-001 | unit | filters only implementation entities | correctness |
+| REQ-RUST-001.0 | TEST-INTEG-003 | integration | preserves order across parser and filter | correctness |
+| REQ-RUST-001.0 | TEST-PERF-002 | perf | p99 < 500us for 10k entities | latency |
+| REQ-RUST-001.0 | TEST-CONC-004 | concurrency | no race under 100 parallel tasks | safety |
+
+### Test skeletons
+
+Name each test after the requirement it proves.
+
+Unit:
+
+```rust
+#[test]
+fn test_req_rust_001_filter_implementation_entities_only() {
+    let input = create_test_entities_mixed_set();
+    let output = filter_implementation_entities_only(&input);
+    assert!(output.iter().all(DomainEntity::is_implementation));
+}
+```
+
+Async integration:
+
+```rust
+#[tokio::test]
+async fn test_req_rust_001_pipeline_integration() -> anyhow::Result<()> {
+    let fixture = create_pipeline_fixture_valid_case().await?;
+    let output = run_processing_pipeline_async(&fixture).await?;
+    assert_eq!(output.status, ProcessingStatus::Completed);
+    Ok(())
+}
+```
+
+Performance contract:
+
+```rust
+#[test]
+fn test_req_rust_001_performance_contract() {
+    use std::time::{Duration, Instant};
+    let input = create_test_entities_large_set(10_000);
+    let start = Instant::now();
+    let _ = filter_implementation_entities_only(&input);
+    assert!(start.elapsed() < Duration::from_micros(500));
+}
+```
+
+Concurrency contract:
+
+```rust
+#[tokio::test]
+async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
+    use futures::future::join_all;
+    let shared = std::sync::Arc::new(create_shared_processor_state());
+    let tasks = (0..100).map(|_| {
+        let shared = std::sync::Arc::clone(&shared);
+        tokio::spawn(async move { shared.process_safely_async().await })
+    });
+    let results = join_all(tasks).await;
+    assert!(results.into_iter().all(|r| r.is_ok()));
+    Ok(())
+}
+```
 
 ## 6. Types and API design
 
