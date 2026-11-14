@@ -207,6 +207,12 @@ What the compiler does not prove:
 - **Typed library errors (must).** The error type is part of the API. Never export `anyhow::Error` as a library's default contract. Add context where the operation or repair action becomes clear: file I/O, database calls, subprocesses, HTTP requests, task joins, for example `read_to_string(path).with_context(|| format!("read config: {path}"))?`. Never propagate a bare `NotFound` or `Io`.
 - **Collection by access pattern.** `BTreeMap` for stable ordered iteration, `HashMap` for fast keyed lookup, `Vec` for compact ordered scans. Using `HashMap` everywhere and then re-sorting or cloning into the shape the caller needed is the anti-pattern.
 
+- **Dependency types in public APIs (must).** Each exposed dependency type is a deliberate compatibility commitment. Otherwise wrap it in a local `Error`, `Request` or `Config` type and convert internally. Verify with a SemVer-oriented API review before release.
+- **Explicit close (must).** A type whose teardown can fail, block or needs ordering exposes `close`, `flush` or `shutdown` returning `Result`; `Drop` only releases local state. No I/O, task waiting or panics in a destructor. Test the close path, double-close behavior and shutdown ordering.
+- **Owned async boundaries (must).** Anything retained across `.await` or handed to a spawned task is owned. Move the request or domain state into the workflow; do not hold borrowed request fragments across awaits. Test cancellation and partial progress.
+- **No blocking, no locks across await (must).** No `std::thread::sleep`, sync file I/O or `MutexGuard` held into a `select!` or network await. One passing run proves nothing about fairness or contention: use stress, timeout or latency tests, and `loom` when race behavior matters.
+- **Bounded concurrency and explicit cancellation (must).** Worker pools, pipelines, retries and supervisors state their concurrency bound, backpressure and cancellation behavior. Throughput without defined overload and shutdown behavior is not reliability.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
