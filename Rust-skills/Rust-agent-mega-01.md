@@ -226,11 +226,11 @@ Tauri work is neither only frontend work nor only Rust work. Decide what must be
 
 | Mode | Use when |
 | --- | --- |
-| Spec Mode | The request is vague, acceptance criteria are missing, or the work needs `REQ-TAURI-*` contracts first |
-| App Architecture Mode | The task needs command boundaries, managed state, IPC shape, frontend/backend contracts, module structure or build seam decisions |
-| Desktop Security Mode | The main risk is capabilities, permission scoping, filesystem or plugin access, CSP, sidecars or updater trust boundaries |
-| Lifecycle Mode | The main risk is tray, single-instance, deep links, window state, startup/setup, external binary packaging or platform config drift |
-| Review Mode | The question is whether the app will stay safe, reliable and operable under change |
+| Spec Mode | The request is vague, acceptance criteria are missing, or the work needs `REQ-TAURI-*` contracts first. Emphasis: contracts, acceptance criteria, traceability |
+| App Architecture Mode | The task needs command boundaries, managed state, IPC shape, frontend/backend contracts, module structure or build seam decisions. Emphasis: invoke contracts, managed state, module shape, build seams |
+| Desktop Security Mode | The main risk is permissions or trust boundaries: capabilities, filesystem or plugin scope, CSP, sidecars, updater trust |
+| Lifecycle Mode | The main risk is desktop runtime behavior: tray, single-instance, deep links, window state, startup/setup, external binary packaging, platform config drift |
+| Review Mode | The question is whether the app will stay safe, reliable and operable under change. Emphasis: anti-patterns, safety, operability, compatibility, final gates |
 
 Default combinations:
 
@@ -252,6 +252,62 @@ Default combinations:
 
 Output order: Tauri Work Mode, Executable Requirements, Tauri Design (Frontend/IPC/Rust Core + Permissions/Lifecycle), Verification Matrix, Implementation Plan, Quality Gate Results, Open Questions. Use the same traceability table as section 2.
 
+### Tauri priorities by task type
+
+| Task type | Prioritize |
+| --- | --- |
+| Commands and frontend IPC | Typed invoke contracts; serializable command errors; async command ownership rules; a clear split between the command layer and the deeper Rust core; Rust integration tests plus frontend contract tests |
+| Shared state and Rust core | Managed state discipline; explicit state ownership and synchronization choice; centralized command registration and module structure; Rust unit and integration tests around the core boundary |
+| Capabilities, permissions, filesystem or plugin access | Capability scoping by window label; least-privilege filesystem and plugin access; CSP hardening where relevant; permission review before feature convenience |
+| Sidecars and external binaries | Exact sidecar permissions and arguments; startup bounds, health checks, restart policy and log caps; explicit external binary packaging; lifecycle ownership and failure visibility |
+| Lifecycle and platform integration | Setup/startup boundaries; tray event flow; single-instance handoff; deep-link routing; window-state restore; platform config drift management |
+| Review or hardening pass | Panic and serialization risks in command paths; permission creep; lifecycle ownership gaps; event spam and binary payload misuse |
+
+### Tauri requirements
+
+Use the template of section 3 with `REQ-TAURI-001.0` identifiers. Use explicit units for latency, payload size, retries, startup bounds and resource limits. Split security, lifecycle and operability requirements; do not hide them in one broad clause.
+
+### Tauri design scaffold
+
+| Area | Role | Question to ask |
+| --- | --- | --- |
+| Frontend contract | Typed invoke payloads, responses, events or channels | What exact UI-facing boundary should stay stable? |
+| Command layer | Tauri commands and request validation | What belongs in the command boundary versus deeper Rust services? |
+| Rust core | Domain logic, adapters, state types, sidecar supervision | What should stay testable and framework-light? |
+| Managed state | Tauri-managed shared state and synchronization | What state is shared, and what mutex model fits it? |
+| Capabilities and permissions | Capability files, labels, filesystem and plugin scope | What is the least-privilege set for the actual windows and actions? |
+| Lifecycle and packaging | Setup, tray, updater, single-instance, deep links, external binaries | What lifecycle ownership and packaging guarantees are required? |
+
+- Make the frontend invoke contract explicit before implementation.
+- Scope permissions by real window labels and concrete actions.
+- Treat lifecycle and packaging as part of design, not deployment cleanup.
+
+### Tauri verification matrix
+
+| Verification type | Choose it when |
+| --- | --- |
+| Rust unit | Behavior is local and deterministic inside the Rust core |
+| Rust integration | Behavior crosses command, adapter or serialization boundaries |
+| frontend test | UI logic depends on typed command or event results |
+| typed invoke contract check | Stringly-typed IPC drift is a material risk |
+| mocked Tauri boundary test | Desktop runtime behavior must be validated without a full live shell |
+| desktop boundary test | Tray, deep links, single-instance, updater or window-state behavior is central |
+| performance | Latency or payload thresholds were explicitly stated |
+
+Follow the TDD loop of section 5, with one test or test skeleton per `REQ-TAURI-*`. Run the command gates of section 16 plus the repo's normal frontend and Tauri checks for the changed boundary.
+
+### Tauri default reliability and security stack
+
+If you do not know what to prioritize, work down this list:
+
+1. Make frontend-to-command contracts explicit and typed.
+2. Keep command failures serializable and user-reachable paths panic-free.
+3. Keep shared mutable state in disciplined Tauri-managed boundaries.
+4. Make permissions least-privilege by window label and action.
+5. Use channels or binary responses for large or long-running IPC.
+6. Supervise sidecars and external binaries explicitly.
+7. Treat updater, tray, deep links, single-instance and window state as correctness concerns.
+
 ### Tauri reliability and security rules
 
 - Command errors are serializable and visible to the frontend. Never panic in a command.
@@ -261,6 +317,22 @@ Output order: Tauri Work Mode, Executable Requirements, Tauri Design (Frontend/I
 - Async command inputs are owned values.
 - Treat tray, deep links, single-instance and startup/setup behavior as correctness concerns, not polish.
 - Stay skeptical about: malformed input, permission creep, event spam, detached sidecars, updater trust, and lifecycle drift across platforms.
+
+- When a rename is risky, keep command IDs, event names and window labels stable. Keep command registration centralized.
+
+### Tauri anti-patterns
+
+Reject these by default:
+
+- vague desktop requirements with no measurable assertions
+- generic Rust rules overriding Tauri-specific capability or lifecycle safety guidance
+- borrowed inputs on async command boundaries
+- `unwrap()` or `expect()` in user-reachable command or lifecycle paths
+- broad filesystem, plugin or sidecar permissions used as convenience defaults
+- event spam for large payloads or streaming progress
+- the plugin store used as a blob sink
+- unchecked sidecar spawning with no lifecycle ownership
+- updater, tray or deep-link behavior treated as post-hoc polish
 
 ## 16. Quality gates and commands
 
