@@ -186,6 +186,16 @@ What the compiler does not prove:
 - **Shared state.** `Rc`, `Arc`, `Cell`, `RefCell`, `Mutex`, `RwLock`, atomics and channels are different tools. Narrow shared state to the smallest mutable surface. `Arc<Mutex<T>>` must not become the default architecture for unrelated concerns.
 - **Loops.** A manual loop is fine when it is clearer, more controllable or easier to debug than a combinator chain.
 
+### Doctrine for ecosystem and boundary code
+
+- **Conversion names follow cost.** `as_` for a cheap borrowed view, `to_` for a transform that may allocate or copy, `into_` for owned consumption.
+- **Generated code** is an implementation artifact. Do not hand-edit it; own the semantic contract in a hand-written wrapper or extension module. A type with deterministic cleanup makes its post-close behavior obvious.
+- **Boundary types.** Transport shapes stay transport shapes; domain invariants live in domain types, not raw DTOs. Send binary payloads over a binary-friendly transport, not as large JSON blobs. Inspect opaque or untrusted payloads before converting them to richer internal forms.
+- **Persistence and integrations.** Each persistence workflow has one clear transaction owner. When durable state and a remote side effect are combined, state the failure strategy. An external client boundary exposes typed failures, a timeout policy, a retry policy and correlation context. Design idempotency and deduplication wherever callers or infrastructure can replay a request.
+- **Measure before optimizing.** Start from a profile or a demonstrated hot path. Compile time, binary size, memory and latency are different targets: name the one being optimized. Benchmarks use representative inputs and stable thresholds. An algorithmic guarantee can outrank a micro-optimization when worst-case behavior matters.
+- **Adopting a pattern.** Adopt one only when it reduces a bug class, misuse or ambiguous failure behavior, never because it looks advanced. High-ceremony patterns must pay for themselves in safety, boundary clarity or correctness. Judge a pattern on: zero-cost, type-safe, ergonomic, compositional, resilient.
+- **Recovery-aware errors.** Where retryability changes control flow (network clients, storage, subprocesses, queues, external APIs), encode it in the error type as transient or permanent. Classify by recovery strategy, not by cause. Never match on error strings. Test that transient errors retry and permanent errors do not.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
