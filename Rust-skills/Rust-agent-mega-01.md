@@ -2398,6 +2398,8 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - **Latency gate.** Require a service-specific SLO before deployment. Without one, hold representative handlers to p95 under 200 ms and p99 under 500 ms locally, or document why latency does not apply.
 - **Scale seams are design events.** Traffic growth re-triggers the worker-split question. A second instance or a rolling deploy makes multi-step schema evolution mandatory: never ship a strict-constraint migration in one step. Moving work behind a worker adds queue tables whose schema changes then need sequencing. Several independent services are beyond single-service rules.
 
+- **Name the task's dominant risk before designing.** The risk classes are ambiguity, delivery sequencing, operational safety, security, resilience and review readiness. The dominant risk is often not the stated topic: a migration's topic is schema and its risk is rollout ordering; a retry question is a resilience question, not a client-boundary one. Classify by risk, not by a keyword shared with the ticket.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
