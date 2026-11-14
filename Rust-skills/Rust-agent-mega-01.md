@@ -384,6 +384,15 @@ fn test_req_rust_005_shared_state_loom_model() {
 }
 ```
 
+### Testing and contract verification patterns
+
+- **Doctests as executable contracts.** Examples rot when they are not executed; a doctest turns API explanation into a regression boundary. Use when the example communicates expected behavior, not just syntax. Move very large examples to integration tests.
+- **Compile-fail UI tests for misuse contracts.** If misuse should fail with a specific type error, that is part of the public contract, especially for macros, builders and type-level APIs. Do not assert unstable compiler wording too precisely.
+- **Property tests for invariants and round trips.** Example tests prove one chosen case; property tests probe the input space and shrink failures to something readable. Use for serializers, parsers, formatters, normalizers and algebraic invariants. Skip when the state space is tiny and examples cover it.
+- **Fuzzing for parser, decoder and protocol frontiers.** Fuzzing explores malformed input no human would write. Use for bytes, external protocols, compressed data and attacker-influenced input. Pair it with sanitizers, corpus hygiene and timeouts.
+- **Snapshot tests (`expect-test`) where textual output is the contract.** Good for parsers, formatters, diagnostics and macro expansions whose whole output shape matters. Do not let snapshots become golden files reviewers stop reading.
+- **Test infrastructure that optimizes failure readability and isolation.** A suite is only as fast as its failure-diagnosis loop. Use dedicated temp dirs, diff-friendly assertions, explicit command wrappers and retries for flaky OS operations in integration tests that touch real filesystems, commands or multi-line output.
+
 ## 6. Types and API design
 
 - Prefer newtypes, explicit conversions, and designs that make invalid states unrepresentable.
@@ -433,7 +442,12 @@ Each pattern: why it matters, when to use it, when to avoid it.
 
 - **`thiserror` in libraries, `anyhow` or `eyre` in binaries.** Libraries need structured errors callers can inspect; binaries need ergonomic propagation, context and display. Mixing the two produces mushy error boundaries. Never export `anyhow::Error` from a library because it feels easier.
 - **Opaque public errors with a private kind.** A public error struct that wraps a private or controlled kind keeps semver room while still allowing inspection, and it stops downstream code constructing states only your crate should own. Use when the library's error space is public and likely to evolve. Avoid when the error really is a small fixed enum.
-- **`#[non_exhaustive]` on public enums and structs that will grow.** Future-proofing a public type is an API reliability pattern, not a cosmetic one.
+- **`#[non_exhaustive]` on public enums and structs that will grow.** Future-proofing a public type is an API reliability pattern, not a cosmetic one; omitting the attribute silently promises the type will never grow. Use when the type is public and the domain has room to evolve. Avoid when the type is intentionally sealed and extra variants would change its meaning.
+- **Actionable diagnostics with exact location and a repair hint.** Telling a user the byte offset and a valid workaround is worth more than another abstract variant name. Use when parsing user-facing input, formats, flags, sizes, patterns and configuration. Avoid when the detail is internal and would confuse the caller.
+- **Binary-safe diagnostics for non-UTF-8 data.** Paths and byte-oriented data are often not valid UTF-8; converting to `String` too early loses data or panics in the wrong place. Use for file paths, regex patterns, command stderr, protocol bytes and search output. Avoid only when the domain guarantees UTF-8 and the proof is local and strong.
+- **Context at I/O and orchestration boundaries.** `?` preserves propagation but not local meaning; add context where the operation is still understandable: opening files, issuing requests, decoding payloads, crossing service boundaries. Avoid adding it at every small helper layer, which repeats the same message.
+- **`ExitCode` and error-chain inspection at CLI boundaries.** CLIs need semantically correct exit behavior, not "print error and die". Broken pipes and other wrapped I/O failures often need special handling, and returning `ExitCode` keeps destructors running. A library must never own process exit semantics.
+- **FFI unwind boundaries with `catch_unwind` and explicit contracts.** A panic crossing an FFI boundary can be undefined behavior. Handle it explicitly whenever exporting or importing C-facing APIs; never assume the other side handles it.
 
 ## 9. Async and concurrency
 
@@ -446,11 +460,29 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - Give long-running async operations a cancellation path.
 - Validate shared-state behavior with concurrent stress tests.
 
+### Async and concurrency reliability patterns
+
+- **No blocking and no locks across `.await`.** Violations cause latency spikes, deadlocks, starvation and performance cliffs. Applies on any async runtime. Do not assume a short synchronous call is harmless without proving it is non-blocking.
+- **Bounded channels, backpressure and cancellation tokens.** Unbounded queues hide problems until memory pressure is the symptom; backpressure makes throughput limits visible; cancellation tokens make shutdown explicit and cooperative. Use in pipelines, workers, fan-out systems and long-running services.
+- **Cancel-safe `tokio::select!`.** A future dropped by `select!` loses its internal state at once. If partially consumed state lives inside the future, cancellation becomes data loss or protocol corruption. Keep half-read buffers and half-advanced parsers outside the branch futures when multiplexing reads, writes, shutdown signals, timers and work streams.
+- **Structured concurrency with `JoinSet` and task scopes.** Detached tasks are easy to start and hard to reason about; structured concurrency keeps ownership, shutdown and error propagation visible. Use when a parent operation owns a family of subtasks and must know when they finish or fail.
+- **Model checking with `loom`.** One passing run proves almost nothing about concurrency. `loom` explores interleavings of a small model and finds races ordinary tests miss. Use for lock-free pieces, ordering-sensitive state machines and subtle synchronization. Carve out a focused model; do not put the whole production system into `loom`.
+- **Atomic ordering by reasoning, not superstition.** Do not use `SeqCst` everywhere or `Relaxed` everywhere. Justify each ordering by the memory relation needed, then test it where possible.
+- **Thread naming, join discipline and `move` closures.** Name threads so their purpose is visible, join them so their lifecycle is explicit, and use `move` closures so ownership across the boundary is clear. Do not leak threads or rely on implicit shutdown.
+- **`OnceLock` and `LazyLock` for one-time initialization.** Use for expensive shared configuration, lookup tables, regexes and lazily initialized global state; they replace hand-rolled synchronization. Do not reach for global mutable state where plain ownership is simpler.
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
 
 ## 11. Performance
+
+### Performance without sacrificing correctness
+
+- **Panic-free arithmetic and slicing.** External input plus unchecked indexing is a classic source of boundary bugs. Use `checked_*`, `saturating_*` and `.get()` for ranges, offsets, terminators, suffix stripping and parser cursor movement. Do not rely on "we already proved this above" in code that will change.
+- **Builder plus frozen config struct.** Configuration is mutable during construction and immutable during execution; a builder that produces a cheap frozen config makes the split explicit. Use when a component has many orthogonal knobs and a stable execution phase. Keep runtime state and expensive artifacts out of the builder.
+- **Accumulate, then build, collecting errors as you go.** Some structures (pattern sets, registries, ignore lists, aggregated configuration) can only be optimized once the whole batch is known. Collect non-fatal build-time errors separately from final construction. Do not force eager construction on every incremental addition.
+- **Prepare once, query many.** Precompute a normalized or derived view once as a named value type, then reuse it across many checks: matching, routing, filtering, repeated comparison against one input. Avoid when precomputation costs more than the reuse saves or hides a freshness requirement.
 
 ## 12. Naming, modules and documentation
 
@@ -1954,6 +1986,16 @@ Run the optional advanced gates for high-risk changes.
 - [ ] No TODO, STUB or FIXME placeholders remain in finalized code.
 
 Reject work that lacks requirement coverage, measurable performance evidence, or concurrency validation where it matters.
+
+### Tooling, release and operations patterns
+
+- **`cargo clippy -D warnings` as a correctness gate.** A meaningful subset of lints catches correctness bugs, needless allocation and API footguns. Optional warnings become background noise. Do not suppress large lint classes without understanding why they fire.
+- **`rustfmt` as non-negotiable.** Consistent formatting removes review churn and keeps diffs and blame readable. Do not hand-tune style against the formatter.
+- **MSRV policy and toolchain pinning.** Depending on "whatever latest stable has" makes compatibility accidental. State the MSRV, pin the toolchain, and document any MSRV change.
+- **Supply-chain policy with `cargo audit`, `cargo deny` or `cargo vet`.** Advisories, license constraints and yanked crates affect whether code is safe to ship. `Cargo.lock` alone is not risk management.
+- **Structured observability with `tracing`.** Spans, fields and correlation IDs make async and concurrent failures reconstructable. Never log secrets or dump whole payloads unfiltered.
+- **Secret handling with `secrecy`.** Wrap API keys, tokens and passwords in types that resist accidental display. Do not pass secrets as plain `String` because the code is internal.
+- **SQLx compile-time query checking and pool discipline.** Compile-time verified queries stop SQL strings and schemas drifting apart. Do not hold pooled connections across unnecessary `.await`s. Dynamic SQL generation loses the benefit.
 
 ## 17. Review checklist
 
