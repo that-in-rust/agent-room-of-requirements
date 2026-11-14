@@ -203,6 +203,10 @@ What the compiler does not prove:
 - **Static before dynamic validation (must).** Prefer argument types that rule out invalid input; when that is not enough, validate immediately at the entry point. The best validation is the one callers cannot accidentally forget. Review every unchecked escape hatch.
 - **Trait seams at side-effect boundaries.** Put a trait where ownership of side effects changes: outbound HTTP, storage, queues, clock, UUID generation, sidecar processes. The core service depends on a `UserStore` trait and the adapter owns the SQLx pool; handlers never build clients or queries inline. Skip the trait for small leaf logic and stable internal helpers. Verify with unit tests against fakes plus integration tests against the real adapter.
 
+- **Typestate for must-complete protocols (may).** Use for handshakes, builders with mandatory fields, resource lifecycles and staged activation, for example `Connection<Unauthenticated>` to `Connection<Authenticated>`. Do not use for ordinary CRUD or soft workflows where the state-machine cost exceeds the risk. Verify with compile-fail misuse tests plus transition tests.
+- **Typed library errors (must).** The error type is part of the API. Never export `anyhow::Error` as a library's default contract. Add context where the operation or repair action becomes clear: file I/O, database calls, subprocesses, HTTP requests, task joins, for example `read_to_string(path).with_context(|| format!("read config: {path}"))?`. Never propagate a bare `NotFound` or `Io`.
+- **Collection by access pattern.** `BTreeMap` for stable ordered iteration, `HashMap` for fast keyed lookup, `Vec` for compact ordered scans. Using `HashMap` everywhere and then re-sorting or cloning into the shape the caller needed is the anti-pattern.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
