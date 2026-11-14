@@ -347,6 +347,17 @@ Reject these by default:
 - concurrency code that has never been stress-tested or modeled
 - L3 dependencies leaking into L1 core
 
+Fatal anti-patterns; do not ship code with these:
+
+1. Ambiguous requirements with no measurable assertions.
+2. Monolithic "god object" structs with mixed responsibilities.
+3. Performance claims without benchmark or contract tests.
+4. Hard concrete dependencies that block unit testing.
+5. Resource lifecycle leaks or missing cleanup guarantees.
+6. Oversimplified domain models that ignore real constraints.
+7. Layer violations: L3 dependencies leaking into L1 core.
+8. Async or concurrency logic with no stress or race validation.
+
 ## 14. Rust web backends
 
 ## 15. Tauri desktop apps
@@ -482,6 +493,34 @@ Optional advanced gates:
 cargo test --release
 cargo llvm-cov --workspace --branch --fail-under-lines 75
 ```
+
+Run the optional advanced gates for high-risk changes.
+
+### Traceability gate
+
+- Every requirement has a stable id (`REQ-RUST-<NNN>.<REV>`) and is linked to one or more tests.
+- Fail the review if any requirement lacks verification.
+
+### Naming and structure gate
+
+- New symbols use four-word names when feasible.
+- Modules are single-purpose and understandable.
+- Existing public API contracts are preserved when compatibility matters.
+
+### Runtime and safety gate
+
+- No blocking I/O or CPU-bound work runs directly on an async executor.
+- No lock is held across `.await`.
+- Cancellation and timeout paths are handled.
+- No secret value is logged.
+
+### Release readiness checklist
+
+- [ ] Requirements are executable and measurable.
+- [ ] Tests validate functional, error and edge behavior.
+- [ ] Performance claims include explicit threshold tests.
+- [ ] Documentation and examples reflect current behavior.
+- [ ] No TODO, STUB or FIXME placeholders remain in finalized code.
 
 ## 17. Review checklist
 
