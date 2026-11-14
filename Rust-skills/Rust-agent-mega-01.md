@@ -868,6 +868,15 @@ fn snapshot() {
 }
 ```
 
+Document `# Errors`, `# Panics` and `# Safety` on public items; an undocumented panic or unsafe precondition is a defect:
+
+```rust
+/// Parses input.
+/// # Errors
+/// Returns Err if input is invalid.
+pub fn parse(_s: &str) -> Result<(), Error> { Ok(()) }
+```
+
 ## 6. Types and API design
 
 - Prefer newtypes, explicit conversions, and designs that make invalid states unrepresentable.
@@ -941,6 +950,80 @@ impl UserId { fn parse(s: &str) -> Option<Self> { (!s.is_empty()).then(|| Self(s
 - **Pattern matching in the 2024 edition.** Be explicit about `ref`/`mut` bindings instead of relying on older match ergonomics; migrate with `cargo fix --edition`.
 - **Custom futures and executors.** Respect the `Poll::Pending` contract: return `Pending` only after arranging a wake, and wake only when progress is possible. No busy-loop polling.
 
+- **Dispatchable and non-dispatchable methods.** Object-safe receivers are `&self`, `&mut self`, `Box<Self>`, `Rc<Self>`, `Arc<Self>` and `Pin<P>`. Mark helpers `where Self: Sized` to keep them off the trait object while keeping a rich API on concrete types.
+
+```rust
+trait DynOk {
+  fn do_it(&self);
+  // not on dyn objects; callable only on concrete types
+  fn into_inner(self) where Self: Sized; 
+}
+```
+
+- **Pin projection.** Use `pin-project-lite` or `pin-project` to project pinned fields safely.
+
+```rust
+use pin_project_lite::pin_project;
+pin_project! {
+  struct Task { #[pin] fut: impl Future<Output = ()> }
+}
+```
+
+- **Lifetime elision.** Rely on elision for simple cases. Add explicit lifetimes when there are several reference inputs or the output cannot be inferred; `fn frob(s: &str, t: &str) -> &str` is ambiguous.
+- **Trait-object lifetimes.** Know the default object lifetime bound; write `&'a dyn Trait` where needed, and avoid an accidental `'static`.
+- **Preludes.** Do not shadow std prelude items or re-import them. Offer a crate `prelude` for frequently used traits and types, keeping internal modules private:
+
+```rust
+pub mod prelude { pub use crate::{MyTrait, KeyType}; }
+```
+
+- **API guidelines.** Follow the standard casing conventions. Name features without `no-`, `use-` or `with-` prefixes. Changing a public trait can break SemVer; seal traits to control external impls.
+- **Additive features in Cargo.** Use `dep:` to decouple feature names from dependency names, guard code with `#[cfg(feature = "foo")]`, and document each feature's effect:
+
+```toml
+[features]
+serde = ["dep:serde"]
+fast = []
+```
+
+### Macros and build scripts
+
+- **Choose the flavor.** Derive to generate impls from type structure; attribute macros to transform or wrap items; function-like macros for DSLs. Do not write a proc macro where `macro_rules!` suffices, or heavy proc-macro logic that could run in `build.rs`.
+- **Hygiene.** Refer to items with `$crate::path` or `::std::...`, and use unique internal names.
+
+```rust
+#[macro_export]
+macro_rules! myvec {
+    ($($x:expr),* $(,)?) => {{
+        let mut v = ::std::vec::Vec::new();
+        $(v.push($x);)*
+        v
+    }};
+}
+```
+
+- **`macro_rules!` matchers.** Use `$( ... )*` or `+` with separators and the correct fragment specifier (`expr`, `ty`, `path`, `ident`, `tt`). Keep matchers simple and layered; avoid greedy or ambiguous patterns.
+- **Proc-macro pipeline.** Parse with `syn`, generate with `quote!`, and target `proc-macro2` so the logic is testable outside a proc-macro crate. Never build code by string concatenation.
+- **Errors.** Emit `compile_error!` with a span on the exact offending tokens. Do not `panic!`, and do not swallow an error and generate broken code.
+- **Cost and security.** Proc macros run at compile time with filesystem access. Keep the surface small, document the cost, avoid quadratic token growth, and do not read arbitrary files without rerun guards.
+- **Formatting.** Keep macro bodies readable and tested; do not disable formatting wholesale or depend on formatting-sensitive macro bodies.
+- **Build-script codegen.** Write generated files only under `OUT_DIR`, declare inputs with `cargo::rerun-if-changed`, keep generation deterministic, and `include!` the result:
+
+```rust
+// build.rs
+use std::{env, fs, path::PathBuf};
+fn main() {
+    let out: PathBuf = env::var_os("OUT_DIR").unwrap().into();
+    fs::write(out.join("generated.rs"), "pub const V: &str = \"1.0\";").unwrap();
+    println!("cargo::rerun-if-changed=build.rs");
+}
+```
+
+```rust
+// lib.rs
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+```
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
@@ -956,6 +1039,24 @@ impl UserId { fn parse(s: &str) -> Option<Self> { (!s.is_empty()).then(|| Self(s
 - **Borrow-checker-friendly API design.** Many awkward APIs are awkward because their shape prolongs borrows. Smaller scopes, temporaries and methods that separate read and write phases remove E0502-class friction without cloning everything. Do not rely on subtle two-phase-borrow behavior where clear structure would do.
 - **Iterator contracts and fallible pipelines.** Support owned and borrowed iteration correctly and keep error short-circuiting. `size_hint`, `ExactSizeIterator`, `try_fold`, `try_for_each` and `FromIterator` define what consumers may assume. Do not claim exact iterator properties you cannot uphold, and do not `unwrap` inside a chain that should short-circuit with `Result`.
 - **Collection choice.** `Vec`, `VecDeque`, `HashMap`, `BTreeMap`, `IndexMap` and `BinaryHeap` make different operational promises: dense append-heavy storage, queue, hashed lookup, ordered map, stable iteration order, priority scheduling. The wrong default causes performance or determinism bugs. Do not use `LinkedList` as a default, and never treat `HashMap` iteration order as meaningful.
+
+- **Two-phase borrows.** In a nested call the mutable borrow is reserved first and activated later; shared borrows must end before activation. Do not publish an API that is only sound under a specific compiler lowering.
+
+```rust
+let mut v = vec![1];
+// OK: len() borrow ends before push activates the &mut
+v.push(v.len());
+```
+
+- **Fixing E0502.** Shorten borrows with inner scopes, bind temporaries so the shared borrow ends before the `&mut` use, and split struct borrows by field.
+- **Fallible pipelines.** An iterator of `Result<T, E>` collects into `Result<Vec<T>, E>`; use `try_fold`/`try_for_each` to stop at the first error.
+
+```rust
+let items: Vec<Result<u32, &'static str>> = vec![Ok(1), Ok(2)];
+let ok: Result<Vec<_>, _> = items.into_iter().collect();
+```
+
+- **RAII guards.** Acquire in the constructor, release in `Drop`, keep guards short-lived, and do not share a guard beyond the scope that needs it.
 
 ### Iterators and closures
 
@@ -1104,6 +1205,8 @@ pub enum ParseError {
 }
 ```
 
+- **CLI termination.** Return `Result<(), E>` from `main` or use `std::process::ExitCode`. Do not panic on expected user errors, and keep nonzero codes consistent.
+
 ## 9. Async and concurrency
 
 - Never block inside async code, and never hold a lock guard across `.await`.
@@ -1247,6 +1350,52 @@ async fn run(mut stream: BufferedStream) {
 }
 ```
 
+Backpressure with a bounded or rendezvous channel (`crossbeam_channel::bounded`, `flume::bounded`), sending with a timeout or deadline:
+
+```rust
+let (tx, rx) = flume::bounded::<u32>(1024);
+// send with timeout
+if tx.send_timeout(42, std::time::Duration::from_millis(50)).is_err() {
+    // apply backpressure strategy
+}
+```
+
+Task scope: children finish before the scope exits, so no task outlives its owner and no manual join bookkeeping is needed:
+
+```rust
+use tokio::task;
+async fn parent() {
+    task::scope(|s| async move {
+        let h1 = s.spawn(async { /* child */ });
+        let h2 = s.spawn(async { /* child */ });
+        let _ = (h1.await, h2.await);
+    }).await;
+}
+```
+
+`JoinSet` owns its children; dropping it cancels the outstanding ones. Drain it with `join_next()`:
+
+```rust
+use tokio::task::JoinSet;
+let mut set = JoinSet::new();
+for i in 0..10 { set.spawn(async move { i }); }
+while let Some(res) = set.join_next().await { let _ = res?; }
+```
+
+- **Runtime choice.** Tokio for general-purpose work and ecosystem; smol for lightweight single-threaded use; glommio for io_uring with sharded executors. Do not mix runtimes in one process without clear isolation.
+- **Async in traits.** Use `async fn` in traits for static dispatch. For dynamic dispatch, return a boxed future or use `async-trait` and accept the boxing cost. State `Send` bounds explicitly. Async trait methods are not dyn-compatible by default.
+
+```rust
+use core::future::Future;
+trait Fetch {
+  async fn get(&self, k: &str) -> Vec<u8>; // static dispatch
+}
+// dynamic dispatch alternative
+trait FetchDyn {
+  fn get(&self, k: &str) -> Pin<Box<dyn Future<Output = Vec<u8>> + Send + '_>>;
+}
+```
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
@@ -1270,6 +1419,21 @@ pub extern "C" fn api_do(ptr: *const u8, len: usize) -> i32 {
 - **Nullable pointers:** model them as `Option<NonNull<T>>` or `Option<extern "C" fn()>`, which have a guaranteed representation. No magic sentinel integers.
 - **Layout:** choose `repr(C)` or `repr(transparent)` whenever ABI stability is required.
 - **Trait objects:** never construct vtables by hand in unsafe code or leak raw trait-object pointers.
+
+- **Aliasing model.** `&mut` implies uniqueness and `&` implies immutability outside `UnsafeCell`. A read or write through an unrelated pointer can invalidate a reference. Set up raw pointers before writing, never write through a raw pointer while a shared reference is live, and validate with Miri (`cargo +nightly miri test` in CI).
+- **`MaybeUninit`.** Write with `ptr::write`, and call `assume_init` only after every byte is initialized. Do not call `assume_init_mut` and read before initialization.
+
+```rust
+use std::{mem::MaybeUninit, ptr};
+let mut buf: MaybeUninit<[u8; 4]> = MaybeUninit::uninit();
+let p = buf.as_mut_ptr() as *mut u8;
+unsafe { ptr::write(p, 1); ptr::write(p.add(1), 2); ptr::write(p.add(2), 3); ptr::write(p.add(3), 4); }
+let arr = unsafe { buf.assume_init() };
+```
+
+- **Drop check.** When implementing `Drop` for a generic type, generic parameters must outlive `self`; do not hold references into shorter-lived data in a struct with `Drop`.
+- **Fat pointers.** Never construct an invalid fat pointer or transmute between unrelated `dyn` types.
+- **Public surface.** Keep unsafe internals private and do not expose raw pointers in public APIs. An `unsafe fn` contract must be sound and documented.
 
 ## 11. Performance
 
