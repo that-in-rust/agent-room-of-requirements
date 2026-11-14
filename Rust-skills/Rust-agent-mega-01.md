@@ -218,6 +218,9 @@ What the compiler does not prove:
 - **Structured observability.** At request handlers, jobs, external calls, supervisors and queue consumers, emit `tracing` spans with request IDs, resource IDs, attempt counts and outcome fields. No free-form string logs with unstable wording. Skip tight inner loops when a higher boundary already gives the context.
 - **Transport to domain at the edge (must).** Request DTO, then `TryFrom`, then domain command, then workflow, then persistence. Shape validation is not invariant validation. Handlers, services and database calls must not share raw strings and optional fields.
 
+- **Unsafe islands (must).** Isolate unsafe code in the smallest private module or helper that can uphold a stable safe interface, with a `SAFETY` comment on each block. Never use unsafe for convenience around the borrow checker. Verify with invariant-focused tests, Miri or sanitizers, and a module-level safety review.
+- **Measure first.** Profile, isolate the hotspot, benchmark representative workloads, optimize, re-measure. Do not add unsafe, caches, clone avoidance or lock-free structures because they "should be faster". An optimization that cannot name its metric is not justified.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
@@ -2177,6 +2180,14 @@ pub struct CoreProcessor {
 ```
 
 Premature abstraction is a ninth: "make it generic so we can swap implementations later" is wrong; make it work correctly and fast first, then abstract if needed.
+
+### Anti-pattern cards
+
+Each card gives the smell and the preferred alternative.
+
+- **Borrowing by habit.** Complex lifetimes or hidden clones added only to avoid taking ownership where the workflow clearly retains the data. Take owned inputs where storage or async lifetimes require it.
+- **Stringly recovery logic.** Retry, fallback or escalation branches keyed on substrings of an error message. Message drift and wrapper layers break them silently. Use typed variants or retryability metadata.
+- **Kitchen-sink public error enum.** One giant enum with a variant per crate, subsystem and transport failure plus catch-all strings. Callers cannot tell what is actionable and every internal refactor becomes an API change. Use typed local errors at meaningful boundaries and translate dependency failures into local concepts.
 
 ## 14. Rust web backends
 
