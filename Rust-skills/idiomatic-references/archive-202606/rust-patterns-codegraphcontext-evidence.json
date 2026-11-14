@@ -1,0 +1,107 @@
+{
+  "generated_on": "2026-07-06",
+  "purpose": "CodeGraphContext evidence pass for rust-patterns-1.md through rust-patterns-5.md.",
+  "tool": "/Users/amuldotexe/.codex/tooling/code-intelligence/.venvs/codegraphcontext/bin/cgc",
+  "skill": "/Users/amuldotexe/.codex/skills/codegraphcontext-evidence-reader/SKILL.md",
+  "evidence_rule": "Treat CodeGraphContext as navigational evidence. Confirm reusable findings with direct source reads before transferring a pattern.",
+  "attempts": [
+    {
+      "shard_file": "rust-patterns-1.md",
+      "repo_path": "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker",
+      "output_dir": "/tmp/codex-code-intel/codegraphcontext/knight-bus-graph-walker-20260706-225543",
+      "status": "complete",
+      "stats": {
+        "repositories": 1,
+        "files": 258,
+        "functions": 560,
+        "classes": 3,
+        "traits": 6,
+        "structs": 66,
+        "enums": 25,
+        "modules": 80
+      },
+      "graph_findings": [
+        "cgc find name build_snapshot_from_paths returned src/app.rs:17",
+        "cgc stats confirmed one indexed repository with function, trait, struct, enum, and module coverage"
+      ],
+      "source_confirmations": [
+        "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/src/app.rs:17",
+        "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/src/low_ram.rs:44",
+        "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/src/low_ram.rs:1473",
+        "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/src/runtime.rs:170",
+        "/Users/amuldotexe/Desktop/personal-repos-lane/knight-bus-graph-walker/src/types.rs:398"
+      ]
+    },
+    {
+      "shard_file": "rust-patterns-2.md",
+      "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/polars",
+      "output_dir": "/tmp/codex-code-intel/codegraphcontext/polars-20260706-225543",
+      "status": "usable_partial_index",
+      "stats": {
+        "repositories": 1,
+        "files": 719,
+        "functions": 8723,
+        "classes": 0,
+        "traits": 196,
+        "structs": 293,
+        "enums": 70,
+        "modules": 870
+      },
+      "graph_findings": [
+        "cgc find name DataFrame returned crates/polars-core/src/frame/dataframe.rs:85",
+        "cgc find name Expr surfaced expression-related functions/modules, while direct rg found the DSL enum"
+      ],
+      "source_confirmations": [
+        "/Users/amuldotexe/Desktop/oss-read-only/polars/crates/polars-core/src/frame/dataframe.rs:85",
+        "/Users/amuldotexe/Desktop/oss-read-only/polars/crates/polars-lazy/src/frame/mod.rs:70",
+        "/Users/amuldotexe/Desktop/oss-read-only/polars/crates/polars-plan/src/dsl/expr/mod.rs:98",
+        "/Users/amuldotexe/Desktop/oss-read-only/polars/crates/polars-expr/src/expressions/mod.rs:691"
+      ]
+    },
+    {
+      "shard_file": "rust-patterns-3.md",
+      "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/codex",
+      "output_dir": "/tmp/codex-code-intel/codegraphcontext/codex-20260706-225543",
+      "status": "usable_partial_index",
+      "stats": {
+        "repositories": 1,
+        "files": 1383,
+        "functions": 5589,
+        "classes": 8,
+        "traits": 19,
+        "structs": 1076,
+        "enums": 320,
+        "modules": 2892
+      },
+      "graph_findings": [
+        "cgc find name Parser returned tree-sitter parser imports in codex-rs/apply-patch/src/invocation.rs",
+        "direct source confirmation found StreamingPatchParser in codex-rs/apply-patch/src/streaming_parser.rs"
+      ],
+      "source_confirmations": [
+        "/Users/amuldotexe/Desktop/oss-read-only/codex/codex-rs/apply-patch/src/invocation.rs:7",
+        "/Users/amuldotexe/Desktop/oss-read-only/codex/codex-rs/apply-patch/src/invocation.rs:317",
+        "/Users/amuldotexe/Desktop/oss-read-only/codex/codex-rs/apply-patch/src/streaming_parser.rs:20"
+      ]
+    },
+    {
+      "shard_file": "rust-patterns-4.md",
+      "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/tauri",
+      "output_dir": "/tmp/codex-code-intel/codegraphcontext/tauri-20260706-225543",
+      "status": "interrupted_index_wal_unreadable",
+      "stats_error": "cgc stats returned Corrupted wal file after bounded interruption",
+      "source_confirmations": [
+        "Use rust-patterns-4.md source-backed Tauri entries as authority; do not transfer from this partial graph."
+      ]
+    },
+    {
+      "shard_file": "rust-patterns-5.md",
+      "repo_path": "/Users/amuldotexe/Desktop/oss-read-only/datafusion",
+      "output_dir": "/tmp/codex-code-intel/codegraphcontext/datafusion-20260706-225543",
+      "status": "interrupted_index_wal_unreadable",
+      "stats_error": "cgc stats returned Corrupted wal file after bounded interruption",
+      "source_confirmations": [
+        "Use rust-patterns-5.md source-backed DataFusion entries as authority; do not transfer from this partial graph."
+      ]
+    }
+  ]
+}
