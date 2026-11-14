@@ -1304,6 +1304,333 @@ pub fn run() {
 
 - Commands defined in `lib.rs` must not be `pub`.
 - Commands in separate modules should be `pub`.
+- Command names are global, not module-scoped, so they must be unique across modules.
+- Call `invoke_handler(...)` once, with a single `generate_handler![...]` list.
+
+**Setup lifecycle**
+
+```rust
+use tauri::{AppHandle, Manager};
+
+async fn warm_start_services(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.emit("app-warm-started", ());
+    }
+}
+
+#[tauri::command]
+async fn reveal_main_window(app: AppHandle) -> Result<(), AppError> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.show().map_err(|e| AppError::Io(e.to_string()))?;
+        window.set_focus().map_err(|e| AppError::Io(e.to_string()))?;
+    }
+    Ok(())
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .setup(|app| {
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                warm_start_services(handle).await;
+            });
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![reveal_main_window])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+- Put app-wide initialization in `.setup(...)`, not scattered across commands.
+- Avoid heavy blocking work directly inside `.setup(...)`.
+- Use `AppHandle` for path resolution, restart and update access, and cross-window orchestration.
+- Key runtime window logic by stable labels, not titles.
+
+**Binary response**
+
+```rust
+use tauri::ipc::Response;
+
+#[tauri::command]
+fn read_image_file(path: std::path::PathBuf) -> Result<Response, AppError> {
+    let data = std::fs::read(path).map_err(|e| AppError::Io(e.to_string()))?;
+    Ok(Response::new(data))
+}
+```
+
+- Use `tauri::ipc::Response` for file bytes, image bytes and download payloads.
+- Keep JSON responses for structured metadata and small payloads.
+
+**Raw request validation**
+
+```rust
+use tauri::ipc::{InvokeBody, Request};
+
+#[tauri::command]
+fn upload_binary(request: Request) -> Result<(), AppError> {
+    let InvokeBody::Raw(bytes) = request.body() else {
+        return Err(AppError::InvalidRequest("raw body required"));
+    };
+
+    let Some(_authorization) = request.headers().get("Authorization") else {
+        return Err(AppError::InvalidRequest("missing Authorization header"));
+    };
+
+    if bytes.is_empty() {
+        return Err(AppError::InvalidRequest("empty upload body"));
+    }
+
+    Ok(())
+}
+```
+
+- Validate headers and body shape explicitly.
+- Treat raw IPC handlers as privileged ingress points.
+
+**Sidecar permission scope**
+
+```json
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "binaries/my-sidecar",
+          "sidecar": true,
+          "args": ["serve", { "validator": "\\d+" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+```rust
+let (_rx, _child) = app
+    .shell()
+    .sidecar("my-sidecar")
+    .map_err(|e| AppError::Sidecar(e.to_string()))?
+    .args(["serve", "7780"])
+    .spawn()
+    .map_err(|e| AppError::Sidecar(e.to_string()))?;
+```
+
+- Use `shell:allow-execute` for `execute()` and `shell:allow-spawn` for `spawn()`.
+- Match the sidecar name exactly with the configured binary reference.
+- Whitelist exact arguments or validators.
+- Never grant broad shell authority because the app needs one safe sidecar.
+
+**Window labels and capabilities**
+
+```rust
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .setup(|app| {
+            let webview_url = tauri::WebviewUrl::App("index.html".into());
+
+            tauri::WebviewWindowBuilder::new(app, "first", webview_url.clone())
+                .title("First")
+                .build()?;
+
+            tauri::WebviewWindowBuilder::new(app, "second", webview_url)
+                .title("Second")
+                .build()?;
+
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+```json
+{
+  "identifier": "dialog",
+  "windows": ["first", "second"],
+  "permissions": ["dialog:allow-ask"]
+}
+```
+
+- Labels must be unique and stable. Capabilities attach to labels, not window titles.
+- Overlapping capabilities merge, so keep high-privilege windows isolated.
+- Use the `platforms` field when a capability should exist only on certain operating systems.
+- Expose window-creation ability only to windows you trust with privilege.
+
+**Tray menu**
+
+```rust
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+};
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .setup(|app| {
+            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&quit_item])?;
+
+            let _tray = TrayIconBuilder::new()
+                .menu(&menu)
+                .menu_on_left_click(true)
+                .build(app)?;
+
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+- Enable the `tray-icon` feature explicitly.
+- Keep menu item IDs stable and machine-readable.
+- Handle tray and menu events in one obvious place.
+
+**Mocked frontend IPC test**
+
+```typescript
+import { afterEach, expect, test } from 'vitest';
+import { clearMocks, mockIPC, mockWindows } from '@tauri-apps/api/mocks';
+import { invoke } from '@tauri-apps/api/core';
+
+afterEach(() => {
+  clearMocks();
+});
+
+test('loads settings through IPC', async () => {
+  mockWindows('main', 'settings');
+  mockIPC((cmd) => {
+    if (cmd === 'read_settings_file') {
+      return '{"theme":"dark"}';
+    }
+  });
+
+  const result = await invoke<string>('read_settings_file');
+  expect(result).toContain('"theme":"dark"');
+});
+```
+
+- Reliable Tauri code needs two test layers: mocked frontend IPC tests and runtime-backed Rust tests. End-to-end WebDriver tests help but are not the whole story.
+- Call `clearMocks()` after each test.
+- Use `mockIPC(...)` to validate command usage and simulate backend responses.
+- Use `shouldMockEvents: true` when testing event-driven flows.
+- Use `mockWindows(...)` for label-oriented frontend logic.
+- Tauri's WebDriver-based desktop end-to-end support excludes macOS desktop clients.
+
+**Build hooks** (`tauri.conf.json`)
+
+```json
+{
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  }
+}
+```
+
+- Wire `beforeDevCommand` and `beforeBuildCommand` to the real frontend scripts.
+- Keep `devUrl` and `frontendDist` aligned with the actual frontend toolchain.
+- Treat the config, not README prose, as the source of truth for the build seam.
+- Commit lockfiles so frontend and Rust builds stay reproducible together.
+
+**Platform config files**
+
+```json
+// src-tauri/tauri.conf.json
+{
+  "productName": "MyApp",
+  "bundle": {
+    "resources": ["./resources"]
+  },
+  "plugins": {
+    "deep-link": {}
+  }
+}
+```
+
+```json
+// src-tauri/tauri.windows.conf.json
+{
+  "productName": "MyApp Windows",
+  "plugins": {
+    "cli": {
+      "description": "Windows CLI entrypoint"
+    }
+  }
+}
+```
+
+- Use `tauri.windows.conf.json`, `tauri.macos.conf.json`, `tauri.linux.conf.json` and the mobile variants when platform behavior diverges.
+- Tauri merges a platform config into the base config with JSON Merge Patch semantics.
+- Prefer config-layer overrides for platform packaging, identifiers or plugin shape before adding runtime `cfg` branches.
+- Use `--config` for flavors such as beta builds; do not clone entire config trees.
+
+**External binaries**
+
+```json
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/my-sidecar"
+    ]
+  }
+}
+```
+
+```rust
+use tauri_plugin_shell::ShellExt;
+
+let sidecar = app
+    .shell()
+    .sidecar("my-sidecar")
+    .map_err(|e| AppError::Sidecar(e.to_string()))?;
+```
+
+- Relative `bundle.externalBin` entries resolve relative to `src-tauri/tauri.conf.json`.
+- Each bundled binary needs the correct `-$TARGET_TRIPLE` suffix for the target architecture.
+- `shell().sidecar(...)` expects the filename alias, not the full path from `externalBin`.
+- Keep sidecar naming stable across config, capability files and runtime calls.
+
+**Single-instance handoff**
+
+```rust
+use tauri::Manager;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }));
+    }
+
+    builder
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+- Register the single-instance plugin first so other plugins cannot interfere.
+- A second launch should focus or route to the existing main window.
+- The plugin has no JavaScript API; drive it from Rust lifecycle code.
 
 ### Tauri TDD-first checks
 
@@ -1311,6 +1638,28 @@ pub fn run() {
 - Validate serializable error shapes before UI handling depends on them.
 - Test lifecycle-sensitive behavior wherever tray, updater, single-instance or deep links are involved.
 - Prefer mocked desktop-boundary tests when full runtime integration is heavier than necessary.
+
+Before shipping any meaningful Tauri feature, verify:
+
+- the capability file proves least privilege for every new permission
+- the command returns structured success and structured failure
+- the async command has no blocking call sites
+- managed state has the right mutex type
+- persisted payload size stays below explicit caps
+- sidecar startup has a timeout and a health endpoint
+- updater keys are not in git
+- listeners are cleaned up on unmount
+- command names are unique across modules
+- sidecar permissions whitelist the binary and its args
+- high-privilege windows do not accidentally inherit merged capabilities
+- binary responses do not go through JSON when raw bytes are intended
+- mocked frontend tests clear state between runs
+- build hooks and frontend dist paths match the real toolchain
+- platform-specific config overrides are intentional and minimal
+- single-instance is registered first if the app uses it
+- deep links are validated beyond scheme matching
+- CLI access has the right plugin config and capability
+- window-state restore avoids first-paint flash
 
 ### Tauri runtime and safety gates
 
@@ -1360,6 +1709,35 @@ Reject these by default:
 - blocking inside an async command handler
 - an unnecessary `Arc` around state Tauri already manages
 - filesystem access wider than the actual paths and windows involved
+
+Anti-patterns with their fixes:
+
+```rust
+// Blocking an async command. Fix: use async APIs or spawn_blocking.
+async fn bad_command() -> String {
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    "done".into()
+}
+
+// Borrowed async input. Fix: take String.
+async fn bad_command(name: &str) -> String {
+    format!("hello {name}")
+}
+
+// Panicking command path. Fix: return Result<T, AppError>.
+fn read_file_now() -> String {
+    std::fs::read_to_string("file.txt").unwrap()
+}
+
+// Double-wrapped managed state. Fix: manage(Mutex::new(...)).
+use std::sync::{Arc, Mutex};
+let state = Arc::new(Mutex::new(AppState::default()));
+tauri::Builder::default().manage(state);
+```
+
+- `{ "permissions": ["fs:default"] }`. Fix: exact commands plus scoped directories.
+- Plugin store as a blob sink: `settings.json` and a theme preference are fine; base64 screenshot history and multi-megabyte terminal scrollback are not. Fix: externalize large payloads.
+- Unchecked sidecar spawning: spawn the process, then assume it is ready, its args are safe and its logs stay small. Fix: capabilities, health check, timeout and bounded logs.
 
 ## 16. Quality gates and commands
 
