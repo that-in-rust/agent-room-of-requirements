@@ -3870,3 +3870,11 @@ Before finishing a design, check whether one of these applies:
 - **Streams:** bound buffers; split, merge and window with `StreamExt` combinators; decide per stream whether an item error ends the stream or is skipped; make every stream cancellable by drop.
 - **Platform abstraction:** wrap OS APIs and syscalls behind one trait or module per capability; detect CPU features at run time (`is_x86_feature_detected!`) before using them; keep a portable fallback.
 - **Macro debugging:** inspect output with `cargo expand`; document every exported macro with a compiling example.
+
+- **`Option` misuse:** never write `if x.is_some() { x.unwrap() }` or nest `match` on options; use `if let`, `let else` or combinators. In tests, compare whole values (`assert_eq!(Some(expected), result)`) and test the `None` case explicitly.
+- **Unsafe and panics:** keep invariants true at every point where a panic can unwind (exception safety); if they cannot be, restore them with a guard in `Drop`.
+- **Async networking:** set connect, read and write timeouts separately; configure keep-alive; reconnect with backoff; terminate TLS with `rustls` unless a platform stack is required.
+- **Compile-time validation:** assert layout and size facts at compile time (`const _: () = assert!(size_of::<T>() == N);`); validate constants in `const fn` constructors; let type-level constraints and const generics reject invalid combinations; treat dead-code warnings as errors.
+- **Long-lived state:** model it as an explicit state machine with validated transitions; persist snapshots with a version tag, migrate old versions on load, and test recovery from each persisted version.
+- **Async tests:** use `#[tokio::test]`; control time with `tokio::time::pause` or `start_paused = true` instead of sleeping; mock services behind traits; inject faults (timeouts, dropped connections, partial writes); test races with `loom` or repeated stress runs.
+- **Library releases:** follow SemVer, check each release with `cargo semver-checks`, deprecate before removing, and record breaking changes in a changelog.
