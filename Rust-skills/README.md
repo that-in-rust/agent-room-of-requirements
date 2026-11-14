@@ -1,160 +1,324 @@
 # Rust-skills
 
-Copies of every Rust- and Tauri-related skill and idiomatic reference file in this
-repository, gathered in one place. The originals are unchanged and remain the source;
-each copy was byte-identical to its original when made (see the table at the end).
+Every file in this repository that mentions Rust, gathered in one place: 274 files,
+each with different content. The originals are unchanged and remain the source.
+
+How the set was built:
+
+- Every file on all three branches (`main`, `devin/1783832548-idiomatic-evolution-alpha-a21`,
+  `codex/kotlin-backend-delivery-skill`) was searched by content, whatever its name.
+- A file counts if it contains `rust` in any letter case at the start of a word
+  (`Rust`, `rustc`, `rust-lang`; not `trust`).
+- Files with identical content are kept once. Two files that differ by even one byte are both kept.
+- Four Tauri and scan-summary files that do not contain the word are kept because they belong to a Rust or Tauri skill.
 
 | Folder | Files | What it holds |
 |---|---|---|
-| `idiomatic-references/current-202607/rust/` | 16 | Current Rust idiomatic references |
-| `idiomatic-references/current-202607/tauri/` | 6 | Current Tauri idiomatic references |
-| `idiomatic-references/seed/` | 1 | `Rust-Coder-1000IQ-01.md`, the seed reference |
-| `idiomatic-references/archive-202604/` | 2 | April 2026 executable-specs references |
-| `idiomatic-references/archive-202606/` | 55 | June 2026 generated references, `meta-rust-ref`, `rust-patterns`, and their check scripts |
-| `skills/codex/` | 37 | Archived Codex skills, by month |
-| `skills/claude/` | 6 | Archived Claude skills, by month |
-| `methodology/executable-specifications/` | 4 | Rust and Tauri executable-specification method |
+| `idiomatic-references/` | 80 | Rust and Tauri idiomatic references: current (202607), seed, and the 202604 and 202606 archives |
+| `skills/` | 36 | Archived Codex and Claude skills for Rust and Tauri, by month |
+| `methodology/` | 2 | Rust and Tauri executable-specification method |
 | `research/` | 4 | Strategy notes about Rust |
+| `mentions-rust/main/` | 102 | Every other file on `main` that mentions Rust, under its original path |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/` | 49 | Files whose content exists only on that branch. Most are earlier versions of `main` files that differ only in folder paths |
+| `mentions-rust/branch-kotlin-backend-delivery-skill/` | 1 | Same, for that branch |
 
-Not copied: the review question packets under
-`projects/idiomatic-reference-evolution/`, which are working material for the
-reference-evolution project.
+Things to know:
 
-Links inside the copied files still point to their original relative locations and
-may not resolve from here.
+- 52 of the files mention Rust only once or twice (for example in a list of languages). The table below gives the count for each file.
+- Because identical files are kept once, some month folders under `skills/` are incomplete. The files removed for that reason are listed at the end.
+- Links inside the copied files still point to their original relative locations and may not resolve from here.
 
-## Source of each file
+## Every file and where it came from
 
-| Copy | Original |
+"Mentions" is the number of times `rust` appears. "Same content elsewhere" is how many other paths on `main` hold an identical file.
+
+| File | Mentions | Original path | Branch | Same content elsewhere |
+|---|---|---|---|---|
+| `idiomatic-references/archive-202604/rust-executable-specs-01/rust-executable-specs-reference.md` | 13 | `archive/monthly-agent-snapshots/idiomatic-references-202604/rust-executable-specs-01/rust-executable-specs-reference.md` | main | 1 |
+| `idiomatic-references/archive-202604/tauri-executable-specs-01/tauri-executable-specs-reference.md` | 13 | `archive/monthly-agent-snapshots/idiomatic-references-202604/tauri-executable-specs-01/tauri-executable-specs-reference.md` | main | 1 |
+| `idiomatic-references/archive-202606/generated-references/rust_backend_playbook_reference.md` | 45 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_playbook_reference.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_backend_reference_routing.md` | 38 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_reference_routing.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_backend_runtime_operations.md` | 45 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_runtime_operations.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_backend_security_resilience.md` | 45 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_security_resilience.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_backend_skill_entrypoint.md` | 50 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_skill_entrypoint.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_backend_testing_fixtures.md` | 45 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_testing_fixtures.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_coder_reliability_patterns.md` | 63 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_coder_reliability_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_conventions_quality_gates.md` | 46 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_conventions_quality_gates.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_executable_reference_maps.md` | 57 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_reference_maps.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_executable_reliability_reference.md` | 51 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_reliability_reference.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_executable_skill_patterns.md` | 58 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_skill_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_executable_template_patterns.md` | 75 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_template_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_idiomatic_skill_patterns.md` | 51 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_idiomatic_skill_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_idioms_checklist_patterns.md` | 58 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_idioms_checklist_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_legacy_coder_prompts.md` | 59 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_legacy_coder_prompts.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/rust_quality_gate_patterns.md` | 56 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_quality_gate_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/tauri_conventions_quality_gates.md` | 9 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_conventions_quality_gates.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/tauri_doctrine_source_review.md` | 9 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_doctrine_source_review.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/tauri_executable_playbook_templates.md` | 9 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_executable_playbook_templates.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/tauri_executable_reference_maps.md` | 13 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_executable_reference_maps.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/tauri_executable_skill_patterns.md` | 9 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_executable_skill_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/generated-references/tauri_legacy_coder_patterns.md` | 9 | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_legacy_coder_patterns.md` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-coverage-ledger.json` | 2455 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-coverage-ledger.json` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-coverage-summary.json` | 1 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-coverage-summary.json` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-evidence-index.json` | 3155 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-evidence-index.json` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-evidence-summary.json` | 1 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-evidence-summary.json` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part1-repos.txt` | 128 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-1-repos.txt` | main | 1 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part1.md` | 1427 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part1.md` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part2-repos.txt` | 128 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-2-repos.txt` | main | 1 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part2.md` | 1451 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part2.md` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part3-repos.txt` | 126 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-3-repos.txt` | main | 1 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part3.md` | 1370 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part3.md` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part4-repos.txt` | 126 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-4-repos.txt` | main | 1 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part4.md` | 1396 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part4.md` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part5-repos.txt` | 125 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-5-repos.txt` | main | 1 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part5.md` | 1392 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part5.md` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-progress.md` | 34 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-progress.md` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-repo-inventory.json` | 2201 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-repo-inventory.json` | main | 0 |
+| `idiomatic-references/archive-202606/meta-rust-ref-202606-scan-summary.json` | 0 | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-scan-summary.json` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-1-repos.txt` | 3 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-1-repos.txt` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-1.md` | 218 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-1.md` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-2-repos.txt` | 3 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-2-repos.txt` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-2.md` | 205 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-2.md` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-3-repos.txt` | 5 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-3-repos.txt` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-3.md` | 188 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-3.md` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-4-repos.txt` | 2 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-4-repos.txt` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-4.md` | 173 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-4.md` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-5-repos.txt` | 1 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-5-repos.txt` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-5.md` | 245 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-5.md` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-codegraphcontext-evidence.json` | 9 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-codegraphcontext-evidence.json` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-progress.md` | 55 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-progress.md` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-repo-inventory.json` | 19 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-repo-inventory.json` | main | 0 |
+| `idiomatic-references/archive-202606/rust-patterns-scan-summary.json` | 773 | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-scan-summary.json` | main | 0 |
+| `idiomatic-references/archive-202606/tools/verify_meta_rust_ref.py` | 12 | `archive/monthly-agent-snapshots/idiomatic-references-202606/tools/verify_meta_rust_ref.py` | main | 0 |
+| `idiomatic-references/archive-202606/tools/verify_rust_patterns_reference.py` | 7 | `archive/monthly-agent-snapshots/idiomatic-references-202606/tools/verify_rust_patterns_reference.py` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_backend_playbook_reference-20260710.md` | 84 | `library/idiomatic/202607/rust_backend_playbook_reference-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_backend_reference_routing-20260710.md` | 57 | `library/idiomatic/202607/rust_backend_reference_routing-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_backend_runtime_operations-20260710.md` | 60 | `library/idiomatic/202607/rust_backend_runtime_operations-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_backend_security_resilience-20260710.md` | 62 | `library/idiomatic/202607/rust_backend_security_resilience-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_backend_skill_entrypoint-20260710.md` | 67 | `library/idiomatic/202607/rust_backend_skill_entrypoint-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_backend_testing_fixtures-20260710.md` | 54 | `library/idiomatic/202607/rust_backend_testing_fixtures-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_coder_reliability_patterns-20260710.md` | 109 | `library/idiomatic/202607/rust_coder_reliability_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_conventions_quality_gates-20260710.md` | 69 | `library/idiomatic/202607/rust_conventions_quality_gates-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_executable_reference_maps-20260710.md` | 64 | `library/idiomatic/202607/rust_executable_reference_maps-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_executable_reliability_reference-20260710.md` | 68 | `library/idiomatic/202607/rust_executable_reliability_reference-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_executable_skill_patterns-20260710.md` | 78 | `library/idiomatic/202607/rust_executable_skill_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_executable_template_patterns-20260710.md` | 86 | `library/idiomatic/202607/rust_executable_template_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_idiomatic_skill_patterns-20260710.md` | 70 | `library/idiomatic/202607/rust_idiomatic_skill_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_idioms_checklist_patterns-20260710.md` | 122 | `library/idiomatic/202607/rust_idioms_checklist_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_legacy_coder_prompts-20260710.md` | 154 | `library/idiomatic/202607/rust_legacy_coder_prompts-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/rust/rust_quality_gate_patterns-20260710.md` | 57 | `library/idiomatic/202607/rust_quality_gate_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/tauri/tauri_conventions_quality_gates-20260710.md` | 23 | `library/idiomatic/202607/tauri_conventions_quality_gates-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/tauri/tauri_doctrine_source_review-20260710.md` | 24 | `library/idiomatic/202607/tauri_doctrine_source_review-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/tauri/tauri_executable_playbook_templates-20260710.md` | 34 | `library/idiomatic/202607/tauri_executable_playbook_templates-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/tauri/tauri_executable_reference_maps-20260710.md` | 18 | `library/idiomatic/202607/tauri_executable_reference_maps-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/tauri/tauri_executable_skill_patterns-20260710.md` | 23 | `library/idiomatic/202607/tauri_executable_skill_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/current-202607/tauri/tauri_legacy_coder_patterns-20260710.md` | 18 | `library/idiomatic/202607/tauri_legacy_coder_patterns-20260710.md` | main | 0 |
+| `idiomatic-references/seed/Rust-Coder-1000IQ-01.md` | 294 | `library/idiomatic/seed/Rust-Coder-1000IQ-01.md` | main | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/IDIOMATIC_REFERENCE_EVOLUTION_HANDOFF_202607.md` | 14 | `IDIOMATIC_REFERENCE_EVOLUTION_HANDOFF_202607.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/code_review_feedback_patterns-20260710.md` | 1 | `idiomatic-ref-202607/code_review_feedback_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/completion_verification_gate_patterns-20260710.md` | 1 | `idiomatic-ref-202607/completion_verification_gate_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md` | 2 | `idiomatic-ref-202607/dependency_map_cli_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md` | 1 | `idiomatic-ref-202607/executable_metapattern_reference_digest-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/executable_specification_skill_patterns-20260710.md` | 3 | `idiomatic-ref-202607/executable_specification_skill_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/executable_traceability_template_patterns-20260710.md` | 12 | `idiomatic-ref-202607/executable_traceability_template_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/polyglot_idiomatic_reference_patterns-20260710.md` | 7 | `idiomatic-ref-202607/polyglot_idiomatic_reference_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/python_language_skill_entrypoint-20260710.md` | 3 | `idiomatic-ref-202607/python_language_skill_entrypoint-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/python_reference_routing_sources-20260710.md` | 1 | `idiomatic-ref-202607/python_reference_routing_sources-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_backend_playbook_reference-20260710.md` | 84 | `idiomatic-ref-202607/rust_backend_playbook_reference-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_backend_reference_routing-20260710.md` | 57 | `idiomatic-ref-202607/rust_backend_reference_routing-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_backend_runtime_operations-20260710.md` | 60 | `idiomatic-ref-202607/rust_backend_runtime_operations-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_backend_security_resilience-20260710.md` | 62 | `idiomatic-ref-202607/rust_backend_security_resilience-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_backend_skill_entrypoint-20260710.md` | 67 | `idiomatic-ref-202607/rust_backend_skill_entrypoint-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_backend_testing_fixtures-20260710.md` | 54 | `idiomatic-ref-202607/rust_backend_testing_fixtures-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_coder_reliability_patterns-20260710.md` | 109 | `idiomatic-ref-202607/rust_coder_reliability_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_conventions_quality_gates-20260710.md` | 69 | `idiomatic-ref-202607/rust_conventions_quality_gates-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_executable_reference_maps-20260710.md` | 64 | `idiomatic-ref-202607/rust_executable_reference_maps-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_executable_reliability_reference-20260710.md` | 68 | `idiomatic-ref-202607/rust_executable_reliability_reference-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_executable_skill_patterns-20260710.md` | 78 | `idiomatic-ref-202607/rust_executable_skill_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_executable_template_patterns-20260710.md` | 86 | `idiomatic-ref-202607/rust_executable_template_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_idiomatic_skill_patterns-20260710.md` | 70 | `idiomatic-ref-202607/rust_idiomatic_skill_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_idioms_checklist_patterns-20260710.md` | 122 | `idiomatic-ref-202607/rust_idioms_checklist_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_legacy_coder_prompts-20260710.md` | 154 | `idiomatic-ref-202607/rust_legacy_coder_prompts-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/rust_quality_gate_patterns-20260710.md` | 57 | `idiomatic-ref-202607/rust_quality_gate_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/skill_creator_evaluation_patterns-20260710.md` | 6 | `idiomatic-ref-202607/skill_creator_evaluation_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/system_design_architecture_patterns-20260710.md` | 2 | `idiomatic-ref-202607/system_design_architecture_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/tauri_conventions_quality_gates-20260710.md` | 23 | `idiomatic-ref-202607/tauri_conventions_quality_gates-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/tauri_doctrine_source_review-20260710.md` | 24 | `idiomatic-ref-202607/tauri_doctrine_source_review-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/tauri_executable_playbook_templates-20260710.md` | 34 | `idiomatic-ref-202607/tauri_executable_playbook_templates-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/tauri_executable_reference_maps-20260710.md` | 18 | `idiomatic-ref-202607/tauri_executable_reference_maps-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/tauri_executable_skill_patterns-20260710.md` | 23 | `idiomatic-ref-202607/tauri_executable_skill_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/tauri_legacy_coder_patterns-20260710.md` | 18 | `idiomatic-ref-202607/tauri_legacy_coder_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/tdd_cycle_skill_patterns-20260710.md` | 1 | `idiomatic-ref-202607/tdd_cycle_skill_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-ref-202607/threejs_react_visualization_patterns-20260710.md` | 2 | `idiomatic-ref-202607/threejs_react_visualization_patterns-20260710.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-progress-202607.md` | 26 | `idiomatic-reference-evolution-progress-202607.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-tasks-202607.csv` | 4475 | `idiomatic-reference-evolution-tasks-202607.csv` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/alpha/assignments.csv` | 3 | `idiomatic-reference-evolution-work/alpha/assignments.csv` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/alpha/packets/rust_legacy_coder_prompts-20260710-question-packets.md` | 249 | `idiomatic-reference-evolution-work/alpha/packets/rust_legacy_coder_prompts-20260710-question-packets.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/alpha/progress.md` | 30 | `idiomatic-reference-evolution-work/alpha/progress.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/beta/assignments.csv` | 5 | `idiomatic-reference-evolution-work/beta/assignments.csv` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/beta/progress.md` | 10 | `idiomatic-reference-evolution-work/beta/progress.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/delta/assignments.csv` | 4 | `idiomatic-reference-evolution-work/delta/assignments.csv` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/delta/progress.md` | 9 | `idiomatic-reference-evolution-work/delta/progress.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/gamma/assignments.csv` | 4 | `idiomatic-reference-evolution-work/gamma/assignments.csv` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/idiomatic-reference-evolution-work/gamma/progress.md` | 8 | `idiomatic-reference-evolution-work/gamma/progress.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/unclassified-yet/DOCUMENT_INDEX.md` | 79 | `unclassified-yet/DOCUMENT_INDEX.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-idiomatic-evolution-alpha-a21/unclassified-yet/Prompts202606.md` | 5 | `unclassified-yet/Prompts202606.md` | devin/1783832548-idiomatic-evolution-alpha-a21 | 0 |
+| `mentions-rust/branch-kotlin-backend-delivery-skill/DOCUMENT_INDEX.md` | 79 | `DOCUMENT_INDEX.md` | codex/kotlin-backend-delivery-skill | 0 |
+| `mentions-rust/main/A02-Mega-Idiomatic-Prompt.md` | 2 | `A02-Mega-Idiomatic-Prompt.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202602/commit-push-dev-flow.md` | 7 | `archive/monthly-agent-snapshots/claude-skills-202602/commit-push-dev-flow.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202602/minto-pyramid-01.md` | 3 | `archive/monthly-agent-snapshots/claude-skills-202602/minto-pyramid-01.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202602/notes01-agent.md` | 26 | `archive/monthly-agent-snapshots/claude-skills-202602/notes01-agent.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202602/react-threejs-coder-01.md` | 3 | `archive/monthly-agent-snapshots/claude-skills-202602/react-threejs-coder-01.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202602/tdd-task-progress-context-retainer.md` | 1 | `archive/monthly-agent-snapshots/claude-skills-202602/tdd-task-progress-context-retainer.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202602/typescript-coder-01.md` | 1 | `archive/monthly-agent-snapshots/claude-skills-202602/typescript-coder-01.md` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/personal/visual-explainer/template.html` | 1 | `archive/monthly-agent-snapshots/claude-skills-202603/personal/visual-explainer/template.html` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/plugins/claude-code-setup/references/hooks-patterns.md` | 8 | `archive/monthly-agent-snapshots/claude-skills-202603/plugins/claude-code-setup/references/hooks-patterns.md` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/plugins/claude-code-setup/references/plugins-reference.md` | 2 | `archive/monthly-agent-snapshots/claude-skills-202603/plugins/claude-code-setup/references/plugins-reference.md` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/command-development/references/interactive-commands.md` | 1 | `archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/command-development/references/interactive-commands.md` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/hook-development/examples/load-context.sh` | 2 | `archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/hook-development/examples/load-context.sh` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/hook-development/references/patterns.md` | 2 | `archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/hook-development/references/patterns.md` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/plugin-structure/examples/standard-plugin.md` | 2 | `archive/monthly-agent-snapshots/claude-skills-202603/plugins/plugin-dev/plugin-structure/examples/standard-plugin.md` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/claude-skills-202603/superpowers/using-git-worktrees/SKILL.md` | 1 | `archive/monthly-agent-snapshots/claude-skills-202603/superpowers/using-git-worktrees/SKILL.md` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202602/dependency-map-cli-tools-01/scripts/build_rough_codebase_map.sh` | 1 | `archive/monthly-agent-snapshots/codex-skills-202602/dependency-map-cli-tools-01/scripts/build_rough_codebase_map.sh` | main | 1 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202602/executable-specs-01/references/executable-specs-templates.md` | 2 | `archive/monthly-agent-snapshots/codex-skills-202602/executable-specs-01/references/executable-specs-templates.md` | main | 2 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202603/run-parseltongue-1-7-2/central-logs/parseltongue-query-log.txt` | 42 | `archive/monthly-agent-snapshots/codex-skills-202603/run-parseltongue-1-7-2/central-logs/parseltongue-query-log.txt` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202603/run-parseltongue-1-7-2/scripts/setup_parseltongue_1_7_2.sh` | 2 | `archive/monthly-agent-snapshots/codex-skills-202603/run-parseltongue-1-7-2/scripts/setup_parseltongue_1_7_2.sh` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202603/typescript-coder-01/references/typescript-reliability-reference.md` | 1 | `archive/monthly-agent-snapshots/codex-skills-202603/typescript-coder-01/references/typescript-reliability-reference.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202606/kotlin-coder-01/references/sources-and-research-brief.md` | 1 | `archive/monthly-agent-snapshots/codex-skills-202606/kotlin-coder-01/references/sources-and-research-brief.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202606/python-coder-01/references/sources-and-research-brief.md` | 1 | `archive/monthly-agent-snapshots/codex-skills-202606/python-coder-01/references/sources-and-research-brief.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/codex-skills-202607/clarity202606/scripts/probe_clarity.sh` | 1 | `archive/monthly-agent-snapshots/codex-skills-202607/clarity202606/scripts/probe_clarity.sh` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202602/broad-idiomatic-patterns.md` | 28 | `archive/monthly-agent-snapshots/idiomatic-references-202602/broad-idiomatic-patterns.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202602/Idiom-DotNet-CSharp-Angular-TypeScript-Patterns.md` | 1 | `archive/monthly-agent-snapshots/idiomatic-references-202602/Idiom-DotNet-CSharp-Angular-TypeScript-Patterns.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202602/Idiom-React-Frontend-Patterns.md` | 1 | `archive/monthly-agent-snapshots/idiomatic-references-202602/Idiom-React-Frontend-Patterns.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202602/Idiom96-polyglot-basic-patterns-20251205.md` | 1 | `archive/monthly-agent-snapshots/idiomatic-references-202602/Idiom96-polyglot-basic-patterns-20251205.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/critique-JD-01.md` | 173 | `archive/monthly-agent-snapshots/idiomatic-references-202606/critique-JD-01.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/critique-SD-01.md` | 185 | `archive/monthly-agent-snapshots/idiomatic-references-202606/critique-SD-01.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-1.md` | 190 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-1.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-2.md` | 294 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-2.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-3.md` | 271 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-3.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-4.md` | 224 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-4.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-5.md` | 242 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-5.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-codebase-memory-smoke.json` | 2 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-codebase-memory-smoke.json` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-codegraphcontext-evidence.md` | 11 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-codegraphcontext-evidence.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-codegraphcontext-smoke.json` | 18 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-codegraphcontext-smoke.json` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-coverage-ledger.json` | 1266 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-coverage-ledger.json` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-coverage-ledger.md` | 102 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-coverage-ledger.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-evidence-index-summary.md` | 2 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-evidence-index-summary.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-evidence-index.json` | 2573 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-evidence-index.json` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-progress.md` | 6 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-progress.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-repo-inventory.json` | 1291 | `archive/monthly-agent-snapshots/idiomatic-references-202606/idiomatic-code-patterns-repo-inventory.json` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/prd-idiomatic-202606.md` | 61 | `archive/monthly-agent-snapshots/idiomatic-references-202606/prd-idiomatic-202606.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/reference-generation-coverage.md` | 32 | `archive/monthly-agent-snapshots/idiomatic-references-202606/reference-generation-coverage.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/reference-generation-progress.md` | 1 | `archive/monthly-agent-snapshots/idiomatic-references-202606/reference-generation-progress.md` | main | 0 |
+| `mentions-rust/main/archive/monthly-agent-snapshots/idiomatic-references-202606/tools/generate_reference_files.py` | 18 | `archive/monthly-agent-snapshots/idiomatic-references-202606/tools/generate_reference_files.py` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/code_review_feedback_patterns-20260710.md` | 1 | `library/idiomatic/202607/code_review_feedback_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/completion_verification_gate_patterns-20260710.md` | 1 | `library/idiomatic/202607/completion_verification_gate_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/dependency_map_cli_patterns-20260710.md` | 2 | `library/idiomatic/202607/dependency_map_cli_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/executable_metapattern_reference_digest-20260710.md` | 1 | `library/idiomatic/202607/executable_metapattern_reference_digest-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/executable_specification_skill_patterns-20260710.md` | 3 | `library/idiomatic/202607/executable_specification_skill_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/executable_traceability_template_patterns-20260710.md` | 12 | `library/idiomatic/202607/executable_traceability_template_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/polyglot_idiomatic_reference_patterns-20260710.md` | 7 | `library/idiomatic/202607/polyglot_idiomatic_reference_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/python_language_skill_entrypoint-20260710.md` | 3 | `library/idiomatic/202607/python_language_skill_entrypoint-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/python_reference_routing_sources-20260710.md` | 1 | `library/idiomatic/202607/python_reference_routing_sources-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/skill_creator_evaluation_patterns-20260710.md` | 6 | `library/idiomatic/202607/skill_creator_evaluation_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/system_design_architecture_patterns-20260710.md` | 2 | `library/idiomatic/202607/system_design_architecture_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/tdd_cycle_skill_patterns-20260710.md` | 1 | `library/idiomatic/202607/tdd_cycle_skill_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/library/idiomatic/202607/threejs_react_visualization_patterns-20260710.md` | 2 | `library/idiomatic/202607/threejs_react_visualization_patterns-20260710.md` | main | 0 |
+| `mentions-rust/main/methodology/prompts/202606-prompt-library.md` | 5 | `methodology/prompts/202606-prompt-library.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/handoff.md` | 14 | `projects/idiomatic-reference-evolution/202607/handoff.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/progress.md` | 26 | `projects/idiomatic-reference-evolution/202607/progress.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/assignments.csv` | 3 | `projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/assignments.csv` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/rust_backend_security_resilience-20260710-question-packets.md` | 104 | `projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/rust_backend_security_resilience-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/rust_idioms_checklist_patterns-20260710-question-packets.md` | 299 | `projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/rust_idioms_checklist_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/rust_legacy_coder_prompts-20260710-question-packets.md` | 249 | `projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/rust_legacy_coder_prompts-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/tauri_executable_playbook_templates-20260710-question-packets.md` | 74 | `projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/tauri_executable_playbook_templates-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/tauri_executable_reference_maps-20260710-question-packets.md` | 7 | `projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/packets/tauri_executable_reference_maps-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/progress.md` | 30 | `projects/idiomatic-reference-evolution/202607/section-review-packets/alpha/progress.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/assignments.csv` | 5 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/assignments.csv` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/polyglot_idiomatic_reference_patterns-20260710-question-packets.md` | 23 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/polyglot_idiomatic_reference_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/python_reference_routing_sources-20260710-question-packets.md` | 1 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/python_reference_routing_sources-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_backend_playbook_reference-20260710-question-packets.md` | 242 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_backend_playbook_reference-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_backend_testing_fixtures-20260710-question-packets.md` | 93 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_backend_testing_fixtures-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_coder_reliability_patterns-20260710-question-packets.md` | 289 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_coder_reliability_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_executable_template_patterns-20260710-question-packets.md` | 125 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_executable_template_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_quality_gate_patterns-20260710-question-packets.md` | 62 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/rust_quality_gate_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/threejs_react_visualization_patterns-20260710-question-packets.md` | 4 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/packets/threejs_react_visualization_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/beta/progress.md` | 10 | `projects/idiomatic-reference-evolution/202607/section-review-packets/beta/progress.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/assignments.csv` | 4 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/assignments.csv` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/python_language_skill_entrypoint-20260710-question-packets.md` | 11 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/python_language_skill_entrypoint-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_backend_reference_routing-20260710-question-packets.md` | 151 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_backend_reference_routing-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_backend_skill_entrypoint-20260710-question-packets.md` | 114 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_backend_skill_entrypoint-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_conventions_quality_gates-20260710-question-packets.md` | 152 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_conventions_quality_gates-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_executable_reference_maps-20260710-question-packets.md` | 90 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/rust_executable_reference_maps-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/skill_creator_evaluation_patterns-20260710-question-packets.md` | 18 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/skill_creator_evaluation_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/system_design_architecture_patterns-20260710-question-packets.md` | 2 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/system_design_architecture_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/tauri_doctrine_source_review-20260710-question-packets.md` | 49 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/tauri_doctrine_source_review-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/tauri_executable_skill_patterns-20260710-question-packets.md` | 31 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/packets/tauri_executable_skill_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/delta/progress.md` | 9 | `projects/idiomatic-reference-evolution/202607/section-review-packets/delta/progress.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/assignments.csv` | 4 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/assignments.csv` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_backend_runtime_operations-20260710-question-packets.md` | 114 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_backend_runtime_operations-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_executable_reliability_reference-20260710-question-packets.md` | 124 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_executable_reliability_reference-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_executable_skill_patterns-20260710-question-packets.md` | 180 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_executable_skill_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_idiomatic_skill_patterns-20260710-question-packets.md` | 154 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/rust_idiomatic_skill_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/tauri_conventions_quality_gates-20260710-question-packets.md` | 46 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/tauri_conventions_quality_gates-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/tauri_legacy_coder_patterns-20260710-question-packets.md` | 25 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/tauri_legacy_coder_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/tdd_cycle_skill_patterns-20260710-question-packets.md` | 1 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/packets/tdd_cycle_skill_patterns-20260710-question-packets.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/progress.md` | 8 | `projects/idiomatic-reference-evolution/202607/section-review-packets/gamma/progress.md` | main | 0 |
+| `mentions-rust/main/projects/idiomatic-reference-evolution/202607/task-queue.csv` | 4475 | `projects/idiomatic-reference-evolution/202607/task-queue.csv` | main | 0 |
+| `mentions-rust/main/unclassified-yet/DOCUMENT_INDEX.md` | 233 | `unclassified-yet/DOCUMENT_INDEX.md` | main | 0 |
+| `methodology/executable-specifications/rust/core.md` | 21 | `methodology/executable-specifications/rust/core.md` | main | 0 |
+| `methodology/executable-specifications/tauri/core.md` | 12 | `methodology/executable-specifications/tauri/core.md` | main | 0 |
+| `research/20-more-rust-hackathon-ideas-after-the-first-shortlist.md` | 29 | `research/strategic/20-more-rust-hackathon-ideas-after-the-first-shortlist.md` | main | 0 |
+| `research/how-to-rank-rust-opportunities-when-codex-is-helping.md` | 50 | `research/strategic/how-to-rank-rust-opportunities-when-codex-is-helping.md` | main | 0 |
+| `research/how-to-win-a-rust-hackathon-in-6-hours.md` | 59 | `research/strategic/how-to-win-a-rust-hackathon-in-6-hours.md` | main | 0 |
+| `research/why-rust-backends-need-a-separate-playbook.md` | 24 | `research/strategic/why-rust-backends-need-a-separate-playbook.md` | main | 0 |
+| `skills/claude/202602/rust-coder-01.md` | 169 | `archive/monthly-agent-snapshots/claude-skills-202602/rust-coder-01.md` | main | 0 |
+| `skills/claude/202602/rust-coder-02.md` | 41 | `archive/monthly-agent-snapshots/claude-skills-202602/rust-coder-02.md` | main | 2 |
+| `skills/claude/202602/Tauri-coder-01.md` | 33 | `archive/monthly-agent-snapshots/claude-skills-202602/Tauri-coder-01.md` | main | 1 |
+| `skills/claude/202604/personal/rust-web-backend-skill-explainer/SKILL.md` | 17 | `archive/monthly-agent-snapshots/claude-skills-202604/personal/rust-web-backend-skill-explainer/SKILL.md` | main | 0 |
+| `skills/claude/202604/rust-executable-specs-01.md` | 21 | `archive/monthly-agent-snapshots/claude-skills-202604/rust-executable-specs-01.md` | main | 0 |
+| `skills/claude/202604/tauri-executable-specs-01.md` | 12 | `archive/monthly-agent-snapshots/claude-skills-202604/tauri-executable-specs-01.md` | main | 0 |
+| `skills/codex/202602/idiomatic-rust-coder-01/agents/openai.yaml` | 4 | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/agents/openai.yaml` | main | 1 |
+| `skills/codex/202602/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` | 20 | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` | main | 1 |
+| `skills/codex/202602/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` | 4 | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` | main | 1 |
+| `skills/codex/202602/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` | 4 | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` | main | 1 |
+| `skills/codex/202602/idiomatic-rust-coder-01/SKILL.md` | 20 | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/SKILL.md` | main | 0 |
+| `skills/codex/202603/idiomatic-rust-coder-01/SKILL.md` | 20 | `archive/monthly-agent-snapshots/codex-skills-202603/idiomatic-rust-coder-01/SKILL.md` | main | 0 |
+| `skills/codex/202603/rust-coder-02/agents/openai.yaml` | 4 | `archive/monthly-agent-snapshots/codex-skills-202603/rust-coder-02/agents/openai.yaml` | main | 0 |
+| `skills/codex/202603/rust-coder-02/references/reference-map.md` | 3 | `archive/monthly-agent-snapshots/codex-skills-202603/rust-coder-02/references/reference-map.md` | main | 0 |
+| `skills/codex/202603/rust-coder-02/SKILL.md` | 14 | `archive/monthly-agent-snapshots/codex-skills-202603/rust-coder-02/SKILL.md` | main | 0 |
+| `skills/codex/202603/tauri-coder-01/agents/openai.yaml` | 0 | `archive/monthly-agent-snapshots/codex-skills-202603/tauri-coder-01/agents/openai.yaml` | main | 0 |
+| `skills/codex/202603/tauri-coder-01/references/reference-map.md` | 0 | `archive/monthly-agent-snapshots/codex-skills-202603/tauri-coder-01/references/reference-map.md` | main | 0 |
+| `skills/codex/202603/tauri-coder-01/SKILL.md` | 2 | `archive/monthly-agent-snapshots/codex-skills-202603/tauri-coder-01/SKILL.md` | main | 0 |
+| `skills/codex/202604/rust-executable-specs-01/agents/openai.yaml` | 5 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/agents/openai.yaml` | main | 0 |
+| `skills/codex/202604/rust-executable-specs-01/references/reference-map.md` | 33 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/references/reference-map.md` | main | 0 |
+| `skills/codex/202604/rust-executable-specs-01/references/rust-conventions-and-gates.md` | 7 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/references/rust-conventions-and-gates.md` | main | 0 |
+| `skills/codex/202604/rust-executable-specs-01/references/rust-executable-specs-playbook.md` | 37 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/references/rust-executable-specs-playbook.md` | main | 0 |
+| `skills/codex/202604/rust-executable-specs-01/SKILL.md` | 28 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/SKILL.md` | main | 0 |
+| `skills/codex/202604/rust-web-backend-delivery-01/agents/openai.yaml` | 4 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/agents/openai.yaml` | main | 0 |
+| `skills/codex/202604/rust-web-backend-delivery-01/references/reference-map.md` | 38 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/reference-map.md` | main | 0 |
+| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-backend-runtime-and-ops.md` | 2 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-runtime-and-ops.md` | main | 0 |
+| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-backend-security-and-resilience.md` | 1 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-security-and-resilience.md` | main | 0 |
+| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-backend-testing-and-fixtures.md` | 1 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-testing-and-fixtures.md` | main | 0 |
+| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-web-backend-playbook.md` | 1 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-web-backend-playbook.md` | main | 0 |
+| `skills/codex/202604/rust-web-backend-delivery-01/SKILL.md` | 30 | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/SKILL.md` | main | 0 |
+| `skills/codex/202604/tauri-executable-specs-01/agents/openai.yaml` | 0 | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/agents/openai.yaml` | main | 0 |
+| `skills/codex/202604/tauri-executable-specs-01/references/reference-map.md` | 1 | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/reference-map.md` | main | 0 |
+| `skills/codex/202604/tauri-executable-specs-01/references/tauri-conventions-and-gates.md` | 3 | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/tauri-conventions-and-gates.md` | main | 0 |
+| `skills/codex/202604/tauri-executable-specs-01/references/tauri-doctrine.md` | 5 | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/tauri-doctrine.md` | main | 0 |
+| `skills/codex/202604/tauri-executable-specs-01/references/tauri-executable-specs-playbook.md` | 24 | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/tauri-executable-specs-playbook.md` | main | 0 |
+| `skills/codex/202604/tauri-executable-specs-01/SKILL.md` | 6 | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/SKILL.md` | main | 0 |
+
+## Identical files kept once
+
+| Not kept | Identical to |
 |---|---|
-| `idiomatic-references/current-202607/rust/rust_backend_playbook_reference-20260710.md` | `library/idiomatic/202607/rust_backend_playbook_reference-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_backend_reference_routing-20260710.md` | `library/idiomatic/202607/rust_backend_reference_routing-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_backend_runtime_operations-20260710.md` | `library/idiomatic/202607/rust_backend_runtime_operations-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_backend_security_resilience-20260710.md` | `library/idiomatic/202607/rust_backend_security_resilience-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_backend_skill_entrypoint-20260710.md` | `library/idiomatic/202607/rust_backend_skill_entrypoint-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_backend_testing_fixtures-20260710.md` | `library/idiomatic/202607/rust_backend_testing_fixtures-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_coder_reliability_patterns-20260710.md` | `library/idiomatic/202607/rust_coder_reliability_patterns-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_conventions_quality_gates-20260710.md` | `library/idiomatic/202607/rust_conventions_quality_gates-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_executable_reference_maps-20260710.md` | `library/idiomatic/202607/rust_executable_reference_maps-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_executable_reliability_reference-20260710.md` | `library/idiomatic/202607/rust_executable_reliability_reference-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_executable_skill_patterns-20260710.md` | `library/idiomatic/202607/rust_executable_skill_patterns-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_executable_template_patterns-20260710.md` | `library/idiomatic/202607/rust_executable_template_patterns-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_idiomatic_skill_patterns-20260710.md` | `library/idiomatic/202607/rust_idiomatic_skill_patterns-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_idioms_checklist_patterns-20260710.md` | `library/idiomatic/202607/rust_idioms_checklist_patterns-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_legacy_coder_prompts-20260710.md` | `library/idiomatic/202607/rust_legacy_coder_prompts-20260710.md` |
-| `idiomatic-references/current-202607/rust/rust_quality_gate_patterns-20260710.md` | `library/idiomatic/202607/rust_quality_gate_patterns-20260710.md` |
-| `idiomatic-references/current-202607/tauri/tauri_conventions_quality_gates-20260710.md` | `library/idiomatic/202607/tauri_conventions_quality_gates-20260710.md` |
-| `idiomatic-references/current-202607/tauri/tauri_doctrine_source_review-20260710.md` | `library/idiomatic/202607/tauri_doctrine_source_review-20260710.md` |
-| `idiomatic-references/current-202607/tauri/tauri_executable_playbook_templates-20260710.md` | `library/idiomatic/202607/tauri_executable_playbook_templates-20260710.md` |
-| `idiomatic-references/current-202607/tauri/tauri_executable_reference_maps-20260710.md` | `library/idiomatic/202607/tauri_executable_reference_maps-20260710.md` |
-| `idiomatic-references/current-202607/tauri/tauri_executable_skill_patterns-20260710.md` | `library/idiomatic/202607/tauri_executable_skill_patterns-20260710.md` |
-| `idiomatic-references/current-202607/tauri/tauri_legacy_coder_patterns-20260710.md` | `library/idiomatic/202607/tauri_legacy_coder_patterns-20260710.md` |
-| `idiomatic-references/seed/Rust-Coder-1000IQ-01.md` | `library/idiomatic/seed/Rust-Coder-1000IQ-01.md` |
-| `idiomatic-references/archive-202604/rust-executable-specs-01/rust-executable-specs-reference.md` | `archive/monthly-agent-snapshots/idiomatic-references-202604/rust-executable-specs-01/rust-executable-specs-reference.md` |
-| `idiomatic-references/archive-202604/tauri-executable-specs-01/tauri-executable-specs-reference.md` | `archive/monthly-agent-snapshots/idiomatic-references-202604/tauri-executable-specs-01/tauri-executable-specs-reference.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_backend_playbook_reference.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_playbook_reference.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_backend_reference_routing.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_reference_routing.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_backend_runtime_operations.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_runtime_operations.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_backend_security_resilience.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_security_resilience.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_backend_skill_entrypoint.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_skill_entrypoint.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_backend_testing_fixtures.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_backend_testing_fixtures.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_coder_reliability_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_coder_reliability_patterns.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_conventions_quality_gates.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_conventions_quality_gates.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_executable_reference_maps.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_reference_maps.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_executable_reliability_reference.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_reliability_reference.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_executable_skill_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_skill_patterns.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_executable_template_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_executable_template_patterns.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_idiomatic_skill_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_idiomatic_skill_patterns.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_idioms_checklist_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_idioms_checklist_patterns.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_legacy_coder_prompts.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_legacy_coder_prompts.md` |
-| `idiomatic-references/archive-202606/generated-references/rust_quality_gate_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/rust_quality_gate_patterns.md` |
-| `idiomatic-references/archive-202606/generated-references/tauri_conventions_quality_gates.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_conventions_quality_gates.md` |
-| `idiomatic-references/archive-202606/generated-references/tauri_doctrine_source_review.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_doctrine_source_review.md` |
-| `idiomatic-references/archive-202606/generated-references/tauri_executable_playbook_templates.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_executable_playbook_templates.md` |
-| `idiomatic-references/archive-202606/generated-references/tauri_executable_reference_maps.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_executable_reference_maps.md` |
-| `idiomatic-references/archive-202606/generated-references/tauri_executable_skill_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_executable_skill_patterns.md` |
-| `idiomatic-references/archive-202606/generated-references/tauri_legacy_coder_patterns.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/generated-references/tauri_legacy_coder_patterns.md` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part1-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part1-repos.txt` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part1.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part1.md` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part2-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part2-repos.txt` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part2.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part2.md` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part3-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part3-repos.txt` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part3.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part3.md` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part4-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part4-repos.txt` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part4.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part4.md` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part5-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part5-repos.txt` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-Part5.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-Part5.md` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-coverage-ledger.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-coverage-ledger.json` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-coverage-summary.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-coverage-summary.json` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-evidence-index.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-evidence-index.json` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-evidence-summary.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-evidence-summary.json` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-progress.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-progress.md` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-repo-inventory.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-repo-inventory.json` |
-| `idiomatic-references/archive-202606/meta-rust-ref-202606-scan-summary.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/meta-rust-ref-202606-scan-summary.json` |
-| `idiomatic-references/archive-202606/rust-patterns-1-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-1-repos.txt` |
-| `idiomatic-references/archive-202606/rust-patterns-1.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-1.md` |
-| `idiomatic-references/archive-202606/rust-patterns-2-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-2-repos.txt` |
-| `idiomatic-references/archive-202606/rust-patterns-2.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-2.md` |
-| `idiomatic-references/archive-202606/rust-patterns-3-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-3-repos.txt` |
-| `idiomatic-references/archive-202606/rust-patterns-3.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-3.md` |
-| `idiomatic-references/archive-202606/rust-patterns-4-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-4-repos.txt` |
-| `idiomatic-references/archive-202606/rust-patterns-4.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-4.md` |
-| `idiomatic-references/archive-202606/rust-patterns-5-repos.txt` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-5-repos.txt` |
-| `idiomatic-references/archive-202606/rust-patterns-5.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-5.md` |
-| `idiomatic-references/archive-202606/rust-patterns-codegraphcontext-evidence.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-codegraphcontext-evidence.json` |
-| `idiomatic-references/archive-202606/rust-patterns-progress.md` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-progress.md` |
-| `idiomatic-references/archive-202606/rust-patterns-repo-inventory.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-repo-inventory.json` |
-| `idiomatic-references/archive-202606/rust-patterns-scan-summary.json` | `archive/monthly-agent-snapshots/idiomatic-references-202606/rust-patterns-scan-summary.json` |
-| `idiomatic-references/archive-202606/tools/verify_meta_rust_ref.py` | `archive/monthly-agent-snapshots/idiomatic-references-202606/tools/verify_meta_rust_ref.py` |
-| `idiomatic-references/archive-202606/tools/verify_rust_patterns_reference.py` | `archive/monthly-agent-snapshots/idiomatic-references-202606/tools/verify_rust_patterns_reference.py` |
-| `skills/claude/202602/Tauri-coder-01.md` | `archive/monthly-agent-snapshots/claude-skills-202602/Tauri-coder-01.md` |
-| `skills/claude/202602/rust-coder-01.md` | `archive/monthly-agent-snapshots/claude-skills-202602/rust-coder-01.md` |
-| `skills/claude/202602/rust-coder-02.md` | `archive/monthly-agent-snapshots/claude-skills-202602/rust-coder-02.md` |
-| `skills/claude/202604/personal/rust-web-backend-skill-explainer/SKILL.md` | `archive/monthly-agent-snapshots/claude-skills-202604/personal/rust-web-backend-skill-explainer/SKILL.md` |
-| `skills/claude/202604/rust-executable-specs-01.md` | `archive/monthly-agent-snapshots/claude-skills-202604/rust-executable-specs-01.md` |
-| `skills/claude/202604/tauri-executable-specs-01.md` | `archive/monthly-agent-snapshots/claude-skills-202604/tauri-executable-specs-01.md` |
-| `skills/codex/202602/idiomatic-rust-coder-01/SKILL.md` | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/SKILL.md` |
-| `skills/codex/202602/idiomatic-rust-coder-01/agents/openai.yaml` | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/agents/openai.yaml` |
-| `skills/codex/202602/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` |
-| `skills/codex/202602/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` |
-| `skills/codex/202602/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` | `archive/monthly-agent-snapshots/codex-skills-202602/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` |
-| `skills/codex/202603/idiomatic-rust-coder-01/SKILL.md` | `archive/monthly-agent-snapshots/codex-skills-202603/idiomatic-rust-coder-01/SKILL.md` |
-| `skills/codex/202603/idiomatic-rust-coder-01/agents/openai.yaml` | `archive/monthly-agent-snapshots/codex-skills-202603/idiomatic-rust-coder-01/agents/openai.yaml` |
-| `skills/codex/202603/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` | `archive/monthly-agent-snapshots/codex-skills-202603/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` |
-| `skills/codex/202603/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` | `archive/monthly-agent-snapshots/codex-skills-202603/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` |
-| `skills/codex/202603/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` | `archive/monthly-agent-snapshots/codex-skills-202603/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` |
-| `skills/codex/202603/rust-coder-02/SKILL.md` | `archive/monthly-agent-snapshots/codex-skills-202603/rust-coder-02/SKILL.md` |
-| `skills/codex/202603/rust-coder-02/agents/openai.yaml` | `archive/monthly-agent-snapshots/codex-skills-202603/rust-coder-02/agents/openai.yaml` |
-| `skills/codex/202603/rust-coder-02/references/reference-map.md` | `archive/monthly-agent-snapshots/codex-skills-202603/rust-coder-02/references/reference-map.md` |
-| `skills/codex/202603/rust-coder-02/references/rust-reliability-reference.md` | `archive/monthly-agent-snapshots/codex-skills-202603/rust-coder-02/references/rust-reliability-reference.md` |
-| `skills/codex/202603/tauri-coder-01/SKILL.md` | `archive/monthly-agent-snapshots/codex-skills-202603/tauri-coder-01/SKILL.md` |
-| `skills/codex/202603/tauri-coder-01/agents/openai.yaml` | `archive/monthly-agent-snapshots/codex-skills-202603/tauri-coder-01/agents/openai.yaml` |
-| `skills/codex/202603/tauri-coder-01/references/doctrine.md` | `archive/monthly-agent-snapshots/codex-skills-202603/tauri-coder-01/references/doctrine.md` |
-| `skills/codex/202603/tauri-coder-01/references/reference-map.md` | `archive/monthly-agent-snapshots/codex-skills-202603/tauri-coder-01/references/reference-map.md` |
-| `skills/codex/202604/rust-executable-specs-01/SKILL.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/SKILL.md` |
-| `skills/codex/202604/rust-executable-specs-01/agents/openai.yaml` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/agents/openai.yaml` |
-| `skills/codex/202604/rust-executable-specs-01/references/reference-map.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/references/reference-map.md` |
-| `skills/codex/202604/rust-executable-specs-01/references/rust-conventions-and-gates.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/references/rust-conventions-and-gates.md` |
-| `skills/codex/202604/rust-executable-specs-01/references/rust-executable-specs-playbook.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/references/rust-executable-specs-playbook.md` |
-| `skills/codex/202604/rust-executable-specs-01/references/rust-reliability-reference.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-executable-specs-01/references/rust-reliability-reference.md` |
-| `skills/codex/202604/rust-web-backend-delivery-01/SKILL.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/SKILL.md` |
-| `skills/codex/202604/rust-web-backend-delivery-01/agents/openai.yaml` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/agents/openai.yaml` |
-| `skills/codex/202604/rust-web-backend-delivery-01/references/reference-map.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/reference-map.md` |
-| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-backend-runtime-and-ops.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-runtime-and-ops.md` |
-| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-backend-security-and-resilience.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-security-and-resilience.md` |
-| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-backend-testing-and-fixtures.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-backend-testing-and-fixtures.md` |
-| `skills/codex/202604/rust-web-backend-delivery-01/references/rust-web-backend-playbook.md` | `archive/monthly-agent-snapshots/codex-skills-202604/rust-web-backend-delivery-01/references/rust-web-backend-playbook.md` |
-| `skills/codex/202604/tauri-executable-specs-01/SKILL.md` | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/SKILL.md` |
-| `skills/codex/202604/tauri-executable-specs-01/agents/openai.yaml` | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/agents/openai.yaml` |
-| `skills/codex/202604/tauri-executable-specs-01/references/reference-map.md` | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/reference-map.md` |
-| `skills/codex/202604/tauri-executable-specs-01/references/tauri-conventions-and-gates.md` | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/tauri-conventions-and-gates.md` |
-| `skills/codex/202604/tauri-executable-specs-01/references/tauri-doctrine.md` | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/tauri-doctrine.md` |
-| `skills/codex/202604/tauri-executable-specs-01/references/tauri-executable-specs-playbook.md` | `archive/monthly-agent-snapshots/codex-skills-202604/tauri-executable-specs-01/references/tauri-executable-specs-playbook.md` |
-| `methodology/executable-specifications/rust/core.md` | `methodology/executable-specifications/rust/core.md` |
-| `methodology/executable-specifications/rust/reference.md` | `methodology/executable-specifications/rust/reference.md` |
-| `methodology/executable-specifications/tauri/core.md` | `methodology/executable-specifications/tauri/core.md` |
-| `methodology/executable-specifications/tauri/reference.md` | `methodology/executable-specifications/tauri/reference.md` |
-| `research/20-more-rust-hackathon-ideas-after-the-first-shortlist.md` | `research/strategic/20-more-rust-hackathon-ideas-after-the-first-shortlist.md` |
-| `research/how-to-rank-rust-opportunities-when-codex-is-helping.md` | `research/strategic/how-to-rank-rust-opportunities-when-codex-is-helping.md` |
-| `research/how-to-win-a-rust-hackathon-in-6-hours.md` | `research/strategic/how-to-win-a-rust-hackathon-in-6-hours.md` |
-| `research/why-rust-backends-need-a-separate-playbook.md` | `research/strategic/why-rust-backends-need-a-separate-playbook.md` |
+| `methodology/executable-specifications/rust/reference.md` | `idiomatic-references/archive-202604/rust-executable-specs-01/rust-executable-specs-reference.md` |
+| `methodology/executable-specifications/tauri/reference.md` | `idiomatic-references/archive-202604/tauri-executable-specs-01/tauri-executable-specs-reference.md` |
+| `skills/codex/202603/idiomatic-rust-coder-01/agents/openai.yaml` | `skills/codex/202602/idiomatic-rust-coder-01/agents/openai.yaml` |
+| `skills/codex/202603/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` | `skills/codex/202602/idiomatic-rust-coder-01/references/rust-executable-specs-templates.md` |
+| `skills/codex/202603/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` | `skills/codex/202602/idiomatic-rust-coder-01/references/rust-idioms-checklist.md` |
+| `skills/codex/202603/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` | `skills/codex/202602/idiomatic-rust-coder-01/references/rust-quality-gates-anti-patterns.md` |
+| `skills/codex/202603/rust-coder-02/references/rust-reliability-reference.md` | `skills/claude/202602/rust-coder-02.md` |
+| `skills/codex/202603/tauri-coder-01/references/doctrine.md` | `skills/claude/202602/Tauri-coder-01.md` |
+| `skills/codex/202604/rust-executable-specs-01/references/rust-reliability-reference.md` | `skills/claude/202602/rust-coder-02.md` |
