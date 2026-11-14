@@ -2400,6 +2400,8 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 
 - **Name the task's dominant risk before designing.** The risk classes are ambiguity, delivery sequencing, operational safety, security, resilience and review readiness. The dominant risk is often not the stated topic: a migration's topic is schema and its risk is rollout ordering; a retry question is a resilience question, not a client-boundary one. Classify by risk, not by a keyword shared with the ticket.
 
+- **Re-classify mid-task.** When a delivery task uncovers an auth or durability question, treat it as a new risk and apply that risk's rules before continuing. Risk rules consulted after the code is written arrive too late. Checking too much wastes minutes; checking too little ships unexamined risk, so when unsure check more.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
