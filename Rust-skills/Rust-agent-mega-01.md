@@ -295,7 +295,7 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
 - Keep library errors typed and boundary-aware.
 
 - Use `thiserror` for library error enums and `anyhow` at application composition boundaries.
-- No `unwrap` or `expect` in production paths.
+- No `unwrap` or `expect` in production paths unless an invariant is documented and justified.
 
 - Propagate errors with `?` and attach context at I/O and boundary operations.
 
@@ -330,6 +330,16 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
 - Keep rustdoc examples executable and aligned with current behavior.
 - Use structured tracing at system boundaries in async services.
 - Never log secrets or sensitive payloads.
+
+### Rules not to universalize
+
+Do not treat these as default Rust quality rules:
+
+- "Run `cargo clean` constantly."
+- Doctrine copied verbatim into every skill or plan.
+- Four-word naming when it would break a stable API or make a name materially worse.
+- Mermaid-only documentation as a universal requirement.
+- "MVP" used as cover for skipping tests, contracts or verification.
 
 ## 13. Anti-patterns
 
@@ -510,15 +520,16 @@ Run the optional advanced gates for high-risk changes.
 ### Runtime and safety gate
 
 - No blocking I/O or CPU-bound work runs directly on an async executor.
-- No lock is held across `.await`.
-- Cancellation and timeout paths are handled.
+- No mutex guard, rwlock guard or mutable borrow is held across `.await`.
+- Cancellation, timeout and shutdown paths are handled wherever async work can outlive its caller.
 - No secret value is logged.
 
 ### Release readiness checklist
 
 - [ ] Requirements are executable and measurable.
+- [ ] Each `REQ-RUST-*` has at least one linked test.
 - [ ] Tests validate functional, error and edge behavior.
-- [ ] Performance claims include explicit threshold tests.
+- [ ] Performance claims include explicit thresholds and a test method.
 - [ ] Documentation and examples reflect current behavior.
 - [ ] No TODO, STUB or FIXME placeholders remain in finalized code.
 
