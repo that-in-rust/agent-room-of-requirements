@@ -529,6 +529,41 @@ let written: &mut [u8] = to_slice(&my_struct, &mut buf)?;
 let round: My = from_bytes(written)?;
 ```
 
+### Embedded workflow
+
+- **Target and linking.** Add the target (`rustup target add thumbv7em-none-eabihf` for Cortex-M4F/M7F), set it in `.cargo/config.toml`, and provide a `memory.x` defining FLASH, RAM, stack and vector table. Do not hardcode addresses in code; use `#[link_section]` sparingly.
+
+```toml
+# .cargo/config.toml
+[build]
+target = "thumbv7em-none-eabihf"
+```
+
+```ld
+/* memory.x */
+MEMORY { FLASH : ORIGIN = 0x08000000, LENGTH = 512K; RAM : ORIGIN = 0x20000000, LENGTH = 128K }
+PROVIDE(_stack_start = ORIGIN(RAM) + LENGTH(RAM));
+```
+
+- **Structure.** Use `embedded-hal` traits and a platform HAL so code is not tied to one MCU; structure with RTIC or Embassy. Never block inside an async task; use the Embassy time driver, not busy-wait delays. A global allocator is needed only when using `alloc`.
+- **Logging.** `defmt` over RTT with `panic-probe`. No semihosting in production, no blocking prints in interrupts, no verbose logs on time-critical paths.
+
+```rust
+// Cargo.toml (bins)
+// defmt = "*", rtt-target = "*", panic-probe = { version = "*", features = ["print-defmt"] }
+#[defmt::panic_handler]
+fn panic() -> ! { panic_probe::hard_fault() }
+#[defmt::timestamp]
+fn ts() -> u64 { 0 }
+```
+
+- **Flash and run** with `probe-rs`, selecting the chip explicitly:
+
+```sh
+cargo flash --chip STM32F401RETx --release --example blinky
+probe-rs run --chip STM32F401RETx target/thumbv7em-none-eabihf/release/app
+```
+
 ## 5. Verification and test-first delivery
 
 ### Verification selection matrix
@@ -1072,6 +1107,31 @@ match opt.as_ref() { Some(x) => {/*...*/}, None => {} }
 
 - **Associated types.** Prefer `type Output;` to an extra generic parameter when the output is fixed by the implementor.
 
+- **Zero-sized markers.** Field-less marker types with `PhantomData` encode modes and states at no runtime cost. Do not depend on the layout of structs containing ZSTs beyond what is guaranteed.
+
+```rust
+use core::marker::PhantomData;
+struct ReadOnly;
+struct Buffer<T, Mode> { data: Vec<T>, _mode: PhantomData<Mode> }
+let _buf: Buffer<u8, ReadOnly> = Buffer { data: vec![], _mode: PhantomData };
+```
+
+- **Uninhabited types.** `!` is the canonical one; an empty enum models an impossible case in a generic, such as `Result<T, Void>`. Never expose an uninhabited type over FFI.
+
+```rust
+enum Void {}
+fn into_ok<T>(r: Result<T, Void>) -> T { match r { Ok(v) => v, Err(e) => match e {} } }
+```
+
+- **`_` and `..` in patterns.** `_` ignores one field and `..` the rest. Use `..` when destructuring types that may gain fields, and always with `#[non_exhaustive]` types.
+
+```rust
+struct S { a: u32, b: u32, c: u32 }
+let s = S { a: 1, b: 2, c: 3 };
+let S { a, .. } = s; // ignore b, c
+let S { b: _, c, .. } = s; // ignore b explicitly, bind c
+```
+
 ### Macros and build scripts
 
 - **Choose the flavor.** Derive to generate impls from type structure; attribute macros to transform or wrap items; function-like macros for DSLs. Do not write a proc macro where `macro_rules!` suffices, or heavy proc-macro logic that could run in `build.rs`.
@@ -1611,6 +1671,53 @@ let sum: i64 = (0..1_000_000i64).into_par_iter().sum();
 
 - **io_uring runtimes.** `monoio` (thread-per-core, non-`Send` tasks) and `tokio-uring` suit high-throughput I/O-bound Linux servers on kernel 5.11 or later. Benchmark on the real workload, gate behind a feature, and do not use them where epoll/kqueue suffices.
 
+- **Channel choice for threads.** `std::sync::mpsc` is the simple MPSC baseline; `crossbeam-channel` adds MPMC, `select!` and speed; `flume` adds async support, deadlines, rendezvous and a `Selector`. Do not block on sends without a timeout or mix channel ecosystems without need.
+
+```rust
+// flume rendezvous + select-like API
+let (tx1, rx1) = flume::bounded::<u32>(0); // rendezvous
+let (tx2, rx2) = flume::bounded::<u32>(1024);
+flume::Selector::new()
+    .recv(&rx1, |v| println!("r1: {}", v))
+    .recv(&rx2, |v| println!("r2: {}", v))
+    .wait();
+```
+
+- **Work stealing.** With `crossbeam-deque`, use a global `Injector` plus a LIFO `Worker` per thread; idle threads steal in batches. Avoid a single global queue and heavy locking around queues.
+
+```rust
+use crossbeam_deque::{Injector, Worker, Stealer, Steal};
+let injector = Injector::new();
+let workers: Vec<_> = (0..num_cpus::get()).map(|_| Worker::new_lifo()).collect();
+let stealers: Vec<Stealer<_>> = workers.iter().map(|w| w.stealer()).collect();
+// spawn workers: pop local, else steal batch from injector or others
+```
+
+- **Epoch reclamation.** Pin the epoch before touching shared pointers and retire removed nodes with deferred destruction. Never free without retiring, access a pointer outside a pin, or mix collector domains.
+
+```rust
+use crossbeam_epoch as epoch;
+let guard = epoch::pin();
+let shared: epoch::Atomic<usize> = epoch::Atomic::null();
+let ptr = shared.load(epoch::Acquire, &guard);
+// ... remove node ...
+unsafe { guard.defer_destroy(ptr) };
+```
+
+- **A complete `loom` test.** Join the threads and assert the invariant. No randomness, timers or I/O inside the model, and cap the state space.
+
+```rust
+loom::model(|| {
+    use loom::{sync::{Arc, atomic::{AtomicUsize, Ordering::*}}, thread};
+    let n = Arc::new(AtomicUsize::new(0));
+    let a = n.clone(); let b = n.clone();
+    let t1 = thread::spawn(move || { let cur = a.load(Acquire); a.store(cur+1, Release); });
+    let t2 = thread::spawn(move || { let cur = b.load(Acquire); b.store(cur+1, Release); });
+    t1.join().unwrap(); t2.join().unwrap();
+    assert_eq!(n.load(Relaxed), 2);
+});
+```
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
@@ -1690,6 +1797,23 @@ struct CacheLine([u8; 64]);
 - **The `-sys` crate pattern.** Put raw bindings in `foo-sys` with `package.links = "foo"` and link metadata from its build script; a separate crate depends on it and exposes the safe API. Do not mix raw FFI and the safe wrapper in one crate.
 
 ```toml
+
+- **Wide pointers.** `&[T]`, `&str` and `&dyn Trait` are pointer plus length or vtable. Never pass them across FFI (`extern "C" fn foo(s: &str)` is wrong); pass `(ptr, len)` in a `repr(C)` struct.
+
+```rust
+#[repr(C)]
+pub struct SliceU8 { ptr: *const u8, len: usize }
+#[no_mangle]
+pub extern "C" fn take_bytes(s: SliceU8) { /* safe FFI shape for &[u8] */ }
+```
+
+- **Manual `Send`/`Sync`.** Write `unsafe impl` only when the thread-safety invariant is proven: no non-thread-safe interior mutability, raw pointers guarded by atomics or locks, no leaked lifetimes. Prefer composing `Send`/`Sync` fields. State the justification in docs.
+
+```rust
+unsafe impl<T: Send> Send for MyType<T> {}
+unsafe impl<T: Sync> Sync for MyType<T> {}
+// Justify invariants in docs: why concurrent access is safe.
+```
 # Cargo.toml
 [package]
 links = "foo"
@@ -3608,6 +3732,14 @@ sqlx migrate run --database-url=${DATABASE_URL}
 Pin the toolchain per project:
 
 ```toml
+
+Workspace hygiene:
+
+- Declare dependency versions once at the workspace root and inherit them in member crates; use path dependencies between local crates.
+- Share common types through one workspace crate.
+- Keep optional dependencies behind features, grouped by feature set.
+- Re-export the public API from `lib.rs`.
+- Run `cargo clean` after a major dependency or workspace-configuration change, or when build errors make no sense, before trusting a critical test run.
 # rust-toolchain.toml
 [toolchain]
 channel = "1.80.1"
