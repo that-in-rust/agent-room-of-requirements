@@ -2362,6 +2362,10 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - Do not design password or session flows without addressing storage, failure behavior and async-safe verification boundaries.
 - Do not treat deployment and migrations as postscript tasks when schema or background workflow behavior changes.
 
+- **Layers give every failure an owner.** Parsing failures belong to transport, orchestration and error mapping to handlers, invariants to domain types, transactions to persistence, remote-system risk to typed clients. Walk a request end to end and name the owning layer for each step; a step with no owner is a boundary the design still owes. The layer boundaries are the rule; the crates are replaceable.
+- **Decide inline or worker before coding a long-running path.** A slow remote call kept inline holds client connections open and turns client retries into duplicate side effects. Keep a slow call inline only with a stated tradeoff. Do not add a queue without a durability reason.
+- **Adoption order when refactoring:** layer separation, edge validation, transaction ownership, typed clients, then the worker split. Draw layer boundaries before touching handler bodies; do not tune connection pools while unchecked strings still travel through the core. Review a diff in the same order, transport first.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
