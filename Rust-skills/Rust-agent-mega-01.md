@@ -196,6 +196,13 @@ What the compiler does not prove:
 - **Adopting a pattern.** Adopt one only when it reduces a bug class, misuse or ambiguous failure behavior, never because it looks advanced. High-ceremony patterns must pay for themselves in safety, boundary clarity or correctness. Judge a pattern on: zero-cost, type-safe, ergonomic, compositional, resilient.
 - **Recovery-aware errors.** Where retryability changes control flow (network clients, storage, subprocesses, queues, external APIs), encode it in the error type as transient or permanent. Classify by recovery strategy, not by cause. Never match on error strings. Test that transient errors retry and permanent errors do not.
 
+### Rule cards
+
+- **Newtypes at trust boundaries (must).** Identifiers, units, tokens, credentials, offsets and validated values get dedicated types once they cross a trust boundary, for example `struct UserId(NonZeroU64);` and `TryFrom<&str> for EmailAddress`. If two values should not be swappable, their types should not be swappable. Not needed for one-shot local glue. Verify with parse and round-trip tests.
+- **One conversion path.** Convert between transport, domain and storage forms through `From`, `TryFrom` or a dedicated constructor, for example `TryFrom<CreateUserRequest> for NewUser`. Never hand-validate the same fields in several handlers. Verify with conversion tests and malformed-input cases.
+- **Static before dynamic validation (must).** Prefer argument types that rule out invalid input; when that is not enough, validate immediately at the entry point. The best validation is the one callers cannot accidentally forget. Review every unchecked escape hatch.
+- **Trait seams at side-effect boundaries.** Put a trait where ownership of side effects changes: outbound HTTP, storage, queues, clock, UUID generation, sidecar processes. The core service depends on a `UserStore` trait and the adapter owns the SQLx pool; handlers never build clients or queries inline. Skip the trait for small leaf logic and stable internal helpers. Verify with unit tests against fakes plus integration tests against the real adapter.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
