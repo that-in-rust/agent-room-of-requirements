@@ -131,6 +131,52 @@ fn test_operation_performance_contract() {
 }
 ```
 
+### Rule strength, waivers and severity
+
+- **Rule strength.** MUST and MUST NOT are mandatory unless a waiver is recorded. SHOULD and SHOULD NOT are defaults that context can override. MAY is optional.
+- **Waivers.** An exception to a MUST rule records: reason, narrowed scope, compensating control, verification plan, owner, and a review trigger or expiry.
+- **Invalid waiver reasons:** deadline pressure alone; "MVP" with no compensating control; discomfort with tests; unfamiliarity with the Rust feature that would solve the problem; keeping a speculative abstraction alive.
+- **Review severity:**
+  - P0: correctness or safety failure likely to cause broken behavior, corruption, exploitability or an invalid completion claim.
+  - P1: serious design or reliability weakness with high regression or operability risk.
+  - P2: notable maintainability, verification or boundary weakness.
+  - P3: polish or clarity issue with limited correctness risk.
+- **Confidence in a rule:** high when backed by language guarantees, std behavior or broad production precedent; medium for strong but context-sensitive ecosystem precedent; low for a heuristic or local convention.
+
+### First principles
+
+1. Make invalid states unrepresentable where practical.
+2. Ownership is a design tool. Borrow before cloning.
+3. Parse at boundaries; do not let unvalidated shapes travel inward.
+4. Make failure modes explicit in types, control flow and tests.
+5. Prefer a simple public surface to internal sophistication.
+6. Async, cancellation and concurrency are correctness concerns.
+7. An advanced pattern earns its place by removing misuse or ambiguity.
+8. Safe and unsafe code meet through explicit contracts.
+9. Destructor timing and cleanup are part of program semantics.
+
+Enforcement order:
+
+- Check an invariant statically with a type when that is cheap.
+- Otherwise validate once at the narrowest trustworthy boundary, not repeatedly downstream.
+- An `_unchecked` fast path may exist only beside a checked counterpart that defines the contract, and only where callers can realistically uphold it.
+- Debug-only validation is for expensive internal consistency checks; it does not replace boundary validation.
+
+Destructors and temporaries:
+
+- Destructors are infallible, non-blocking and minimal in side effects.
+- If teardown must fail, block or await, expose an explicit `shutdown`, `flush` or `close` method.
+- Keep temporaries and guards short-lived so drop timing is predictable.
+- If correctness depends on teardown happening before later work, show that in control flow and test it.
+- If a task can outlive its caller, describe its cancellation and shutdown behavior.
+
+What the compiler does not prove:
+
+- It proves memory and type properties. It does not prove domain correctness, performance, cancellation behavior or SemVer compatibility.
+- No borrow-checker error does not mean the clones are justified.
+- No data race does not mean no logical race, starvation, dropped work or stale state.
+- Unsafe code must stay sound even if the surrounding safe code is logically wrong. Each unsafe block maps to one narrow proof obligation that can be explained locally. Delete an unsafe optimization that does not buy measurable gain.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
@@ -165,6 +211,33 @@ Trace every requirement to a test in a concise table:
 
 | req_id | test_id | test_type | assertion | metric |
 | --- | --- | --- | --- | --- |
+
+### Mode precedence and defaults
+
+Default mode combinations:
+
+- vague feature request: Spec + Delivery
+- public API or reusable crate: Spec + Architecture + Reliability
+- async or concurrent system: Delivery + Reliability
+- parser, decoder or protocol: Spec + Reliability
+- code review: Review + Architecture or Reliability
+
+When modes disagree, apply them in this order:
+
+1. Spec decides what must be proven.
+2. Architecture decides where invariants and dependencies belong.
+3. Reliability decides which failure behavior must be explicit.
+4. Delivery decides sequencing.
+5. Review decides what to challenge hardest.
+
+Prefer the choice that preserves correctness and compatibility with the least surprise to callers.
+
+Output rules:
+
+- Every non-trivial behavior claim maps to a requirement or rule, and every non-trivial requirement to at least one verification path.
+- Review output leads with findings, not reassurance.
+- Completion claims include fresh verification evidence. Evidence outranks confidence, earlier runs and plausibility.
+- When a section is empty, say why. Do not fill it with placeholders.
 
 ## 3. Executable specifications
 
