@@ -2379,6 +2379,11 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - **Review order differs from build order.** Build shape first, then risk. Review risk first (credential handling, rollback safety, session handling), then shape.
 - **Reference endpoint exercise.** Parse at transport, convert to a newtype at the edge, own one transaction, call a typed remote client, and prove it with a spawned-app test plus a `wiremock` contract test. The transaction must not span the remote call. Test the duplicate-submission case for idempotent replay and the remote-timeout case. Practice on write endpoints, not only reads.
 
+- **Invalid inputs are named contracts.** Each empty, malformed and duplicate input case gets a requirement and a named test.
+- **Scope each change to one service slice:** one endpoint or worker with its requirements, layer design and assigned tests. Do not put an endpoint, its schema change and a new worker loop in one change; split them. A risky schema change is several ordered deliveries, not one. Batching trivial read endpoints that share every boundary is acceptable.
+- **Delivery speed is not the measure.** An inline remote call demos faster than a worker split until the first duplicated payment. When a layer keeps collecting incidents, its boundary is drawn in the wrong place.
+- **Routing.** Libraries, CLIs, parsers, protocol crates and FFI follow the general Rust rules, not the backend rules. The costly misroute is the reverse: a web service reviewed as a generic library, so sessions, migrations and idempotency go unexamined. Worker and queue questions are backend questions.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
