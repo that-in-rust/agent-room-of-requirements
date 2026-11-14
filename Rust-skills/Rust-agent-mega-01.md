@@ -113,6 +113,58 @@ Trace every requirement to a test in a concise table:
 ```markdown
 
 - Give non-functional claims explicit units (`us`, `ms`, `MB`, `ops/s`).
+
+- Split functional from non-functional requirements when they would otherwise blur together.
+- Use `REQ-RUST-*` identifiers for Rust work even when the user starts with a generic request.
+
+### Vague-to-executable rewrites
+
+| Vague statement | Executable rewrite |
+| --- | --- |
+| "Make it faster." | "Reduce p99 latency from 5ms to less than 1ms for 10k entities." |
+| "Improve reliability." | "Return typed validation errors for malformed input without panics or detached task leaks." |
+| "Handle async correctly." | "Propagate cancellation, avoid blocking in async contexts, and keep lock guards out of `.await`." |
+| "Make the API cleaner." | "Accept borrowed inputs, preserve semver-safe public types, and reject invalid states at construction time." |
+
+### Work packet template
+
+Use this shape when a request is not ready for immediate coding:
+
+```markdown
+## Rust Work Mode
+- Spec Mode
+- Delivery Mode
+
+## Executable Requirements
+### REQ-RUST-001.0: <title>
+**WHEN** ...
+**THEN** the system SHALL ...
+**AND** SHALL ...
+**SHALL** ...
+
+## Rust Design (L1/L2/L3 + Traits)
+- L1 core:
+- L2 std:
+- L3 external:
+- Trait seams:
+
+## Verification Matrix
+| req_id | test_id | test_type | assertion | metric |
+| --- | --- | --- | --- | --- |
+
+## Implementation Plan
+1. STUB
+2. RED
+3. GREEN
+4. REFACTOR
+5. VERIFY
+
+## Quality Gate Results
+- fmt:
+- clippy:
+- tests:
+- build:
+```
 ### REQ-RUST-001.0: <short title>
 
 **WHEN** <trigger or input condition>
@@ -131,9 +183,9 @@ Plan the design before coding.
 
 | Layer | Role | Question to ask |
 | --- | --- | --- |
-| L1 Core | Invariants, types, traits, protocol and state rules | What must stay runtime-agnostic and easy to trust? |
-| L2 Std | Collections, ownership orchestration, iterator and sync composition | What belongs in Rust std without framework coupling? |
-| L3 External | Runtime, database, HTTP, serialization, tracing, FFI adapters | What touches the outside world and should stay behind traits or adapters? |
+| L1 Core | Domain invariants, types, traits, protocol and state rules. Depends only on `core` or dependency-light standard types | What must stay stable, testable, runtime-agnostic and easy to trust? |
+| L2 Std | Collections, ownership orchestration, error composition, iterators, sync primitives. Depends on the Rust standard library | What orchestration belongs in Rust std without framework coupling? |
+| L3 External | Async runtime, database, HTTP, serialization, tracing, FFI adapters. Depends on external crates and runtime integration | What touches the outside world and should stay behind traits or adapters? |
 
 - Keep L3 dependencies out of L1.
 - Push validated types and invariants as low in the stack as practical.
@@ -141,7 +193,7 @@ Plan the design before coding.
 
 ### Trait-first design
 
-Define the trait before the concrete adapter when the task needs test doubles or integration seams, when public behavior should be settled before storage or transport details, or when infrastructure dependencies would otherwise leak into core logic.
+Define the trait before the concrete adapter when IO or adapters should be isolated from domain logic, when the task needs test doubles or integration seams, when public behavior should be settled before storage or transport details, or when infrastructure dependencies would otherwise leak into core logic.
 
 ```rust
 pub trait EntityStoreBehavior {
@@ -196,7 +248,7 @@ STUB -> RED -> GREEN -> REFACTOR -> VERIFY
 - **RED:** confirm the failure matches the missing behavior.
 - **GREEN:** implement the minimum code that satisfies the test.
 - **REFACTOR:** improve decomposition, ownership and naming while staying green.
-- **VERIFY:** run all chosen gates and confirm requirement traceability.
+- **VERIFY:** run formatting, lints, tests and build, plus any higher-risk gate chosen (doctest, compile-fail, property, fuzz, `loom`, coverage), and confirm requirement traceability.
 
 Cover unit, integration, error-path and concurrency cases. Add performance tests only when a metric is specified.
 
@@ -212,6 +264,18 @@ For each requirement cover the happy path, the error path and the edge path. Add
 | REQ-RUST-001.0 | TEST-INTEG-003 | integration | preserves order across parser and filter | correctness |
 | REQ-RUST-001.0 | TEST-PERF-002 | perf | p99 < 500us for 10k entities | latency |
 | REQ-RUST-001.0 | TEST-CONC-004 | concurrency | no race under 100 parallel tasks | safety |
+
+A matrix that uses the wider verification mix. Choose the smallest useful set, not the biggest possible set.
+
+| req_id | test_id | test_type | assertion | metric |
+| --- | --- | --- | --- | --- |
+| REQ-RUST-001.0 | TEST-UNIT-001 | unit | validates parsed entity ids | correctness |
+| REQ-RUST-001.0 | TEST-INTEG-002 | integration | persists and reloads valid entities | integration |
+| REQ-RUST-002.0 | TEST-DOC-003 | doctest | public example compiles and behaves as documented | usability |
+| REQ-RUST-003.0 | TEST-CF-004 | compile-fail | rejects invalid generic usage | misuse |
+| REQ-RUST-004.0 | TEST-PROP-005 | property | round-trip preserves invariant | invariant |
+| REQ-RUST-005.0 | TEST-LOOM-006 | concurrency | shared state remains race-safe | safety |
+| REQ-RUST-006.0 | TEST-PERF-007 | performance | p99 < 500us for 10k entities | latency |
 
 ### Test skeletons
 
@@ -267,6 +331,51 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
     let results = join_all(tasks).await;
     assert!(results.into_iter().all(|r| r.is_ok()));
     Ok(())
+}
+```
+
+Doctest:
+
+```rust
+/// ```
+/// let user_id = UserId::try_from("user_123")?;
+/// assert_eq!(user_id.as_str(), "user_123");
+/// # Ok::<(), UserIdError>(())
+/// ```
+```
+
+Compile-fail (with `trybuild`):
+
+```rust
+#[test]
+fn test_req_rust_003_invalid_usage_compile_fails() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/ui/invalid_usage.rs");
+}
+```
+
+Property (with `proptest`):
+
+```rust
+proptest! {
+    #[test]
+    fn test_req_rust_004_round_trip_invariant(input in valid_entity_strategy()) {
+        let encoded = encode_entity_for_wire(&input)?;
+        let decoded = decode_entity_from_wire(&encoded)?;
+        prop_assert_eq!(decoded, input);
+    }
+}
+```
+
+Concurrency model (with `loom`):
+
+```rust
+#[cfg(loom)]
+#[test]
+fn test_req_rust_005_shared_state_loom_model() {
+    loom::model(|| {
+        // model the smallest interesting concurrent interaction here
+    });
 }
 ```
 
@@ -542,7 +651,7 @@ Questions to answer in any review or before handoff:
 - Which mode or combination of modes is active?
 - What is the smallest set of `REQ-RUST-*` contracts that makes the work testable?
 - Which types and invariants belong in L1 instead of leaking into adapters?
-- Which risk deserves doctest, compile-fail, property, fuzz, `loom` or `Miri` coverage?
+- Which failure modes deserve doctest, compile-fail, property, fuzz, `loom` or `Miri` coverage instead of unit tests alone?
 - Which public names must stay stable even if a cleaner new alias exists?
 
 - Does this API expose concrete containers unnecessarily?
