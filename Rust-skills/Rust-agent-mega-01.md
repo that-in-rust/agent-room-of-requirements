@@ -2373,6 +2373,12 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - **Default backend mode combinations.** New endpoint: Spec plus Delivery. Auth flow: Spec plus Security. Migration: Delivery plus Operations. Skip Spec mode only when acceptance criteria already exist. Never generate handler code before a requirement and a boundary decision exist.
 - **Version-specific crate questions.** Read the target repository's `Cargo.lock` and the crate changelog; do not answer from memory of a crate's API. A `docs.rs/.../latest` link floats, so pin the version when citing behavior.
 
+- **Worker split definitions.** Keep work inline until retries must be durable, the call fans out to unreliable systems, or a connection would hang. When you split, define four things: what the endpoint commits, what the worker consumes, what "already processed" means, and what operators can observe. A payment retry loop inline in a handler is wrong; so is a queue hiding a simple request flow.
+- **Backend defaults.** Inline handling, domain types converted at the edge, and pools and clients held in app state and wired in one place. Deviate only with a named reason. Reusing transport types as domain types is cheap until a second writer appears.
+- **Request lifecycle record per service.** Trace transport, handler, domain, persistence and integration, and mark the transaction owner, the correlation identifier hook, the inline-or-worker fork, and each layer's failure classes. Update it in the same change as any boundary or split decision; a stale record misleads incident responders. For a worker, trace from queue message to side effect.
+- **Review order differs from build order.** Build shape first, then risk. Review risk first (credential handling, rollback safety, session handling), then shape.
+- **Reference endpoint exercise.** Parse at transport, convert to a newtype at the edge, own one transaction, call a typed remote client, and prove it with a spawned-app test plus a `wiremock` contract test. The transaction must not span the remote call. Test the duplicate-submission case for idempotent replay and the remote-timeout case. Practice on write endpoints, not only reads.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
