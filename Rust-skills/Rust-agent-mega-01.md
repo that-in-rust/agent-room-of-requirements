@@ -728,7 +728,6 @@ proptest! {
     }
 }
 ```
-```
 
 A complete `loom` model:
 
@@ -760,7 +759,6 @@ mod loom_tests {
     }
 }
 ```
-```
 
 Mutation testing with `cargo-mutants` checks test quality by introducing bugs; write tests that cover each boundary so every mutation is caught:
 
@@ -778,7 +776,6 @@ mod mutation_tests {
         assert!(validate_user("valid_user").is_ok());  // Valid case
     }
 }
-```
 ```
 
 ### Testing and contract verification patterns
@@ -1000,7 +997,6 @@ where
         }
     }
 }
-```
 ```
 
 ## 10. Unsafe and FFI
@@ -1266,7 +1262,6 @@ impl Database {
         .await
     }
 }
-```
 ```
 
 ## 15. Tauri desktop apps
