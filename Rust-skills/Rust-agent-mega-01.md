@@ -858,6 +858,453 @@ Scope: Tauri 2 app-layer work. It does not cover plugin-author internals, mobile
 - **Build hooks.** Treat the frontend/backend build seam as part of the design.
 - **Platform configs.** Put platform differences in explicit config, not scattered runtime branches.
 
+### Tauri code examples
+
+**Managed state with a dedicated type alias**
+
+```rust
+use std::sync::Mutex;
+use tauri::State;
+
+#[derive(Default)]
+struct AppState {
+    counter: i32,
+    user_name: Option<String>,
+}
+
+type ManagedAppState = Mutex<AppState>;
+
+#[tauri::command]
+fn increment_counter(state: State<'_, ManagedAppState>) -> Result<i32, AppError> {
+    let mut state = state.lock().map_err(|_| AppError::StatePoisoned)?;
+    state.counter += 1;
+    Ok(state.counter)
+}
+
+pub fn run() {
+    tauri::Builder::default()
+        .manage(Mutex::new(AppState::default()))
+        .invoke_handler(tauri::generate_handler![increment_counter])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+**Serializable command error**
+
+```rust
+use serde::Serialize;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+enum AppError {
+    #[error("state lock poisoned")]
+    StatePoisoned,
+    #[error("io error: {0}")]
+    Io(String),
+    #[error("file not found: {0}")]
+    FileNotFound(String),
+    #[error("permission denied: {0}")]
+    PermissionDenied(String),
+    #[error("invalid request: {0}")]
+    InvalidRequest(&'static str),
+    #[error("sidecar failed: {0}")]
+    Sidecar(String),
+}
+
+impl Serialize for AppError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
+    }
+}
+```
+
+Contract: when a command fails it rejects with a typed error, the error serializes cleanly for the frontend, and the command does not panic. Avoid `unwrap()` in commands, raw `String` errors everywhere, and leaking opaque backend-only error types to JS.
+
+**Capability file** (`src-tauri/capabilities/`)
+
+```json
+{
+  "identifier": "default",
+  "description": "Main window capability",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "fs:allow-read-text-file",
+    {
+      "identifier": "fs:scope",
+      "allow": ["$APPDATA/*", "$DOCUMENT/MyApp/**"]
+    }
+  ]
+}
+```
+
+- Grant permissions per window, not per app.
+- Prefer granular permissions such as `fs:allow-read-text-file` over `fs:default`.
+- Scope filesystem access to exact directories and patterns.
+- Sidecars need explicit shell permissions for execute or spawn.
+- Never grant `"permissions": ["fs:default", "shell:default"]` as a convenience.
+
+The safest bug is the one the window cannot perform.
+
+**Scope-anchored file access** (frontend)
+
+```typescript
+import {
+  BaseDirectory,
+  exists,
+  mkdir,
+  readTextFile,
+  writeTextFile,
+} from '@tauri-apps/plugin-fs';
+
+export async function loadSettings(): Promise<Settings> {
+  const name = 'settings.json';
+
+  if (!(await exists(name, { baseDir: BaseDirectory.AppData }))) {
+    return defaultSettings;
+  }
+
+  const text = await readTextFile(name, {
+    baseDir: BaseDirectory.AppData,
+  });
+
+  return JSON.parse(text) as Settings;
+}
+
+export async function saveSettings(settings: Settings): Promise<void> {
+  await mkdir('.', { baseDir: BaseDirectory.AppData, recursive: true });
+  await writeTextFile('settings.json', JSON.stringify(settings, null, 2), {
+    baseDir: BaseDirectory.AppData,
+  });
+}
+```
+
+- Treat paths as capability-bound resources, not free-form strings.
+- Prefer `BaseDirectory`-anchored access over hand-built absolute paths.
+- Keep user data in app-specific directories when possible.
+- Every accessed path must match `fs:scope`.
+- Constrain paths early; path bugs become cross-platform bugs.
+
+**Plugin registration**
+
+```rust
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_shell::init())
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+- Register every plugin explicitly via `.plugin(...)` and add the matching capability permissions.
+- Keep the plugin count intentional; every plugin expands the authority surface.
+
+**Typed invoke wrapper** (frontend)
+
+```typescript
+import { invoke } from '@tauri-apps/api/core';
+
+interface GreetResponse {
+  message: string;
+}
+
+export async function greetUser(name: string): Promise<GreetResponse> {
+  return invoke<GreetResponse>('greet_user', { name });
+}
+```
+
+- Never scatter raw command strings across the UI.
+- Prefer generated bindings when using `specta` or similar tooling.
+
+**Channel progress plus binary response**
+
+```rust
+use serde::Serialize;
+use tauri::ipc::{Channel, Response};
+
+#[derive(Clone, Serialize)]
+struct DownloadProgress {
+    bytes_downloaded: u64,
+    total_bytes: u64,
+}
+
+#[tauri::command]
+async fn download_file(
+    url: String,
+    on_progress: Channel<DownloadProgress>,
+) -> Result<Response, AppError> {
+    let bytes = reqwest::get(url)
+        .await
+        .map_err(|e| AppError::Sidecar(e.to_string()))?
+        .bytes()
+        .await
+        .map_err(|e| AppError::Sidecar(e.to_string()))?;
+
+    on_progress
+        .send(DownloadProgress {
+            bytes_downloaded: bytes.len() as u64,
+            total_bytes: bytes.len() as u64,
+        })
+        .map_err(|e| AppError::Sidecar(e.to_string()))?;
+
+    Ok(Response::new(bytes.to_vec()))
+}
+```
+
+- Channels are for high-frequency, ordered progress; large binary payloads use `tauri::ipc::Response`.
+- Do not fake streaming with hundreds of tiny `invoke` calls.
+
+**Window-targeted event**
+
+```rust
+use tauri::{AppHandle, Emitter, Manager};
+
+fn notify_window(app: &AppHandle, label: &str, message: &str) {
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.emit("notification", message);
+    }
+}
+```
+
+- Use events for user-visible state changes, background completion and window-targeted notifications.
+- Always clean up listeners on unmount. Keep payloads small and serializable.
+
+**CSP** (`tauri.conf.json`)
+
+```json
+{
+  "app": {
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data: https:",
+        "connect-src": "'self' https://api.example.com",
+        "frame-src": "'none'"
+      },
+      "dangerousDisableAssetCspModification": false
+    }
+  }
+}
+```
+
+- Keep `default-src` and `script-src` tight; avoid remote script execution.
+- Allow only the outbound connections you need.
+- Leave `dangerousDisableAssetCspModification` set to `false`.
+
+**Supervised sidecar**
+
+```rust
+use std::collections::VecDeque;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+use tauri::{AppHandle, Manager, State};
+use tauri_plugin_shell::{
+    process::{CommandChild, CommandEvent},
+    ShellExt,
+};
+
+#[derive(Default)]
+struct SidecarState {
+    child: Mutex<Option<CommandChild>>,
+    logs: Mutex<VecDeque<String>>,
+}
+
+#[tauri::command]
+async fn ensure_sidecar_ready(
+    app: AppHandle,
+    state: State<'_, SidecarState>,
+) -> Result<String, AppError> {
+    let url = "http://127.0.0.1:7780".to_string();
+    if check_local_health(&url).await {
+        return Ok(url);
+    }
+
+    if let Some(mut child) = state
+        .child
+        .lock()
+        .map_err(|_| AppError::StatePoisoned)?
+        .take()
+    {
+        let _ = child.kill();
+    }
+
+    let (mut rx, child) = app
+        .shell()
+        .sidecar("my-sidecar")
+        .map_err(|e| AppError::Sidecar(e.to_string()))?
+        .args(["serve"])
+        .spawn()
+        .map_err(|e| AppError::Sidecar(e.to_string()))?;
+
+    *state
+        .child
+        .lock()
+        .map_err(|_| AppError::StatePoisoned)? = Some(child);
+
+    tauri::async_runtime::spawn(async move {
+        while let Some(event) = rx.recv().await {
+            match event {
+                CommandEvent::Stdout(bytes) | CommandEvent::Stderr(bytes) => {
+                    let _line = String::from_utf8_lossy(&bytes);
+                }
+                _ => {}
+            }
+        }
+    });
+
+    wait_until_healthy(&url, Duration::from_secs(30)).await?;
+    Ok(url)
+}
+
+async fn check_local_health(url: &str) -> bool {
+    let Ok(parsed) = reqwest::Url::parse(url) else {
+        return false;
+    };
+
+    let Ok(client) = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .no_proxy()
+        .build()
+    else {
+        return false;
+    };
+
+    let Ok(health_url) = parsed.join("/health") else {
+        return false;
+    };
+
+    client
+        .get(health_url)
+        .send()
+        .await
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
+}
+
+async fn wait_until_healthy(url: &str, timeout: Duration) -> Result<(), AppError> {
+    let started = Instant::now();
+    while started.elapsed() < timeout {
+        if check_local_health(url).await {
+            return Ok(());
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    Err(AppError::Sidecar("startup timed out".into()))
+}
+```
+
+Sidecar rules: treat it as a subsystem, not a shell command.
+
+- Keep the child handle in managed state.
+- Kill the old child before spawning a replacement.
+- Poll health with a bounded timeout.
+- Disable proxy use for loopback health checks.
+- Cap sidecar logs with a ring buffer.
+- Whitelist the executable name and allowed args in capabilities.
+
+**Store payload policy** (frontend)
+
+```typescript
+type PersistPolicy = {
+  warnBytes: number;
+  maxBytes: number;
+  onOversize: 'drop' | 'truncate' | 'blobRef';
+};
+
+const policies: Record<string, PersistPolicy> = {
+  promptHistory: { warnBytes: 128 * 1024, maxBytes: 256 * 1024, onOversize: 'blobRef' },
+  promptDraft: { warnBytes: 64 * 1024, maxBytes: 128 * 1024, onOversize: 'blobRef' },
+  terminal: { warnBytes: 64 * 1024, maxBytes: 128 * 1024, onOversize: 'truncate' },
+};
+
+function estimatePersistedBytes(value: unknown): number {
+  return new TextEncoder().encode(JSON.stringify(value)).length;
+}
+```
+
+- Put hard byte caps on hot keys; truncate or externalize oversize payloads.
+- If a rollout period is needed, log oversize writes before enforcing the cap.
+
+**Blobs out of band**
+
+```text
+Small JSON state -> plugin-store
+Large binary payloads -> app data files
+Persisted state -> blob reference only
+Hydration -> lazy, only when needed
+```
+
+- Image and file metadata lives in the store; blob bytes live under app data.
+- State stores a `blob_id`, never base64.
+- Cleanup is TTL-based or reference-scan based.
+- This matters most for apps that accumulate screenshots, chat attachments or terminal snapshots.
+
+**Updater** (`tauri.conf.json`)
+
+```json
+{
+  "plugins": {
+    "updater": {
+      "pubkey": "YOUR_PUBLIC_KEY",
+      "endpoints": [
+        "https://releases.example.com/{{target}}/{{arch}}/{{current_version}}"
+      ]
+    }
+  }
+}
+```
+
+- Sign updates. Embed only the public key. Never commit the private signing key.
+- Surface download progress through a channel or an explicit progress callback.
+- On Windows, account for quit-and-install behavior.
+
+**Command modules**
+
+```rust
+// src-tauri/src/commands/files.rs
+#[tauri::command]
+pub async fn read_settings_file() -> Result<String, AppError> {
+    std::fs::read_to_string("settings.json").map_err(|e| AppError::Io(e.to_string()))
+}
+
+// src-tauri/src/commands/windows.rs
+#[tauri::command]
+pub fn show_main_window(window: tauri::WebviewWindow) -> Result<(), AppError> {
+    window.show().map_err(|e| AppError::Io(e.to_string()))?;
+    Ok(())
+}
+
+// src-tauri/src/commands/mod.rs
+pub mod files;
+pub mod windows;
+
+// src-tauri/src/lib.rs
+mod commands;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            commands::files::read_settings_file,
+            commands::windows::show_main_window,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+- Commands defined in `lib.rs` must not be `pub`.
+- Commands in separate modules should be `pub`.
+
 ### Tauri TDD-first checks
 
 - Write or update typed boundary tests before widening the command surface.
