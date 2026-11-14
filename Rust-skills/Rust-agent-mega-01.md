@@ -651,6 +651,13 @@ let round: My = from_bytes(written)?;
 - **Target and linking.** Add the target (`rustup target add thumbv7em-none-eabihf` for Cortex-M4F/M7F), set it in `.cargo/config.toml`, and provide a `memory.x` defining FLASH, RAM, stack and vector table. Do not hardcode addresses in code; use `#[link_section]` sparingly.
 
 ```toml
+
+### Architectural pattern cards
+
+- **Sync core, async shell.** Async handlers, workers and adapters outside; synchronous domain and policy logic inside. Parse and fetch outside, decide and transform inside, then persist or emit outside. Unit-test the core; integration-test the shell. Skip the split for a tiny, purely async library.
+- **Transport, domain, persistence separation.** Transport DTOs, then domain commands and values, then persistence rows and queries. Convert at the edge, enforce invariants in domain types, isolate storage specifics in adapters. Costs more conversion code; buys stronger invariants and clearer failure location.
+- **Workspace layering by change boundary.** Core domain crates, adapter crates, binary or command crates, optional proc-macro or tooling crates. Split by stable responsibility and dependency direction, not by file count or chronology. Check the workspace graph and dependency direction.
+- **Stable external API over composed internals.** Callers depend on a narrow contract while internal modules compose interchangeable engines or strategies chosen by the implementation. Fits parser engines, search and index systems, storage adapters, planners and performance-critical libraries. Buys optimization freedom and lower SemVer pressure.
 # .cargo/config.toml
 [build]
 target = "thumbv7em-none-eabihf"
@@ -2197,6 +2204,10 @@ Each card gives the smell and the preferred alternative.
 - **Fire-and-forget task architecture.** Spawned tasks with no join path, shutdown path or failure observation, which leads to leaks, partial shutdown, hidden panics and stale state. Use a `JoinSet` or supervisor, bounded channels and cancellation tokens.
 - **Transport types leaking inward.** Handlers, services and persistence share the same DTO struct, so every layer re-decides what is valid. Convert DTOs to domain commands at the edge.
 - **Broad desktop privilege and unchecked sidecars.** Wide filesystem grants, generic shell authority, or sidecars with no health check or owner. Use granular capabilities, exact sidecar scoping, startup bounds and a supervised lifecycle. No exception for software running on a user's machine.
+
+- **Speculative unsafe or lock-free code.** Unsafe blocks or lock-free structures added for an anticipated speed-up, with no measurement. Build the safe baseline first, then narrow unsafe only after measurement and a proof plan.
+- **Compiler acceptance as proof.** "The borrow checker would have complained" used to justify logical behavior. Pair compile-time guarantees with behavior tests, boundary review and claim-specific evidence such as benchmarks or shutdown tests.
+- **Hand-edited generated source.** Direct edits in `generated/`, `prost` or other codegen output. Regeneration discards them. Edit the schema, the generator configuration or a thin wrapper module, and check that regeneration is reproducible.
 
 ## 14. Rust web backends
 
