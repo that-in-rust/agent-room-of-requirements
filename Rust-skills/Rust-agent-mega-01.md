@@ -570,6 +570,59 @@ Output order: Tauri Work Mode, Executable Requirements, Tauri Design (Frontend/I
 
 Use the template of section 3 with `REQ-TAURI-001.0` identifiers. Use explicit units for latency, payload size, retries, startup bounds and resource limits. Split security, lifecycle and operability requirements; do not hide them in one broad clause.
 
+Use `REQ-TAURI-*` identifiers even when the request begins as a generic desktop feature.
+
+| Vague statement | Executable rewrite |
+| --- | --- |
+| "Add a Tauri sync feature." | "Expose a typed frontend invoke contract and a Rust command that validates input, reports progress, and returns a serializable result for the sync operation." |
+| "Make permissions safer." | "Restrict filesystem and plugin capabilities to the minimum paths and commands needed by the named windows and sidecars." |
+| "Handle app startup better." | "Initialize required state during setup without blocking the UI thread and restore the app to a ready state within the stated startup bound." |
+| "Support tray and deep links." | "Route tray actions and deep-link events to the primary instance without spawning duplicate background workers or losing window focus semantics." |
+| "Improve reliability." | "Return typed frontend-visible errors, avoid panics in command and lifecycle paths, and bound sidecar startup/retry behavior." |
+
+Work packet shape for a request that is not ready for coding:
+
+```markdown
+## Tauri Work Mode
+- Spec Mode
+- App Architecture Mode
+
+## Executable Requirements
+### REQ-TAURI-001.0: <title>
+**WHEN** ...
+**THEN** the system SHALL ...
+**AND** SHALL ...
+**SHALL** ...
+
+## Tauri Design (Frontend/IPC/Rust Core + Permissions/Lifecycle)
+- Frontend contract:
+- Command layer:
+- Rust core:
+- Managed state:
+- Capabilities and permissions:
+- Sidecars and external binaries:
+- Lifecycle and platform behavior:
+
+## Verification Matrix
+| req_id | test_id | test_type | assertion | metric |
+| --- | --- | --- | --- | --- |
+
+## Implementation Plan
+1. STUB
+2. RED
+3. GREEN
+4. REFACTOR
+5. VERIFY
+
+## Quality Gate Results
+- fmt:
+- clippy:
+- rust tests:
+- rust build:
+- frontend checks:
+- tauri checks:
+```
+
 ### Tauri design scaffold
 
 | Area | Role | Question to ask |
@@ -582,7 +635,10 @@ Use the template of section 3 with `REQ-TAURI-001.0` identifiers. Use explicit u
 | Lifecycle and packaging | Setup, tray, updater, single-instance, deep links, external binaries | What lifecycle ownership and packaging guarantees are required? |
 
 - Make the frontend invoke contract explicit before implementation.
-- Scope permissions by real window labels and concrete actions.
+- Choose the narrowest typed request/response or stream contract the UI should rely on.
+- Scope permissions by real window labels and concrete actions, not UI titles or future hopes.
+- Decide the mutex or async-mutex discipline for each piece of shared mutable state.
+- Treat sidecars, updater, tray and single-instance behavior as design decisions, not afterthoughts.
 - Treat lifecycle and packaging as part of design, not deployment cleanup.
 
 ### Tauri verification matrix
@@ -598,6 +654,94 @@ Use the template of section 3 with `REQ-TAURI-001.0` identifiers. Use explicit u
 | performance | Latency or payload thresholds were explicitly stated |
 
 Follow the TDD loop of section 5, with one test or test skeleton per `REQ-TAURI-*`. Run the command gates of section 16 plus the repo's normal frontend and Tauri checks for the changed boundary.
+
+In STUB, define the command payloads, expected responses, window and capability assumptions, and fixtures.
+
+Example matrix:
+
+| req_id | test_id | test_type | assertion | metric |
+| --- | --- | --- | --- | --- |
+| REQ-TAURI-001.0 | TEST-RUST-UNIT-001 | rust-unit | command service validates normalized request shape | correctness |
+| REQ-TAURI-001.0 | TEST-RUST-INTEG-002 | rust-integration | command returns serializable `AppError` on invalid input | boundary |
+| REQ-TAURI-002.0 | TEST-FRONTEND-003 | frontend | typed invoke caller handles success and failure shapes | contract |
+| REQ-TAURI-003.0 | TEST-MOCK-004 | mocked-tauri | UI reacts correctly to mocked IPC and window behavior | desktop-boundary |
+| REQ-TAURI-004.0 | TEST-LIFECYCLE-005 | desktop-boundary | second launch triggers single-instance handoff | lifecycle |
+| REQ-TAURI-005.0 | TEST-PERF-006 | performance | p99 command latency < 100ms for stated fixture | latency |
+
+### Tauri test skeletons
+
+Rust unit:
+
+```rust
+#[test]
+fn test_req_tauri_001_command_validates_payload() {
+    let input = create_valid_request_payload();
+    let output = normalize_command_request(input).unwrap();
+    assert_eq!(output.command_name, "sync-workspace");
+}
+```
+
+Rust integration:
+
+```rust
+#[tokio::test]
+async fn test_req_tauri_002_command_returns_serializable_error() {
+    let result = run_sync_workspace_command(invalid_request()).await;
+    assert!(matches!(result, Err(AppError::InvalidRequest(_))));
+}
+```
+
+Frontend typed invoke:
+
+```ts
+it("TEST-FRONTEND-001 handles typed invoke contract", async () => {
+  const result = await invokeSyncWorkspaceSafely(validPayload);
+  expect(result.status).toBe("completed");
+});
+```
+
+Mocked Tauri boundary:
+
+```ts
+it("TEST-MOCK-002 recovers from desktop command failure", async () => {
+  mockIPC((cmd) => {
+    if (cmd === "sync_workspace") {
+      throw new Error("permission denied");
+    }
+  });
+  render(<SyncWorkspaceScreen />);
+  expect(await screen.findByText(/permission denied/i)).toBeVisible();
+});
+```
+
+Lifecycle boundary test:
+
+- Launch the primary instance.
+- Trigger a second launch or a deep-link open.
+- Assert the handoff reaches the primary window.
+- Assert no duplicate long-running background service remains active.
+
+Performance contract:
+
+```rust
+#[test]
+fn test_req_tauri_003_command_performance_contract() {
+    use std::time::{Duration, Instant};
+    let fixture = create_large_fixture();
+    let start = Instant::now();
+    let _ = evaluate_preview_command(fixture).unwrap();
+    assert!(start.elapsed() < Duration::from_millis(100));
+}
+```
+
+### Tauri review questions
+
+- Which mode or combination of modes is active, and which one is primary?
+- What is the smallest set of `REQ-TAURI-*` contracts that makes the work testable?
+- What belongs in the frontend contract, the command layer and the Rust core respectively?
+- Which boundaries require capability, sidecar-policy or lifecycle-ownership decisions?
+- Which risks deserve Rust tests, frontend tests, mocked desktop tests or desktop boundary checks instead of unit tests alone?
+- Which names, command IDs or window labels must stay stable even if a cleaner new name exists?
 
 ### Tauri default reliability and security stack
 
