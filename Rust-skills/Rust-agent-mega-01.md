@@ -853,6 +853,21 @@ fuzz_target!(|data: &[u8]| { let _ = my_crate::parse(data); });
 
 For property tests, record failing seeds for reproducibility and let the framework shrink to a minimal counterexample.
 
+Inline snapshot with `expect-test`, for parsers, formatters and analyzers:
+
+```rust
+use expect_test::expect;
+
+fn render(x: &[u8]) -> String { format!("{:?}", x) }
+
+#[test]
+fn snapshot() {
+    let got = render(&[1,2,3]);
+    expect![["[1, 2, 3]"]].assert_eq(&got);
+    // Run with `EXPECT=overwrite` to update.
+}
+```
+
 ## 6. Types and API design
 
 - Prefer newtypes, explicit conversions, and designs that make invalid states unrepresentable.
@@ -912,6 +927,20 @@ impl UserId { fn parse(s: &str) -> Option<Self> { (!s.is_empty()).then(|| Self(s
 - **Macro and proc-macro hygiene.** A macro bug repeats at every expansion site. Use absolute paths in expansions, disciplined spans and compile-time diagnostics. Do not panic inside a proc macro on user error, and do not rely on the caller's imports.
 - **`NonZero` niches, ZSTs and uninhabited types.** Use `NonZero*` and `Option<NonZero*>` when the niche is real and semantically clean, zero-sized marker types with `PhantomData` for compile-time state that costs nothing at runtime, and uninhabited types for impossible states in place of sentinel values. Use them because the model is clearer, not because the layout looks clever.
 
+### Trait and language details
+
+- **Coherence and the orphan rule.** Either the trait or the self type must be local (E0117, E0210). Provide extension traits for foreign types. Avoid blanket impls that could conflict with downstream impls.
+- **Specialization.** Do not use `specialization` or `min_specialization` in general libraries; prefer explicit trait design.
+- **Trait-object upcasting.** Upcast `dyn SubTrait` to `dyn SuperTrait` directly where the toolchain supports it, in place of hand-written `as_super` shims.
+- **HRTBs for callbacks.** Use `for<'a> Fn(&'a T) -> U` when a callback borrows data of any lifetime. Do not require `'static` unnecessarily or encode the lifetime as a type parameter.
+- **GATs for lending.** Use them when an associated type depends on a lifetime (lending iterators, parser cursors), so outputs can borrow instead of allocating.
+- **Object safety.** For dyn-compatible traits, avoid `Self` in return position and generic methods, and use object-safe receivers (`&self`, `&mut self`, `Box<Self>`).
+- **Never type.** Use `!` for functions that never return. Document any library function that diverges by panicking.
+- **`where` clauses.** Move long bounds off the signature into `where`.
+- **Raw identifiers.** Use `r#ident` when a name collides with a keyword across editions; do not rename a public symbol that must stay stable.
+- **Pattern matching in the 2024 edition.** Be explicit about `ref`/`mut` bindings instead of relying on older match ergonomics; migrate with `cargo fix --edition`.
+- **Custom futures and executors.** Respect the `Poll::Pending` contract: return `Pending` only after arranging a wake, and wake only when progress is possible. No busy-loop polling.
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
@@ -927,6 +956,60 @@ impl UserId { fn parse(s: &str) -> Option<Self> { (!s.is_empty()).then(|| Self(s
 - **Borrow-checker-friendly API design.** Many awkward APIs are awkward because their shape prolongs borrows. Smaller scopes, temporaries and methods that separate read and write phases remove E0502-class friction without cloning everything. Do not rely on subtle two-phase-borrow behavior where clear structure would do.
 - **Iterator contracts and fallible pipelines.** Support owned and borrowed iteration correctly and keep error short-circuiting. `size_hint`, `ExactSizeIterator`, `try_fold`, `try_for_each` and `FromIterator` define what consumers may assume. Do not claim exact iterator properties you cannot uphold, and do not `unwrap` inside a chain that should short-circuit with `Result`.
 - **Collection choice.** `Vec`, `VecDeque`, `HashMap`, `BTreeMap`, `IndexMap` and `BinaryHeap` make different operational promises: dense append-heavy storage, queue, hashed lookup, ordered map, stable iteration order, priority scheduling. The wrong default causes performance or determinism bugs. Do not use `LinkedList` as a default, and never treat `HashMap` iteration order as meaningful.
+
+### Iterators and closures
+
+- **`IntoIterator`, `iter`, `iter_mut`.** Accept `impl IntoIterator<Item = X>` for flexibility. Use `iter()`/`iter_mut()` when a borrow suffices; `into_iter()` on an owned container moves it. Arrays implement `IntoIterator` by value on modern editions; do not rely on edition-specific behavior.
+- **Implement `IntoIterator` for owned and borrowed forms** of a custom collection, so `for x in &collection` works:
+
+```rust
+#[derive(Debug)]
+struct MyCollection(Vec<i32>);
+impl IntoIterator for MyCollection {
+  type Item = i32;
+  type IntoIter = std::vec::IntoIter<i32>;
+  fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
+}
+impl<'a> IntoIterator for &'a MyCollection {
+  type Item = &'a i32;
+  type IntoIter = std::slice::Iter<'a, i32>;
+  fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+```
+
+- **Adapters versus consumers.** Compose with adapters (`map`, `filter`, `take`) and drive with consumers (`collect`, `sum`, `for_each`). Do not build intermediate `Vec`s, put side effects in adapters, or collect when a lazy pipeline suffices.
+- **Return `impl Iterator`**, not a concrete adaptor type, and document when evaluation happens. Do not box iterators on hot paths.
+- **`FromIterator`.** Implement it for custom containers. Keep turbofish use readable.
+- **Fusion and reversal.** Call `.fuse()` if `next()` may be called after exhaustion; do not assume fused behavior. Implement `DoubleEndedIterator` only where reverse traversal is natural, and keep forward and backward state consistent in `next_back`.
+- **`size_hint` and `ExactSizeIterator`.** Give a meaningful `size_hint`; implement `ExactSizeIterator` only when the length is truly exact. Unsafe code must never rely on `size_hint` being correct.
+- **Closure bounds.** Pick the narrowest that fits: `Fn` for repeated read-only calls, `FnMut` when the closure mutates, `FnOnce` when it may consume its captures. Function pointers implement all three.
+- **Closures across threads and tasks.** Use `move`; captured values must be `Send + 'static` where required. Prefer a channel to `Arc<Mutex<_>>` when one suffices.
+
+### Collections
+
+- **Sequences.** Default to `Vec`. Use `VecDeque` for queue or deque semantics. Use `LinkedList` only when O(1) splicing dominates and the cache cost is acceptable.
+- **Maps.** `HashMap` for average O(1) lookup; `BTreeMap` for ordering, range queries and predictable iteration. Do not use `BTreeMap` for hot random access with no ordering need. `IndexMap` gives stable insertion order for caches, diffs and tests; after a removal, order is kept only with `shift_remove`.
+- **Hashers.** The std map is a SwissTable. Swap in a faster hasher (aHash, fxhash) only for non-adversarial input, because of hash-flooding DoS. Never mutate a key in place.
+- **Priority queues.** `BinaryHeap` builds from a `Vec` in O(n), with O(log n) push and pop. Use it for top-k and scheduling; do not fully sort or emulate a heap with `BTreeMap`.
+- **Capacity.** Use `with_capacity` when the number of pushes is known.
+- **Small collections.** `SmallVec<[T; N]>` cuts heap traffic when a small bound holds on a hot path. Profile first and watch the cost when it spills to the heap.
+- **Bits.** Use `bitvec` for packed booleans and protocol layouts, with an explicit bit order and store type, not `Vec<bool>` or ad-hoc bit-twiddling:
+
+```rust
+use bitvec::prelude::*;
+let mut bits: BitVec<u8, Msb0> = bitvec![0; 16];
+bits.set(3, true);
+assert!(bits[3]);
+```
+
+- **Read-mostly concurrent maps.** When reads dominate and eventual consistency is acceptable, use a read-optimized map such as `evmap` in place of `Mutex<HashMap>`. Readers see snapshots; writers publish with `refresh()`. It is not linearizable.
+
+```rust
+let (read, mut write) = evmap::new();
+write.insert("k", 1);
+write.refresh();
+assert_eq!(read.get_and("k", |v| v.iter().copied().collect::<Vec<_>>()), Some(vec![1]));
+```
 
 ### Smart pointer decision matrix
 
@@ -1006,6 +1089,18 @@ fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
     // ...
     Ok(())
+}
+```
+
+Typed library error with a transparent source. Use `snafu` when call sites need context-rich enums:
+
+```rust
+#[derive(thiserror::Error, Debug)]
+pub enum ParseError {
+  #[error("invalid header: {0}")]
+  InvalidHeader(String),
+  #[error(transparent)]
+  Io(#[from] std::io::Error),
 }
 ```
 
@@ -1161,6 +1256,20 @@ async fn run(mut stream: BufferedStream) {
 - **Encapsulate unsafe behind a minimal surface, with SAFETY docs and Miri.** Unsafe is not wrong by default; undocumented unsafe is. Keep it small and private where possible, justify each block with a `SAFETY` comment and test it with Miri. Use it only where raw pointers, FFI, aliasing-sensitive optimization or manual memory invariants are truly required. Do not spread it across a wide public surface without one owned invariant boundary.
 - **`MaybeUninit`, aliasing invariants and RAII guards.** Memory-safety mistakes cluster around manual initialization and raw-pointer writes. Separate "allocated but uninitialized", "safely initialized" and "resource must be released" into explicit phases and guards. Never create a reference to uninitialized memory. `&mut` implies uniqueness.
 - **FFI layout, wide pointers and explicit nullability.** `&str`, `&[u8]` and `&dyn Trait` are not FFI-safe. Use explicit `repr` choices, `(ptr, len)` structs and `Option<NonNull<T>>` for nullability. Never export Rust fat pointers over FFI or assume default Rust layout is stable for external consumers.
+
+Never let a panic cross FFI. Catch it and convert to an error code; consider `extern "C-unwind"` only with an explicit contract:
+
+```rust
+#[no_mangle]
+pub extern "C" fn api_do(ptr: *const u8, len: usize) -> i32 {
+  let res = std::panic::catch_unwind(|| unsafe { do_work(std::slice::from_raw_parts(ptr, len)) });
+  match res { Ok(Ok(())) => 0, Ok(Err(_e)) => -2, Err(_panic) => -1 }
+}
+```
+
+- **Nullable pointers:** model them as `Option<NonNull<T>>` or `Option<extern "C" fn()>`, which have a guaranteed representation. No magic sentinel integers.
+- **Layout:** choose `repr(C)` or `repr(transparent)` whenever ABI stability is required.
+- **Trait objects:** never construct vtables by hand in unsafe code or leak raw trait-object pointers.
 
 ## 11. Performance
 
@@ -2923,6 +3032,14 @@ rust-version = "1.76"
 License and advisory policy in `deny.toml`; run the advisory check as a scheduled job:
 
 ```toml
+
+Commit `rustfmt.toml` so style is project-wide and diffs stay stable:
+
+```toml
+edition = "2024"
+max_width = 100
+group_imports = "StdExternalCrate"
+```
 # deny.toml
 [licenses]
 allow = ["MIT", "Apache-2.0"]
