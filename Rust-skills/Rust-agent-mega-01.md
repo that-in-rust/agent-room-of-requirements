@@ -44,6 +44,11 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - Keep docs and tests synchronized with behavior changes.
 - For MVP work, prefer battle-tested crates over speculative abstractions.
 
+- Prefer patterns that reduce bug classes, misuse and ambiguous failure behavior over patterns that merely look advanced. A pattern earns its place when it prevents a mistake at compile time, narrows API misuse, gives better diagnostics when things still fail, behaves well under async, concurrency and cancellation, and shows up in serious production code.
+- The biggest reliability gaps are at failure boundaries, not in syntax: public API evolution without semver traps, typed error design versus app-level aggregation, byte-safe diagnostics when UTF-8 assumptions break, async cancellation with backpressure and structured shutdown, cancel-safe futures inside `select!`, concurrency verification beyond "it passed once", panic-free slicing and offsets on external input, compile-fail tests and fuzzing, tracing and secret handling and supply-chain gates, and types that make incorrect states unrepresentable.
+- Tell repo-local conventions (four-word naming, the executable requirements format, one feature per version, Mermaid-only docs) apart from general Rust practice (typed boundaries and newtypes, typed library errors, no blocking in async, cancel-safe `select!`, `loom`, `proptest`, doctests, compile-fail tests, `#[non_exhaustive]`, `Cow`, `OnceLock`, `ExitCode`, `tracing`). The general practice applies everywhere.
+- This file covers libraries, CLIs, async services, application backends, moderately low-level systems code and FFI wrappers with contained unsafe. It is not a specialist manual for compiler internals, kernel-grade lock-free systems, deeply embedded no-std firmware or advanced proc-macro internals.
+
 ### Priorities by task type
 
 | Task type | Prioritize |
@@ -390,6 +395,22 @@ fn test_req_rust_005_shared_state_loom_model() {
 - Use `From` for infallible conversions and `TryFrom` for fallible ones.
 - Model domain states with enums and domain types so invalid states cannot be built.
 
+### API and type design patterns
+
+Each pattern: why it matters, when to use it, when to avoid it.
+
+- **Accept borrowed inputs in public APIs.** `&[T]`, `&str`, `AsRef<T>` and `Borrow<T>` reduce caller friction and needless allocation; the API commits to semantics, not to a backing container, and hot paths get cheaper by default. Use when the function reads its input and callers may hold slices, arrays, `Vec`, `String`, `&str` or borrowed views. Avoid when the function must take ownership for long-term storage or mutation.
+- **Newtypes and parse-don't-validate.** Turning raw data plus repeated checks into a validated type removes whole classes of downstream bugs, and newtypes stop accidental mixing of offsets, IDs, units and domain concepts that are all primitives underneath. It converts runtime discipline into compile-time discipline, which makes it one of the highest-leverage Rust patterns. Use for IDs, offsets, handles, units, validated strings and FFI wrapper types. Avoid when the wrapper adds no semantic distinction and only makes the API noisier.
+- **`From` and `TryFrom`, not ad hoc constructors.** Conversions become composable and discoverable, and infallible and fallible conversions are cleanly separated. Use when the operation is fundamentally a conversion between two domain types. Avoid when the operation does real work beyond conversion and deserves a named constructor.
+- **Option and Result combinators over nested matching.** `map`, `and_then`, `transpose`, `ok_or_else` and `try_fold` keep linear flows linear; deep nested matching hides the control flow. Use for straightforward transformation or chaining. Avoid when a full `match` shows the branching more clearly than stacked combinators.
+- **Trait objects versus generics as an explicit decision.** Both dispatch kinds are valid; problems come when the choice is accidental. Hot paths often want generics. Plugin points, heterogeneous collections and boundary seams often want `dyn Trait`. Use `dyn` when flexibility and type erasure are worth the dispatch cost or save code size. Avoid it in a tight loop or heavily inlined path.
+- **Return `impl Iterator` when laziness matters.** It preserves laziness, hides messy adapter types and avoids `Box<dyn Iterator>` overhead. Use when the pipeline should stay lazy and the concrete type is an implementation detail. Avoid when you need heterogeneity, object safety or long-lived trait objects.
+- **Named outcome enums over booleans and sentinels.** A boolean says something happened; an enum says which action the caller must take next. Strong in control-flow helpers, search engines, state machines and CLI parsing. Use when the return value controls caller behavior. Avoid when there are truly two obvious, universally understood states.
+- **Blanket impls for `&T`, `&mut T` and `Box<T>`.** Traits are easier to use when references and boxed forms work naturally; this cuts wrapper boilerplate. Use when a trait is read-only, object-safe or naturally delegating. Avoid when object-safety or ownership semantics would make the impls misleading.
+- **Flat public API facades with `pub use`.** Internal file layout and public API shape should not be welded together; re-exports let a crate reorganize internals without breaking callers. Use when a crate has several internal modules and wants one stable import surface. Avoid when it only hides useful structure.
+- **`PhantomData<fn() -> T>` invariance for typed handles.** Handle types, arena indices and lifetime-sensitive tokens can be unsound if variance is too permissive. Use when the type parameter carries lifetime or aliasing implications that must not be coerced. Avoid when ordinary covariance is correct.
+- **Type-state plus a drop bomb for must-complete protocols.** Some APIs are wrong if partially used. Type-state makes legal transitions explicit, and a debug-time bomb in `Drop` catches "forgot to complete or abandon" immediately. Use for parser markers, staged builders, transactions and protocol objects that must be finalized. Avoid when the state machine is trivial and the extra types would outweigh the gain.
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
@@ -407,6 +428,12 @@ fn test_req_rust_005_shared_state_loom_model() {
 - No `unwrap` or `expect` in production paths unless an invariant is documented and justified.
 
 - Propagate errors with `?` and attach context at I/O and boundary operations.
+
+### Error design patterns
+
+- **`thiserror` in libraries, `anyhow` or `eyre` in binaries.** Libraries need structured errors callers can inspect; binaries need ergonomic propagation, context and display. Mixing the two produces mushy error boundaries. Never export `anyhow::Error` from a library because it feels easier.
+- **Opaque public errors with a private kind.** A public error struct that wraps a private or controlled kind keeps semver room while still allowing inspection, and it stops downstream code constructing states only your crate should own. Use when the library's error space is public and likely to evolve. Avoid when the error really is a small fixed enum.
+- **`#[non_exhaustive]` on public enums and structs that will grow.** Future-proofing a public type is an API reliability pattern, not a cosmetic one.
 
 ## 9. Async and concurrency
 
