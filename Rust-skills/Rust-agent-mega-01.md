@@ -16,7 +16,7 @@ The aim is a decision-complete work packet or implementation that stays correct 
 
 ### Default workflow
 
-1. **Classify the task.** Name the component type first: library, CLI, async service, backend, parser or protocol, FFI wrapper, Tauri app, or review. Pick the primary work mode (section 2).
+1. **Classify the task.** Name the component type first: library, CLI, async service, backend, parser or protocol, FFI wrapper, Tauri app, or review. Decide whether the main risk is ambiguity, design, reliability or review depth, and pick the primary work mode (section 2).
 2. **Write executable requirements** (section 3). Reject vague claims such as "faster" or "more reliable" unless they carry a threshold.
 3. **Define the architecture before coding** (section 4): layers, and trait seams where substitution or testability matters.
 4. **Choose the verification mix deliberately** (section 5). Match tests to the real risk surface; do not default to unit tests only.
@@ -28,7 +28,7 @@ The aim is a decision-complete work packet or implementation that stays correct 
 
 - Keep invalid states unrepresentable where practical.
 - Treat async, cancellation and concurrency as correctness problems, not only performance concerns.
-- Do not force every repo-local convention onto every Rust task.
+- Do not force every repo-local convention onto every Rust task; use the lightest rule set that preserves correctness and compatibility.
 - Do not recommend unsafe, lock-free or proc-macro-heavy designs as defaults; use them only when the task truly requires them.
 - Stay skeptical about: malformed input, non-UTF-8 boundaries, backpressure, cancellation, semver surface changes, and detached task lifecycles.
 
@@ -521,6 +521,8 @@ Run the optional advanced gates for high-risk changes.
 - [ ] Performance claims include explicit threshold tests.
 - [ ] Documentation and examples reflect current behavior.
 - [ ] No TODO, STUB or FIXME placeholders remain in finalized code.
+
+Reject work that lacks requirement coverage, measurable performance evidence, or concurrency validation where it matters.
 
 ## 17. Review checklist
 
