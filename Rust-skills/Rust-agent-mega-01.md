@@ -39,6 +39,11 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - Ask throughout: what fails here under malformed input, cancellation, backpressure, non-UTF-8 data, concurrency, or API evolution?
 - Before handoff, reread the anti-patterns (section 13) and the default reliability stack.
 
+- Require measurable evidence for performance claims.
+- Stress-test shared state and cancellation paths in async and concurrent code.
+- Keep docs and tests synchronized with behavior changes.
+- For MVP work, prefer battle-tested crates over speculative abstractions.
+
 ### Priorities by task type
 
 | Task type | Prioritize |
@@ -178,15 +183,25 @@ STUB -> RED -> GREEN -> REFACTOR -> VERIFY
 - **REFACTOR:** improve decomposition, ownership and naming while staying green.
 - **VERIFY:** run all chosen gates and confirm requirement traceability.
 
+Cover unit, integration, error-path and concurrency cases. Add performance tests only when a metric is specified.
+
 ## 6. Types and API design
 
 - Prefer newtypes, explicit conversions, and designs that make invalid states unrepresentable.
 
+- Accept `&[T]`, `&str` or `AsRef` in public APIs, not `&Vec<T>` or `&String`.
+- Use newtypes for domain identifiers and invariants.
+
 ## 7. Ownership, borrowing and data handling
+
+- Prefer expression-oriented style and iterators over mutable accumulator code.
 
 ## 8. Errors and recovery
 
 - Keep library errors typed and boundary-aware.
+
+- Use `thiserror` for library error enums and `anyhow` at application composition boundaries.
+- No `unwrap` or `expect` in production paths.
 
 ## 9. Async and concurrency
 
@@ -206,6 +221,9 @@ STUB -> RED -> GREEN -> REFACTOR -> VERIFY
 - Keep modules cohesive and docs synchronized with behavior.
 
 - Treat Mermaid diagrams as a documentation convention only when the project already expects them.
+
+- Apply the same naming clarity to new crates, folders and top-level commands when creating or renaming them is practical.
+- When an existing public API cannot be renamed, keep it and add an adapter.
 
 ## 13. Anti-patterns
 
