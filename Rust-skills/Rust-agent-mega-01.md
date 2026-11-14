@@ -177,6 +177,15 @@ What the compiler does not prove:
 - No data race does not mean no logical race, starvation, dropped work or stale state.
 - Unsafe code must stay sound even if the surrounding safe code is logically wrong. Each unsafe block maps to one narrow proof obligation that can be explained locally. Delete an unsafe optimization that does not buy measurable gain.
 
+### Doctrine for core and standard-library code
+
+- **Lifetimes.** Annotations express real relationships between inputs and outputs. If lifetime reasoning gets harder than the logic, rethink the API shape instead of adding annotations. Prefer scoped borrows to long-lived shared mutable access.
+- **Parse, don't validate.** Parse once at the edge and pass only validated domain types inward. Re-validation deep in business logic is boundary leakage unless it guards a separate trust boundary.
+- **Constructors.** Invariant-preserving constructors are the default way into a domain type; public field mutation is a last resort. If validation must be dynamic, do it immediately and return a typed error, never half-validated state. An `_unchecked` constructor documents its preconditions precisely and sits beside the checked one.
+- **Error surface.** Do not leak a dependency's error type through a stable public API unless that SemVer commitment is deliberate. If callers mostly propagate and display an error and rarely inspect it, an opaque error with good context beats a large public enum. State the recovery strategy wherever it changes what the caller should do.
+- **Shared state.** `Rc`, `Arc`, `Cell`, `RefCell`, `Mutex`, `RwLock`, atomics and channels are different tools. Narrow shared state to the smallest mutable surface. `Arc<Mutex<T>>` must not become the default architecture for unrelated concerns.
+- **Loops.** A manual loop is fine when it is clearer, more controllable or easier to debug than a combinator chain.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
