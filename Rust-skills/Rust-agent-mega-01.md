@@ -3842,3 +3842,21 @@ Before finalizing a design, verify:
 - **Design:** start with traits; include test contracts; respect L1, L2, L3; design for real complexity.
 - **Implementation:** write tests first; give every performance assertion a test; use RAII consistently; structure errors with context; stress-test concurrency.
 - **Maintenance:** keep docs synchronized with code by automation; provide one command that validates a whole feature; run the full suite in CI.
+
+### Technique checklist by area
+
+Before finishing a design, check whether one of these applies:
+
+- **Ownership:** move a value out of a `&mut` place with `mem::replace` or `mem::take` instead of cloning; move out of collections with `drain`, `pop`, `swap_remove` or `into_iter`; take owned values in constructors and borrow in method arguments; derive `Clone` only on types that should be cheaply copyable.
+- **Resources:** release in reverse order of acquisition (fields drop in declaration order, locals in reverse); pool expensive resources such as connections and buffers; cap resource use with explicit limits.
+- **Builders:** validate in `build()` and return `Result`; implement `Default` for the common case; choose consuming (`self`) builders for one-shot construction and `&mut self` builders for reuse; use type-state or phantom-typed builders when required fields must be enforced at compile time; nest builders for nested configuration.
+- **Traits:** extension traits to add methods to foreign types; marker traits for compile-time capabilities; conditional impls (`impl<T: Bound> Trait for Wrapper<T>`); default method implementations to keep required methods minimal; auto traits (`Send`, `Sync`, `Unpin`) are inferred from fields, so check them after adding a field.
+- **Types:** const generics for sizes and capacities known at compile time; type aliases only to shorten names, never for type safety.
+- **API shape:** implement `Display` for user-facing text and `Debug` for every public type; `AsRef`/`AsMut` for cheap view conversions; visitor for traversing heterogeneous trees; command, strategy and factory as enums or trait objects; adapter to fit a foreign type to a local trait.
+- **Macros:** internal rules (`@name` arms) to hide helper cases; recursive macros only with a clear base case and bounded depth.
+- **Tests:** parameterized tests (table of cases, or `rstest`); shared fixtures and test utilities in one module; assertion messages that state the expected behavior; unit tests beside the code, integration tests under `tests/`.
+- **Safety:** safe wrapper types that own an invariant; panic guards that restore state in `Drop`; capability or permission types that must be held to call an operation; validation chains that return the first or all errors.
+- **Performance:** batch work to amortize per-call overhead; compute at compile time with `const fn` and const evaluation; use SIMD and prefetching only with a benchmark that proves the gain; lazy initialization for expensive, rarely used state.
+- **Async services:** stream processing with bounded buffering; timeouts on every external call; rate limiting at ingress; circuit breakers around failing dependencies; async initialization done once and awaited before serving; errors propagated with context across task boundaries.
+- **Collections:** custom iterators in place of exposing internals; `sort_unstable` when stability is not needed and `binary_search` on sorted data; views and cursors in place of copies; checked indexing (`get`) where an index can be out of range.
+- **Serialization:** derive serde where possible and write custom impls only for a real format need; version every persisted or wire format and plan schema evolution (`#[serde(default)]`, optional fields, explicit version tag); validate during deserialization (`try_from`, `deny_unknown_fields`) so invalid data never becomes a domain value; choose binary formats for size and speed and text formats for human editing.
