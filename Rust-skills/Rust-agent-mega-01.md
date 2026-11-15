@@ -269,6 +269,8 @@ Working terms:
 
 **Check that source is really source.** Before drawing conclusions from a repository, list its manifests and source files. A repository or file name proves nothing, and a keyword hit is only a lead. An empty manifest, an empty `src`, or Git LFS pointer stubs (files that begin with `version https://git-lfs.github.com/spec/v1`) are not code: fetch the real content or report that the source is unavailable.
 
+**A broken index is not evidence.** When a code-intelligence index or graph database was interrupted, is stale or reports storage errors, take no claim from it. Use an index for navigation and confirm every claim in the source files.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
@@ -1503,6 +1505,23 @@ Tests round-trip representative payloads, assert that the subject constants matc
 
 **Detection is pure; verification is a later step.** A tool that accepts several invocation forms classifies its arguments with slice patterns over the argument vector in a function with no side effects. File-system checks and execution happen in a separate, explicit step.
 
+**Parser shapes for small languages and queries.**
+
+- **Two entry points.** A DSL parser offers a plain function that returns the domain error and a diagnostic function that returns a message with a rendered source span. The grammar library's rule and pair types stay inside the parser module, and the API returns owned syntax nodes.
+- **Grammar first, meaning second.** The grammar accepts a construct; rules that need accumulated context (no duplicate annotation, no unknown annotation) live in the lowering code and return domain messages. Negative tests assert the exact domain phrase.
+- **Public entry points consume the whole input.** They skip surrounding whitespace and require end of input, so trailing text fails the parse. Inner grammar nodes never require end of input, because they must compose.
+- **Mutually recursive grammars with combinators.** Declare every recursive parser handle first, then define each one with clones of the handles it depends on. Operator precedence and left recursion still need hand-written parsers. A derive macro can assemble sequence and choice parsers for the many plain syntax nodes; it splits very large choices into chunks and boxes them to hold compile time down.
+- **Borrowed query for a hot interactive path.** A search-box query type borrows from the input string and keeps the raw text beside the extracted constraints. Do not use it when the parsed value must outlive the input or cross threads.
+- **Search boxes favour intent.** A single token that could be a filter or ordinary text is treated as text; a strict configuration language rejects the ambiguity. Regression tests cover a lone file name, escaped tokens and a path with a line suffix.
+- **Owned events with byte ranges.** When a parser's output borrows the source but results must be cached or rendered later, convert the events to owned values paired with their source byte ranges. Never drop the ranges; links, selection and diagnostics map back through them.
+
+**Protocol edges for agents and tools.**
+
+- **Internal events are translated.** A function maps each internal event to an optional protocol message and returns none for events that would repeat content already streamed. Internal enums never go over the wire. Snapshot tests cover each mapped event and assert that skipped events emit nothing.
+- **Wire plans become runtime objects in one match.** Children and required fields go through helpers that return an error naming the missing field; nothing unwraps a wire field. Each variant has a golden fixture, and one negative fixture lacks a required field.
+- **Private binary framing.** A reader returns `Ok(None)` when the stream ends cleanly at a record boundary and an error when it ends inside a record. A format that leaves the process family needs a schema and version header and compatibility tests.
+- **Shared board for parallel workers.** Workers that produce intermediate results for a later reducer write to a store trait keyed by conversation or job id; an unknown id is a domain error. A long-running process needs a retention rule for it. A fan-out that needs a minimum number of results returns a typed error with the required and received counts.
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -2019,6 +2038,8 @@ fn build_trials() -> Vec<Trial> {
 **Scenario tests with a typed world.** Where behaviour is naturally described as scenarios against a live async client, map each step to an async function and keep scenario state in a typed struct with explicit fields (the client, the last created id, the last observed payload). A string-keyed bag of values is the failure mode. Each step changes only named fields, and an `expect` in a step names the missing test setup. Tight unit tests do not need this indirection.
 
 **Test a plugin loader with built fixtures.** For a tool that discovers and loads plugins, drivers or lint libraries, an integration test builds small fixture crates in a temporary directory from a template, with a sanitised environment so no toolchain variable leaks in from the developer's shell. It points the loader at them through its own environment variable, runs the real binary and asserts on the output. Cases: the same name under two toolchains, the same name under two paths, missing metadata, and an explicit override.
+
+**A real-socket harness behind a feature.** When tests need a real listening server, a `test-support` feature exposes a harness that owns temporary storage, runs the server on a background thread with its own runtime, and reports the bound address. Its `Drop` closes the shutdown channel and joins the thread. When calling the router as a service is enough, do that and start no thread. Functions that probe the outside world take the probe as a parameter (an `exists` closure, an environment value), so tests need no real file system.
 
 ### Verification rules by risk
 
@@ -3857,6 +3878,19 @@ self.running.insert(job.clone(), tokio::task::spawn_blocking(move || run_holding
 
 **Shutdown that saves state has a deadline.** A process that manages a resumable job asks for a final checkpoint on shutdown and waits for the stopped or failed state under a timeout. When the timeout passes it logs an error and exits. A test with a fake client and a simulated interrupt asserts that the checkpoint stop was requested and that the timeout path ends the process.
 
+**Output pressure by event class.** Outgoing events are either semantic (turn start and end, tool start and end, errors) or supersedable (text deltas, progress updates). When the bounded output channel is full, keep only the latest pending event of each supersedable class. Before a semantic event is sent, flush the pending ones, so order holds. Test with a one-slot channel: many deltas and then a semantic event deliver the latest delta and the semantic event.
+
+**More async shapes.**
+
+- **Stdio protocol servers.** Blocking threads own stdin and stdout, and bounded channels connect them to the async loop. When the inbound channel is full the reader thread waits and retries, so a fast client is slowed.
+- **Server-sent event clients.** Check the HTTP status before reading. Buffer bytes across network chunks and split only on complete lines, because a line or a UTF-8 character can span two chunks. Skip blank data lines and the end marker. A tolerant fallback for a malformed chunk is acceptable only where the protocol is not security-sensitive. Tests include a chunk boundary inside a line and inside a character.
+- **Hashing inside an async commit.** Hash a file in `spawn_blocking` with a heap buffer, map the join error to its own variant, compare digests, then do the async rename. Tiny in-memory checks do not need a blocking task.
+- **A writer task behind a channel.** One task owns the receiver and a buffered writer, flushes at a batch size, and flushes the remainder when the channel closes; the channel capacity is the backpressure. Write CSV with the `csv` crate, never by joining fields. Tests cover a flush at exact capacity, the final partial flush and fields with commas and newlines.
+- **Async CLI cancellation.** Race the command against Ctrl-C in `select!`. Cancellation produces a typed error with its own exit code. `std::process::exit` appears only in the binary.
+- **Background parse from a snapshot.** Wait only the remaining debounce time, take an immutable snapshot, parse off the UI thread, and apply the result in one UI update. Never read mutable editor state across an `.await`.
+- **A framework's global runtime accepts a handle.** A framework crate keeps one process-wide runtime object that either owns a runtime or borrows a handle supplied by the application, and can be set once. Application code passes handles explicitly.
+- **Build the index first.** Linking records by repeated linear search is quadratic; build the key-to-parent map once.
+
 ### Async runtime discipline, in code
 
 ```rust
@@ -5019,6 +5053,10 @@ A bridge test calls several methods through the foreign ABI, so the shared runti
 
 **Cancel the foreign task when the Rust future is dropped.** A Rust future that wraps a task on a foreign event loop (a Python asyncio task, for example) creates the task through the loop's thread-safe scheduling call, never directly from an arbitrary Rust thread, and receives the result through a oneshot channel. The wrapper records completion, and its `Drop` schedules a cancel on the loop when the task has not finished and the foreign runtime is still alive. Tests assert that dropping before completion cancels the task and that a finished future does not; run them with the foreign runtime's debug mode on to catch cross-thread misuse.
 
+**JVM resources behind owning wrappers.** A Rust struct owns a JNI global reference to the Java object. Local references never leave the wrapper, because they are bound to a scope. `Drop` closes the Java resource and logs a failure without panicking. A timer guard around each call makes the foreign I/O time visible. Tests force early drops as well as the read and write paths.
+
+**Temporary OS resources need more than `Drop`.** A type that creates a temporary system resource through external commands (a signing keychain, a mount) deletes it in `Drop` and also offers an explicit cleanup call, because `Drop` does not run on abort or kill. Every command goes through one helper that maps a failure to a structured error. A mock command runner asserts the command sequence.
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -5251,6 +5289,8 @@ impl<const N: usize> TopoSort<N> {
 
 - Name the owning phase. Nothing arena-backed escapes it; the `&'bump` borrow enforces that.
 - A long-lived arena is a leak in disguise: it grows to the largest workload it has ever seen.
+
+**Move an expensive drop off the latency-critical thread.** When dropping a large structure (a deep syntax tree, a big index) stalls a UI or request thread, its `Drop` swaps the content for an empty value and sends the old one to a long-lived background thread that only receives and drops. Do not use this for a resource that must be released before the next operation. Profile to confirm that the caller's cost is gone.
 
 ### Allocator and build-time optimization
 
@@ -6409,6 +6449,14 @@ where
 
 The host application implements the trait on its own state, and a test uses the service itself as the state. No global singleton is needed.
 
+**Stream an upload into storage.** An upload handler turns the body into a data stream and writes each chunk to the storage writer, counts the bytes, and flushes explicitly. Body read errors and storage write errors are separate variants. When the whole body must be validated before any write, use a size-limited extractor and document the limit. Test with a body larger than one chunk and assert the stored length and digest.
+
+**Inspect archives behind a size gate.** The size check is its own named operation with a typed limit error, tested apart from the directory scan. Add a path-traversal fixture (an entry that escapes the target directory) before supporting extraction.
+
+**Optional exporters behind a feature.** Core metrics are always compiled; the exporter and its registry sit behind a cargo feature, and tests run with and without it. An in-memory metric store has a retention bound.
+
+**Local SQLite stores.** A single-process desktop or CLI tool may keep one connection behind a mutex. The constructor creates the parent directory and the schema for file and in-memory stores alike. A server uses a pool.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
@@ -7385,6 +7433,8 @@ fn audit_count(db: tauri::State<'_, AuditDb>) -> Result<u64, String> { /* ... */
 - A command that asks for unmanaged state fails at call time, so register all state before any command can run, and test the missing-state path.
 - Shared mutable state is wrapped explicitly in a `Mutex`, `RwLock` or atomic. Do not hand-roll a type map with `unsafe` downcasts.
 - A plugin composes its optional lifecycle hooks (`setup`, `on_navigation`, `on_page_load`, `on_event`) through `tauri::plugin::Builder`. The `setup` hook returns a `Result`, and its error aborts start-up.
+
+**Plugin permissions are generated at build time.** A plugin's build script validates the plugin name, generates the command permissions and their schema, and writes the allowed-command metadata to `OUT_DIR`, so a host can review permissions statically. A build fixture asserts that the generated files change when the command list or the permission files change.
 
 ### Tauri code examples
 
