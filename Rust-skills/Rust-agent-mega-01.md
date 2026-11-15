@@ -4188,6 +4188,8 @@ Rule to test to gate:
 - **Secret-logging check.** Check per handoff that no secret or sensitive payload is logged; no compiler error hints at this one. Look at debug, error and crash paths first, because a handler that prints the whole request is invisible on the happy path. Richer logging and tracing widen the leak surface, so adopt typed secret wrappers together with them.
 - **Performance wording.** Every performance statement in requirements, docs, release notes or a changelog carries a threshold and a method ("p95 under 10 ms on the named benchmark"), or is marked unverified. "Significantly faster" fails. "Faster than the previous release" passes only with the comparison method and the margin. A threshold with no runnable method fails as surely as no number.
 - **More than one workspace.** One gate record must not sign for a workspace its commands never ran against. Run the commands per workspace and combine the results into one record.
+
+- **Two gate layers.** The four commands are owed on every change. The heavier gates are owed by the boundary a change touches: `loom` for shared-state interleavings, Miri for unsafe, fuzzing for an input frontier, compile-fail for a misuse contract. They add up; neither replaces the other. A change that is never classified by boundary gets the four commands only, and that under-verifies exactly the concurrent, unsafe and FFI work that needs more.
 # rust-toolchain.toml
 [toolchain]
 channel = "1.80.1"
