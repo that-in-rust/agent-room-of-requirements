@@ -742,6 +742,8 @@ probe-rs run --chip STM32F401RETx target/thumbv7em-none-eabihf/release/app
 | performance | Latency or memory thresholds were explicitly stated |
 | coverage | Higher-risk changes need stronger release confidence |
 
+Choose the rows at the start of the task and record which ones the change triggers; a matrix walked after implementation only justifies the evidence that already exists. The four required commands can all pass over a parser that was never fuzzed or a concurrency change whose interleavings were never explored. The performance row triggers only when a threshold was stated: no threshold means no performance test is owed and no performance claim is allowed. `loom` may be skipped for shared state behind a boundary that is proven single-threaded. In the traceability table an empty row marked as missing is better than an invented test name.
+
 ### TDD loop
 
 ```text
