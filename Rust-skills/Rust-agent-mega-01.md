@@ -3980,6 +3980,8 @@ Tauri reliability mostly comes from getting these boundaries right: the Rust com
 - Test lifecycle-sensitive behavior wherever tray, updater, single-instance or deep links are involved.
 - Prefer mocked desktop-boundary tests when full runtime integration is heavier than necessary.
 
+These checks apply at design time. A new command lands with its typed boundary test in the same change, with no plan to backfill, so test coverage grows with the IPC surface. The mock preference has a limit: lifecycle behavior (tray, updater, single-instance, deep links) often cannot be mocked faithfully, so when a deep-link handoff is tested only in mocks, record that trade. Read the relevant Tauri patterns before committing to structure (async boundary, IPC transport, process supervision) and note which pattern forced which choice; a feature that meets these rules for the first time at review turns each violation into a rewrite. The trade-offs are decided by an observable condition: mutex flavor by whether the guard crosses `.await`, events or channels by stream volume and duration, store or files by payload size, mock or integration by runtime weight. Start on the cheap side and move only when the condition is observed and recorded; do not shrink a volume estimate to keep the cheap tool.
+
 Before shipping any meaningful Tauri feature, verify:
 
 - the capability file proves least privilege for every new permission
