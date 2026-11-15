@@ -2351,6 +2351,9 @@ Each card gives the smell and the preferred alternative.
 - **Compiler acceptance as proof.** "The borrow checker would have complained" used to justify logical behavior. Pair compile-time guarantees with behavior tests, boundary review and claim-specific evidence such as benchmarks or shutdown tests.
 - **Hand-edited generated source.** Direct edits in `generated/`, `prost` or other codegen output. Regeneration discards them. Edit the schema, the generator configuration or a thin wrapper module, and check that regeneration is reproducible.
 
+- **Over-correcting an anti-pattern.** Removing every clone, replacing every `String` parameter with generic `AsRef<str>`, giving every error its own enum, or adding a trait to mock one function. A clone is fine when ownership clarity outweighs a measured cost. Make no zero-cost claim without a measurement.
+- **Hazards a signature does not show.** Lock guards kept alive inside iterators, `Arc` reference cycles, and a new trait changing object safety or SemVer.
+
 ## 14. Rust web backends
 
 This section applies to Rust HTTP backends and APIs (Actix, Axum or similar). For generic libraries, CLIs, parsers, protocol crates and FFI boundaries use sections 1 to 13 instead.
@@ -4253,6 +4256,9 @@ Rule to test to gate:
 | dependency exposure | downstream compile + doctest | API review, optional SemVer tooling |
 | measure first | benchmark + profile | benchmark gate |
 | all rules | format and lint | `cargo fmt --all -- --check`, `cargo clippy --all-targets --all-features -- -D warnings` |
+
+- **Match the gate to the obligation.** `cargo check` alone proves nothing about behavior, `cargo test` alone proves nothing about concurrency, and Clippy is not design review. Compile a public-call fixture for an API claim, test each error variant, saturate the bounded channel, cancel the work. Where features are mutually exclusive, `--all-features` is invalid by design: run the intended feature matrix and record it. Also check workspace default members, feature unification, target-specific code and the MSRV toolchain.
+- **Scale strictness to the code.** Public, concurrent and invariant-heavy code needs stronger explicit contracts than simple private glue. State what must be representable, borrowable, fallible, cancellable and testable before leaning on the compiler; otherwise compiler-driven churn becomes the architecture.
 
 ### Completion contract for an agent
 
