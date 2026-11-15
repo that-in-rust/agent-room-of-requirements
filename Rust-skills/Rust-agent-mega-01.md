@@ -61,7 +61,7 @@ Work down this ladder; do not pick patterns at random.
 6. Choose the verification mix: unit, doctest, compile-fail, property, fuzz, `loom`, coverage gates.
 7. If unsafe remains necessary: minimize the block, document the invariant, and verify with Miri or an equivalent.
 
-Reach for the simplest pattern that preserves correctness boundaries, not the most impressive one.
+Reach for the simplest pattern that preserves correctness boundaries, not the most impressive one. Test: each pattern you applied should be removable only by weakening a named boundary. A newtype and a typed error that close a boundary in twenty lines beat a typestate protocol wrapped around a two-state flag. Start with the patterns that prevent the most bugs (newtypes for validated values, no blocking across `.await`) before advanced ones (HRTBs, GATs, `PhantomData` variance).
 
 Powerful techniques that are not first bets, because they are niche or easy to misapply:
 
