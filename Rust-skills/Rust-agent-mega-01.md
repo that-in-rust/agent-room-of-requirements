@@ -74,6 +74,8 @@ Powerful techniques that are not first bets, because they are niche or easy to m
 
 Correctness is won or lost in public API commitments, error boundary design, async cancellation and concurrency semantics, executable verification, and operational behavior after the code ships.
 
+Record the ladder choices on any change that touches a public API, an error surface, concurrency or unsafe: the classification, the four surface choices, the gates matched to each touched boundary, and every unsafe block with its safety argument (state explicitly when there is none). Put it in the PR or the crate docs. Note the condition that would invalidate a choice, for example "`dyn Trait` here because this is a plugin seam; revisit if it becomes a hot loop", so a later reader can tell a decision from an accident. The choices constrain each other in order (the newtype shapes the error variants, the error shape decides what the doctest asserts), so a typed error behind an API that takes `&String` fails the ladder even though each pattern passes on its own.
+
 ### Priorities by task type
 
 | Task type | Prioritize |
