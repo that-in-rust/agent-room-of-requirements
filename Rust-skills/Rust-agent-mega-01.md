@@ -2458,6 +2458,9 @@ Auth and recovery flows:
 - **Tests for these flows.** Compare public failure responses and timing for known and unknown accounts; race identical writes; replay and reuse reset tokens concurrently; crash before and after commit; inject each remote failure class and a timeout after remote success; replay jobs; check that an operator can see and reconcile stuck state.
 - **Scope.** This list is not a threat model. Authorization, CSRF, SSRF, TLS, key management, dependency risk and data retention need their own review. If no durable store for idempotency and recovery exists, narrow the operation, fail closed, or require manual reconciliation. Choose hashing crates and parameters from current documentation for the locked version.
 
+- **Release blockers in auth and recovery code.** Raw credentials past the adapter; secrets in logs; public failures that depend on identity; reusable or overbroad reset tokens; idempotency keys not bound to actor and normalized request; a lock or transaction held across a remote effect; retry of a permanent failure; a remote call with no timeout; a job that is not durable; an acknowledgment before durable completion; a status transition written after the acknowledgment. Reset tokens are not sessions: single use, scoped, hashed. An unmodeled intermediate state is the most dangerous defect, because it can leak information and duplicate effects at once.
+- **Check framework behavior against the locked version.** Read `Cargo.lock`, enabled features and the matching docs for extractor rejection shape, middleware order, timeout semantics and graceful shutdown; latest docs may not match. A correct runtime and framework can still compose into an unsafe flow, so test the composed flow. A type wrapper is not access control.
+
 ### Database pool and compile-time checked queries
 
 ```rust
