@@ -1955,6 +1955,8 @@ Shutdown and cleanup:
 - **Snapshots over contention.** Prefer immutable snapshots or owned work packets when lock contention would otherwise dominate the reasoning.
 - **Concurrency evidence.** A single green CI run proves almost nothing about concurrency. High-risk interleavings get `loom` or equivalent model checking; lower-risk code still gets stress, timeout, teardown and cancellation tests.
 
+- **Retry only where state ownership is clean.** A retry loop around a future that is not cancel-safe re-enters half-consumed state on every attempt. Give retries a budget. Shutdown is where bounded channels, cancellation tokens and cancel-safe `select!` branches either compose or fail together, so test it: inject cancellation under load and assert no message is lost or processed twice. A bounded channel's fullness is a measurable saturation signal; an unbounded channel grows silently until memory pressure is the symptom. An unbounded channel on a provably low-volume control path is tolerable if the reason is written down.
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
@@ -2067,6 +2069,8 @@ cc = "*"
 - **Builder plus frozen config struct.** Configuration is mutable during construction and immutable during execution; a builder that produces a cheap frozen config makes the split explicit. Use when a component has many orthogonal knobs and a stable execution phase. Keep runtime state and expensive artifacts out of the builder.
 - **Accumulate, then build, collecting errors as you go.** Some structures (pattern sets, registries, ignore lists, aggregated configuration) can only be optimized once the whole batch is known. Collect non-fatal build-time errors separately from final construction. Do not force eager construction on every incremental addition.
 - **Prepare once, query many.** Precompute a normalized or derived view once as a named value type, then reuse it across many checks: matching, routing, filtering, repeated comparison against one input. Avoid when precomputation costs more than the reuse saves or hides a freshness requirement.
+
+- **Verify a performance change on two axes.** The benchmark delta, and a check that no checked operation became unchecked and no precomputed value outlives the freshness of its input. Do not replace `.get()` with indexing in a loop because the benchmark improved. "We already proved this above" stops being true when the code moves, so when a check is removed, state the invariant at the place the check was. Prefer speedups that add named structure (a precomputed view as its own type) over speedups that remove checks. Use saturating arithmetic only where saturation is the documented meaning, not to hide an overflow.
 
 ### Memory-efficiency examples
 
