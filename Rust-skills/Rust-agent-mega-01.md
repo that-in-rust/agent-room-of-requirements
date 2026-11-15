@@ -1576,6 +1576,27 @@ Tests round-trip representative payloads, assert that the subject constants matc
 - **Team-specific checks are loadable.** Organisation lints are separate libraries selected in workspace metadata, each with its own configuration. A compiler-backed tool pins its toolchain version and treats it as part of its interface.
 - **Platform wrappers document caller duties.** A crate over native platform features has a narrow builder and `cfg`-gated adapters. Event-loop, thread and lifetime requirements are written down as part of the interface. Compile checks run for every target.
 
+**Incremental tools, search and storage engines.**
+
+- **One edit type for incremental work.** A tool that updates incrementally defines a single public edit value, with byte offsets and with row and column positions when callers use both. No caller invents its own. A golden test parses, edits and reparses, then compares the result with a fresh parse of the final text.
+- **Extraction is pure; storage is incremental.** Functions turn parsed input into facts, dependencies and diagnostics, with filesystem and resolver access behind a trait. An incremental database stores those facts. A test changes one file and checks that only its dependents are recomputed.
+- **A lossless syntax tree is shared.** In a compiler-like workspace the parser, formatter and linter use one tree crate, and each language is an adapter over it. Round-trip tests assert that the tree reproduces the source text exactly.
+- **Analyses read an intermediate form.** Compiler and parser tools translate the raw tree into an explicit intermediate layer. The stage to start from and a dump of each layer are options, so a failure can be traced to extraction, normalisation or reconstruction. Snapshot each layer.
+- **Lowering has one builder state.** When a plan is lowered into executable fragments, one state value allocates identifiers and tracks shared nodes. Rewrites ask it for identifiers. Golden tests assert that allocation is deterministic.
+- **Queries run in three stages.** A query is a recipe; binding it to an index gives a plan that computes statistics once; the plan gives a cursor for each segment. Counting passes an explicit scoring-disabled mode. Test and benchmark each stage separately.
+- **A schema states capabilities.** Each field declares whether it can be queried, stored, sorted or aggregated. Ingestion and query parsing both read the schema, and a query against an unsupported field is an error.
+- **Versions are explicit in storage.** A read says which version it reads as of. A read hold stops compaction below that version until it is released. Tests keep a stale reader open and check that compaction waits.
+- **Progress that composes has laws.** When versions or timestamps are combined along paths, the combine and advance operations are trait methods that return `None` on overflow. Property tests check that combining two steps equals applying one after the other.
+- **Stream operators carry their lifecycle.** Start, process, progress mark, checkpoint and close are methods of the operator trait, and the runtime owns queues and alignment. A deterministic test sends checkpoint markers on several inputs and checks that the snapshot waits for all of them.
+- **A guard fixes the order of unlock and side effect.** When a side effect such as cache eviction must follow a lock release, a guard type's `Drop` releases the lock and then runs the effect.
+- **Graph walkers borrow per step.** A traversal object borrows the graph only inside its `next` call, so the caller can mutate the graph between steps.
+- **Options are a named type.** Two or more booleans passed together become a small options struct with named methods such as `desc()` and `nulls_last()` and a `Display` form. A table test covers every combination.
+
+**Agent runtimes and subprocesses.**
+
+- **The tool list is built in one place.** Features do not append tools to a request. One function takes the configuration and the discovered context and returns the complete, validated tool list with its handlers. Snapshot the serialised list for each representative configuration, and test that duplicate names and missing handlers are rejected.
+- **Subprocess placement is an adapter.** A launcher trait takes a command and returns a transport, with local and remote implementations. The transport owns the process handle and its cleanup. Tests run a small fixture server in each placement, exchange one message, close, and assert that no child process remains; on Unix they also test process-group termination.
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -2099,6 +2120,13 @@ fn build_trials() -> Vec<Trial> {
 
 - **Miniature library fixtures.** Tests for a compiler, parser or analyser use a small stand-in for the standard library, divided into named regions. A header line in each test lists the regions it needs. One test confirms that unrequested regions are stripped.
 - **A panicking caller closure poisons the transaction.** Storage that runs caller closures during a mutation records a panic as transaction state, and the next commit returns a poisoned error. A test panics inside the closure, sees the commit fail and reads the earlier data back.
+
+**More storage and adapter tests.**
+
+- **A verification adapter.** Where a simple, slow reference implementation exists, one adapter runs it beside the real store and compares every result. A fused iterator wrapper panics if it is called after the end or after an error, and a test checks that.
+- **Failures injected at named points.** Storage tests trigger I/O errors at named failure points, crash around flush boundaries and compare behaviour against a plain map under fuzzing. An integration test writes, restarts and reads back.
+- **Adapters agree on failures.** Provider conformance tests check that every adapter treats authentication, idempotency, not-found and retryable errors the same way.
+- **Two fixtures for each language.** A multi-language extractor keeps, for every language, one fixture of declarations and one of imports and calls. Tests assert the entity kind, name, line range and dependency edge, and a contract test pins the output schema.
 
 ### Verification rules by risk
 
