@@ -78,6 +78,8 @@ Record the ladder choices on any change that touches a public API, an error surf
 
 Size a change by the surfaces it crosses, not by its line or symbol count. A large rename that crosses none is cheap to review; a small diff that changes the API, the error type and the concurrency model at once is three changes. If a change crosses more than two of ownership, error, concurrency and API stability, split it, in that order: introduce the newtype first, then the error redesign it enables; do not convert an API to async and retype its errors in one PR. Any unsafe adds the safety argument and a Miri run regardless of diff size; where Miri cannot run (FFI-heavy code), use an equivalent check. Absence of crashes is not evidence that unsafe code is sound.
 
+Before the ladder: choose the work mode, then read the actual code and its callers, and only then pick a pattern. A guide is a checkpoint inside the work, not the implementation plan. The cheapest correct change may be a repaired test or a documentation fix. When a test goes red, confirm it fails for the intended reason and not on a compile error or a setup mistake. A public name kept for compatibility can stay while new private items follow the current convention, and replacing a public error type is a SemVer break.
+
 ### Priorities by task type
 
 | Task type | Prioritize |
