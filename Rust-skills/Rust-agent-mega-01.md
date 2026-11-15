@@ -1986,6 +1986,10 @@ Shutdown and cleanup:
 
 - **Retry only where state ownership is clean.** A retry loop around a future that is not cancel-safe re-enters half-consumed state on every attempt. Give retries a budget. Shutdown is where bounded channels, cancellation tokens and cancel-safe `select!` branches either compose or fail together, so test it: inject cancellation under load and assert no message is lost or processed twice. A bounded channel's fullness is a measurable saturation signal; an unbounded channel grows silently until memory pressure is the symptom. An unbounded channel on a provably low-volume control path is tolerable if the reason is written down.
 
+- **Classify a failure before retrying it.** Never retry a compiler error, a panic, an invariant violation, a deterministic assertion, an authorization failure or a schema incompatibility. Retry hazards: a timeout after the remote effect already succeeded, a library retry nested inside an application retry, cancellation between an effect and its acknowledgment, jitter that outlasts the parent deadline, and a retry that discards the first error chain. Keep both the first and the terminal error. A bounded channel does not bound the system if another producer is unbounded.
+- **Backpressure is part of correctness.** It lets the system reject and explain work before resource exhaustion destroys the evidence needed to diagnose it.
+- **Telemetry that maps to the design.** Record the parent of each task and its shutdown result, queue depth with its capacity, the typed terminal result and the cancellation reason. Keep cancellation distinct from other terminal states. Do not build metric labels from user input, do not let a span guard cross an `.await` by accident, and check that panic paths and sampling do not drop the rare terminal failures. A library should not impose telemetry policy: typed errors and executable examples are its diagnostics.
+
 ## 10. Unsafe and FFI
 
 - Keep unsafe surfaces minimal.
@@ -2100,6 +2104,8 @@ unsafe impl<T: Sync> Sync for MyType<T> {}
 - **Prepare once, query many.** Precompute a normalized or derived view once as a named value type, then reuse it across many checks: matching, routing, filtering, repeated comparison against one input. Avoid when precomputation costs more than the reuse saves or hides a freshness requirement.
 
 - **Verify a performance change on two axes.** The benchmark delta, and a check that no checked operation became unchecked and no precomputed value outlives the freshness of its input. Do not replace `.get()` with indexing in a loop because the benchmark improved. "We already proved this above" stops being true when the code moves, so when a check is removed, state the invariant at the place the check was. Prefer speedups that add named structure (a precomputed view as its own type) over speedups that remove checks. Use saturating arithmetic only where saturation is the documented meaning, not to hide an overflow.
+
+- **Benchmark pitfalls.** A debug build cannot support a production claim, an average hides the tail, one run gives no precision, and dead-code elimination can remove the work being measured. Clones do not tell you allocations: measure them. Declare the input distribution, toolchain, target, build profile and features; assert that both versions return identical results; report variance. Noise sources include CPU frequency scaling, allocator caching, cache warmth, hash order and async runtime startup. A microbenchmark supports only the measured operation on that machine. Do not ban `clone` because one microbenchmark was faster, and keep the simpler version when the requirement is already met.
 
 ### Memory-efficiency examples
 
@@ -2357,6 +2363,8 @@ Each card gives the smell and the preferred alternative.
 
 - **Over-correcting an anti-pattern.** Removing every clone, replacing every `String` parameter with generic `AsRef<str>`, giving every error its own enum, or adding a trait to mock one function. A clone is fine when ownership clarity outweighs a measured cost. Make no zero-cost claim without a measurement.
 - **Hazards a signature does not show.** Lock guards kept alive inside iterators, `Arc` reference cycles, and a new trait changing object safety or SemVer.
+
+- **Fixing the symptom.** Similar symptoms can need opposite fixes, so find the cause before adding a trait, clone, retry or lock. Reproduce the failure in the smallest fixture, confirm the mechanism, then change the code. The costly failures are hidden contract transfers: convenience in one function moves a panic, an ownership rule, a queue or a compatibility cost onto callers and operators. Also watch for panic hooks that hide abort behavior and locks nested through helper calls.
 
 ## 14. Rust web backends
 
