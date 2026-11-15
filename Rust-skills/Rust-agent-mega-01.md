@@ -848,6 +848,8 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
 }
 ```
 
+A `join_all` run like this is a smoke check: it sees the schedules the runtime happened to pick, not every interleaving. Where ordering of shared state matters, model it with `loom`. If `loom` is not available and this stands in for it, record the substitution and the reason.
+
 Doctest:
 
 ```rust
