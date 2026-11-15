@@ -413,6 +413,10 @@ fn test_blast_radius_performance_req_mvp_003() { // References REQ-MVP-003.0
 | "Handle async correctly." | "Propagate cancellation, avoid blocking in async contexts, and keep lock guards out of `.await`." |
 | "Make the API cleaner." | "Accept borrowed inputs, preserve semver-safe public types, and reject invalid states at construction time." |
 
+Enter these templates at the first input that is missing. A vague request starts at the rewrite table; a request with testable requirements starts at the work packet; test skeletons come only once requirements and design exist, and a trivial fix can go straight to one. Starting at the skeletons because they look most like code produces tests for requirements nobody stated.
+
+A filled-in template can still be hollow. A `WHEN` clause that says "sometimes" or a metric column that says "fast" satisfies the shape and defeats the rule, so review what is in the blanks against the rewrite table, not only that every section is present.
+
 ### Work packet template
 
 Use this shape when a request is not ready for immediate coding:
