@@ -318,9 +318,20 @@ Output rules:
 ### Requirement contract template
 
 ```markdown
+### REQ-RUST-001.0: <short title>
 
+**WHEN** <trigger or input condition>
+**THEN** the system SHALL <primary behavior>
+**AND** SHALL <secondary measurable behavior>
+**SHALL** <edge-case or default behavior>
+```
+
+- Keep each `SHALL` independently testable.
+- Use explicit units for latency, memory, throughput, retries and concurrency limits.
+- Retry behavior is a requirement, not a loop added in review: state the retry count, the backoff shape and the concurrency ceiling with units, and link each to a test. A metric showing thirty retries against a stated three is then a violated requirement. State what the requirement assumes about retries in the infrastructure below it. A correct retry requirement can still be implemented on a future that is not cancel-safe, so check the implementation as well.
+- A latency regression on a path with no stated threshold violates nothing; add the missing clause. Ask whether a requirement set that is silent on performance is indifferent or avoiding the test.
+- Split requirements; do not stack unrelated behavior into one clause.
 - Give non-functional claims explicit units (`us`, `ms`, `MB`, `ops/s`).
-
 - Split functional from non-functional requirements when they would otherwise blur together.
 - Use `REQ-RUST-*` identifiers for Rust work even when the user starts with a generic request.
 
@@ -456,19 +467,8 @@ Use this shape when a request is not ready for immediate coding:
 - tests:
 - build:
 ```
-### REQ-RUST-001.0: <short title>
 
-**WHEN** <trigger or input condition>
-**THEN** the system SHALL <primary behavior>
-**AND** SHALL <secondary measurable behavior>
-**SHALL** <edge-case or default behavior>
-```
-
-- Keep each `SHALL` independently testable.
-- Use explicit units for latency, memory, throughput, retries and concurrency limits.
-- Retry behavior is a requirement, not a loop added in review: state the retry count, the backoff shape and the concurrency ceiling with units, and link each to a test. A metric showing thirty retries against a stated three is then a violated requirement. State what the requirement assumes about retries in the infrastructure below it. A correct retry requirement can still be implemented on a future that is not cancel-safe, so check the implementation as well.
-- A latency regression on a path with no stated threshold violates nothing; add the missing clause. Ask whether a requirement set that is silent on performance is indifferent or avoiding the test.
-- Split requirements; do not stack unrelated behavior into one clause.
+The mode block is example filler: replace it with the modes actually chosen. A packet whose blanks still read like the template is hollow. Fill the gate lines with real command results; a packet with empty gate lines is not complete, and passing tests do not imply the `--all-targets --all-features` build passes, so report the build line separately.
 
 ## 4. Architecture and boundaries
 
@@ -683,26 +683,6 @@ let round: My = from_bytes(written)?;
 - **Target and linking.** Add the target (`rustup target add thumbv7em-none-eabihf` for Cortex-M4F/M7F), set it in `.cargo/config.toml`, and provide a `memory.x` defining FLASH, RAM, stack and vector table. Do not hardcode addresses in code; use `#[link_section]` sparingly.
 
 ```toml
-
-### Architectural pattern cards
-
-- **Sync core, async shell.** Async handlers, workers and adapters outside; synchronous domain and policy logic inside. Parse and fetch outside, decide and transform inside, then persist or emit outside. Unit-test the core; integration-test the shell. Skip the split for a tiny, purely async library.
-- **Transport, domain, persistence separation.** Transport DTOs, then domain commands and values, then persistence rows and queries. Convert at the edge, enforce invariants in domain types, isolate storage specifics in adapters. Costs more conversion code; buys stronger invariants and clearer failure location.
-- **Workspace layering by change boundary.** Core domain crates, adapter crates, binary or command crates, optional proc-macro or tooling crates. Split by stable responsibility and dependency direction, not by file count or chronology. Check the workspace graph and dependency direction.
-- **Stable external API over composed internals.** Callers depend on a narrow contract while internal modules compose interchangeable engines or strategies chosen by the implementation. Fits parser engines, search and index systems, storage adapters, planners and performance-critical libraries. Buys optimization freedom and lower SemVer pressure.
-
-- **Tauri split.** Frontend UI, then a typed IPC contract, then Rust core and workflows, then the capability and sidecar boundary. Use typed command modules, managed state, explicit permissions and explicit sidecar ownership. Verify with command tests, a permission review, sidecar lifecycle tests and startup and restore checks.
-
-### Domain context packs
-
-- **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
-- **Backend services.** Path: DTO to domain conversion at the edge, typed state and services, explicit timeout and retry policy, `tracing`, pooled database access (`axum`, `tokio`, `tower`, `sqlx`). Stretch: idempotency keys, durable intent plus background processing, compile-time query checks, overload control. Risks: DTO leakage inward, hidden retries, timeout ambiguity, auth leakage, transactions coupled to remote side effects. Verify: handler integration tests, malformed input, timeout and retry behavior, transaction boundaries.
-- **Libraries and SDKs.** Path: curated facade, typed errors, minimal dependency leakage, doctests for caller stories, additive features. Stretch: SemVer-aware layering, feature-matrix verification, optional zero-copy or `no_std` surfaces. Tools: `thiserror`, `proptest`, `criterion`, `cargo-semver-checks`. Risks: public dependency exposure, kitchen-sink errors, re-export sprawl, undocumented feature interactions.
-- **Parsers and protocols.** Path: explicit frontier types, corpus tests, malformed-input handling, binary-safe diagnostics, round-trip property tests. Stretch: zero-copy where justified, fuzzing, typestate-assisted protocol handling. Tools: `nom` or a hand-written parser, `proptest`, `arbitrary`, `cargo-fuzz`. Risks: partial parse treated as success, UTF-8 assumptions, panic on bad input, protocol state corruption.
-- **Tauri desktop.** Path: owned async commands, explicit managed state, narrow capabilities, exact sidecar scoping, typed IPC contracts. Risks: broad permissions, borrowed async inputs, hidden sidecar lifecycle, large payloads in JSON IPC, overlapping high-privilege windows. Verify: command tests, capability review, startup timeout, sidecar health checks, restore and first-paint behavior, deep-link handoff.
-- **FFI and unsafe.** Path: smallest safe wrapper, explicit ownership and nullability, layout discipline, private unsafe core. Tools: `libc`, `bindgen`, `cxx`, Miri. Risks: layout mismatch, aliasing violations, panic crossing FFI, invalid lifetimes. Verify: harness tests, ABI shape review, ownership-transfer tests, Miri or sanitizers.
-- **Performance work.** Path: representative benchmark cases, profile first, algorithmic wins and boundary simplification before unsafe or lock-free code. Stretch: worst-case complexity guards, cache-aware layout, allocation budgets. Tools: `criterion`, `iai-callgrind`, `cargo-bloat`, flamegraphs. Risks: optimizing the wrong metric, overfitting microbenchmarks, freezing internals into the public API.
-- **When Rust is the wrong tool.** Ultra-short scripts; deadline prototypes that do not need a typed service; one-off binaries with no reusable contract; integration surfaces so dynamic that safe boundary modeling is out of proportion; cases where the dominant latency is outside the process.
 # .cargo/config.toml
 [build]
 target = "thumbv7em-none-eabihf"
@@ -732,6 +712,26 @@ fn ts() -> u64 { 0 }
 cargo flash --chip STM32F401RETx --release --example blinky
 probe-rs run --chip STM32F401RETx target/thumbv7em-none-eabihf/release/app
 ```
+
+### Architectural pattern cards
+
+- **Sync core, async shell.** Async handlers, workers and adapters outside; synchronous domain and policy logic inside. Parse and fetch outside, decide and transform inside, then persist or emit outside. Unit-test the core; integration-test the shell. Skip the split for a tiny, purely async library.
+- **Transport, domain, persistence separation.** Transport DTOs, then domain commands and values, then persistence rows and queries. Convert at the edge, enforce invariants in domain types, isolate storage specifics in adapters. Costs more conversion code; buys stronger invariants and clearer failure location.
+- **Workspace layering by change boundary.** Core domain crates, adapter crates, binary or command crates, optional proc-macro or tooling crates. Split by stable responsibility and dependency direction, not by file count or chronology. Check the workspace graph and dependency direction.
+- **Stable external API over composed internals.** Callers depend on a narrow contract while internal modules compose interchangeable engines or strategies chosen by the implementation. Fits parser engines, search and index systems, storage adapters, planners and performance-critical libraries. Buys optimization freedom and lower SemVer pressure.
+
+- **Tauri split.** Frontend UI, then a typed IPC contract, then Rust core and workflows, then the capability and sidecar boundary. Use typed command modules, managed state, explicit permissions and explicit sidecar ownership. Verify with command tests, a permission review, sidecar lifecycle tests and startup and restore checks.
+
+### Domain context packs
+
+- **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
+- **Backend services.** Path: DTO to domain conversion at the edge, typed state and services, explicit timeout and retry policy, `tracing`, pooled database access (`axum`, `tokio`, `tower`, `sqlx`). Stretch: idempotency keys, durable intent plus background processing, compile-time query checks, overload control. Risks: DTO leakage inward, hidden retries, timeout ambiguity, auth leakage, transactions coupled to remote side effects. Verify: handler integration tests, malformed input, timeout and retry behavior, transaction boundaries.
+- **Libraries and SDKs.** Path: curated facade, typed errors, minimal dependency leakage, doctests for caller stories, additive features. Stretch: SemVer-aware layering, feature-matrix verification, optional zero-copy or `no_std` surfaces. Tools: `thiserror`, `proptest`, `criterion`, `cargo-semver-checks`. Risks: public dependency exposure, kitchen-sink errors, re-export sprawl, undocumented feature interactions.
+- **Parsers and protocols.** Path: explicit frontier types, corpus tests, malformed-input handling, binary-safe diagnostics, round-trip property tests. Stretch: zero-copy where justified, fuzzing, typestate-assisted protocol handling. Tools: `nom` or a hand-written parser, `proptest`, `arbitrary`, `cargo-fuzz`. Risks: partial parse treated as success, UTF-8 assumptions, panic on bad input, protocol state corruption.
+- **Tauri desktop.** Path: owned async commands, explicit managed state, narrow capabilities, exact sidecar scoping, typed IPC contracts. Risks: broad permissions, borrowed async inputs, hidden sidecar lifecycle, large payloads in JSON IPC, overlapping high-privilege windows. Verify: command tests, capability review, startup timeout, sidecar health checks, restore and first-paint behavior, deep-link handoff.
+- **FFI and unsafe.** Path: smallest safe wrapper, explicit ownership and nullability, layout discipline, private unsafe core. Tools: `libc`, `bindgen`, `cxx`, Miri. Risks: layout mismatch, aliasing violations, panic crossing FFI, invalid lifetimes. Verify: harness tests, ABI shape review, ownership-transfer tests, Miri or sanitizers.
+- **Performance work.** Path: representative benchmark cases, profile first, algorithmic wins and boundary simplification before unsafe or lock-free code. Stretch: worst-case complexity guards, cache-aware layout, allocation budgets. Tools: `criterion`, `iai-callgrind`, `cargo-bloat`, flamegraphs. Risks: optimizing the wrong metric, overfitting microbenchmarks, freezing internals into the public API.
+- **When Rust is the wrong tool.** Ultra-short scripts; deadline prototypes that do not need a typed service; one-off binaries with no reusable contract; integration surfaces so dynamic that safe boundary modeling is out of proportion; cases where the dominant latency is outside the process.
 
 ## 5. Verification and test-first delivery
 
@@ -1041,6 +1041,8 @@ mod mutation_tests {
     }
 }
 ```
+
+These skeletons freeze crate-specific shapes: `#[tokio::test]`, `trybuild`, `proptest!`, `loom::model`. Compile a copied skeleton against the project's own crate versions before building on it. If it does not compile, suspect a changed crate API before your own code.
 
 ### Testing and contract verification patterns
 
@@ -2046,6 +2048,13 @@ struct CacheLine([u8; 64]);
 - **The `-sys` crate pattern.** Put raw bindings in `foo-sys` with `package.links = "foo"` and link metadata from its build script; a separate crate depends on it and exposes the safe API. Do not mix raw FFI and the safe wrapper in one crate.
 
 ```toml
+# Cargo.toml
+[package]
+links = "foo"
+
+[build-dependencies]
+cc = "*"
+```
 
 - **Wide pointers.** `&[T]`, `&str` and `&dyn Trait` are pointer plus length or vtable. Never pass them across FFI (`extern "C" fn foo(s: &str)` is wrong); pass `(ptr, len)` in a `repr(C)` struct.
 
@@ -2062,13 +2071,6 @@ pub extern "C" fn take_bytes(s: SliceU8) { /* safe FFI shape for &[u8] */ }
 unsafe impl<T: Send> Send for MyType<T> {}
 unsafe impl<T: Sync> Sync for MyType<T> {}
 // Justify invariants in docs: why concurrent access is safe.
-```
-# Cargo.toml
-[package]
-links = "foo"
-
-[build-dependencies]
-cc = "*"
 ```
 
 ## 11. Performance
@@ -4118,6 +4120,13 @@ rust-version = "1.76"
 License and advisory policy in `deny.toml`; run the advisory check as a scheduled job:
 
 ```toml
+# deny.toml
+[licenses]
+allow = ["MIT", "Apache-2.0"]
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+```
 
 Commit `rustfmt.toml` so style is project-wide and diffs stay stable:
 
@@ -4139,6 +4148,64 @@ sqlx migrate run --database-url=${DATABASE_URL}
 Pin the toolchain per project:
 
 ```toml
+# rust-toolchain.toml
+[toolchain]
+channel = "1.80.1"
+components = ["rustfmt", "clippy"]
+```
+
+Workspaces share one `Cargo.lock` and `target`; keep profiles at the root, and put aliases and offline mode in `.cargo/config.toml`:
+
+```toml
+# .cargo/config.toml
+[alias]
+c = "check --workspace"
+[net]
+offline = true
+```
+
+Coverage in CI: emit lcov or JSON, and exclude generated and build directories with `--ignore-filename-regex`.
+
+```sh
+cargo llvm-cov --all-features --workspace --branch --fail-under-lines 75
+```
+
+Fuzzing setup; seed RNGs for determinism in CI and minimize failing inputs:
+
+```sh
+cargo fuzz init && cargo fuzz add parse && cargo fuzz run parse
+```
+
+Instrument service boundaries and propagate span fields such as `trace_id` and `user_id`. No `println!`-style logging in libraries:
+
+```rust
+#[tracing::instrument(skip(req))]
+pub async fn handle(req: Request) -> Result<Response, Error> {
+    tracing::info!(method = %req.method(), path = %req.uri().path());
+    // ...
+    Ok(resp)
+}
+```
+
+Keep secrets in `SecretString`/`SecretVec`, which have no `Display`/`Debug` output, and do not clone them widely:
+
+```rust
+use secrecy::{ExposeSecret, SecretString};
+let api_key = SecretString::new(load_key());
+// tracing::info!(key = %api_key); // anti-pattern
+tracing::info!(has_key = api_key.expose_secret().len() > 0);
+```
+
+SQLx: use `query!`/`query_as!` with offline mode, and set timeouts and a connection maximum on the pool:
+
+```rust
+#[derive(sqlx::FromRow)]
+struct User { id: i64, name: String }
+let row = sqlx::query_as!(User, "SELECT id, name FROM users WHERE id = $1", id)
+    .fetch_one(&pool).await?;
+```
+
+Run Clippy and coverage across all targets and features, not a subset. Exclude generated code from coverage.
 
 Workspace hygiene:
 
@@ -4196,71 +4263,6 @@ Rule to test to gate:
 - **More than one workspace.** One gate record must not sign for a workspace its commands never ran against. Run the commands per workspace and combine the results into one record.
 
 - **Two gate layers.** The four commands are owed on every change. The heavier gates are owed by the boundary a change touches: `loom` for shared-state interleavings, Miri for unsafe, fuzzing for an input frontier, compile-fail for a misuse contract. They add up; neither replaces the other. A change that is never classified by boundary gets the four commands only, and that under-verifies exactly the concurrent, unsafe and FFI work that needs more.
-# rust-toolchain.toml
-[toolchain]
-channel = "1.80.1"
-components = ["rustfmt", "clippy"]
-```
-
-Workspaces share one `Cargo.lock` and `target`; keep profiles at the root, and put aliases and offline mode in `.cargo/config.toml`:
-
-```toml
-# .cargo/config.toml
-[alias]
-c = "check --workspace"
-[net]
-offline = true
-```
-
-Coverage in CI: emit lcov or JSON, and exclude generated and build directories with `--ignore-filename-regex`.
-
-```sh
-cargo llvm-cov --all-features --workspace --branch --fail-under-lines 75
-```
-
-Fuzzing setup; seed RNGs for determinism in CI and minimize failing inputs:
-
-```sh
-cargo fuzz init && cargo fuzz add parse && cargo fuzz run parse
-```
-# deny.toml
-[licenses]
-allow = ["MIT", "Apache-2.0"]
-
-[advisories]
-db-path = "~/.cargo/advisory-db"
-```
-
-Instrument service boundaries and propagate span fields such as `trace_id` and `user_id`. No `println!`-style logging in libraries:
-
-```rust
-#[tracing::instrument(skip(req))]
-pub async fn handle(req: Request) -> Result<Response, Error> {
-    tracing::info!(method = %req.method(), path = %req.uri().path());
-    // ...
-    Ok(resp)
-}
-```
-
-Keep secrets in `SecretString`/`SecretVec`, which have no `Display`/`Debug` output, and do not clone them widely:
-
-```rust
-use secrecy::{ExposeSecret, SecretString};
-let api_key = SecretString::new(load_key());
-// tracing::info!(key = %api_key); // anti-pattern
-tracing::info!(has_key = api_key.expose_secret().len() > 0);
-```
-
-SQLx: use `query!`/`query_as!` with offline mode, and set timeouts and a connection maximum on the pool:
-
-```rust
-#[derive(sqlx::FromRow)]
-struct User { id: i64, name: String }
-let row = sqlx::query_as!(User, "SELECT id, name FROM users WHERE id = $1", id)
-    .fetch_one(&pool).await?;
-```
-
-Run Clippy and coverage across all targets and features, not a subset. Exclude generated code from coverage.
 
 ## 17. Review checklist
 
