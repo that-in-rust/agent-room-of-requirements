@@ -4021,6 +4021,10 @@ pnpm build
 pnpm tauri build
 ```
 
+Run both command families in CI and spend review time on the inspection checks. The bundle build is the slowest command and the first one skipped: a nightly run is an acceptable compromise when it is written down, but trimming flags to fit a CI budget changes the gate. Copy commands with their flags intact, since a command without `--all-features` or `-D warnings` looks the same in a skim and checks less. `--all-features` can interact with feature-gated Tauri plugins, so use the project's feature matrix where features conflict.
+
+A failed gate is information. Rerun only after something changed, and record what changed (a dependency cache clear counts). Do not answer a red lint with an `#[allow]` or a failed bundle by dropping the command. Fix a flaky frontend test instead of rerunning it, because rerun-until-green teaches the team to distrust the gate. The same check failing across several changes points to a gap earlier in the work (design guidance, onboarding), not to a check that should be loosened.
+
 ### Tauri release readiness checklist
 
 - [ ] Requirements are executable and measurable.
