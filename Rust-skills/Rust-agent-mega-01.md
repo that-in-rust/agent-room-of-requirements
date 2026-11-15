@@ -2469,6 +2469,8 @@ Auth and recovery flows:
 - **Flow threat-and-recovery record, required for sensitive or mutating flows.** Goal, assets, actors, trust and authorization boundaries, secrets, public observations, state machine, transactions, idempotency, remote effects, failure classes, timeouts, workers, logs, abuse cases, controls, tests, rollback, residual risk. Every ambiguous outcome is assignable to one durable state, one owner and one next action. Typed identifiers do not imply authorization. Check that secrets and payloads do not end up in logs or idempotency records, and that remote effects carry a correlation identifier. A read-only route may use a reduced record if it exposes no sensitive topology.
 - **Product-required disclosure is an isolated exception.** If a flow must reveal account state (for example an invitation flow), confine the exception to that flow and test its abuse boundary. Tests that encode enumerable behavior are defects, not specifications. An incident workaround does not become policy.
 
+- **Security-flow outcome measures.** Count secret-exposure findings, observable differences between auth responses, token misuse cases, duplicate-effect incidents, unresolved idempotency races, ambiguous timeout states, retry amplification, worker job age and terminal states, and rollback failures. The most useful single number is unexplained state after a failure. Zero incidents is not proof, fewer compile attempts or review comments say nothing about security, and the metrics themselves must not expose identities. Completeness means no unexplained observation or state inside the declared flow; it is not a claim about the whole system.
+
 ### Database pool and compile-time checked queries
 
 ```rust
