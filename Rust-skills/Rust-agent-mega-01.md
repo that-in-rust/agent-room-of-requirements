@@ -4290,6 +4290,8 @@ Rule to test to gate:
 - **Release-mode tests complement the debug run.** `cargo test --release` is not a superset of `cargo test`. Release mode removes debug assertions and overflow checks and changes optimization-dependent behavior, so the two runs catch different failures. Run both for a high-risk change; never replace the debug run with the release run.
 - **Apply each gate in its phase.** The no-placeholder rule audits finished code, not the stub step of the test-first loop. Do not shape a design around tool gates before the requirements exist; the requirement-shaped rejections (ambiguous wording, claims with no threshold) apply from the first draft.
 
+- **Sizing the gate set.** Keep the mandatory floor small and trigger the extras (release tests, coverage, `loom`, Miri) by risk. A coverage threshold is a team policy: justify the number locally and do not inherit one from a guide. Over-gating shows up as complaints, while under-gating is silent until an incident, so check now and then that the extra tier does run on high-risk changes. Moving an extra into the floor for a release-critical crate is fine when the reason is recorded with the change.
+
 ### Completion contract for an agent
 
 - "It compiles" is not done. Done is: the four required commands green with their output shown, the release checklist affirmed item by item, and none of the review rejections present. If you cannot run commands, list them as follow-up for a human; do not claim them.
