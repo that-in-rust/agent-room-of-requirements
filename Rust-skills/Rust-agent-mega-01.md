@@ -312,6 +312,7 @@ Output rules:
 ## 3. Executable specifications
 
 - Give every requirement an identifier of the form `REQ-RUST-<NNN>.<REV>`.
+- The IDs are flat. Two work packets in one program both start at `REQ-RUST-001`, and a trace then joins requirements that are unrelated. Prefix IDs by component or service as soon as a second packet shares the program, and do not reuse a retired ID in the same crate.
 - Express behavior as `WHEN ... THEN ... SHALL`.
 - A requirement without a measurable threshold or an observable effect is not a requirement yet; send it back.
 
