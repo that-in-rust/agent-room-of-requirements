@@ -2407,6 +2407,8 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 - **Configuration.** Parse configuration once at startup into typed settings and fail fast: an invalid or missing value kills the process at boot with a specific error. No environment-variable string lookups scattered through handlers. Settings parsed at startup but held as raw strings leave invariants unenforced. Test it: boot with deliberately broken configuration and confirm a loud, specific failure.
 - **Operational adoption order.** Typed fail-fast configuration and secret redaction first, structured correlated tracing second, honest health surfaces third, then CI gates, image size, and migration sequencing. Do not write migration runbooks for a service that still crash-loops on malformed environment variables or prints passwords in logs. Tracing, correlation, health checks and failure classification are design concerns from the start, not polish.
 
+- **Operability test for any runtime or rollout change.** State is explicit at boot, behavior is explainable per request, and change is reversible per rollout step. Do not weaken one to strengthen another. Prove each property before depending on it: configuration validated before serving, readiness proven before traffic, rollback verified before the next step. Reject a configuration flag read lazily at first use. Rollback options change after a constraint-tightening step, so re-check what rollback still works after each step. Document which dependencies readiness reflects.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
