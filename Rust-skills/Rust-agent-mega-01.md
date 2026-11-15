@@ -2756,6 +2756,10 @@ Default combinations:
 
 Output order: Tauri Work Mode, Executable Requirements, Tauri Design (Frontend/IPC/Rust Core + Permissions/Lifecycle), Verification Matrix, Implementation Plan, Quality Gate Results, Open Questions. Use the same traceability table as section 2.
 
+Size the planning work by the trust boundaries the change crosses. Write the full set (requirements, layered design, verification matrix) when the change crosses IPC or touches capabilities, for example adding filesystem access to a window. For a small bounded change, trim it and write down which sections were dropped; the sections that feel tedious are usually the boundary ones, and the verification matrix is the last thing to drop. Skip it for a throwaway spike or for frontend styling that never crosses IPC, and write the requirements before a spike is promoted, since "it already works" is how spike code ships without them. During an incident, go straight to the failure checks and write the plan up afterward. A plan that never names a window, a permission or an IPC shape has not yet dealt with Tauri. A wrong permission or an untyped invoke payload ships inside a packaged binary on users' machines, so these come before general tidiness. A command handler that temporarily holds business logic is acceptable only with a named extraction task and a date.
+
+Record the result of every gate in the plan: fmt, clippy, Rust tests, Rust build, frontend checks and Tauri checks. An empty results block is not done, a failing gate has an owner and a date, and a platform-specific gate that could not run locally is recorded as skipped. A gate command copied into a repo with a different layout can run nothing and still exit zero, so confirm it did real work. Before editing a capability file, check its schema against the docs for the project's Tauri major version, because permission guidance goes stale at major versions. General Rust API guidance on error types applies to command errors only within Tauri's serialization requirements.
+
 ### Tauri priorities by task type
 
 | Task type | Prioritize |
