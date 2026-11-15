@@ -4175,6 +4175,10 @@ Rule to test to gate:
 
 - **Gate record at handoff.** With a release or handoff claim, attach: the four command results and the toolchain version they ran under; the risk classification and whether the advanced gates ran; each checklist item with a pointer to the test, doc or threshold that makes it true (a clean grep output is a valid pointer for the placeholder item); and the verdict of the review-rejection pass. A later defect can then be traced to a gate that failed or a gate that was skipped, which need opposite fixes. A green badge alone is not a record.
 - **Naming conventions versus stable APIs.** Do not rename a published API to comply with a naming convention. Keep the stable surface, give new surfaces the clear names, and bridge with an adapter that states when it will be removed.
+
+- **How the gate decays.** Flags trimmed from the commands to save CI time (review such a change as a change to the gate, not as minutes saved); the review-rejection pass quietly dropped while the badges stay green; universal rules reclassified one by one as waivable local conventions; checklist boxes ticked from a template with pointers that no longer resolve. Each keeps the visible artifacts and verifies less, so compare the CI configuration with the command list and follow a sampled pointer to its evidence. Require the four commands in branch protection so they cannot be skipped. A hotfix that bypasses the review pass under incident pressure says so in the record and runs the pass afterwards.
+- **A failed required command is fixed, not rerun.** `fmt`, `clippy` and `build` are deterministic for the same source and toolchain; a test command that flakes is reporting test-isolation or environment debt. Take toolchain updates as scheduled changes so new lints arrive as planned work.
+- **Gate cost is fixed per handoff.** Automate the commands and the record, and prefer small frequent handoffs. Batching work into one large change to pay the gate less often makes the review pass shallow and defects harder to attribute.
 # rust-toolchain.toml
 [toolchain]
 channel = "1.80.1"
