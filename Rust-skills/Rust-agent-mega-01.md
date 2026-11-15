@@ -4172,6 +4172,9 @@ Rule to test to gate:
 - The commands catch what a machine can see: format, lints, failing tests, build breaks. They cannot see an unmeasurable requirement, a layer leak that compiles, a design that cannot be tested in isolation, or concurrency that passed one run. Check those by reading, and ask of every design: what here cannot be tested?
 - A pinned `clippy -- -D warnings` gate can start failing after a toolchain update with no code change, because new lints arrive; that is intended. If features are mutually exclusive, `--all-features` cannot build: document the feature sets the gate runs instead.
 - Read the review rejections at planning time as well; they are cheapest to act on before the architecture is fixed.
+
+- **Gate record at handoff.** With a release or handoff claim, attach: the four command results and the toolchain version they ran under; the risk classification and whether the advanced gates ran; each checklist item with a pointer to the test, doc or threshold that makes it true (a clean grep output is a valid pointer for the placeholder item); and the verdict of the review-rejection pass. A later defect can then be traced to a gate that failed or a gate that was skipped, which need opposite fixes. A green badge alone is not a record.
+- **Naming conventions versus stable APIs.** Do not rename a published API to comply with a naming convention. Keep the stable surface, give new surfaces the clear names, and bridge with an adapter that states when it will be removed.
 # rust-toolchain.toml
 [toolchain]
 channel = "1.80.1"
