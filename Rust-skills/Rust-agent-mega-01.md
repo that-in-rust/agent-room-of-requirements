@@ -201,6 +201,10 @@ Working terms:
 - **Opaque error:** an error meant for propagation and display, not detailed matching.
 - **Generated surface:** code produced from a schema or tool whose source of truth lives elsewhere.
 
+- **Idiomatic means fewest hidden contracts.** Idiomatic Rust is the smallest design that makes ownership, invalid states, failure, task lifetime and dependency direction visible. It is not the most types, the most generics, the fewest clones or the deepest abstraction. Do not apply an idiom list mechanically: keep a concrete type until callers need an abstraction, add a trait only at a real substitution seam, take owned values at real ownership boundaries, stay synchronous when nothing needs async, and keep the repository's existing error convention. `AsRef<str>` earns its place only when it simplifies real callers without ambiguous conversions. A newtype with no validation, `Arc` by habit and a benchmark with no stated constraint copy the shape of an idiom without its purpose.
+- **Where contracts hide.** SemVer effects of a public signature, allocations inside ergonomic conversions, lock guards held inside helper functions, cancellation after a partial effect, object safety of a trait, feature combinations, and doctests that compile under a different `cfg`.
+- **Framework evidence is local.** An Axum or Tokio example justifies code on that framework at the locked version. It does not justify the design of a CLI or a parser library.
+
 ### Doctrine for core and standard-library code
 
 - **Lifetimes.** Annotations express real relationships between inputs and outputs. If lifetime reasoning gets harder than the logic, rethink the API shape instead of adding annotations. Prefer scoped borrows to long-lived shared mutable access.
