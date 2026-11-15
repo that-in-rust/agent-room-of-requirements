@@ -4030,6 +4030,8 @@ pnpm tauri build
 - [ ] Rust quality gates pass.
 - [ ] Repo-normal frontend or desktop checks pass for the changed surface.
 
+The gate reads only the artifact: code, capability files, configuration and docs. Intentions are not inputs, so the walk works across a handoff where the closing reviewer lacks the author's context. Tick an item only against something checkable (a linked test, a command log, a capability file) and leave that evidence per section, with a reason for each waived convention; a ticked list with no linked tests is not a pass. If the commands could not be run, say the review was inspection-only. Scale the walk to the changed boundary: a docs-only change can skip the bundle build with the reason recorded. A sidecar change is the longest walk: check supervision, bounded startup, permission scope and the packaging declaration separately. Gate rules name Tauri 2 mechanisms (capability syntax, channels, the store plugin, the updater), so keep the intent and check the mechanism against the project's Tauri version.
+
 ### Tauri anti-patterns
 
 Reject these by default:
