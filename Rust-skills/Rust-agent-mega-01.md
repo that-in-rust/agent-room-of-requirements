@@ -2107,6 +2107,8 @@ unsafe impl<T: Sync> Sync for MyType<T> {}
 
 - **Benchmark pitfalls.** A debug build cannot support a production claim, an average hides the tail, one run gives no precision, and dead-code elimination can remove the work being measured. Clones do not tell you allocations: measure them. Declare the input distribution, toolchain, target, build profile and features; assert that both versions return identical results; report variance. Noise sources include CPU frequency scaling, allocator caching, cache warmth, hash order and async runtime startup. A microbenchmark supports only the measured operation on that machine. Do not ban `clone` because one microbenchmark was faster, and keep the simpler version when the requirement is already met.
 
+- **Let the measurement reject work.** Performance evidence is strongest when it can show an optimization is unnecessary or damages a contract. Run correctness tests before measuring, and reproduce a result on a second run before acting on it.
+
 ### Memory-efficiency examples
 
 ```rust
@@ -4275,6 +4277,9 @@ Rule to test to gate:
 - **False proxies.** Zero Clippy warnings do not prove the design, fewer clones do not imply speed, and more traits do not imply testability. The useful signal is fewer surprises at boundaries: callers, errors, tasks and features behave as the design said they would.
 - **Scope a change by contract crossings, not by size.** Count public items, downstream callers, error variants, spawned tasks, locks and channels, external effects, feature sets and MSRV targets. A small patch that changes a public enum, cancellation semantics or feature resolution needs the full gate; a broad rename can be reviewed as one unit once behavior and contracts are shown unchanged. Split a change by public API, runtime lifecycle, persistence effect, dependency layer or feature matrix.
 - **Where a review misses callers and code.** Proc-macro expansion, build scripts, examples compiled as downstream crates, doctest features, hidden default features, transitive runtime dependencies, target-specific dependencies, callers outside the repository, and tests that run on a different runtime flavor.
+
+- **When a change is too large for one review.** The measure is evidence closure: one owner can list the affected contracts and verify their callers, errors, task lifetimes, features and rollback. Line count is not the trigger. Split when that closure fails, along a service, runtime, public contract, migration phase, feature family or rollback unit, and keep one compatibility matrix and one integration owner across the slices. Couplings that defeat a split: shared types between nominally separate crates, build scripts crossing layers, feature unification, database migrations that outlive binaries, and a rollback order that differs from the deployment order.
+- **Looking up current behavior.** Search by the exact obligation and the owning source ("lock guard across await" in the Tokio docs for the locked version), not by a general phrase. Open the source; a search snippet is not evidence. Version traps: stable versus nightly, Tokio major versions, Axum examples on unreleased branches, Cargo feature-resolver changes, deprecated Clippy lints, and an MSRV policy that is stricter than what the compiler accepts.
 
 ### Completion contract for an agent
 
