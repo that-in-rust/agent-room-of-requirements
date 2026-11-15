@@ -1565,6 +1565,17 @@ Tests round-trip representative payloads, assert that the subject constants matc
 - **Test across a corpus of grammars.** Keep vendored grammar versions apart from production. A harness compiles queries and parses samples for each and reports failures per grammar.
 - **External tools are candidates.** Detection, installed-or-not checks, installation and version metadata for an external tool sit behind one trait that receives a command runner. Tests pass a fake runner.
 
+**Translators, interpreters and analysis hosts.**
+
+- **A translation unit is one module.** A small language or translation file exposes "parse from text" and "execute into a target". Parsing, semantic checks, traversal mode, cancellation and output building sit behind those calls, so callers never sequence them. Tests use only the public entry points: a valid input, an undefined name, an unused name, a missing global and a cancelled run.
+- **Interpreter extensions are a named function registry.** Functions are registered by name over a standard set. Each consumes its arguments through a small interface that ends with a "finish" call, so too few and too many arguments are both errors. Test through the interpreter, not the function structs.
+- **A virtual file system between I/O and analysis.** Parsers and analyses never read the filesystem. A loader trait does the I/O; the virtual file system assigns file identities and merges changes. Tests use an in-memory loader and check that create, modify, delete and excluded files produce the expected changes.
+- **One analysis context owns the caches.** A static-analysis tool keeps compiler handles and derived data in one context with a memoised "translate this item" method. Individual checks consume the context. A test runs two checks over one item and asserts a single translation.
+- **A heavy external engine sits behind a request server.** When an analysis depends on a slow or non-thread-safe engine, send it a serialisable, hashable request holding the program and the engine configuration. Caching and reproducibility then follow from the request. Tests cover stable hashing, round trips and one request against a server bound to an ephemeral port.
+- **Plugins get a request-scoped adapter.** A host that runs plugins over its storage gives each call an adapter holding the request context and a storage reference. Routing, version checks and error conversion stay in the host. Tests go through the host's entry point with a fake plugin registry.
+- **Team-specific checks are loadable.** Organisation lints are separate libraries selected in workspace metadata, each with its own configuration. A compiler-backed tool pins its toolchain version and treats it as part of its interface.
+- **Platform wrappers document caller duties.** A crate over native platform features has a narrow builder and `cfg`-gated adapters. Event-loop, thread and lifetime requirements are written down as part of the interface. Compile checks run for every target.
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -2083,6 +2094,11 @@ fn build_trials() -> Vec<Trial> {
 **Test a plugin loader with built fixtures.** For a tool that discovers and loads plugins, drivers or lint libraries, an integration test builds small fixture crates in a temporary directory from a template, with a sanitised environment so no toolchain variable leaks in from the developer's shell. It points the loader at them through its own environment variable, runs the real binary and asserts on the output. Cases: the same name under two toolchains, the same name under two paths, missing metadata, and an explicit override.
 
 **A real-socket harness behind a feature.** When tests need a real listening server, a `test-support` feature exposes a harness that owns temporary storage, runs the server on a background thread with its own runtime, and reports the bound address. Its `Drop` closes the shutdown channel and joins the thread. When calling the router as a service is enough, do that and start no thread. Functions that probe the outside world take the probe as a parameter (an `exists` closure, an environment value), so tests need no real file system.
+
+**Test worlds and failure states.**
+
+- **Miniature library fixtures.** Tests for a compiler, parser or analyser use a small stand-in for the standard library, divided into named regions. A header line in each test lists the regions it needs. One test confirms that unrequested regions are stripped.
+- **A panicking caller closure poisons the transaction.** Storage that runs caller closures during a mutation records a panic as transaction state, and the next commit returns a poisoned error. A test panics inside the closure, sees the commit fail and reads the earlier data back.
 
 ### Verification rules by risk
 
