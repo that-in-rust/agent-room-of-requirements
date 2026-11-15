@@ -529,6 +529,55 @@ pub trait EntityProcessorBehavior {
 
 - Keep domain logic testable without network, database or runtime dependencies.
 
+**Algorithms over minimum behavioural traits.** When a library has several storage representations, define the smallest composable traits each algorithm needs and implement them per backend, so one algorithm serves all.
+
+```rust
+pub trait IntoEdges: IntoEdgeReferences + IntoNeighbors {
+    type Edges: Iterator<Item = Self::EdgeRef>;
+
+    fn edges(self, node: Self::NodeId) -> Self::Edges;
+}
+
+pub fn dijkstra<G, F, K>(graph: G, start: G::NodeId, goal: Option<G::NodeId>, edge_cost: F) -> HashMap<G::NodeId, K>
+where
+    G: IntoEdges + Visitable,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    K: Measure + Copy,
+```
+
+- Start a new algorithm from the weakest bounds and add a stronger trait only when a concrete operation requires it.
+- A new representation proves every small trait contract through shared conformance tests.
+- Do not abstract when the algorithm depends on representation-specific mutation, layout or asymptotic guarantees that the traits do not capture.
+- Optional plugins are discovered from a small manifest or explicit registry, and one coordinator calls lifecycle hooks in an explicit order. A plugin that fails to load is reported at startup, never silently skipped. Adding a hook updates the trait and the coordinator together, with a fake-plugin test.
+
+**One trait per language, one factory.** Each language owns its grammar, meaningful node kinds, symbol extraction and import resolution behind one trait, and the pipeline is generic over it.
+
+```rust
+pub trait Language: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn get_ts_language(&self) -> tree_sitter::Language;
+    fn get_meaningful_kinds(&self) -> Vec<&'static str>;
+    fn extract_symbols(&self, node: Node, contents: &str) -> Vec<String>;
+    fn extract_imports_exports(&self, node: Node, contents: &str) -> (Vec<String>, Vec<String>) {
+        let _ = (node, contents);
+        (Vec::new(), Vec::new())
+    }
+    fn resolve_import(&self, import_path: &str, source_file: &str, all_files: &[String]) -> Option<String>;
+}
+
+pub fn get_language(name: &str) -> Option<Box<dyn Language>> {
+    match name {
+        "rust" => Some(Box::new(Rust {})),
+        "python" => Some(Box::new(Python {})),
+        _ => None,
+    }
+}
+```
+
+- A default empty implementation silently omits data for a language that has not implemented the richer method. Split the trait into capabilities when defaults become misleading.
+- Add a fixture for every non-default method that callers rely on.
+
 ### Layer and dependency examples
 
 ```rust
@@ -797,6 +846,207 @@ The baseline pipeline continues when the service is absent. Tests inject a mock 
 - To search many shard, project or tenant indexes with one query, compute the expensive query representation once above the shard loop and return an explicit error when it cannot be computed; search each shard, merge all hits, sort globally and apply the limit only after the global sort. Scores are comparable only when every shard uses the same model and normalisation. A per-shard metadata lookup failure is handled per hit, not fatal.
 
 **Per-function syntax-tree metrics.** Define the traversal boundary first: the walk for one function stops when it meets a nested function, closure or lambda, so nested scopes are not counted into the parent, while whole-file metrics do not stop. The node kinds that count as a decision are a documented policy list, and fixtures include nested functions.
+
+**Side effects behind a trait that carries the policy context.** Put environment-dependent side effects behind a small trait and pass the policy context alongside each operation.
+
+```rust
+#[async_trait]
+pub trait ExecutorFileSystem: Send + Sync {
+    async fn read_file(
+        &self,
+        path: &AbsolutePathBuf,
+        sandbox: Option<&FileSystemSandboxContext>,
+    ) -> FileSystemResult<Vec<u8>>;
+
+    async fn write_file(
+        &self,
+        path: &AbsolutePathBuf,
+        contents: Vec<u8>,
+        sandbox: Option<&FileSystemSandboxContext>,
+    ) -> FileSystemResult<()>;
+}
+```
+
+- The adapter, not the caller, picks the safe backend (local, remote, sandboxed).
+- Higher-level modules add no direct `std::fs` calls. They extend the trait or its adapters, so sandbox behaviour stays uniform.
+- An async trait method must not hide blocking I/O.
+- Skip the trait when direct `std::fs` is the whole domain and there is no policy boundary.
+- When one operation runs over backends with different execution models, the common trait holds orchestration and cache contracts, and each backend decides batching, filtering and I/O. Document a default no-op for an optional optimisation, so callers do not assume it happened.
+
+**Platform facade over private `cfg` backends.** One public API sits over OS-specific modules selected at compile time.
+
+```rust
+#[cfg(target_os = "windows")]
+#[path = "windows/mod.rs"]
+mod platform;
+#[cfg(target_os = "macos")]
+#[path = "macos/mod.rs"]
+mod platform;
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+compile_error!("The platform you're compiling for is not supported");
+
+pub struct EventLoop<T: 'static> {
+    pub(crate) event_loop: platform::EventLoop<T>,
+    pub(crate) _marker: PhantomData<*mut ()>, // neither Send nor Sync
+}
+```
+
+- An unsupported target fails at compile time, not at run time.
+- Public wrapper types encode `Send` and `Sync` deliberately. An accidental auto trait is an API promise, and it can be unsound.
+- Compile tests assert which public types are `Send` or `Sync`, for example with `fn needs_send<T: Send>() {}`.
+- Use run-time selection instead when backends are chosen at run time.
+
+**Indexers, extractors and analysis sessions.**
+
+- An indexer that filters aggressively returns both the included files and the excluded roots, so a caller can explain why a file is absent. Skip lists are per mode (`enum IndexMode { Fast, Full }`), because a hardcoded list can hide real source. Tests cover the selected files and the excluded report for each mode.
+- Per-language extraction dispatches with one exhaustive `match` into dedicated functions that all emit one normalised record and reuse shared helpers. An unsupported language is a silent no-op only when callers expect partial extraction.
+- An adapter between an interface type and a native type checks for the native-backed wrapper first and returns the inner value without copying; otherwise it copies explicitly. Express the fast path with `fn as_native(&self) -> Option<&Native>` on the trait, not with `Any` downcasts at call sites. The doc comment states that the fast path aliases the original.
+- Optional behaviours scoped to one execution are named keys declared together and carried in a context object passed down the execution path, not constructor parameters or global switches.
+- An expensive batch analysis is a session object that owns its resources for a bounded lifetime and streams results to a caller-owned sink (`FnMut(Finding) -> Result<(), E>`), so the host decides rendering and failure policy. Return a plain value when results are small.
+- Help text, completion candidates and defaults for plugin options are generated from the same registry and descriptors used at run time, so they cannot drift.
+- Wrap a generated syntax tree in a thin newtype (`pub struct Term(generated::Program);`) that implements the platform's capability traits by delegation, so generated internals are not the public surface.
+- To lower a chained source form such as `a = b = c = expr`, walk to the terminal expression while accumulating obligations (names with spans), fail with a typed error on a shape that cannot be lowered, then fold the obligations back in order. Every generated node keeps its source span.
+- A developer tool that needs a persistent project list without a database makes the filesystem layout the durable ledger: one directory per project, a metadata file, known artifact names. Every metadata field is written by the writer and read by the loader. Create a project in a temporary directory and rename it into place.
+- One command surface over many toolchain frontends goes through one factory that normalises the language name, checks availability in an explicit fallback order, and normalises the artifact format. Tests pin the fallback precedence.
+
+**Hot-reload boundary.** Convert watcher or compiler output into a runtime descriptor, mark dependent objects dirty, and rebuild them lazily at the next use. Never mutate them in place from the watcher thread.
+
+```rust
+pub fn set_shader_code(&mut self, code: Vec<u32>) {
+    self.shader_code = code;
+    self.should_recreate = true;
+}
+
+pub fn get_pipeline(&mut self) -> anyhow::Result<&Pipeline> {
+    if self.should_recreate {
+        self.rebuild_pipeline()?;
+    }
+    self.pipeline.as_ref().context("pipeline was never built")
+}
+```
+
+- A compile error is not fatal: report it and keep the last working module. A failed rebuild falls back to the previous good object.
+- Throttle rebuilds. Outside a demo the watcher thread has a stop signal and is joined.
+
+**Query operators, values and planner nodes.**
+
+- A query-plan operator is a trait with the full lifecycle (initialise, consume, reset, clone for another plan) and uniform child traversal. A new operator implements every method before it is registered. Prefer an enum and `match` when the operator set is small and closed.
+- A dynamic value that can hold borrowed, shared or owned payloads makes ownership explicit in the representation: `Cow<'a, str>`, `Arc<str>`, or an enum with an `into_owned()` step before the value outlives its source. A new variant adds construction, comparison, hashing, display and clone behaviour together.
+- When a pipeline is declared before it runs, separate declaration from compilation and compile exactly once at the first consumption. Lazy construction moves errors to first use, and the API doc says so.
+- Planner and AST nodes that are transformed by copying stay immutable after construction: private fields, read-only accessors, and `with_annotation(..) -> Self` building a new node. Cache no reference into the old node across a clone.
+- Related grammars or dialects share one core. Each dialect extends it through a helper that rejects a name conflict, and corpus tests run for the base and for every derived grammar.
+
+**Static analysis: matcher algebra and finding identity.** A multi-language analyser compiles language-specific AST shapes into one small algebra of explicit variants.
+
+```rust
+pub enum NodeMatcher {
+    Attribute { root: String, field: String, description: String },
+    Call { canonical: String, description: String },
+    MethodNameRegex { regex: CompiledRegex, description: String },
+    TypedAssignTarget { type_name: String, description: String },
+    LiteralString { description: String, regex: Option<String> },
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct TaintSpec {
+    pub sources: Vec<NodeMatcher>,
+    pub sinks: Vec<NodeMatcher>,
+    pub sanitizers: Vec<NodeMatcher>,
+}
+```
+
+- New rule semantics are a new variant, at least one language engine and a parity test, never a raw string.
+- A variant that a language engine does not support must not silently do nothing. A coverage test lists `(variant, language)` support and reports unsupported pairs.
+- A suppression baseline or report fingerprint is a deterministic hash of normalised domain facts (rule ID, relative path, location, message) with a separator byte between fields, never an object ID or address.
+- Too many fields make the fingerprint fragile; too few suppress unrelated findings. Where line numbers churn, anchor on a snippet hash or AST path. Keep a path that still recognises older fingerprints.
+
+**Ambitious algorithm with a conservative fallback.** When a smarter algorithm sits on top of a trusted conservative one, wrap it in cheap preconditions, postconditions and a fallback path.
+
+```rust
+if is_binary(base) || is_binary(ours) || is_binary(theirs) {
+    let mut stats = MergeStats::default();
+    stats.used_fallback = true;
+    return git_merge_file(base, ours, theirs, &mut stats);
+}
+if base.len() > 1_000_000 || ours.len() > 1_000_000 || theirs.len() > 1_000_000 {
+    return line_level_fallback(base, ours, theirs, file_path);
+}
+```
+
+- Preconditions cover binary input, a size cap and supported syntax. Postconditions catch suspicious output such as lost or duplicated content.
+- Record that the fallback was used and why, and monitor it. A silent fallback masks quality problems in the smart path.
+- Tests include an adversarial input that forces the fallback, and one proving the smart path leaves unchanged lines untouched.
+- A conflict renderer may add parsable metadata (entity type and name, confidence, a deterministic hint) and narrow the marked region to the lines that differ. Keep a strict standard mode for downstream tools, and give every marker format a round-trip parse test.
+
+**Version-vector claims for multi-agent coordination.** Separate ownership intent from causal history.
+
+- A claim is an advisory lock. A per-entity version vector, one counter per agent, records causal edit history, so concurrent changes are detected (neither vector dominates) and not overwritten.
+- An agent editing an entity updates the claim, heartbeat, content hash and version vector together, and appends to an operation log.
+- Safety is never inferred from `claimed_by` alone. Stale-agent cleanup and conflict detection run regularly.
+- A database transaction is simpler for single-writer state or hard locks.
+
+**Parsers, lexers and grammars.**
+
+- A large declarative specification (grammar, schema, rule set) is composed from domain-sized modules with one top-level integration point. Composition fails on a duplicate rule name; a later module never silently wins.
+- Operators that share one parse shape are a data table, `const BINARY_OPS: &[(Token, Prec, Assoc)]`, driving one precedence-climbing rule. Adding an operator is a table row. A standalone rule is written only when the operator changes the child shape.
+- A delimiter whose closing tag must equal its opening tag (heredocs, dollar-quoted strings, raw strings with a variable number of `#`) needs lexer state: store the opening tag when scanned, accept the end only when the same tag recurs, then clear it.
+- Dynamic lexical context is a small serialisable lexer state, not grammar recursion. Release replaced state on every path, and test serialise and deserialise for incremental parsing.
+- In an indentation-sensitive language, layout is parse state. Keep an indent stack (`Vec<u32>`), emit an indent when a line's indentation exceeds the top and a dedent when it is smaller, emit neither inside brackets, and delay a dedent until comments that belong to the block are consumed.
+- Indentation tests cover blank lines, comment-only lines, bracketed continuations, dedents at end of input, and serialisation of the stack.
+- When token shapes overlap, try the most specific alternative first and demote broad fallbacks. Add a fallback only after a corpus case proves it is needed, and cover every fallback branch with a corpus example.
+
+**Rule engines, translators and linters.**
+
+- A rule engine with many detectors filters rules by language once and precomputes buckets by entity kind, so each entity sees only rules that can apply.
+
+```rust
+struct RuleBuckets {
+    function: Vec<FunctionRule>,
+    interface: Vec<InterfaceRule>,
+    type_alias: Vec<TypeAliasRule>,
+}
+```
+
+- Route by matching on the entity's enum variant, not on a string-key prefix.
+- A new symbol kind updates the signature type, the translator, the rule-target enum, the bucket map and one rule fixture together. With a handful of rules, plain conditionals are clearer.
+- A translator from a language-specific tree to the common model is pure and deterministic: no I/O, logging or global state. Queries are compiled once per language, and the caller adds file and repository context one layer up.
+- Query capture names and emitted keys are a contract. Each new query gets a fixture proving the emitted entity reaches the expected bucket. Overloads get a disambiguating counter, so same-named entities do not overwrite each other.
+- A lint-rule trait has default no-op hooks, so a rule can run on raw source, on selected node kinds, or on state accumulated during traversal.
+
+```rust
+pub trait Rule {
+    fn get_target_ast_nodes(&self) -> &[&str] { &[] }
+    fn check_source(&mut self, _source: &str) -> Vec<LintIssue> { Vec::new() }
+    fn check_node(&mut self, _node: &Node, _source: &str) -> Vec<LintIssue> { Vec::new() }
+    fn finalize(&mut self, _source: &str) -> Vec<LintIssue> { Vec::new() }
+}
+```
+
+- The linter walks the tree once and dispatches each node only to the rules registered for its kind, through a kind-to-rule-index map.
+
+**Formatters and structural rewrites.**
+
+- A formatter or codemod lets hand-maintained sections opt out. It replaces each protected region with a reversible placeholder before any opinionated pass and restores it byte-for-byte afterwards, on every path including errors.
+- The placeholder is unlikely to collide with real source. Each pass states whether it runs before or after restoration.
+- The syntax tree is reparsed whenever the content string changes, so no pass reads a stale tree. A validation stage checks that the output still parses and that formatting is idempotent.
+- Pair every structural rewrite with a cheap multiset invariant: count entity signatures before, subtract after, require all zeros, and return the original text on failure.
+
+```rust
+let mut diff = HashMap::<TopLevelTokenSignature, i32>::new();
+for signature in signatures_of(original_source)? {
+    *diff.entry(signature).or_insert(0) += 1;
+}
+for signature in signatures_of(rewritten_source)? {
+    *diff.entry(signature).or_insert(0) -= 1;
+}
+if diff.values().any(|count| *count != 0) {
+    return Ok(original_source.to_owned()); // an entity was lost or duplicated
+}
+```
+
+- Reordering uses a stable sort, carries leading comments and attributes with their declaration, and leaves unknown nodes in place.
+- Do not reorder when declaration order is semantically significant and nothing verifies dependencies.
 
 ### Domain context packs
 
@@ -1204,6 +1454,33 @@ pub fn parse(_s: &str) -> Result<(), Error> { Ok(()) }
 
 **Replaying a recorded event stream on another schedule.** Wrap the unchanged iterator in a small adapter that rewrites only the schedule field (offset to a new start time, then compress by a ratio). The adapter initialises its time functions lazily from the first item, so test the empty stream, a first-item anomaly, a future offset, a past offset, no compression, and offset with compression together.
 
+**One conformance suite for many backends.** Separate "run this backend" from "validate this algorithm".
+
+```rust
+trait PageRankBackend {
+    fn run(&self, graph: &Graph, params: &Params) -> Output;
+}
+
+fn conformance_suite<B: PageRankBackend>(backend: &B) {
+    for case in fixtures() {
+        let got = backend.run(&case.graph, &case.params);
+        assert_close(&got, &case.expected, case.tolerance);
+    }
+}
+```
+
+- The shared fixture owns canonical inputs, expected outputs and tolerances. Expected output is captured independently of any implementation.
+- Choose the floating-point tolerance per metric: absolute, relative or mixed. Relative deviation misbehaves near an expected zero.
+- Define the hook and the sample-resource tests before backend code.
+- A fixture loader normalises at the parser boundary: skip blank lines and `#` comments, split with `split_whitespace`, expand undirected input into symmetric edges in one place, and report the line number and token on failure.
+
+**Registration coverage and query templates.**
+
+- Wiring from operation type to handler lives in one registration function. A test iterates the operation enum (`strum::IntoEnumIterator`) and asserts every operation has a handler, because compile success does not prove coverage.
+- When large query text lives in template files (`include_str!`), keep three layers apart: the text, extraction of values from the domain operation, and one converter that owns quoting and escaping per placeholder kind.
+- Raw substitution is open to injection. Never feed it user-controlled values; use bound parameters.
+- A fixture test prepares the final query for each template and fails on any unreplaced placeholder.
+
 ### Verification rules by risk
 
 - **Bug-fix rule.** Reproduce the bug, write or strengthen a regression test, see it fail on the broken state, apply the fix, then see the regression test and the broader suite pass. Do not claim a regression test exists if it was never observed failing.
@@ -1323,6 +1600,124 @@ pub trait ShapeBuilder {
 Test each layout separately. Not for ordinary structs where plain fields are clearer.
 
 **Lazy plans carry `#[must_use]` and their metadata.** A value that does nothing until consumed says so (`#[must_use = "zipping producers is lazy and does nothing unless consumed"]`). A lazy traversal plan records the dimension and memory layout of its parts so it can pick the efficient execution order; all parts must have equal dimensions, checked when a part is added and before any unchecked indexed access. Prefer such a lock-step zip to hand-written index loops over several arrays.
+
+**Normalised value objects at a security boundary.** Parse and normalise once into a named type; every policy check, wildcard expansion, loopback test and audit log then uses that type, never the raw string.
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Host(String);
+
+impl Host {
+    pub fn parse(input: &str) -> Result<Self> {
+        let normalized = normalize_host(input);
+        ensure!(!normalized.is_empty(), "host is empty");
+        Ok(Self(normalized))
+    }
+}
+
+pub enum NetworkDecision {
+    Allow,
+    Deny { reason: String, source: NetworkDecisionSource },
+}
+```
+
+- A deny decision carries its reason and its source.
+- Keep the raw input when diagnostics or audit need it.
+- Write tests first for odd inputs: bracketed IPv6, trailing dots, ports, wildcard patterns, the empty host.
+- A fluent builder accumulates intent, and one `build()` converts it into a validated artifact. Tests call `build()` and never inspect private builder state.
+
+**Joined diagnostic views state provenance.** A view that joins persisted records with live configuration or health carries an explicit marker for each joined part, so absence is not ambiguous. Prefer `enum Joined<T> { Present(T), Missing }` over a `bool` beside an `Option`, since the two can disagree. Tests cover present and missing joins.
+
+**Unit-bearing command-line values.** Sizes such as `10MB`, durations, percentages and rates are parsed once at the command boundary into a domain type (a clap `value_parser` returning `ByteSize(u64)` or `Duration`), so downstream code never repeats unit parsing.
+
+- The suffix policy is explicit and documented: `KB` is 10^3 and `KiB` is 2^10.
+- An unknown suffix or extra tokens is an error that quotes the input. Overflow is checked.
+- Tests cover a bare number, each suffix, case-insensitivity, fractional values and invalid input.
+
+**Opaque text offsets and ranges.** Parsers, editors, diagnostics and formatters pass a named offset and range type, never a naked `usize`.
+
+```rust
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TextSize {
+    pub(crate) raw: u32,
+}
+
+pub struct TextRange {
+    start: TextSize,
+    end: TextSize, // private: the constructor asserts start <= end
+}
+```
+
+- The name says the unit: bytes, not chars or UTF-16 units. Convert at the boundary.
+- A `u32` caps a file at 4 GiB, so conversion from `usize` stays fallible through `TryFrom`.
+
+**Capability arguments for dangerous operations.** Process execution, network access, filesystem roots and temporary files require an explicit capability argument in the function signature.
+
+```rust
+pub struct ExecCap(()); // private constructor: created only in main or one trusted module
+
+pub fn run_tool(cap: &ExecCap, program: &Path, args: &[OsString]) -> io::Result<Output> {
+    let _ = cap;
+    std::process::Command::new(program).args(args).output()
+}
+```
+
+- Back the token with a repository lint that forbids the raw API outside the wrapper module: `disallowed_methods` and `disallowed_types` in `clippy.toml`, for example for `std::process::Command::new` and `std::env::set_var`. Without the lint the token is only social discipline.
+- Generated code near process execution goes through the wrapper, never the raw call.
+
+**Parsed names for user-facing filters.** When a filter must address rich entities (impl blocks, generics, lifetimes, wildcards) that plain strings cannot, model the name as a parsed AST such as `enum PatternElem { Ident(String, GenericArgs), Impl(Expr), Wild }`.
+
+- The parse error carries the position and the input.
+- A DSL is a long-term promise about syntax and error text. New syntax updates the AST, parser, printer and round-trip tests (`parse(print(x)) == x`) together.
+- Prefer existing paths or structured selectors when they suffice.
+- A deep deserialisation failure reads as a path from root to leaf: use `serde_path_to_error` or per-field context, and bound the size of any fragment quoted in the message.
+
+**Build-orchestration builder.** An API with many optional flags is a fluent, serialisable builder with one `build()` boundary.
+
+```rust
+pub fn capability(mut self, capability: Capability) -> Self {
+    self.capabilities.push(capability);
+    self
+}
+
+// One explicit lowering function turns options into tool flags.
+target_features.extend(builder.capabilities.iter().map(|cap| format!("+{cap:?}")));
+target_features.extend(builder.extensions.iter().map(|ext| format!("+ext:{ext}")));
+```
+
+- Required inputs go in `new()`; options go in consuming setters.
+- `build()` rejects incompatible combinations with a clear error, since fluent setters hide them.
+- A new option adds the field, the setter, CLI and serde metadata, the lowering, and an incompatibility test.
+- Use typestate when options need compile-time sequencing.
+
+**Scalar-or-array argument.** Represent broadcastability as a small trait capability, instead of duplicating every entry point or materialising a repeated constant array.
+
+```rust
+pub trait Datum {
+    /// Returns the value and whether it is a scalar.
+    fn get(&self) -> (&dyn Array, bool);
+}
+
+impl<T: Array> Datum for T {
+    fn get(&self) -> (&dyn Array, bool) {
+        (self, false)
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Scalar<T: Array>(T);
+
+impl<T: Array> Datum for Scalar<T> {
+    fn get(&self) -> (&dyn Array, bool) {
+        (&self.0, true)
+    }
+}
+```
+
+- The implementor interprets the scalar flag and the scalar's null state correctly.
+- Write array-array, array-scalar and scalar-scalar tests, with nulls, before optimising the inner loop.
+- Keep separate functions when scalar and vector operations differ in semantics.
+- A checked constructor's error quotes both sides of a mismatch, such as the column count and the field count.
 
 ### Core idioms with code
 
@@ -1643,6 +2038,27 @@ fn save_file_atomic(content: &str, temp_dir: &Path, file_path: &Path) -> Result<
 
 Create the temporary file in a directory on the same filesystem as the target so `persist` is an atomic rename. Generation is idempotent. A new wrapped item is a spec-list entry plus generator tests. Validate signatures at generation time, or the error surfaces at run time in the foreign call.
 
+**One inventory macro for a variant matrix.** When the same matrix (variant, property type, split type) drives several generated sites, keep one inventory macro that takes a callback macro, and expand every site from it.
+
+```rust
+macro_rules! for_all_classified_sources {
+    ($macro:path $(, $extra_args:tt)*) => {
+        $macro! {
+            { { Mysql }, { Postgres } },
+            {
+                { Kafka, $crate::source::kafka::KafkaProperties, $crate::source::kafka::KafkaSplit },
+                { Pulsar, $crate::source::pulsar::PulsarProperties, $crate::source::pulsar::PulsarSplit }
+            }
+            $(, $extra_args)*
+        }
+    };
+}
+```
+
+- Adding a variant edits only the inventory, and the compiler then checks the enum, string matching, dispatch and registration sites.
+- Write no one-off match arm elsewhere.
+- Macros obscure generated code and error messages. Use plain enums and matches when the set is small.
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
@@ -1770,6 +2186,33 @@ Repeatedly pushing ascending values into a `BinaryHeap` is its slow path; build 
 **Edit-heavy, then read-heavy structures.** Mutations append to a pending buffer, and an explicit, named consolidation step (`update()` or `finish()`) sorts, deduplicates, applies removals and recomputes totals before read-optimised algorithms run. Reads before consolidation may see stale counts, so make that a type-state (`Builder` into `Frozen`) or a checked error, not a convention. Not when every mutation must be visible immediately.
 
 **Compressed sparse row (CSR) layout.** For a static or mostly static graph, store `offsets: Vec<usize>` of length `vertices + 1` and packed `edge_targets` and `edge_values` arrays; the neighbours of `u` are `edge_targets[offsets[u]..offsets[u + 1]]`. Contiguous arrays give cache-friendly scans and easy parallel partitioning. At construction assert `offsets.len() == vertices + 1`, that offsets are non-decreasing, and that the last offset equals `edge_targets.len()`. Rebuild for major updates instead of inserting in place.
+
+**Total-order priority wrapper for `BinaryHeap`.** Wrap the priority key in a type with an explicit `Ord` to turn the standard max-heap into a min-heap and to give partially ordered keys a deterministic order.
+
+```rust
+pub struct MinScored<K, T>(pub K, pub T);
+
+impl<K: PartialOrd, T> Ord for MinScored<K, T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let a = &self.0;
+        let b = &other.0;
+        if a < b {
+            Ordering::Greater
+        } else if a > b {
+            Ordering::Less
+        } else if a.ne(a) {
+            Ordering::Less // NaN: a policy choice
+        } else {
+            Ordering::Equal
+        }
+    }
+}
+```
+
+- `PartialOrd`, `PartialEq` and `Eq` are implemented consistently with it.
+- Where NaN sorts is a policy choice that can mask a bad cost calculation. Reject NaN at the boundary when it should be an error, or use `f64::total_cmp`.
+- Tests cover equal scores, reversed ordering and NaN.
+- `std::cmp::Reverse` is enough when the key is already `Ord`.
 
 ### Smart pointer decision matrix
 
@@ -1964,6 +2407,28 @@ It is diagnostic only, not error handling, and because it is thread-local it doe
 
 **Extension-facing error shim.** A plugin-facing trait returns a small public error type. A newtype shim with `impl From<InternalError>` maps the cases an extension can act on (a timeout with its duration) to typed variants and everything else to an opaque `Other(message, Box<dyn Any>)` holding the original internal value, so privileged host code can downcast it back while extensions see a stable surface. Both the immediate call error and the error from an awaited callback go through the same shim. Document the downcast escape hatch. Not when callers need the full internal error type as a public contract.
 
+**Diagnostic context combinators.** In CLI, compiler, linter and language-server code, context attachment is built into the error type, so a call site enriches a failure instead of replacing it.
+
+```rust
+pub trait DiagnosticExt: internal::Sealed + Sized {
+    fn context<M>(self, message: M) -> Error
+    where
+        Self: 'static,
+        M: fmt::Display + 'static,
+        Error: From<internal::ContextDiagnostic<M, Self>>;
+
+    fn with_category(self, category: &'static Category) -> Error;
+    fn with_file_path(self, path: impl AsResource) -> Error;
+    fn with_file_span(self, span: impl AsSpan) -> Error;
+    fn with_severity(self, severity: Severity) -> Error;
+}
+```
+
+- Each combinator wraps the original diagnostic in a typed layer and keeps the source.
+- At each `?` in diagnostic-heavy code, decide whether this boundary should add a path, span, category or severity.
+- Chained contexts get noisy. The rendered diagnostic keeps one clear primary message.
+- A simple internal error enum whose context is never shown does not need this.
+
 ### Error and recovery taxonomy
 
 | Error class | Typical boundary | Recovery | Representation | Required tests |
@@ -1986,6 +2451,32 @@ It is diagnostic only, not error handling, and because it is thread-local it doe
 - Box or layer large cold-path error payloads so they do not bloat hot-path `Result` values.
 
 **Public status codes are one taxonomy.** Each public code carries a classification (client error, transient, server error) and a description that tells the client what to do (fix the request, retry later). Retry decisions are read from the classification, not from the message: `enum Status` with `fn class(&self) -> Class` and `fn description(&self) -> &'static str`. A new error goes in the narrowest category. Once public, a name is a compatibility commitment.
+
+**Retry bounds and retry tests.** Retry at least twice before the elapsed-time bound applies: `retry_count < 2 || elapsed < max_retry_time`. Tests assert semantics and not exact jittered delays: a non-retryable error is attempted exactly once, a timeout stops retries, and each retry is logged.
+
+**Undo log for mutations without transactions.** An in-memory mutation system that needs rollback logs each mutation's inverse as data and replays the log backward on failure.
+
+```rust
+enum UndoOp {
+    CreateNode(NodeId),
+    DeleteEdge(Edge),
+    UpdateAttr { id: NodeId, old: Value },
+}
+```
+
+- Each new mutation kind adds its undo record and its rollback path in the same change. An exhaustive `match` enforces it, because one missing kind is a silent consistency gap.
+- Use real transactions when the storage engine provides them.
+
+**Classify retries from the whole error chain.** Walk the source chain (`std::error::Error::source`, or `anyhow`'s `chain().find_map(|e| e.downcast_ref())`) for the innermost typed backend error.
+
+- Retry only when it is explicitly temporary. Pass a typed permanent error through unchanged. Wrap an unknown error as permanent, naming the operation.
+- Never add a broad catch-all retry. A test proves a permanent error passes through after exactly one attempt.
+
+**Routed-resource lookups in a distributed service.** The lookup returns `Result<Arc<Part>, ErrorCode>` with a distinct machine-readable code per miss, such as `SpaceNotFound` and `PartNotFound`, and holds the read lock only for the lookup.
+
+- Every operation starts with the lookup and applies leadership and permission checks immediately after it, before touching the engine.
+- "Leader changed" and "leader lease failed" are distinct codes, so a client can re-route or retry.
+- A local invariant violation still panics; it does not become a status value.
 
 ## 9. Async and concurrency
 
@@ -2024,6 +2515,30 @@ trait EdgeKernel {
 `update` and `update_atomic` must be semantically equivalent, or the sequential and parallel modes diverge. Implement all three hooks together and test under real parallel races. Not when the update needs broad mutable state that cannot be made atomic or partitioned.
 
 **Parallel passes that produce diffs, applied once.** For parallel passes over a shared structure, workers read the unchanged initial structure, each accumulates its own diff plus side results (a rayon `fold` with a per-worker `(DiffBuilder, Accumulator)`, then `reduce` to merge), and one deterministic apply step mutates the structure at the end, so writes never interleave with reads. Merging must be associative and order-independent, or the merged diff is sorted before applying. Peak memory holds all parts and all diffs until the apply. Generate-parts, run-on-part, merge and final apply are separate functions with lifecycle tests. Not when later parts must see earlier mutations.
+
+**Lifecycle as an explicit async state machine.** Each lifecycle state owns its event loop and returns an explicit transition value instead of mutating a global status.
+
+```rust
+pub enum Transition {
+    Stop,
+    Advance(StateHolder),
+}
+
+#[async_trait]
+impl State for Running {
+    async fn next(mut self: Box<Self>, ctx: &mut JobContext) -> Result<Transition, StateError> {
+        tokio::select! {
+            msg = ctx.rx.recv() => { /* handle a control message, maybe Advance */ }
+            _ = tokio::time::sleep(HEARTBEAT) => { /* check liveness */ }
+            _ = log_interval.tick() => { /* periodic report */ }
+        }
+    }
+}
+```
+
+- Allowed transitions are declared in one place. Adding a state updates the state module and the transition declarations together.
+- No new lifecycle path goes through an ad hoc status flag.
+- For a short request handler, a plain enum and `match` is enough.
 
 ### Async runtime discipline, in code
 
@@ -2335,6 +2850,90 @@ loom::model(|| {
 - **Dependency-aware scheduling.** Dependency traversal, timeout interruption, error propagation and removal of the failed task belong to the scheduler; a task exposes `run`, its children and its termination state. Dependent work never bypasses the scheduler.
 - **Engine and callbacks.** The engine owns loading, scheduling, storage and iteration; user code implements a trait with one required method and default no-op lifecycle hooks. Add a hook only when the algorithm needs that state, since an empty default can hide a missed lifecycle need.
 
+**Probe without the lock, then lock around the side effect.** The fast path reads a registry without the mutex; the slow path takes it, re-checks, and only then runs the side effect.
+
+```rust
+static REGISTRY: LazyLock<LanguageRegistry> = LazyLock::new(LanguageRegistry::new);
+static DOWNLOAD_CACHE_LOCK: Mutex<()> = Mutex::new(());
+
+pub fn get_language(name: &str) -> Result<Language, Error> {
+    if let Ok(lang) = REGISTRY.get_language(name) {
+        return Ok(lang);
+    }
+    let _cache_guard = DOWNLOAD_CACHE_LOCK
+        .lock()
+        .map_err(|e| Error::LockPoisoned(e.to_string()))?;
+    if let Ok(lang) = REGISTRY.get_language(name) {
+        return Ok(lang); // another thread loaded it while this one waited
+    }
+    ensure_cache_registered(name)?;
+    REGISTRY.get_language(name)
+}
+```
+
+- A poisoned lock becomes a typed error, not a panic.
+- A global lock can hide a long download. In a service, add a timeout or cancellation and log the wait.
+- Test concurrent first access: N threads, exactly one download.
+- Do not use this when every lookup mutates, or when a stale negative lookup is dangerous.
+
+**Delayed-task scheduler that never runs callbacks under its lock.** Keep a min-heap ordered by due time, `BinaryHeap<Reverse<(Instant, TaskId)>>`, under a mutex that protects only heap bookkeeping.
+
+- Pop the due task under the lock, drop the guard, run the callback, then lock again. Insertion and abort are never blocked by long work.
+- Callbacks tolerate concurrent scheduler operations. An abort that races with a running task waits or is reported, never ignored.
+- This is not for persistent or distributed jobs.
+
+**Active and pending copies.** When readers need a stable structure while background work prepares a replacement, keep an active copy and an optional pending one.
+
+- A modification clones the active copy into pending if none exists and populates pending independently.
+- Promotion swaps pending into the active slot atomically (`ArcSwap`, or `active = pending.take()` under a short write lock) and repairs every dependent object that referred to the old copy in the same step.
+
+**Keyed resource with `Connecting` and `Connected` states.** For an expensive keyed resource whose miss starts async setup, store both states under the same key and decide a local action under the lock.
+
+```rust
+enum Action {
+    Return(ManagedHandle),
+    AwaitConnection(watch::Receiver<()>),
+    StartConnection(watch::Sender<()>),
+}
+
+let action = match self.tunnels.lock().expect("lock poisoned").entry(key.clone()) {
+    Entry::Occupied(mut o) => match o.get_mut() {
+        State::Connected(handle) => Action::Return(ManagedHandle::new(handle, self, &key)),
+        State::Connecting(rx) => Action::AwaitConnection(rx.clone()),
+    },
+    Entry::Vacant(v) => {
+        let (tx, rx) = watch::channel(());
+        v.insert(State::Connecting(rx));
+        Action::StartConnection(tx)
+    }
+};
+// The guard ended with the statement above. Every .await happens after it.
+```
+
+- Waiters re-check the map after the watch fires, because the starter may have failed and removed the entry.
+- If the starter future is dropped or fails, a drop guard removes the `Connecting` entry. Without it every waiter hangs forever.
+- The managed handle removes the map entry when its last user drops it.
+- Do not share when callers need isolated credentials, independent cancellation or separate quotas.
+
+**Ordered multi-key batches and flush epochs.**
+
+- Keep the batch in a `BTreeMap`, so its keys iterate in the same order as the lock key space. Acquire every lock in that order first, and only then enter the flush epoch. No item is then marked dirty in a later epoch than its batch.
+- Keep the phases separate: lock acquisition, mutation, visibility, dirty marking.
+- Large batches hold many locks. Bound the batch size, and add concurrency tests before changing lock scope.
+- Model persistence progress as explicit states keyed by `(flush_epoch, object_id)`.
+
+```rust
+pub enum Dirty {
+    NotYetSerialized { low_key: InlineArray, node: Object, collection_id: CollectionId },
+    CooperativelySerialized { object_id: ObjectId, data: Arc<Vec<u8>>, mutation_count: u64 },
+    MergedAndDeleted { object_id: ObjectId, collection_id: CollectionId },
+}
+```
+
+- A final state is never overwritten within an epoch, and an assertion checks it.
+- Adding a state updates the final-state check, the install path, flush matching, the event verifier and crash-recovery tests together.
+- Run fault-injection and concurrency tests. This is overkill for a simple cache with no epoch ordering.
+
 ### Cancellation, backpressure and primitive choice
 
 Primitive choice:
@@ -2428,6 +3027,28 @@ tokio::select! {
 ```
 
 A new UI action is a new variant handled in the app state; widgets never make network calls. An unbounded channel hides backpressure when producers outpace rendering, so use a bounded channel or coalesce ticks. Not when the UI framework already owns a full event loop.
+
+**Shutdown guard with cascading cancellation.** Task ownership equals guard lifetime.
+
+```rust
+impl Drop for ShutdownGuard {
+    fn drop(&mut self) {
+        if !self.temporary {
+            self.token.cancel();
+        }
+        let count = self.ref_count.fetch_sub(1, Ordering::SeqCst);
+        if count == 1 {
+            let _ = self.tx.send(());
+        }
+    }
+}
+```
+
+- Dropping a non-temporary guard cancels the shared token, so a failed or finished task brings its group down. The last guard dropped signals that all children are done.
+- Children get guards through provided methods (`child_guard`, a named `spawn_task`), never by hand-cloning tokens and channels.
+- Make the cloning rule obvious: a temporary guard does not cancel.
+- For one-shot ownership a `JoinSet` is enough.
+- A cached, transport-bound client is looked up through one helper with one key shape; inconsistent keys create duplicate clients. Its shutdown is explicit: stop the event loop, drain background tasks, then report drain completion (count, success, error).
 
 ## 10. Unsafe and FFI
 
@@ -2669,6 +3290,59 @@ The unsafe step happens in exactly one place, and the public iterator API is saf
 
 **Owned versus borrowed handles from a C API.** When binding a C API, write the owning wrapper (its `Drop` calls the matching delete function) before any business logic, and document for every API whether it returns an owned or a borrowed pointer. Never put an owning wrapper around a borrowed handle; that is a double free. RAII fixes lifetime, not thread safety: a shared handle still needs synchronisation or one instance per thread.
 
+**Mirror the C library's ABI version range.** A binding re-exports the library's version constants and checks a loaded grammar or plugin against the supported range before use.
+
+```rust
+pub const LANGUAGE_VERSION: usize = ffi::LIB_LANGUAGE_VERSION as usize;
+pub const MIN_COMPATIBLE_LANGUAGE_VERSION: usize = ffi::LIB_MIN_COMPATIBLE_LANGUAGE_VERSION as usize;
+
+pub fn check_version(found: usize) -> Result<(), LanguageError> {
+    if (MIN_COMPATIBLE_LANGUAGE_VERSION..=LANGUAGE_VERSION).contains(&found) {
+        Ok(())
+    } else {
+        Err(LanguageError::IncompatibleVersion { found })
+    }
+}
+```
+
+- The failure is a typed error. Handles stay opaque: never reach into a private C struct.
+- A generated file starts with a header naming its generator and its regeneration command. Reviewers inspect the generator and a representative output, because generated code can hide a bad abstraction.
+- When one native core is exposed to many languages, one binding specification generates every package around the same opaque core type. CI runs a freshness check that fails when generated files are stale, and per-language end-to-end tests check the same behaviours. A new method goes into the specification and those tests, never by hand into one package.
+
+**Fixed header layout checked at compile time.** A fixed-width network, disk or shared-memory record that is decoded by a byte cast is `#[repr(C)]`, derives the checked `bytemuck` traits, and has compile-time size and offset assertions.
+
+```rust
+pub const HEADER_SIZE: usize = 256;
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, CheckedBitPattern, NoUninit)]
+pub struct GenericHeader {
+    // fixed-width fields, then:
+    reserved_command: [u8; 128],
+}
+
+const _: () = {
+    assert!(size_of::<GenericHeader>() == HEADER_SIZE);
+    assert!(offset_of!(GenericHeader, reserved_command) + size_of::<[u8; 128]>() == HEADER_SIZE);
+};
+```
+
+- `CheckedBitPattern` rejects invalid enum and bool bytes. `NoUninit` forbids padding.
+- After the cast, a `validate()` method checks semantic fields before use.
+- Pin integer widths, alignment, endianness and enum representation.
+- Editing the header updates the offset assertions and the invalid-byte tests in the same change.
+- This is not for extensible formats.
+
+**Bindings over a native async engine.**
+
+- Implement the Rust binding first. The host-language wrapper is a typed one-line facade with documentation.
+- Plan creation, execution, metrics caching and format conversion live in the native core.
+- A synchronous host method that drives an async Rust future blocks the caller's thread. It releases the interpreter lock while waiting, checks for interrupts, and its doc says it blocks.
+- Extension hooks such as user-defined functions cross the boundary in the engine's native batch format (Arrow arrays through the C data interface), never as per-record adapter objects.
+- A host callable's exception becomes an execution error.
+- Tests cover type conversion, null handling, host exceptions and reconstruction across processes.
+- Examples of one feature in several languages keep the query text and parameter names identical, and each closes its session on failure paths too.
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -2730,6 +3404,14 @@ fn ensure_thread_parser(language: Language) -> Result<(), ParseSetupError> {
 ```
 
 Initialise lazily and return the construction error instead of panicking. Never hold the `RefCell` borrow across a call that can re-enter the same thread-local. The cache lives as long as the worker thread, so bound it. Not for small single-threaded tools, where it only complicates lifecycle and tests.
+
+**Out-of-core processing under a memory budget.**
+
+- Put the memory-budget decision beside the storage metadata. If the budget is smaller than the data, use direct I/O and stream partitions; otherwise use buffered reads.
+- Expose the algorithm as a callback over already-filtered partitions, for example `fn stream_edges(&self, active: Option<&Bitmap>, f: impl Fn(&Edge) + Sync)`. The algorithm says "process matching edges", and the storage layer decides how to stream them.
+- State the callback's mutation rules: atomic updates or partition-local ownership. A callback can hide random writes into shared state.
+- One array-like type can support both full-file memory mapping and an explicit hot window loaded with positioned reads when the state exceeds the budget.
+- Memory mapping gives no crash-consistent writes, is unsafe when another process truncates the file, and is not worth it for small vectors.
 
 ### Memory-efficiency examples
 
@@ -2801,6 +3483,43 @@ impl Drop for ScopedTracker<'_> {
     fn drop(&mut self) { self.parent.release(self.tracked); }
 }
 ```
+
+**Fixed-capacity stack buffer for `no_std`.** Where the heap is forbidden, a const-generic buffer states its invariants in the type and enforces them at every write boundary.
+
+```rust
+#![deny(unsafe_code)]
+
+pub struct FixedBuffer<const N: usize> {
+    buffer: [u8; N],
+    length: usize,
+}
+
+impl<const N: usize> FixedBuffer<N> {
+    pub fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), FixedBufferError> {
+        let remaining = N - self.length;
+        if bytes.len() > remaining {
+            return Err(FixedBufferError::CapacityExceeded {
+                bytes_needed: bytes.len(),
+                bytes_available: remaining,
+            });
+        }
+        self.buffer[self.length..self.length + bytes.len()].copy_from_slice(bytes);
+        self.length += bytes.len();
+        Ok(())
+    }
+}
+```
+
+- The capacity error carries the bytes needed and the bytes available.
+- A failed write leaves the buffer unchanged. A property test asserts this, and it is written before any new mutation method.
+- If `as_str()` relies on the contents being UTF-8, every byte-writing path must preserve that and never split a multi-byte character.
+- Implement `core::fmt::Write` so `write!` works. Use `String` when allocation is acceptable.
+
+**Inline small case, heap for the rest.** A compact representation keeps the common small case inline and falls back to the heap for large or complex cases: `SmallVec`, a small-string type, or `enum Node { Inline(InlineData), Heap(Arc<HeapData>) }`.
+
+- Adopt it only after profiling shows allocation or cache locality is the bottleneck.
+- Document layout invariants beside the type and pin the size: `const _: () = assert!(std::mem::size_of::<Node>() == 16);`.
+- A layout change touches every copy, free and tag path. It is never a local edit.
 
 ### Allocator and build-time optimization
 
@@ -2920,6 +3639,160 @@ The step function reads `[` first, then before each element expects `,` or `]`. 
 **Canonical hashing of structured values.** Raw bytes hash directly (`Sha256` over the content, hex-encoded). A structured value is hashed in a canonical form: object keys sorted, only a whitelist of identity-bearing fields included, arrays left in order when order is meaningful (traces, patches, rankings). Write down which fields define identity before adding a hash. Test the same content in a different key order (same hash) and different content in the same shape (different hash). Over-normalising collapses distinct inputs; under-normalising causes needless cache misses.
 
 **Rank fusion keeps every signal separate.** Compute a per-signal reciprocal rank (`1.0 / (k + rank + 1)`) for lexical, semantic and evidence channels; use a negative signal that demotes test and fixture files instead of excluding them (make the demotion conditional for test-writing work); apply a graph boost only to items already in the result set, never to add new ones. Keep the per-signal breakdown on each result so ranking can be debugged and tuned.
+
+**Handle manager for expensive open resources.** When many logical objects are backed by fewer open resources such as file handles, a small manager owns the bounded LRU cache, the lock and the close-on-evict behaviour.
+
+- Logical lifetime is decoupled from physical lifetime.
+- The cache key includes every opener argument that distinguishes handles (path, mode, options), which prevents aliasing.
+- Callers never close a handle acquired from the manager.
+- Plugin discovery is lazy and cached once in a `OnceLock`. The plugin contract is validated at load time, with a typed options struct and not a free-form map.
+
+**Greedy selection under a budget.** Score candidates by relevance, sort descending, and take each one that still fits.
+
+```rust
+scored.sort_by(|a, b| b.relevance_score.total_cmp(&a.relevance_score));
+
+let mut used_tokens = 0;
+let mut selected = Vec::new();
+for entity in scored {
+    if used_tokens + entity.estimated_tokens <= budget {
+        used_tokens += entity.estimated_tokens;
+        selected.push(entity);
+    }
+}
+```
+
+- An item that does not fit is skipped; a smaller later one may still fit. This is a heuristic, not optimal packing.
+- Return the amount used. Use `f64::total_cmp` for a total order that tolerates NaN.
+- When weights or depth limits change, add an example that pins the selected items and the amount used for a known input.
+
+**Conservative prefilter in front of expensive matching.** A prefilter may produce false positives and never false negatives.
+
+```rust
+enum Formula<P> {
+    And(Vec<Formula<P>>),
+    Or(Vec<Formula<P>>),
+    Pred(P),
+}
+
+enum Predicate {
+    Literal(String),
+    Regex(Regex),
+}
+```
+
+- Decide what "cannot translate" means before writing the combinators. An `And` drops an untranslatable term with `filter_map`, since fewer conditions are still sound. An `Or` with any unknown branch becomes unknown as a whole, with `collect::<Option<Vec<_>>>()`, because dropping a branch would drop real matches.
+- Keep a fast literal path beside the regex path, cache compiled regexes, and treat a regex evaluation error as a match.
+
+**Caches that own side-effectful resources.**
+
+- A cache addressed by two keys, such as directory and generated project ID, keeps the forward and reverse maps in one owner struct and updates them together in add, move, remove and clear.
+- A generated ID is the directory name, with a short hash of the full path appended only on collision. A collision of the shortened hash is detected, not assumed impossible.
+- Eviction stops a file watcher or subprocess before it removes the entry.
+- A bounded LRU of long-lived external-tool sessions has one owner for connection lifetime, eviction and cleanup. Each session runs in a task that holds its resources and waits on a stop signal.
+- The eviction callback only signals stop, because eviction is synchronous and cleanup is async. Shutdown runs an explicit pass that awaits every session task, since fire-and-forget eviction cleanup is no shutdown guarantee.
+- Test eviction and explicit cleanup separately.
+
+**Registry-composed pipelines and resumable batches.**
+
+- A retrieval pipeline is assembled from named stages resolved through a registry, with per-stage timings.
+- A per-call override such as `top_k` is a request parameter or is applied to a per-request clone. Never mutate a shared component and restore it afterwards: that races across concurrent requests and leaks on an early return.
+- Single-query and batch paths are implemented and tested together.
+- A long batch run checkpoints each finished unit under a deterministic key such as `(trial, task_id, seed)`. Under one lock it skips a saved key, writes to a temporary file in the same directory, renames it into place, and flushes the index.
+- Replacing a unit whose earlier result was an infrastructure error is a separate, explicit operation. Tests cover resume, duplicate save, replacement and a crash during the write.
+- Randomness inside a domain object is injected or seeded (`&mut impl Rng`), so tests are deterministic.
+
+**Bounded cache of expensive machinery.** Cache expensive machinery in a fixed table of `OnceCell` or `OnceLock` indexed by the small supported parameter space, so the cache is bounded by construction.
+
+```rust
+static AUTOMATON_BUILDER: [[OnceCell<LevenshteinAutomatonBuilder>; 2]; 3] = [
+    [OnceCell::new(), OnceCell::new()],
+    [OnceCell::new(), OnceCell::new()],
+    [OnceCell::new(), OnceCell::new()],
+];
+
+let builder = AUTOMATON_BUILDER
+    .get(self.distance as usize)
+    .ok_or_else(|| InvalidArgument(format!("Levenshtein distance of {} is not allowed", self.distance)))?
+    [self.transposition_cost_one as usize]
+    .get_or_init(|| LevenshteinAutomatonBuilder::new(self.distance, self.transposition_cost_one));
+```
+
+- An input outside the supported range is a typed invalid-argument error raised before execution, never an unbounded build.
+- The bound is a product decision. Raising it increases memory and expansion cost sharply.
+- Tests cover the bounds, each mode and invalid operand types.
+
+**Lazy consolidation of signed updates.** For frequent signed updates where many increments and decrements cancel, append cheaply and consolidate only when a clean view is needed or the dirty tail outgrows the clean prefix.
+
+```rust
+pub struct ChangeBatch<T, const X: usize = 2> {
+    updates: SmallVec<[(T, i64); X]>,
+    clean: usize,
+}
+
+impl<T: Ord, const X: usize> ChangeBatch<T, X> {
+    pub fn update(&mut self, item: T, value: i64) {
+        self.updates.push((item, value));
+        self.maintain_bounds();
+    }
+}
+```
+
+- Consolidation sorts, sums equal keys and drops zeros.
+- Methods that may compact take `&mut self`, including observers such as `is_empty`. Observing can change the representation, and the doc says so.
+- A `SmallVec` with inline capacity avoids allocation for the common tiny batch.
+- Tests cover cancellation to empty, draining, and that no zero entry is retained.
+
+**Frontier-gated notifications.** In a streaming operator that buffers by logical time, delayed work is released only when observed input progress proves that no earlier data can arrive, never by a wall-clock timer.
+
+- Holding a capability retains a progress obligation. Drop it as soon as its work is emitted, or everything downstream stalls.
+- Every stash keyed by timestamp has a test that advances the frontiers and proves release order.
+
+**Retrieval and incremental indexing.**
+
+- Linter traversal and ignore-directive filtering are centralised in the linter, not in each rule. A stateful rule clears its accumulated data in its finalisation hook or is constructed per file, or findings leak across files. Every rule has an ignore-directive test.
+- Index a code chunk together with cheap structural context, and store the same enriched text for embeddings and for the keyword column, so dense retrieval, keyword search and reranking all see it.
+
+```rust
+pub fn build_structural_context(block: &CodeBlock) -> String {
+    let mut parts = Vec::with_capacity(4);
+    parts.push(format!("# File: {}", block.path));
+    parts.push(format!("# Language: {}", block.language));
+    if !block.symbols.is_empty() {
+        parts.push(format!("# Defines: {}", block.symbols.join(", ")));
+    }
+    parts.join("\n")
+}
+```
+
+- A paired function strips the preamble before display, or snippets and line numbers shown to people are polluted.
+- When scores from two retrieval systems are not comparable, fuse ranks through stable row IDs: each source adds `weight / (rank + k)` to the ID's score.
+
+```rust
+for (i, id) in vector_ids.iter().enumerate() {
+    let score = self.vector_weight / (i as f32 + self.k);
+    rrf_scores.entry(*id).and_modify(|e| *e += score).or_insert(score);
+}
+// The same loop over keyword_ids with self.keyword_weight.
+```
+
+- Weights and `k` are configuration tuned by evaluation sweeps. Tests cover vector-only hits, keyword-only hits and overlap. With calibrated comparable scores, use the scores.
+- Incremental indexing keeps per-file old and new content-hash sets: new minus old is inserted, old minus new is deleted, and no full rebuild is needed.
+
+```rust
+let exists = !force_reindex && ctx.store.content_exists(&content_hash, "code_blocks").await?;
+if !exists {
+    code_blocks_batch.push(code_block.clone());
+}
+
+let hashes_to_remove: Vec<String> = existing_hashes
+    .into_iter()
+    .filter(|hash| !new_hashes.contains(hash))
+    .collect();
+```
+
+- The hash inputs define cache identity. Including line ranges improves uniqueness but re-embeds after pure movement, so choose the inputs from the invalidation behaviour wanted.
+- Changing chunking updates hash construction and stale-removal tests together.
 
 ### Benchmark harness (criterion)
 
@@ -3312,6 +4185,13 @@ fn url_encode(&self, id: &str) -> String {
 
 Every path segment taken from data is percent-encoded. Endpoint methods add no presentation behaviour such as sorting. Each endpoint has tests for URL encoding, error-status mapping and parse failure. Not when a generated client already gives correct typed boundaries.
 
+**Endpoint-per-file router.** Centralise route registration and error conversion, and localise endpoint implementation.
+
+- One builder registers every route. Each endpoint lives in its own handler module. One error enum implements `IntoResponse` and maps each variant to a status code.
+- Adding an endpoint touches the handler module, `mod.rs`, the route builder and the shared error type.
+- Split the route file by group once it stops being scannable.
+- Degraded behaviour for a downstream client is decided per method and written beside the client contract: fail fast, fallback value, retry, or enqueue on failure. Never default to a no-op fallback. A logging-only fallback loses the work for good unless a retry queue or reconciliation backs it.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
@@ -3394,6 +4274,32 @@ pub fn is_symlink_or_junction(path: &Path) -> bool {
 
 Windows junctions are reparse points, not symlinks, so check both. If linked workspaces must be followed, make it an opt-in mode with cycle detection.
 
+**Zeroise short-lived secret carriers.** A struct that carries key material, passwords, tokens or serialised credentials implements `Zeroize` and `Drop` together, or derives `ZeroizeOnDrop`.
+
+```rust
+pub struct Pkcs12Archive {
+    pub der: Vec<u8>,
+    pub pass: String,
+}
+
+impl Zeroize for Pkcs12Archive {
+    fn zeroize(&mut self) {
+        self.der.zeroize();
+        self.pass.zeroize();
+    }
+}
+
+impl Drop for Pkcs12Archive {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+```
+
+- Tests assert `std::mem::needs_drop::<T>()` and that `zeroize()` clears each field.
+- An `into_parts()` that moves the fields out hands the duty to the caller, and its doc says so.
+- Do not claim secrecy for data that was copied elsewhere, interned, logged, or passed to a library that keeps its own buffer.
+
 ### Database pool and compile-time checked queries
 
 ```rust
@@ -3422,6 +4328,48 @@ impl Database {
     }
 }
 ```
+
+**Format-like query macro with bound parameters.** A query macro can read like `format!` while every value becomes a bound parameter. The wrapper's `Display` writes the placeholder and moves the value into the parameter map.
+
+```rust
+impl<T: Into<BoltType>> std::fmt::Display for QueryParameter<'_, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let Some(v) = self.value.replace(None) else {
+            return Err(std::fmt::Error);
+        };
+        self.params.borrow_mut().put(self.name.into(), v.into());
+        write!(f, "${}", self.name)
+    }
+}
+```
+
+- Reject ambiguous unnamed forms at compile time with `compile_error!`.
+- Tests assert both the rendered query text and the contents of the parameter map.
+- Document and test any form that still falls back to plain interpolation.
+- Identifiers, dynamic clauses and schema names need their own escaping rules. They do not go through value parameters.
+
+**A detached result stream owns its connection.** Bundle a lazy stream with the resource it depends on, so a caller cannot consume data after its transport is gone.
+
+```rust
+pub struct DetachedRowStream {
+    stream: RowStream,
+    connection: ManagedConnection,
+}
+
+impl DetachedRowStream {
+    pub async fn next(&mut self) -> Result<Option<Row>> {
+        self.stream.next(&mut self.connection).await
+    }
+
+    pub async fn finish(mut self) -> Result<RunResult> {
+        self.stream.finish(&mut self.connection).await
+    }
+}
+```
+
+- An open stream holds a pooled connection, so a slow consumer can starve the pool. Document it, bound it with a timeout, or buffer fully when results are small.
+- Tests cover partial consumption followed by drop, and `finish()`.
+- Keep the connection in an explicit transaction scope when a transaction must manage it.
 
 ### Axum service template
 
@@ -3657,6 +4605,124 @@ pub struct Database<D: Datastore> { pub datastore: D }
 Optional capabilities are default methods that return an "unsupported" error. A new operation goes on the wrapper when it can be composed, and on the backend trait only when a backend can do it much more efficiently. Boxed iterators cost an allocation and a virtual call per item, acceptable at this boundary but measure hot paths. Not worth it for a single hard-coded engine.
 
 **Loading several on-disk formats.** Probe the format at the edge (magic bytes at the start of the file), convert legacy formats once into the current internal representation, and keep everything downstream format-agnostic. A missing file is a distinct error from an unsupported or malformed one. If conversion writes a converted sibling file, that side effect is explicit in the API (a `persist_to` argument), never a surprise for a caller expecting read-only loading. Each format has probe and conversion tests. Magic-byte probing is not enough when formats share a prefix or need version negotiation.
+
+**Type-erased variable registry with typed parsing.** Erase the type only at the registry boundary, and keep parsing and constraints attached to the concrete type through function pointers captured at definition.
+
+```rust
+pub struct VarDefinition {
+    pub name: &'static UncasedStr,
+    pub value: VarDefaultValue,
+    pub constraint: Option<ValueConstraint>,
+    parse: fn(VarInput) -> Result<Box<dyn Value>, VarParseError>,
+    type_name: fn() -> Cow<'static, str>,
+}
+
+pub trait DomainConstraint: Debug + Send + Sync + 'static {
+    type Value;
+    fn check(&self, var: &dyn Var, v: &Self::Value) -> Result<(), VarError>;
+}
+```
+
+- Choose the concrete value type first and attach constraints at definition, rather than validating elsewhere after parsing.
+- Downcasts rely on correct registry construction, so test each definition.
+- A plain typed struct is better when there is no dynamic lookup by name.
+- A config field that may hold a secret placeholder is its own type: validated on assignment, resolved through a provider at use, redacted in `Debug` and serialisation. A field accepting both templated and concrete values is an enum of the two.
+
+**Typed option conversion for a DSL.** Each target type owns accepting, rejecting, naming and rendering its option value.
+
+```rust
+pub trait TryFromValue<T>: Sized {
+    fn try_from_value(v: T) -> Result<Self, PlanError>;
+    fn try_into_value(self, catalog: &dyn SessionCatalog) -> Option<T>;
+    fn name() -> String;
+}
+```
+
+- The reverse conversion serves display and catalog serialisation.
+- Error quality depends on `name()` and the failure path. Test valid syntax and wrong-kind syntax, such as a string where a secret is required.
+
+**Length-prefixed messages over a byte stream.** A `Content-Length` style protocol is an explicit reader state machine looping over a pending buffer. One read is never assumed to be one message.
+
+```rust
+enum ReaderState {
+    Header,
+    Body { content_length: usize },
+}
+```
+
+- In `Header`, wait for a full header line. In `Body`, wait until `content_length` bytes are buffered, then emit the message and return to `Header`.
+- Bound the pending buffer and the declared content length, and reject malformed headers. Otherwise a peer can grow memory or stall the connection.
+- Tests cover a split header, a split body, several messages in one chunk and an invalid content length.
+- Prefer a maintained framing codec such as `tokio_util::codec` when one fits.
+- One map at the transport boundary owns the request lifecycle: an ID from a monotonically increasing counter maps to a `oneshot` sender. Success, error response, timeout and connection close each remove the entry, and connection close fails every waiter. Tests cover all four paths and out-of-order replies.
+
+**Config discovery ladder.** The search order lives in one function that returns an ordered list, project-local before the user directory.
+
+```rust
+pub fn discover() -> Result<Option<Self>, Error> {
+    for path in config_search_paths() {
+        if path.exists() {
+            let config = Self::load(&path).map_err(|e| {
+                Error::Config(format!("Failed to parse config at {}: {e}", path.display()))
+            })?;
+            return Ok(Some(config));
+        }
+    }
+    Ok(None)
+}
+```
+
+- The first existing file wins. A parse failure in it is an error naming the path; it never falls through to the next file or to defaults.
+- `Ok(None)` means no config. Using defaults is the caller's deliberate decision.
+- A parent-directory search has a depth limit and handles symlinks with care.
+- Discovery is explicit, with no ladder, where security or reproducibility requires it.
+- A database-backed store owns its connection, schema setup, statement cache and close behind one handle. Use the driver's statement cache (`rusqlite`'s `prepare_cached`, `sqlx`'s per-connection cache) and do not share one connection across threads without a pool or documented synchronisation.
+
+**Buffer-first wire codec.** Allocation is the caller's choice: the primitive writes into a caller-supplied buffer, and the convenient form is layered on top.
+
+```rust
+pub trait WireEncode {
+    fn encode(&self, buf: &mut BytesMut);
+    fn encoded_size(&self) -> usize;
+
+    #[must_use]
+    fn to_bytes(&self) -> Bytes {
+        let mut buf = BytesMut::with_capacity(self.encoded_size());
+        self.encode(&mut buf);
+        buf.freeze()
+    }
+}
+```
+
+- `encoded_size()` and `encode()` stay in lockstep. Every wire type has a round-trip test and `assert_eq!(x.encoded_size(), x.to_bytes().len())`.
+- This does not suit a streaming format whose size is unknown without doing the work twice.
+
+**Options declare their mutability scope.** An option declaration carries its scope beside its namespace, value type, default and validation predicate.
+
+```rust
+enum Mutability {
+    Fixed,         // never after first initialisation
+    GlobalOffline, // cluster-wide, only while offline
+    Global,
+    Maskable,      // a local override is allowed
+    Local,
+}
+```
+
+- A change outside the allowed scope is a typed error at set time, not a downstream failure.
+- Read-after-write consistency tokens shared across sessions are a mergeable set behind one small manager per workload: an update removes the consumed tokens and adds the new ones. A failure in its persistence hook is logged and monitored, never swallowed.
+
+**Named pipeline registry.** Schema and config files refer to a processing pipeline by a stable name, while each pipeline stays a composable builder.
+
+```rust
+pub struct TokenizerManager {
+    tokenizers: Arc<RwLock<HashMap<String, TextAnalyzer>>>,
+}
+```
+
+- Separate named lookup from pipeline construction. `get(name)` clones the pipeline out, so no lock is held during analysis.
+- Registering under an existing name replaces the pipeline and silently breaks data built by the old one. Reject or version a re-registration when persisted data depends on the name.
+- Freeze the registry after startup when analysis must be immutable. Test a successful lookup and a missing name.
 
 ## 15. Tauri desktop apps
 
@@ -5318,6 +6384,93 @@ pub(crate) const CALL_GRAPH_DEFAULT_LIMIT: usize = 200;
 ```
 
 Every tool starts with a readiness check that returns a status payload when its index is missing, stale or still building. An empty result is a first-class response carrying a hint about what to try next (another tool, a broader query), tested as carefully as a success. Failures are shaped as guidance: readiness, truncation, totals and a suggested next tool. Caps are configurable for administrative use, and hints must not be so prescriptive that they steer callers away from valid paths.
+
+**Local environment launcher.** Split "what service is this" from "how services are started, logged, checked and stopped".
+
+```rust
+pub trait Task: 'static + Send {
+    fn execute(&mut self, ctx: &mut ExecuteContext<impl std::io::Write>) -> anyhow::Result<()>;
+    fn id(&self) -> String {
+        "<task>".into()
+    }
+}
+
+pub trait DockerServiceConfig: Send + 'static {
+    fn id(&self) -> String;
+    fn is_user_managed(&self) -> bool;
+    fn image(&self) -> String;
+    fn ports(&self) -> Vec<(String, String)> {
+        vec![]
+    }
+}
+```
+
+- A new service implements the small config trait and composes the existing readiness-check tasks before any bespoke orchestration.
+- Shared task mechanics own logs, progress, container lifecycle and the TCP readiness check.
+- Command construction and environment variables are heavy with side effects, so keep a seam around command execution for tests.
+
+**Dependency boundaries as lint rules.** Encode a boundary as a lint with an actionable replacement message.
+
+```toml
+# clippy.toml
+disallowed-methods = [
+    { path = "std::process::Command::new", reason = "use crate::exec::run_command (sandboxed, logged)" },
+]
+```
+
+- Deny `clippy::disallowed_methods` at the crate root. The wrapper module carries the only `#[allow]`.
+- Add the rule and its recommended alternative before refactoring callers, and add no rule until the replacement API is mature.
+- Keep exceptions few and justified.
+
+**Agent tool routing.**
+
+- With a large tool catalog grouped by server, retrieve in two stages: rank servers, then rank tools only inside the matched servers. Combine the two scores with one explicit formula.
+- The handoff from model output to the router is a parsed contract. Malformed output is a typed "no parse" result, distinct from "no match".
+- Routing heuristics are pure functions such as `fn detect_signals(task: &str) -> TaskSignals`. Keywords match on word boundaries (`\b` with `regex::escape`, compiled once in a `LazyLock`), so `class` does not match `classification`. Every keyword has one positive test and one near-miss negative test.
+- Historical memory is a bounded hint, never a dependency of a latency-sensitive handler. The lookup runs under `tokio::time::timeout`, and a miss or timeout yields `None`.
+- Advice from memory is used only above a sample floor (`const MIN_SAMPLES: usize = 3`) and a success threshold. Both are named constants covered by tests.
+- Derive a tool's schema from its typed argument struct (`schemars::JsonSchema`, doc comments as parameter descriptions) and prebind runtime-only dependencies, so the model sees only user-relevant parameters. A test inspects the generated schema.
+- A flat nearest-neighbour search is fine for a tiny catalog, and deterministic policy rules win over similarity.
+
+**Timed child process without pipe deadlock.** A parent that waits for exit before draining full stdout and stderr pipes deadlocks. Drain both pipes concurrently while waiting.
+
+```rust
+let stdout_pipe = child.stdout.take();
+let stdout_thread = std::thread::spawn(move || {
+    let mut buf = Vec::new();
+    if let Some(mut pipe) = stdout_pipe {
+        let _ = pipe.read_to_end(&mut buf);
+    }
+    buf
+});
+// The same for stderr.
+
+match child.wait_timeout(timeout)? {
+    Some(status) => Ok(TimedOutput::Finished(Output { status, stdout, stderr })),
+    None => {
+        let _ = child.kill();
+        let _ = child.wait();
+        Ok(TimedOutput::TimedOut { stdout, stderr })
+    }
+}
+```
+
+- One shared wrapper owns the child's lifecycle and pipes. Every external CLI call goes through it.
+- The timeout outcome is data, with partial output kept. On timeout, kill and then wait, so the child is reaped.
+- The drain threads buffer everything, so cap captured output for noisy or hostile tools.
+- Tests cover timeout, non-zero exit and large stdout and stderr.
+- This is not for interactive or long-lived children.
+
+**Agent edit tools.**
+
+- An edit-context tool returns the target symbol's code, signatures of called dependencies, relevant imports and types, ordered by edit utility and serialised compactly. It enforces a hard token budget before returning (`enforce_budget(&mut out, max_tokens)?`), trimming the lowest-priority fields first.
+- Before editing, check that the types the edit needs are present in the returned context.
+- After a patch, a structural diff lists the changed symbols, confirms the intended symbol changed, and reports every unexpected one. It is paired with tests or a build, because structure does not prove behaviour.
+- A codebase scanner layers ignore policy in a documented order: built-in defaults, the tool-local ignore file, then the project ignore file (`ignore::WalkBuilder`). It reports the active ignore sources before scanning and offers an explicit include override for audits.
+- Dense per-character metadata over a large text is stored as run-length ranges in a rope or balanced tree, never one object per character. An update replaces the affected runs, coalesces equal neighbours and invalidates derived caches.
+- An editor with injected language layers applies queued edits to an isolated copy of parser state per layer, removes a layer whose ranges become empty, returns only the union of invalidated byte ranges, and supports cancellation and a parser timeout.
+- A repair pass at an ingestion boundary (canonical IDs, normalised values, rewritten edges, dropped dangling references) returns counts and reasons. It does not hide a violation that should fail hard.
+- Parse-tree consumers read named fields (`node.child_by_field_name("tag_name")`), not child positions. Keyword case is normalised once at the lexer boundary.
 
 ### Gate discipline
 
