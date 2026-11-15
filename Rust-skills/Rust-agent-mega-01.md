@@ -2409,6 +2409,9 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 
 - **Operability test for any runtime or rollout change.** State is explicit at boot, behavior is explainable per request, and change is reversible per rollout step. Do not weaken one to strengthen another. Prove each property before depending on it: configuration validated before serving, readiness proven before traffic, rollback verified before the next step. Reject a configuration flag read lazily at first use. Rollback options change after a constraint-tightening step, so re-check what rollback still works after each step. Document which dependencies readiness reflects.
 
+- **Operational rejections.** Reject on sight: hard-coded runtime choices, secrets in logs or panic messages, ad-hoc string logging, a boot that limps past invalid configuration, configuration baked into the image, and schema changes that need an impossible deploy ordering. Enforce the greppable half in CI: grep for environment reads outside the settings module and scan log output for secret classes. Enforce the rest in review: require a rollback answer for every rollout step. A `Debug` derive on a settings struct defeats a redaction wrapper as soon as anything logs it; a hand-written `Debug` that elides secrets breaks when the next field is added, so wrap each secret field in a redacting type.
+- **Migration-aware tests.** Any change that touches the schema runs tests against a real database with migrations applied, in CI, triggered by the schema diff. Green unit tests over a stale schema prove nothing, and without this gate the first contact with the new schema is the deploy. Never gate a deploy on compilation alone. Skip the build gate only for a path filter that is provably docs-only. Do not remove existing dependency-audit enforcement to go faster.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
