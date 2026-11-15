@@ -76,6 +76,8 @@ Correctness is won or lost in public API commitments, error boundary design, asy
 
 Record the ladder choices on any change that touches a public API, an error surface, concurrency or unsafe: the classification, the four surface choices, the gates matched to each touched boundary, and every unsafe block with its safety argument (state explicitly when there is none). Put it in the PR or the crate docs. Note the condition that would invalidate a choice, for example "`dyn Trait` here because this is a plugin seam; revisit if it becomes a hot loop", so a later reader can tell a decision from an accident. The choices constrain each other in order (the newtype shapes the error variants, the error shape decides what the doctest asserts), so a typed error behind an API that takes `&String` fails the ladder even though each pattern passes on its own.
 
+Size a change by the surfaces it crosses, not by its line or symbol count. A large rename that crosses none is cheap to review; a small diff that changes the API, the error type and the concurrency model at once is three changes. If a change crosses more than two of ownership, error, concurrency and API stability, split it, in that order: introduce the newtype first, then the error redesign it enables; do not convert an API to async and retype its errors in one PR. Any unsafe adds the safety argument and a Miri run regardless of diff size; where Miri cannot run (FFI-heavy code), use an equivalent check. Absence of crashes is not evidence that unsafe code is sound.
+
 ### Priorities by task type
 
 | Task type | Prioritize |
