@@ -1399,6 +1399,69 @@ pub trait GraphDisplay {
 - Test insertion, deletion and multi-line edits, not only the initial parse. For tiny files a full reparse is simpler.
 - Classification from node type to highlight scope, including ancestor-sensitive overrides, lives in data files, and the renderer stays generic. Validate or regenerate that data when the grammar version changes. Scope classification is not semantic analysis.
 
+**Storage factory with an in-memory backend.** Storage backends are resolved by a factory keyed on the URI scheme (file, object store, RAM), so backend choice is configuration. The in-memory backend implements the same trait and passes the same contract test suite as the real ones, which gives tests a fast and deterministic store. When every call site needs backend-specific features the trait turns into a leaky lowest common denominator; skip it there.
+
+**Provider registry: an enum for which, a trait for how.** An enum of stable, persisted provider kinds maps each variant to a boxed async trait object that knows how to detect, install and run that provider. It fits provider sets with an install or update lifecycle, and is too much for one or two hard-coded providers. Each variant gets the same contract tests (suggestion predicate, detection in the data directory, `PATH` fallback, command arguments, metadata fetch). Renaming a persisted variant is a data migration.
+
+**One core crate, several thin adapters.** When the same engine serves a desktop UI, a CLI and tests, the core crate owns the serialisable request and response types and the orchestration. Each adapter only converts input, forwards the call and maps the error. A review checks that the adapter file holds no domain logic.
+
+**Memory-mapped data behind typed cursors.** A large binary artifact is queried through small traits whose methods validate the id at the edge and return a typed cursor over `offsets[n]..offsets[n + 1]`. Higher layers never see the raw mapped slices. Contract tests assert the counts, the forward and reverse cursor contents, the out-of-range id error, and parity with a simple index built from the source data.
+
+**A manifest for any artifact of more than one file.** The writer emits a manifest that names each file, its data width, its storage mode and the format version, and the reader opens files through the manifest only, never through filename conventions. Tests round-trip the manifest, open an artifact written with the previous manifest version, and check that the reported size equals the sum of the parts.
+
+**Incremental parse state in an editor.** Keep a bounded map from buffer version to syntax tree and evict the oldest entries. Cancel a stale parse through its abort handle when a newer edit arrives. Key the highlight cache on buffer version, range set and language id. A source that is parsed once needs none of this.
+
+**Local state in a combinator parser.** When a mostly functional parser needs context from earlier lines (list indentation, heredoc mode, table alignment), hold one small resettable context struct in a `RefCell` and pass it to the combinators that need it. Parser-wide mutable globals are the failure mode. Regression tests cover nested lists, outdented lines and mixed code blocks, where a stack of indentation levels usually breaks.
+
+**Validated edit set, applied back to front.** A code-modification tool computes every edit as a byte range against the original source, sorts the edits, rejects any that are out of bounds or overlap, and applies them from the end of the source backward so that earlier offsets stay valid. Line and column positions are converted to byte ranges once, against the exact string being edited.
+
+```rust
+pub struct TextEdit {
+    pub start: usize,
+    pub end: usize,
+    pub replacement: String,
+    pub priority: i32,
+}
+
+pub struct EditSet {
+    edits: Vec<TextEdit>,
+}
+
+impl EditSet {
+    pub fn new(mut edits: Vec<TextEdit>, source: &str) -> Result<Self, EditConflict> {
+        edits.sort_by_key(|e| (e.start, e.end, e.priority));
+        for e in &edits {
+            let in_bounds = e.start <= e.end
+                && e.end <= source.len()
+                && source.is_char_boundary(e.start)
+                && source.is_char_boundary(e.end);
+            if !in_bounds {
+                return Err(EditConflict::OutOfBounds { start: e.start, end: e.end });
+            }
+        }
+        for pair in edits.windows(2) {
+            if pair[1].start < pair[0].end {
+                return Err(EditConflict::Overlap { at: pair[1].start });
+            }
+        }
+        Ok(Self { edits })
+    }
+
+    /// `source` is the string the set was validated against.
+    pub fn apply(&self, source: &str) -> String {
+        let mut out = source.to_string();
+        for e in self.edits.iter().rev() {
+            out.replace_range(e.start..e.end, &e.replacement);
+        }
+        out
+    }
+}
+```
+
+Tests cover a single edit, several non-overlapping edits, two inserts at the same position ordered by priority, overlap rejection, out-of-bounds rejection and the merge of edit sets from several operations.
+
+**A stdio tool server is a loop over a registry.** Read one JSON-RPC request per line, parse it into a request enum, dispatch `initialize`, `tools/list` and `tools/call`, and write exactly one JSON line per response. Invalid JSON gets a parse-error response and the loop continues. Each tool implements one trait that returns its definition and handles a call, and a registry maps names to tools. Integration tests send `initialize`, `tools/list`, an unknown method, invalid JSON and one tool call, and assert that every response is one JSON line and that no log text reaches stdout.
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -1911,6 +1974,8 @@ fn build_trials() -> Vec<Trial> {
 
 - Each trial has a specific name (back end, then fixture), so failures can be addressed and filtered. Skipped cases are explicit.
 - A snapshot accepted casually can bless a regression. Review snapshot diffs, and assert precise properties directly for security-sensitive or numeric logic.
+
+**Scenario tests with a typed world.** Where behaviour is naturally described as scenarios against a live async client, map each step to an async function and keep scenario state in a typed struct with explicit fields (the client, the last created id, the last observed payload). A string-keyed bag of values is the failure mode. Each step changes only named fields, and an `expect` in a step names the missing test setup. Tight unit tests do not need this indirection.
 
 ### Verification rules by risk
 
@@ -3403,6 +3468,22 @@ impl Error {
 - Callers never scrape these from strings. An empty or non-JSON error body still yields a sensible message.
 - Rate-limit state is kept per credential, never as one mutable global shared by several tokens.
 
+**Partial-failure accounting across two systems.** An operation that changes two durable systems (object storage and a metadata store, say) returns an error that carries the items that succeeded, the items that failed on each side and the underlying error of each side. One opaque error would hide which system needs repair. The second system is changed only for the items that succeeded in the first.
+
+```rust
+#[derive(Debug, thiserror::Error)]
+#[error("failed to delete some items from storage or the metadata store")]
+pub struct DeleteError {
+    pub deleted: Vec<ItemId>,
+    pub storage_failures: Vec<ItemId>,
+    pub storage_error: Option<StorageError>,
+    pub metadata_failures: Vec<ItemId>,
+    pub metadata_error: Option<MetadataError>,
+}
+```
+
+An all-or-nothing error enum fits only where a real transaction spans both systems. Tests cover the happy path, a failure of the first system and a failure of the second.
+
 ### Error and recovery taxonomy
 
 | Error class | Typical boundary | Recovery | Representation | Required tests |
@@ -3669,6 +3750,14 @@ self.running.insert(job.clone(), tokio::task::spawn_blocking(move || run_holding
 - Flush only paths that have been quiet for the debounce delay, as one batch of modified and deleted paths. Flush the remaining stable batch on shutdown, before cancelling the processing task.
 - A failed batch callback is returned or retried as a structured error, never printed.
 - Do not coalesce when every intermediate event matters, as in audit trails or collaborative edit logs.
+
+**Fan-out results carry their identity.** Each task spawned into a `JoinSet` returns its unit's id with its result, as `(id, Result<T, E>)`. The collector then aggregates successes and failures in completion order without shared mutable state. A `JoinError` is counted apart from a domain error. Where input order matters, the tag is the original position.
+
+**Take the permit inside the task.** To cap concurrent heavy work, spawn every task and have each one acquire a semaphore permit before the work. Throttling by awaiting one handle whenever a count is reached is the weaker form. CPU-bound work runs in `spawn_blocking` while the async task holds the permit, and the blocking closure owns its data. A shared engine must be `Send + Sync`. Set the number of permits from the memory and CPU limits, not from the number of logical workers. Keep the three outcomes apart: success, domain error and join error.
+
+**Prepare outside the writer, write in one loop.** On an ingestion path, do the CPU-heavy encoding and validation before the batch is queued, and let a single consumer loop own the log and the in-memory table. Configuration picks one of three behaviours: write directly, wait for queue space, or reject with a queue-full error through `try_send`. The split is wrong when preparation reads mutable writer state, because the decision can be stale by the time it is written. Test both full-queue policies and the direct path, and export queue length and lock time.
+
+**A background queue generic over the task.** When uploads, sync and indexing share one lifecycle, define a task trait with an associated error type that reports whether it is transient, and give the queue rate limiting, retry options, an abort handle for the active task, and a choice between a one-shot result per task and a broadcast stream of results. A plain channel and loop is clearer for fire-and-forget work. Tests cover a transient retry, a permanent failure, queue close, a rate-limit wait and the abort of the active task.
 
 ### Async runtime discipline, in code
 
@@ -4811,6 +4900,25 @@ impl<T: ValueType> Drop for SparseMatrix<T> {
 - A pointer borrowed from another owner gets a borrowed handle with a lifetime marker instead.
 - Review the drop path, clone path, extraction path and context lifetime together, and justify every `unsafe impl Send` or `Sync` again.
 
+**One runtime for a synchronous foreign surface.** When a host language cannot await a Rust future, the FFI library holds one process-wide runtime in a static and each exported method calls `block_on` on it. No exported method builds a runtime. This shape belongs at the FFI edge only; inside async Rust code a nested `block_on` deadlocks or wastes threads.
+
+```rust
+static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("tokio runtime for the FFI layer")
+});
+
+impl Client {
+    pub fn connect(&self) -> Result<(), ClientError> {
+        RUNTIME.block_on(self.inner.connect())
+    }
+}
+```
+
+A bridge test calls several methods through the foreign ABI, so the shared runtime is exercised across calls.
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -5623,6 +5731,8 @@ fn consolidate<D: Ord, T: Ord, R: Semigroup>(updates: &mut Vec<(D, T, R)>) {
 - Applying a patch filters out removed and upserted IDs, appends the upserts and recomputes derived counts. Nodes and edges are reconciled the same way.
 - Test removing and recreating an ID in one pass. Use delete-wins with tombstones for replication and audit logs.
 
+**Positioned append with a visible sync policy.** A segment or journal writer that receives already-encoded immutable buffers writes them with positioned vectored writes at its tracked offset, in chunks no larger than the operating system's vector limit. `fsync` is an explicit policy flag, so its cost is visible to the caller. The size counter is published after the write succeeds. With concurrent writers, reserve the range with `fetch_add` before writing, or serialise the writes. After recovery the counter equals the file length, and a test or crash simulation covers each sync policy.
+
 ### Benchmark harness (criterion)
 
 ```rust
@@ -6122,6 +6232,10 @@ fn set_ready(&self) {
 **Recursive SQL for graph traversal.** A recursive query can run a graph algorithm in the database when the graph is relational and the result must join back to relational data. Review the base case, the recursive case, the termination condition or iteration cap, and the final path reconstruction as four separate units, and check that pruning bounds the intermediate rows.
 
 - For reusable path services with complex policies, use an application-level algorithm that can be unit-tested.
+
+**Routing on the request body.** A router that picks an upstream node from a body field (tenant, partition key, query text) parses the body once into a typed enum of the payload kinds it supports, derives the routing key, and rebuilds the upstream request from that enum with the same JSON or form encoding. Reading the body consumes it, so a pass-through proxy that inspects it and forwards the original request sends nothing. Unsupported endpoints are rejected with a clear error. A test per payload kind asserts the routing key and the rebuilt method and body type.
+
+**Shutdown is a process concern.** The server passes one dedicated shutdown future to the framework's graceful-shutdown hook. That future waits for SIGTERM or SIGINT on Unix and for Ctrl-C on Windows, in `cfg` branches, and logs which signal arrived. Signal handling stays out of application state and route handlers.
 
 ### Backend security hardening checklist
 
@@ -8806,6 +8920,14 @@ if results.len() < MINIMUM_RESULTS {
 
 - Log the mode taken, and disclose in the final prompt what was omitted. Never truncate raw text blindly.
 - In compliance, legal or safety workflows an omission halts the operation instead of pruning silently.
+
+**Small tooling shapes.**
+
+- **A one-file generator script.** For deterministic source generation where a full crate is too heavy, a single-file Rust script declares its dependencies in its header, validates its arguments with a value parser that gives a clear message, and writes to stdout unless an output path is given. Check it by regenerating and diffing against the committed output. Runtime logic does not belong in a script.
+- **Log level from the environment.** Parse the variable; on an invalid value print one line to stderr and fall back to the default level. A bad logging setting never stops the program.
+- **Shared arguments for sibling subcommands.** Two subcommands that take the same options embed one argument struct with `#[clap(flatten)]`.
+- **Build artifacts from cargo's JSON messages.** A task runner that needs the paths cargo produced runs cargo with JSON message output, reads the stream with `cargo_metadata::Message::parse_stream`, prints compiler messages, collects the artifact messages, and then checks the exit status.
+- **A plugin checks its host version.** A plugin compares the host's version with the one it was built against using a semver requirement and prints a warning to stderr on a mismatch, then carries on.
 
 ### Gate discipline
 
