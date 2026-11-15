@@ -2480,6 +2480,8 @@ Auth and recovery flows:
 - **Benchmark with the controls on.** Measure success, denial, duplicate, timeout and saturation paths with hashing, durable writes and failure shaping enabled; removing them makes an unsafe path look fast. Check that auth variants are not distinguishable by timing. Throughput gained through unbounded queues does not count. Measure password verification separately. Fixed latency numbers are placeholders until the service has its own SLO.
 - **Across services.** A local transaction and typed states do not span independent services, and exactly-once delivery cannot be assumed. Carry idempotency and correlation identifiers explicitly, define authorization and replay semantics at each interface, give each queue one owner, and define rollback order. One endpoint review does not certify a distributed workflow.
 
+- **Levels of security evidence.** Documented is not locked, locked is not reachable, tested is not deployed, deployed is not observable, and observed once is not attacker-resistant. State which level each security claim rests on. Compile success proves no authorization property and one abuse test proves no general one. After a framework, runtime or advisory change, re-check the exact locked versions, reproduce the public response behavior, and update the abuse tests. Do not copy a security middleware example without checking it against the locked version and the flow.
+
 ### Database pool and compile-time checked queries
 
 ```rust
