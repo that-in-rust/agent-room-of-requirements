@@ -205,6 +205,10 @@ Working terms:
 - **Where contracts hide.** SemVer effects of a public signature, allocations inside ergonomic conversions, lock guards held inside helper functions, cancellation after a partial effect, object safety of a trait, feature combinations, and doctests that compile under a different `cfg`.
 - **Framework evidence is local.** An Axum or Tokio example justifies code on that framework at the locked version. It does not justify the design of a CLI or a parser library.
 
+- **Decide per API, not by slogan.** Choose each idiom for one API and one lifecycle. The right choice lowers the total contract complexity for the implementation and its callers together, not inside one function. A good default: borrow the input being parsed and return an owned domain value. Cloning a small value at a task boundary is idiomatic when it makes ownership simpler and the task count is bounded.
+- **Costs that spread to callers.** Lifetime parameters in public signatures, blanket conversions that hide which conversion ran, error enums that grow without limit, `Arc` spreading through every type, a borrowed input tied to a returned reference, and a mock that drifts from the production implementation.
+- **Existing code and general idioms both have limits.** Existing code is not idiomatic just because it exists, and a repository test can lock in an accidental API. A general idiom still does not override an existing public contract, feature set or MSRV without a migration.
+
 ### Doctrine for core and standard-library code
 
 - **Lifetimes.** Annotations express real relationships between inputs and outputs. If lifetime reasoning gets harder than the logic, rethink the API shape instead of adding annotations. Prefer scoped borrows to long-lived shared mutable access.
