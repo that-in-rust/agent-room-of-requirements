@@ -4163,6 +4163,15 @@ Rule to test to gate:
 | dependency exposure | downstream compile + doctest | API review, optional SemVer tooling |
 | measure first | benchmark + profile | benchmark gate |
 | all rules | format and lint | `cargo fmt --all -- --check`, `cargo clippy --all-targets --all-features -- -D warnings` |
+
+### Completion contract for an agent
+
+- "It compiles" is not done. Done is: the four required commands green with their output shown, the release checklist affirmed item by item, and none of the review rejections present. If you cannot run commands, list them as follow-up for a human; do not claim them.
+- Before handoff, grep your own output for placeholder markers (`TODO`, `FIXME`, `todo!()`, `unimplemented!()`).
+- A requirement id in the traceability table must point at a real requirement; never invent ids to satisfy the gate. If a checklist item does not apply (documentation on a change that touches no documented behavior), say why.
+- The commands catch what a machine can see: format, lints, failing tests, build breaks. They cannot see an unmeasurable requirement, a layer leak that compiles, a design that cannot be tested in isolation, or concurrency that passed one run. Check those by reading, and ask of every design: what here cannot be tested?
+- A pinned `clippy -- -D warnings` gate can start failing after a toolchain update with no code change, because new lints arrive; that is intended. If features are mutually exclusive, `--all-features` cannot build: document the feature sets the gate runs instead.
+- Read the review rejections at planning time as well; they are cheapest to act on before the architecture is fixed.
 # rust-toolchain.toml
 [toolchain]
 channel = "1.80.1"
