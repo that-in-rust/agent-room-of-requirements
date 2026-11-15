@@ -209,6 +209,8 @@ Working terms:
 - **Costs that spread to callers.** Lifetime parameters in public signatures, blanket conversions that hide which conversion ran, error enums that grow without limit, `Arc` spreading through every type, a borrowed input tied to a returned reference, and a mock that drifts from the production implementation.
 - **Existing code and general idioms both have limits.** Existing code is not idiomatic just because it exists, and a repository test can lock in an accidental API. A general idiom still does not override an existing public contract, feature set or MSRV without a migration.
 
+- **Applying a rule from any guide, this one included.** Follow a rule only when the failure it prevents can happen in this task, it fits the task mode and the repository's boundaries, and a fresh check can show it held. An example in a guide can encode an obsolete crate API, and a broad principle can be over-applied: testability does not mean a trait on everything. Do not implement every listed pattern; pick the smallest rule that covers the risk.
+
 ### Doctrine for core and standard-library code
 
 - **Lifetimes.** Annotations express real relationships between inputs and outputs. If lifetime reasoning gets harder than the logic, rethink the API shape instead of adding annotations. Prefer scoped borrows to long-lived shared mutable access.
