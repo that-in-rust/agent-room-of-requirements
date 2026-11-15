@@ -1522,6 +1522,19 @@ Tests round-trip representative payloads, assert that the subject constants matc
 - **Private binary framing.** A reader returns `Ok(None)` when the stream ends cleanly at a record boundary and an error when it ends inside a record. A format that leaves the process family needs a schema and version header and compatibility tests.
 - **Shared board for parallel workers.** Workers that produce intermediate results for a later reducer write to a store trait keyed by conversation or job id; an unknown id is a domain error. A long-running process needs a retention rule for it. A fan-out that needs a minimum number of results returns a typed error with the required and received counts.
 
+**Tree rewrites and rule-based optimisers.**
+
+- **One traversal trait for every tree.** Each tree type (plan, expression, syntax node) implements only "visit my children" and "rebuild me from mapped children". The trait supplies top-down inspection, bottom-up and top-down rewriting and early stop. A rewrite returns the node with a flag saying whether it changed; an unchanged node must report no change, or a fixed-point loop never ends. Skip the trait for a small tree with one traversal.
+- **Ordered rules run to a fixed point.** Each rule has a name, an optional traversal order (none means the rule recurses itself) and a rewrite function. The driver applies the list in passes and stops when the plan's signature repeats or a pass limit is reached. It checks an invariant, such as an unchanged output schema, after every rule. Rules consult a function's declared semantics, never its name. Tests can observe the plan after each rule.
+- **Operators return lazy streams.** An execution operator returns a pinned `Send` stream of batches and does no work until polled; asynchronous setup is a future flattened into the stream. Nothing blocks inside a poll. Tests poll the stream, check the schema and drop it early.
+
+**Product choices as code.**
+
+- **Enums as a compatibility matrix.** When choices constrain each other (template, package manager, version), each choice is a small `Copy` enum with an `ALL` constant for prompts and `const fn` methods that return its valid partners, command names and defaults. Tests cover parsing, display and every relation.
+- **Backends advertise what they support.** A backend trait gives every operation a default body that returns an explicit unsupported error, and exposes capability flags. Conformance tests check that the flags match the implemented operations.
+- **Names resolved on demand need an allowlist.** A lookup that falls back to treating an unknown name as a URL or path accepts only explicit schemes and returns a clear error for the rest.
+- **Hand-written mini-languages stay tiny.** A hand-written lexer and parser is acceptable for a controlled internal format with a handful of constructs (variables, one conditional, comments, sections). Once it needs expressions, loops, escaping, includes or untrusted input, use a maintained crate.
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -3594,6 +3607,12 @@ pub struct ErrorEnvelope {
 **Debug strategy for error construction.** A library with many validation sites can route every error message through one constructor that reads a strategy once from the environment: normal, panic at the construction site, or append a captured backtrace to the message. Every `ensure!` and `bail!` call site gains the debugging aid with no change. Keep the default strategy for anything a client parses, and document the variables. The strategy is read once per process, so the panic and backtrace modes are tested in subprocesses.
 
 **Two projections of one error.** An error container has a sanitised external projection, which hides internal errors, and a detailed internal projection. The web framework's response conversion always uses the external one, and the internal one is not reachable from a public HTTP edge.
+
+**More error shapes.**
+
+- **Boxed dependency errors behind semantic helpers.** A library that wraps unstable third-party errors keeps its own typed categories, each with a human message, and stores the dependency error as an optional boxed source. Callers ask questions through helper methods such as `is_not_found()`, which downcast inside the library. Each helper has a test.
+- **`no_std` error enums.** Derive `Debug`, `Clone`, `PartialEq` and `Eq`, and implement `core::fmt::Display` by hand. Implement `std::error::Error` only behind an optional `std` feature. Tests match variants, not message text.
+- **Context added by one layer.** In a stack of backends or plugins, one wrapper adds the operation name, service name and path to every failing call as structured fields. Retry policy reads a retry-status field, never a substring of the message.
 
 ### Error and recovery taxonomy
 
@@ -5918,6 +5937,15 @@ impl ValidityBuilder {
 
 **Optional enrichment stays optional.** A network lookup that only enriches data runs when its token is present and its skip flag is unset, and it changes entries that are already parsed and valid. The offline path and the tests work without the token.
 
+**A cheap key before the expensive key.** When building an artifact is costly, look it up first by a hash of sorted input metadata (path, size, modification time, mode). On a miss, build, compute the content hash and store the result under both keys. If metadata can change without the content changing, or the reverse, put content hashes in the fast key. Tests change one metadata field and expect a miss, and feed the same inputs in another order and expect the same key.
+
+**Files written in parts.**
+
+- **Clean up on failure.** A transform that creates several output files records each path as it is created and removes them all if a later step fails. In a library, use a guard whose `Drop` removes them unless a commit flag is set, so a panic also cleans up.
+- **Validate a split by hashing.** Stream the original through one hasher and the ordered parts through another, and compare. This holds only when part order is authoritative; otherwise keep a manifest with each part's index, size and hash. Tests delete a part, reorder parts and flip one byte.
+- **Archives need explicit parent directories.** A tar builder emits a directory entry for every ancestor, top-down, and keeps a set of the ones already written.
+- **A vector with a read cursor is a queue.** In fixed-capacity or allocation-free code, push to a vector and advance an index instead of removing from the front. Do not discard a failed push on a fixed-capacity vector unless an invariant proves the capacity.
+
 ### Benchmark harness (criterion)
 
 ```rust
@@ -6456,6 +6484,10 @@ The host application implements the trait on its own state, and a test uses the 
 **Optional exporters behind a feature.** Core metrics are always compiled; the exporter and its registry sit behind a cargo feature, and tests run with and without it. An in-memory metric store has a retention bound.
 
 **Local SQLite stores.** A single-process desktop or CLI tool may keep one connection behind a mutex. The constructor creates the parent directory and the schema for file and in-memory stores alike. A server uses a pool.
+
+**Clients of external APIs.** The client takes its base URL as a parameter so tests can point it at a mock server. It sets a timeout and a user agent, and clamps paging parameters to the provider's limits. Each status maps to a domain error: authentication, rate limit after retries, and invalid query with the provider's validation message parsed out. Tests use tiny delays or an injected sleep, never real waits.
+
+**Dynamic SQL identifiers go through one helper.** Every public method that formats a table or column name into SQL calls the same validation function first; values are always bound parameters. A batch upsert runs in one transaction, and an empty batch returns early. Database tests use random table names and probe concurrency through cloned handles.
 
 ### Backend security hardening checklist
 
@@ -9165,6 +9197,14 @@ if results.len() < MINIMUM_RESULTS {
 - **Validate a directory contract once.** A CLI that works on a required folder layout builds one config value at startup. It checks that the path exists, is a directory and holds the required files, with errors that name the path, and it exposes optional inputs as methods that return `Option<PathBuf>`. Later code takes the validated config and does no existence checks of its own. A test builds the layout in a temporary directory.
 - **Split large files with a config and a result.** A chunking utility takes an explicit config, validates it before any I/O, rejects an empty input, keeps compound extensions such as `.tar.gz`, and reads through a fixed-size buffer so the file is never held whole in memory. It returns the chunk list with sizes. Tests cover a small file, a compound extension and the parsing of size strings.
 - **One model, two artifacts.** A generator that produces both a human document and a machine-readable file renders both from one validated and sorted model. For generated text, tests assert stable section headings and predictable file names; a full-file snapshot alone is brittle.
+
+**Command-line configuration and generators.**
+
+- **Resolve configuration once.** Each setting comes from its flag, then its environment variable, and is validated at once, so later code never sees half-valid configuration. Nothing below the boundary reads the environment. Secrets are masked in any printed summary.
+- **A parse entry point for tests.** Beside `parse()`, offer a function that parses a given argument list (`try_get_matches_from` or `try_parse_from`) and returns an error without exiting the process.
+- **Libraries do not print progress.** A library used outside a terminal takes a callback or a writer.
+- **Embedded template trees.** A project generator embeds its templates in the binary and writes a base layer, then a template-specific layer that may override it, then extras named in a per-template manifest. File names carry conditions and renames. Snapshot-test the generated project for each supported combination and assert the override order.
+- **Bindings forward.** A Node or Python binding crate exposes functions that forward to the Rust library and holds no behaviour. The binding's smoke test and the Rust tests run the same fixture arguments.
 
 ### Gate discipline
 
