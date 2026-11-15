@@ -2352,6 +2352,8 @@ Default combinations:
 
 Output order: Backend Work Mode, Executable Requirements, Service Design, Verification Matrix, Implementation Plan, Quality Gates, Open Questions. Traceability table columns: `req_id | test_id | test_type | assertion | target`.
 
+Handoff notes: the migration and rollout review is triggered by a change in schema or rollout behavior, not by whether a migration file was touched; a code-only change that alters rollout behavior still needs it. Passing format, lint, tests and build does not evidence a "faster" or "safer" claim; each such claim needs its measurement. Keep the Open Questions section even when it is empty. For a two-line fix the traceability table may be skipped if the requirement-to-test link is kept in the commit message.
+
 ### Backend delivery rules
 
 - Keep domain validation out of transport-only types. Transport validation is not the whole validation story; keep domain invariants explicit.
