@@ -2464,6 +2464,8 @@ Auth and recovery flows:
 - **Design order for a security-sensitive flow.** Assets and actors; public observations; durable states and effects; typed boundaries and error classes; idempotency and transaction scope; inline or worker; abuse and crash tests; staged rollout with a rehearsed rollback. Decide the state and observation contract before coding.
 - **Test fixtures for these flows.** `cargo test` alone is not enough. Use a database-backed fixture with isolated state, controlled clock and randomness, and a fake remote that can fail both before and after its effect. Run concurrent requests, not only sequential ones. Make sure background tasks do not outlive the test. Run password hashing on the blocking pool, not on the async executor. A read-only route may omit write-replay tests if the scope is stated.
 
+- **Per-flow trade-offs.** Decide auth, retry and recovery per flow and deployment, not through one global policy. Deny by default. Sessions need a revocation path. Idempotency storage must not retain sensitive payloads longer than data policy allows. A queue moves a failure; it does not remove it, so add background work only with a durable owner and operator recovery. Retries can amplify an outage. A deploy rollback does not roll back data. Do not assume client retries arrive sequentially. Prefer the option with the fewest ambiguous states over the one with the lowest latency or least code, and never drop durable state for performance without recording it.
+
 ### Database pool and compile-time checked queries
 
 ```rust
