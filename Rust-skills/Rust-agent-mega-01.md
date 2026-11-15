@@ -2466,6 +2466,9 @@ Auth and recovery flows:
 
 - **Per-flow trade-offs.** Decide auth, retry and recovery per flow and deployment, not through one global policy. Deny by default. Sessions need a revocation path. Idempotency storage must not retain sensitive payloads longer than data policy allows. A queue moves a failure; it does not remove it, so add background work only with a durable owner and operator recovery. Retries can amplify an outage. A deploy rollback does not roll back data. Do not assume client retries arrive sequentially. Prefer the option with the fewest ambiguous states over the one with the lowest latency or least code, and never drop durable state for performance without recording it.
 
+- **Flow threat-and-recovery record, required for sensitive or mutating flows.** Goal, assets, actors, trust and authorization boundaries, secrets, public observations, state machine, transactions, idempotency, remote effects, failure classes, timeouts, workers, logs, abuse cases, controls, tests, rollback, residual risk. Every ambiguous outcome is assignable to one durable state, one owner and one next action. Typed identifiers do not imply authorization. Check that secrets and payloads do not end up in logs or idempotency records, and that remote effects carry a correlation identifier. A read-only route may use a reduced record if it exposes no sensitive topology.
+- **Product-required disclosure is an isolated exception.** If a flow must reveal account state (for example an invitation flow), confine the exception to that flow and test its abuse boundary. Tests that encode enumerable behavior are defects, not specifications. An incident workaround does not become policy.
+
 ### Database pool and compile-time checked queries
 
 ```rust
