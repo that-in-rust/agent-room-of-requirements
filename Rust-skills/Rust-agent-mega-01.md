@@ -4312,6 +4312,8 @@ Rule to test to gate:
 
 ## 17. Review checklist
 
+Review in rejection-first order: read the diff for the fatal anti-patterns of section 13, then check that every requirement has a test, then run the tool gates, then check release readiness. The fatal read takes minutes and the gates cost tool runs, so do not spend a full gate run on a change a short read would reject. It is a pipeline, not a filter to stop at: a change that passes the first read still goes through every later step. Half of the fatal list is about requirements (ambiguous wording, unverified performance claims), so it applies to a one-line fix too.
+
 Questions to answer in any review or before handoff:
 
 - Which mode or combination of modes is active?
