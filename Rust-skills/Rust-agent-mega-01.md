@@ -2471,6 +2471,8 @@ Auth and recovery flows:
 
 - **Security-flow outcome measures.** Count secret-exposure findings, observable differences between auth responses, token misuse cases, duplicate-effect incidents, unresolved idempotency races, ambiguous timeout states, retry amplification, worker job age and terminal states, and rollback failures. The most useful single number is unexplained state after a failure. Zero incidents is not proof, fewer compile attempts or review comments say nothing about security, and the metrics themselves must not expose identities. Completeness means no unexplained observation or state inside the declared flow; it is not a claim about the whole system.
 
+- **Review scope for security flows.** One review covers one asset and one durable workflow. Split by authorization domain, transaction boundary, remote effect, worker lifecycle, deployment unit or operator; endpoint and request counts do not predict review effort. Review password reset separately from session refresh, then reconcile the token and logging controls they share. Keep one owner for the end-to-end visible and durable contract. Distinguish authentication from authorization, a runtime timeout from a business deadline, a framework rejection from a product error, and a dependency advisory from exploitability.
+
 ### Database pool and compile-time checked queries
 
 ```rust
