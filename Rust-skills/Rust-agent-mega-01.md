@@ -4011,6 +4011,8 @@ Before shipping any meaningful Tauri feature, verify:
 - Updater, sidecar, filesystem and plugin boundaries stay least-privilege.
 - Lifecycle ownership is verified for tray, deep links, single-instance handoff, sidecars and startup/setup work.
 
+These checks are unconditional and come before tool output. A Tauri app is a web frontend holding OS-level power through IPC, so its typical failures are at that boundary: permissions granted too widely, a blocked runtime, a command that panics. Clippy and `cargo test` do not see them. Green cargo gates are required and not sufficient: fail a review for a broad shell or filesystem grant even when every command passes. Rules phrased "verify no ..." are gates; rules phrased "use when feasible" (naming, diagram style) are local conventions and never block delivery. Apply this gate list at the end of the work, after the design is settled; do not start a design from it.
+
 Alongside the Rust command gates, run the repo's frontend and Tauri checks for the changed boundary. Use the repo's actual package manager and scripts; for example:
 
 ```bash
