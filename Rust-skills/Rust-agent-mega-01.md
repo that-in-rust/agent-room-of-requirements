@@ -793,6 +793,8 @@ A matrix that uses the wider verification mix. Choose the smallest useful set, n
 | REQ-RUST-005.0 | TEST-LOOM-006 | concurrency | shared state remains race-safe | safety |
 | REQ-RUST-006.0 | TEST-PERF-007 | performance | p99 < 500us for 10k entities | latency |
 
+The seven rows are an example, not a quota. Keep the metric column to a small shared vocabulary (correctness, integration, usability, misuse, invariant, safety, latency): each word states the kind of evidence the test contributes, so the column read top to bottom is a risk profile. A matrix that is all correctness and has no safety row on code with shared state is a review flag before any code is read.
+
 ### Test skeletons
 
 Name each test after the requirement it proves.
@@ -833,6 +835,8 @@ fn test_req_rust_001_performance_contract() {
 }
 ```
 
+This skeleton shows a threshold as code and nothing more. One `Instant` reading carries scheduler noise, and `cargo test` builds in debug mode, where a latency threshold means little: run threshold tests with `--release`. Keep the single reading only when the margin dwarfs the noise, and say so. Otherwise add warm-up, repetition and percentile reporting, or a statistical benchmark such as `criterion`. State a performance claim in four parts: current value, target value, percentile and population ("from 5 ms to under 1 ms at p99 for 10k entities"). A new system with no current value still states percentile and population.
+
 Concurrency contract:
 
 ```rust
@@ -850,7 +854,7 @@ async fn test_req_rust_001_concurrency_contract() -> anyhow::Result<()> {
 }
 ```
 
-A `join_all` run like this is a smoke check: it sees the schedules the runtime happened to pick, not every interleaving. Where ordering of shared state matters, model it with `loom`. If `loom` is not available and this stands in for it, record the substitution and the reason.
+A `join_all` run like this is a smoke check: it sees the schedules the runtime happened to pick, not every interleaving. Where ordering of shared state matters, model it with `loom`. Keep the `loom` model to the smallest interleaving that matters. `loom` does not fit code doing external I/O, so a stress test is the legitimate fallback there: record the substitution and the reason. Keep stress-style tests for load claims, and cite the threshold each one exercises. A retry or concurrency limit stated in a requirement needs a matrix row that exercises it, under the same ID. The rewrite table promises no detached task leaks and no skeleton here tests that, so write that test yourself: assert every spawned task is joined or aborted at shutdown.
 
 Doctest:
 
