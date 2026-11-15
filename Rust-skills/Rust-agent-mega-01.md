@@ -2760,6 +2760,8 @@ Size the planning work by the trust boundaries the change crosses. Write the ful
 
 Record the result of every gate in the plan: fmt, clippy, Rust tests, Rust build, frontend checks and Tauri checks. An empty results block is not done, a failing gate has an owner and a date, and a platform-specific gate that could not run locally is recorded as skipped. A gate command copied into a repo with a different layout can run nothing and still exit zero, so confirm it did real work. Before editing a capability file, check its schema against the docs for the project's Tauri major version, because permission guidance goes stale at major versions. General Rust API guidance on error types applies to command errors only within Tauri's serialization requirements.
 
+Split Tauri work by boundaries crossed, not by lines or symbols changed. One slice holds a handful of requirements whose design decisions and matrix rows a single reviewer can keep in mind. Split when requirements multiply or the change spans several windows and capability files, for example a feature that touches both filesystem capabilities and tray lifecycle. A small diff that rewrites every window's permissions is a large change. Frontend code that calls `window.__TAURI__` globals with no typed invoke contract has skipped the plan. A one-file fix may ship with its requirements and a deferred matrix when the deferral is logged. A requirement-to-test traceability percentage can be raised by writing vaguer requirements, so read the requirements along with the number. Permission-denied defects tend to appear only in packaged builds; when one does, reopen the capability decisions.
+
 ### Tauri priorities by task type
 
 | Task type | Prioritize |
