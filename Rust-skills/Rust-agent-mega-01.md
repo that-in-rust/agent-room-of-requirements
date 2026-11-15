@@ -470,6 +470,8 @@ Use this shape when a request is not ready for immediate coding:
 
 The mode block is example filler: replace it with the modes actually chosen. A packet whose blanks still read like the template is hollow. Fill the gate lines with real command results; a packet with empty gate lines is not complete, and passing tests do not imply the `--all-targets --all-features` build passes, so report the build line separately.
 
+A packet is one document, not six stapled sections. Every requirement ID reappears in the verification matrix, and every matrix row reappears in the plan; a search for the IDs checks it. Matrix rows copied from the example give themselves away by citing IDs the packet never defined. A test row with no requirement behind it means the requirement is written first.
+
 ## 4. Architecture and boundaries
 
 Plan the design before coding.
