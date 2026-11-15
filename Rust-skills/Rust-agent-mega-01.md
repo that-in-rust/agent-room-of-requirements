@@ -2435,6 +2435,10 @@ When a gate fails, return to the workflow step that gate checks instead of redoi
 
 - **Operational scale triggers.** Enabling autoscaling or a rolling deploy crosses the multi-instance line on the day it is configured, not on the first scale-out: make migration sequencing mandatory in the same change. The safe default is to use the four-step pattern from day one. Many services need templated setup; hand-wired configuration across a fleet drifts. When deploy authority and schema authority belong to different owners, write the handoff down. Generic container layer advice can worsen Rust build times; verify cache behavior against Rust's dependency compilation.
 
+- **Backend test suite shape.** For an HTTP service the outside-in integration test is the primary instrument, because backend defects cluster in wiring, serialization, routing and state setup, which lie between units. Unit tests keep domain constructors, validation, parsing edges and small pure decisions. Integration-first is not integration-only. Each defect class has one cheapest catcher; choose the test kind by concern, not by rank.
+- **Build order for the suite.** First a harness that boots the app under test configuration; second isolation (random port, per-test database state); third HTTP mocking for external calls; then helpers, property tests and the concern-by-test matrix. Property tests are selective and strongest at the domain edge. Do not start a property-testing effort on a service that cannot spawn itself in tests.
+- **Tests read as user journeys.** A test should read "create user, post order, expect 201 and a persisted row", not as six internal imports assembling state before one assertion. A helper that hides too much logic stops helping: every failure becomes a harness investigation. An internal setup shortcut is acceptable as a labeled helper. Unit-testing an extractor's deserialization is useful, but still run one pass over the wire. If tests share infrastructure, write down the isolation boundary and why it is safe.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
