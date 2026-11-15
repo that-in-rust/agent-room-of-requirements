@@ -4296,6 +4296,8 @@ Rule to test to gate:
 - **Performance claims at review.** Reject a claim with no test on the first read, and check again at release readiness that every claim has a threshold test. A benchmark and a contract test are different kinds of evidence, so record which one was accepted. A claim whose threshold sits near the noise needs release-mode evidence.
 - **Gates across a workspace.** Run the command floor once at the workspace root and give a readiness verdict per crate. A workspace coverage number can hide one untested crate behind well-tested siblings, so read coverage per crate.
 
+- **Keep rarely run gate commands working.** A gate that runs only on high-risk changes breaks when it is needed most. Test the exact flag combination (for example `cargo llvm-cov --workspace --branch --fail-under-lines N`) against the installed tool version; checking that the tool exists misses a flag that was renamed. A command copied from a guide has been read, not run, until it runs here.
+
 ### Completion contract for an agent
 
 - "It compiles" is not done. Done is: the four required commands green with their output shown, the release checklist affirmed item by item, and none of the review rejections present. If you cannot run commands, list them as follow-up for a human; do not claim them.
