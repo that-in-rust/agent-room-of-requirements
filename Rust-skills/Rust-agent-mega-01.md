@@ -1462,6 +1462,37 @@ Tests cover a single edit, several non-overlapping edits, two inserts at the sam
 
 **A stdio tool server is a loop over a registry.** Read one JSON-RPC request per line, parse it into a request enum, dispatch `initialize`, `tools/list` and `tools/call`, and write exactly one JSON line per response. Invalid JSON gets a parse-error response and the loop continues. Each tool implements one trait that returns its definition and handles a call, and a registry maps names to tools. Integration tests send `initialize`, `tools/list`, an unknown method, invalid JSON and one tool call, and assert that every response is one JSON line and that no log text reaches stdout.
 
+**A collection invariant lives in a wrapper.** When a collection has an invariant that no single element can enforce (every batch has the declared schema, every part belongs to one tenant), a wrapper type owns the collection, and its `try_new` rejects the first violating element with an error that names the expected and the actual value. `TryFrom` conversions from readers and streams reuse that constructor, and `into_inner` gives the parts back. It belongs at FFI, plugin and serialisation boundaries.
+
+**Duplicate registration is a typed error.** A context that owns scarce registrations (URL schemes, routes, sockets, names) keeps the set of registered names. A second registration of the same name returns an error that carries the name and leaves the set unchanged. Nothing is overwritten silently.
+
+**Emulate a missing platform feature with a reversible encoding.** When a platform lacks a feature but has a narrower one that can stand in (no custom URL schemes, but interceptable HTTP hosts), put the mapping in a small pure module with three functions: match, apply and revert. Tests round-trip apply and revert, and check that names sharing a prefix do not match. Do not use it where security depends on the exact original semantics, such as the origin of a page.
+
+**A manifest does not store its own path.** A config or manifest type that must save itself keeps the path it was read from in a field marked `#[serde(skip)]`. The reader sets the field after parsing and returns `Ok(None)` when the file does not exist. A round-trip test asserts that the path comes from the read call and never from the file content.
+
+**Event envelope for a shared bus.** Every message on a shared broker is an envelope with an id, the subject, a UTC timestamp, the producing source and a generic payload. Subjects are constants. The subject and source stay in the body, not only in broker headers, so events can be stored, replayed and inspected.
+
+```rust
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(bound(
+    serialize = "T: serde::Serialize",
+    deserialize = "T: serde::de::DeserializeOwned"
+))]
+pub struct BusEvent<T> {
+    pub id: String,
+    pub subject: String,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+    pub source: String,
+    pub payload: T,
+}
+```
+
+Tests round-trip representative payloads, assert that the subject constants match the subscriptions, and cover acknowledge, reject and redelivery against a real broker.
+
+**Eager object, lazy plan, physical execution.** A query-style engine keeps three layers apart: a stable eager object that users hold, a logical plan behind a `#[must_use]` lazy handle that the optimiser may rewrite, and an execution trait that is bound late. Each layer changes for a different reason.
+
+**Language registry details.** Build the registry once in a `LazyLock`. Names, aliases and file extensions are case-insensitive keys to one shared entry, and a duplicate key fails at construction. Resolve grammar node-kind names to numeric ids at that point; an id of zero means the grammar does not know the kind, which is an error unless absence is intended. Tests cover canonical names, aliases, upper-case extensions and unknown extensions.
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -1976,6 +2007,8 @@ fn build_trials() -> Vec<Trial> {
 - A snapshot accepted casually can bless a regression. Review snapshot diffs, and assert precise properties directly for security-sensitive or numeric logic.
 
 **Scenario tests with a typed world.** Where behaviour is naturally described as scenarios against a live async client, map each step to an async function and keep scenario state in a typed struct with explicit fields (the client, the last created id, the last observed payload). A string-keyed bag of values is the failure mode. Each step changes only named fields, and an `expect` in a step names the missing test setup. Tight unit tests do not need this indirection.
+
+**Test a plugin loader with built fixtures.** For a tool that discovers and loads plugins, drivers or lint libraries, an integration test builds small fixture crates in a temporary directory from a template, with a sanitised environment so no toolchain variable leaks in from the developer's shell. It points the loader at them through its own environment variable, runs the real binary and asserts on the output. Cases: the same name under two toolchains, the same name under two paths, missing metadata, and an explicit override.
 
 ### Verification rules by risk
 
@@ -2990,6 +3023,10 @@ macro_rules! for_all_classified_sources {
 - Write no one-off match arm elsewhere.
 - Macros obscure generated code and error messages. Use plain enums and matches when the set is small.
 
+**A derive that follows field order.** When a struct maps field by field onto a storage schema, the derive accepts only structs with named fields and emits the per-field code in source order, so the generated column order equals the declaration order. Every other input gets a `compile_error!`. Compile-fail tests cover enums, unions and tuple structs; a round-trip test with nullable and non-nullable fields asserts the column order. A nested schema needs a real intermediate representation in the macro first.
+
+**Dump and parse back generated code.** Write the expansion as a plain function from `proc_macro2::TokenStream` to `TokenStream`, with the `#[proc_macro]` entry point as a thin wrapper. When a development environment variable is set, the wrapper parses the expansion as a `syn::File` and prints it with `prettyplease` to stderr. Tests call the inner function, parse the result with `syn::parse2::<syn::File>` and assert on the items. Text assertions on the pretty-printed output are smoke checks; compile-fail and runtime tests still carry the semantics.
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
@@ -3484,6 +3521,47 @@ pub struct DeleteError {
 
 An all-or-nothing error enum fits only where a real transaction spans both systems. Tests cover the happy path, a failure of the first system and a failure of the second.
 
+**Error metadata as a trait, with one serialisable envelope.** When errors cross a process, API, CLI or agent boundary and a machine acts on them, every domain error implements one metadata trait, and one generic envelope carries those fields over the wire. The typed error stays available in-process and is skipped by serde.
+
+```rust
+pub trait ErrorData {
+    fn code(&self) -> &'static str;
+    fn retryable(&self) -> bool;
+    /// Internal errors are not shown to external callers.
+    fn internal(&self) -> bool;
+    fn message(&self) -> String;
+    fn http_status_code(&self) -> u16 { 500 }
+    fn context(&self) -> Option<serde_json::Value> { None }
+    /// What the caller can do about it.
+    fn hint(&self) -> Option<String> { None }
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorEnvelope {
+    pub code: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<serde_json::Value>,
+    pub retryable: bool,
+    pub internal: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub http_status_code: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<Box<ErrorEnvelope>>,
+}
+```
+
+- A derive macro can generate the per-variant `match` arms of the trait, so a new variant cannot be added without its code, retryability and visibility.
+- Test each variant's code, retryability, visibility, status, context and hint, and snapshot the serialised envelope so field names and privacy do not drift.
+- A small private module needs none of this; `thiserror` with context is enough there.
+
+**Convert a generated client's errors at the SDK boundary.** An extension trait on the generated client's `Result` maps its error into the house error type. A documented API error response keeps its status, code, context, retryability and source chain. A transport error becomes a communication error that is retryable when it is a connect, timeout or request failure. Do not flatten every case into one variant while a caller still needs the retry or status decision. Table-test each generated error variant: a server error with a nested source, a timeout marked retryable, and an invalid request marked not retryable with status 400.
+
+**Every visible variant has a tested policy.** In a service-level error enum, a table test asserts the status code, the stable error code, the serialised shape and the retry kind of each externally visible variant. A review rejects a new variant that relies on the catch-all arm.
+
+**Debug strategy for error construction.** A library with many validation sites can route every error message through one constructor that reads a strategy once from the environment: normal, panic at the construction site, or append a captured backtrace to the message. Every `ensure!` and `bail!` call site gains the debugging aid with no change. Keep the default strategy for anything a client parses, and document the variables. The strategy is read once per process, so the panic and backtrace modes are tested in subprocesses.
+
 ### Error and recovery taxonomy
 
 | Error class | Typical boundary | Recovery | Representation | Required tests |
@@ -3758,6 +3836,10 @@ self.running.insert(job.clone(), tokio::task::spawn_blocking(move || run_holding
 **Prepare outside the writer, write in one loop.** On an ingestion path, do the CPU-heavy encoding and validation before the batch is queued, and let a single consumer loop own the log and the in-memory table. Configuration picks one of three behaviours: write directly, wait for queue space, or reject with a queue-full error through `try_send`. The split is wrong when preparation reads mutable writer state, because the decision can be stale by the time it is written. Test both full-queue policies and the direct path, and export queue length and lock time.
 
 **A background queue generic over the task.** When uploads, sync and indexing share one lifecycle, define a task trait with an associated error type that reports whether it is transient, and give the queue rate limiting, retry options, an abort handle for the active task, and a choice between a one-shot result per task and a broadcast stream of results. A plain channel and loop is clearer for fire-and-forget work. Tests cover a transient retry, a permanent failure, queue close, a rate-limit wait and the abort of the active task.
+
+**Concurrency limit as deployment policy.** An optional limit in configuration becomes `Option<Arc<Semaphore>>` in the application context. A unit of work holds its `OwnedSemaphorePermit` on the stack. Where a permit must live in a per-unit context object, the release is idempotent and also runs on the error and cancellation paths. With a limit of one, a test asserts that two units never overlap.
+
+**Best-effort "only one starts" marker.** A store write that sets a key only if it is absent, with an expiry, returns a boolean: this caller won, or another already holds the marker. The return type makes the caller handle both. It suits idempotent job starts where expiry is acceptable. It is not a distributed lock; strict ownership needs a fencing token and renewal. Integration tests assert true for the first insert, false for the second, true again after a delete, and exactly one true among many concurrent calls.
 
 ### Async runtime discipline, in code
 
@@ -4919,6 +5001,8 @@ impl Client {
 
 A bridge test calls several methods through the foreign ABI, so the shared runtime is exercised across calls.
 
+**Cancel the foreign task when the Rust future is dropped.** A Rust future that wraps a task on a foreign event loop (a Python asyncio task, for example) creates the task through the loop's thread-safe scheduling call, never directly from an arbitrary Rust thread, and receives the result through a oneshot channel. The wrapper records completion, and its `Drop` schedules a cancel on the loop when the task has not finished and the foreign runtime is still alive. Tests assert that dropping before completion cancels the task and that a finished future does not; run them with the foreign runtime's debug mode on to catch cross-thread misuse.
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -5733,6 +5817,47 @@ fn consolidate<D: Ord, T: Ord, R: Semigroup>(updates: &mut Vec<(D, T, R)>) {
 
 **Positioned append with a visible sync policy.** A segment or journal writer that receives already-encoded immutable buffers writes them with positioned vectored writes at its tracked offset, in chunks no larger than the operating system's vector limit. `fsync` is an explicit policy flag, so its cost is visible to the caller. The size counter is published after the write succeeds. With concurrent writers, reserve the range with `fetch_add` before writing, or serialise the writes. After recovery the counter equals the file length, and a test or crash simulation covers each sync policy.
 
+**Columnar builder: values and validity apart.** A null-aware column builder appends a value for every row, the default value for a null row, and tracks validity separately. The values buffer and the logical length then always agree, which slicing, vectorised kernels and FFI rely on. The validity bitmap is created on the first null and back-filled with the count of rows seen so far; a column with no nulls finishes with no bitmap.
+
+```rust
+pub struct ValidityBuilder {
+    bitmap: Option<BitmapBuilder>,
+    len_before_bitmap: usize,
+}
+
+impl ValidityBuilder {
+    pub fn append_valid(&mut self, n: usize) {
+        match self.bitmap.as_mut() {
+            Some(bitmap) => bitmap.append_n(n, true),
+            None => self.len_before_bitmap += n,
+        }
+    }
+
+    pub fn append_null(&mut self) {
+        let len = self.len_before_bitmap;
+        self.bitmap
+            .get_or_insert_with(|| {
+                let mut bitmap = BitmapBuilder::new();
+                bitmap.append_n(len, true);
+                bitmap
+            })
+            .append(false);
+    }
+
+    pub fn finish(self) -> Option<Bitmap> {
+        self.bitmap.map(BitmapBuilder::finish)
+    }
+}
+```
+
+- The lazy form fits any optional side structure where the all-default case dominates (sparse masks, dirty flags).
+- Do not store defaults for null rows when the default is costly, or when a consumer may skip the validity check.
+- Property-test that the values length equals the validity length after any sequence of appends, and that a null row never exposes its default through a safe API. Benchmark all-valid, first-null and late-null inputs.
+
+**Deterministic schema inference.** To infer one schema from heterogeneous JSON or CSV, infer a type per value, collect the types seen for a field or array into an insertion-ordered set, and merge them with fixed rules: no values gives null, one type stays, structs union their fields, lists merge their inner types, integer with float gives float, null with a type gives that type, and anything else falls back to string. Where a silent fallback to string would lose data, return a typed schema-conflict error. Table-test each rule.
+
+**A memo entry has a pending state.** An async memo keyed by a fingerprint of the inputs stores `Pending` or `Ready(Option<T>)` per key, so a second caller waits for the first and a finished empty result is not taken for unfinished work. Use it only for deterministic work, or include every side-effect dimension in the fingerprint. A race test sends two concurrent requests for one fingerprint and asserts that one producer ran.
+
 ### Benchmark harness (criterion)
 
 ```rust
@@ -6236,6 +6361,8 @@ fn set_ready(&self) {
 **Routing on the request body.** A router that picks an upstream node from a body field (tenant, partition key, query text) parses the body once into a typed enum of the payload kinds it supports, derives the routing key, and rebuilds the upstream request from that enum with the same JSON or form encoding. Reading the body consumes it, so a pass-through proxy that inspects it and forwards the original request sends nothing. Unsupported endpoints are rejected with a clear error. A test per payload kind asserts the routing key and the rebuilt method and body type.
 
 **Shutdown is a process concern.** The server passes one dedicated shutdown future to the framework's graceful-shutdown hook. That future waits for SIGTERM or SIGINT on Unix and for Ctrl-C on Windows, in `cfg` branches, and logs which signal arrived. Signal handling stays out of application state and route handlers.
+
+**Health listener on an ephemeral port.** A worker, agent or plugin runtime that needs a readiness endpoint binds `127.0.0.1:0`, reads the assigned port from `local_addr`, registers that port with its host, and only then spawns the accept loop. Fixed ports collide across instances and parallel tests; a `--port` flag that defaults to 0 gives a CLI the same behaviour. An internet-facing server still needs shutdown, limits and backpressure around the loop. The test asserts that the returned port is the one registered and that a request to it succeeds.
 
 ### Backend security hardening checklist
 
@@ -8928,6 +9055,15 @@ if results.len() < MINIMUM_RESULTS {
 - **Shared arguments for sibling subcommands.** Two subcommands that take the same options embed one argument struct with `#[clap(flatten)]`.
 - **Build artifacts from cargo's JSON messages.** A task runner that needs the paths cargo produced runs cargo with JSON message output, reads the stream with `cargo_metadata::Message::parse_stream`, prints compiler messages, collects the artifact messages, and then checks the exit status.
 - **A plugin checks its host version.** A plugin compares the host's version with the one it was built against using a semver requirement and prints a warning to stderr on a mismatch, then carries on.
+
+**Source-analysis and CLI tooling shapes.**
+
+- **JSON log formatter with identity.** When one process logs for several tenants, jobs or pipelines and the logs are routed by machine, a custom `tracing_subscriber` event formatter collects the event's fields with a visitor into a JSON map, keeps numbers and booleans typed, adds the process identity (service name, job id) as defaults, and lets an event field of the same name override a default. A configuration flag switches between JSON and plain text. Tests cover the defaults, the override, the field types and the switch.
+- **Syntax-level metrics with `syn::visit`.** A repository-wide counter (unsafe blocks, loops inside unsafe code) is a visitor that pushes a per-function record on entry, calls the default `visit_*` function to recurse, and pops on exit. This suits metrics, lint prototypes and risk scouting; anything that needs types, macro expansion or borrow facts needs the compiler. Fixtures cover an unsafe function, a safe function with an unsafe block, and loops inside and outside unsafe code.
+- **Parser worker stack size.** A batch tool that parses source on a thread pool sets an explicit worker stack size (8 MiB is a common choice), because deeply nested or generated code overflows the default. The binary builds the global pool once, before any parallel work. A library never configures the global pool.
+- **Findings as labelled source snippets.** An analyser or audit tool prints each finding as a diagnostic with the source span labelled and a bounded context window (`saturating_sub` at the start, `min` against the file length at the end). A second label marks related code outside the window. Snapshot the output for a finding at the start of a file, at the end, and with an outside label.
+- **A `cargo foo` subcommand.** The top-level parser has `bin_name = "cargo"` and a subcommand enum with one variant named after the tool, so `cargo foo` parses and the help text reads correctly. Repeatable selectors use `ArgAction::Append`, and a `#[clap(last = true)] Vec<String>` forwards everything after `--` to the wrapped cargo command. Snapshot the help text and the parse of `cargo foo -- --features x`.
+- **Generated files are checked in CI.** CI runs each generator and fails when the working tree differs from the committed output.
 
 ### Gate discipline
 
