@@ -6944,6 +6944,13 @@ fn test_req_tauri_003_command_performance_contract() {
 - Which risks deserve Rust tests, frontend tests, mocked desktop tests or desktop boundary checks instead of unit tests alone?
 - Which names, command IDs or window labels must stay stable even if a cleaner new name exists?
 
+**Production-readiness questions for a desktop app.**
+
+- **The unit of review** is one interaction from front-end event to command, permission declaration, Rust handler and packaged-app check, with a strict schema, a timeout and a recovery behaviour.
+- **Signals to measure:** command duration, front-end error-boundary hits, startup time, bundle size, failure rate by platform and update rollback count.
+- **Failure modes to model:** permission drift, unsafe command inputs, a blocked UI thread, platform-specific path behaviour, update failure and IPC serialisation mismatch.
+- **Scale concerns:** IPC volume, command latency, asset size, permission surface, packaging failures by platform and update rollout safety.
+
 ### Tauri default reliability and security stack
 
 If you do not know what to prioritize, work down this list:
@@ -8941,3 +8948,19 @@ Before finishing a design, check whether one of these applies:
 - **Architecture and boundaries.** Are transport, domain and persistence shapes separated? Does a framework type leak inward? Are trait seams at real external boundaries and absent elsewhere? Could a fresh contributor or agent build and test from the workspace root without hidden knowledge? Is any generated surface being edited as if hand-written?
 - **Verification honesty.** Does each important claim have fresh evidence? Is each bug fix backed by a failing-then-passing regression test? Does the test mix match the risk surface, or only the easiest unit cases? Which performance claim lacks a threshold or profile?
 - **Abstraction skepticism.** Which abstraction is not yet justified by reuse, invariants or compatibility pressure? Where is unsafe, proc-macro, lock-free or typestate complexity used for show? Would a simpler boundary give clearer guarantees?
+
+**Production-readiness questions.** Guidance that reads well can still fail under load. For a service, worker or tool boundary, a reviewer asks for four artifacts and rejects qualitative labels in their place.
+
+- **Interface contract:** input, output, error taxonomy, idempotency key, timeout, retry policy, lifecycle state, resource bounds and owner.
+- **Capacity targets:** p50, p95 and p99 latency, throughput, memory budget, the saturation signal, the degradation behaviour, and what changes at ten and a hundred times the load.
+- **Observability map:** the logs, metrics, traces and sampled events that exist, and the alert threshold for each.
+- **Failure drill:** inject one dependency failure, one slow path, one malformed input and one stale input, and write down the expected recovery.
+
+Further checks:
+
+- **Debugging locality.** When an outcome is bad, the telemetry shows which stage produced it.
+- **Rust signals to measure:** benchmark thresholds, tracing spans, allocation counts, panic rate and p99 operation latency. Compile-time guardrails come first.
+- **Rust failure modes to model:** executor starvation, unbounded task spawning, lock contention, oversized clones, error erasure and hidden blocking calls.
+- **Backend signals:** error rate by route, cancellation and retry counts, pool utilisation and rollback triggers. Model a dependency timeout, a partial database failure, a slow downstream service and a replayed token or session.
+- **Test-loop health:** time from failing to passing test, flake rate and coverage by requirement. A test that never failed first and a stale green check are both defects. Give the test suite a flake budget, a parallelism limit, isolated fixtures and a CI runtime target.
+- **Keep the primitive small.** One explicit API with typed errors, bounded resources and a few measurable invariants, small enough for other code to depend on without copying it.
