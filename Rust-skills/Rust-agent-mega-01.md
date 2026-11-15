@@ -777,6 +777,19 @@ cargo flash --chip STM32F401RETx --release --example blinky
 probe-rs run --chip STM32F401RETx target/thumbv7em-none-eabihf/release/app
 ```
 
+- `#![cfg_attr(not(test), no_std)]` keeps `std` available to tests only. A `no_std` error enum is `Copy + PartialEq + Eq` and implements `core::error::Error`, so tests compare errors directly.
+- Property tests for a fixed-capacity structure cover its algebraic laws: idempotence, symmetry, transitivity and no-op operations.
+
+```rust
+proptest!(|(x in 0usize..100, y in 0usize..100)| {
+    let mut sets = UnionFind::<100>::default();
+    sets.union_sets_by_rank(x, y)?;
+    prop_assert_eq!(sets.find_set_with_compression(x)?, sets.find_set_with_compression(y)?);
+});
+```
+
+- Recursion such as path compression can overflow a small stack. Prefer an iterative loop where stack depth is constrained.
+
 ### Architectural pattern cards
 
 - **Sync core, async shell.** Async handlers, workers and adapters outside; synchronous domain and policy logic inside. Parse and fetch outside, decide and transform inside, then persist or emit outside. Unit-test the core; integration-test the shell. Skip the split for a tiny, purely async library.
@@ -1106,6 +1119,275 @@ for pass in PASSES {
 
 - Each rule declares its eligibility narrowly and has a trigger test and a non-trigger test. Routing keys get a contract test against parser output.
 - This does not fit rules that need global ordering or shared mutable state.
+
+**Inject content access.** An analyzer or parser receives a narrow function or trait for reading content, such as `Fn(&Path) -> io::Result<Vec<u8>>`, and does not call `std::fs::read` itself. The same logic then reads the working tree, a Git revision or an in-memory fixture.
+
+- Document whether paths are absolute or relative to a root.
+- This does not fit code that needs filesystem metadata or streaming.
+
+**Open language registry.** When the set of languages or providers is meant to grow, language-specific analysis is a trait (which extensions it supports, how it resolves imports, how it finalises the graph) registered per extension. Adding a language is one implementation and one registration, with no edit to the central orchestration.
+
+- Test the duplicate-extension policy and the registration order.
+- Validate the requested variant and name the supported values in the error. An unknown key is a typed "unsupported" error, never a panic on a missing map entry.
+- A new language is added to every per-variant table in the same change, with one smoke fixture that proves the whole path.
+- For one or two cases a plain `match` is simpler.
+
+**Handler chain with "not mine".** In a chain of plugins, codecs, authentication mechanisms or back ends, each handler returns `Result<Option<T>>`: `Ok(None)` means "not mine", `Err` means "mine, but it failed".
+
+```rust
+let mut plan = None;
+for planner in &self.extension_planners {
+    plan = planner.plan_extension(self, node, inputs).await?;
+    if plan.is_some() {
+        break;
+    }
+}
+let plan = plan.ok_or_else(|| PlanError::NoPlannerFor { node: format!("{node:?}") })?;
+self.ensure_schema_matches(node.schema(), &plan)?;
+```
+
+- The first `Some` wins, so registration order is behaviour. Document it and test ambiguous handlers.
+- "No handler accepted this" is its own error and names the input.
+- Validate what a handler returns (here, its schema) before accepting it.
+- If every handler must always handle its input, use a plain `Result`.
+
+**Check every rewrite rule.** A rewrite pipeline (optimizer, syntax-tree transform, graph transform) wraps each rule in a post-condition check that names the offending rule, so an invalid rewrite is caught next to its cause.
+
+```rust
+let before = plan.schema();
+let plan = rule.optimize(plan, config)?;
+if rule.schema_check() && !is_allowed_schema_change(&before, &plan.schema()) {
+    return Err(OptimizerError::SchemaChanged { rule: rule.name().to_owned() });
+}
+#[cfg(debug_assertions)]
+check_invariants(&plan)?;
+```
+
+- Cheap checks always run. Expensive whole-tree walks run under `cfg(debug_assertions)` or a config flag.
+- Each new pass ships with its pre- and post-conditions and at least one negative test built on a deliberately invalid transformation.
+- Incomplete invariants give false confidence, so say what the check does not cover.
+
+**Extension trait with explicit defaults.** An extension trait has required methods for the core contract and default methods for optional categories. Decide for each default whether it means "unsupported" (an error that names the thing), "no-op" or "delegate".
+
+- A default encoder that returns `Ok(())` can lose data silently. Prefer the explicit unsupported error unless a round-trip test proves the no-op is lossless.
+- Decode failures are always explicit.
+
+**Derive capabilities from the registry.** The set of supported operations is read from the handler registry. Do not keep a second, hand-written support matrix; capability tests query the registry.
+
+- The fallback arm for an unsupported node in a compiler or interpreter returns a domain error that names the operation and the back end ("no translation rule for X in back end Y"), raised at the dispatch boundary, not a generic unreachable or missing-function failure.
+
+**Statically layered middleware.** When the stack of concerns around one back-end trait (retry, logging, metrics, timeout, capability checks) is known at build time, compose it at the type level. A layer maps an inner accessor to a wrapped one, and a forwarding trait with a blanket implementation supplies every operation, so a new layer overrides only what it changes.
+
+```rust
+pub trait Layer<A: Access> {
+    type LayeredAccess: Access;
+    fn layer(&self, inner: A) -> Self::LayeredAccess;
+}
+
+pub trait LayeredAccess: Send + Sync + Debug + Unpin + 'static {
+    type Inner: Access;
+    type Reader: oio::Read;
+    type Writer: oio::Write;
+    fn inner(&self) -> &Self::Inner;
+    // each operation has a default body that forwards to `self.inner()`
+}
+
+impl<L: LayeredAccess> Access for L { /* forwards every operation */ }
+```
+
+- Concrete reader and writer types are preserved, so the hot path has no dynamic dispatch.
+- The cost is complex signatures and longer compile times. Layers chosen at run time use trait objects.
+
+**Capability gate for optional arguments.** A unified API over different providers keeps a capability struct of feature bits per back end and checks optional arguments against it in one layer at the adapter boundary, before the request reaches the back end.
+
+```rust
+async fn write(&self, path: &str, args: OpWrite) -> Result<(RpWrite, Self::Writer)> {
+    let capability = self.info.full_capability();
+    if !capability.write_with_content_type && args.content_type().is_some() {
+        return Err(new_unsupported_error(&self.info, Operation::Write, "content_type"));
+    }
+    self.inner.write(path, args).await
+}
+```
+
+- The error names the operation, the argument and the back end. Callers never scatter capability checks.
+- A new optional argument adds a capability bit, the early check, and a test against a back end that lacks it.
+- Wrong capability metadata causes false rejections or unsupported calls. A layer that can emulate a feature safely advertises it.
+
+**One gate for transaction mode.** A session layer that supports both explicit transactions and implicit per-statement transactions keeps the lifecycle and mode in one context object, and every statement path goes through it instead of constructing a transaction directly.
+
+- Starting an automatic transaction while one is active is an error. A write inside a manual read-only transaction is rejected.
+- The gate forbids overlapping transactions, so true nesting needs savepoints. The transaction manager below still enforces its own invariants.
+
+**Loading extensions that change persistent state.** Dynamic loading is idempotent by a stable, globally unique extension name: if it is already loaded, release the duplicate handle and return. Initialise before recording the extension as loaded, log the load when the surrounding transaction logs, and replay loads in an explicit recovery mode at startup.
+
+- Never load a dynamic library and forget it. Provide a duplicate guard, an unload path, and durable persistence (write-ahead log or manifest) for stateful extensions.
+- This is unsafe when initialisation has irreversible side effects that must not run again during recovery.
+
+**Shared vocabulary crate.** Names that several crates read and write in one persisted schema (table names, relationship types) live in one shared crate as closed enums with an `ALL` array, `as_str` and `FromStr`. A new kind then fails to compile in every exhaustive `match` downstream.
+
+- Change the shared vocabulary first. An alias kept for old data is explicit compatibility debt with a migration note.
+
+**Parser and grammar design.**
+
+- Keep the context-free grammar declarative. Isolate context-sensitive lexing (indentation, heredocs, interpolation, nested delimiters) in a small scanner whose state is a fixed-size plain struct that serialises and deserialises exactly, because incremental parsers snapshot and restore it. Test it with edits, not only whole-file parses, and do not use a scanner for what the grammar can express.
+- Hide only repeated syntax mechanics, such as delimited lists and separated runs, behind small named helpers. Precedence, associativity and field labels stay explicit in the rule.
+- A family of operators that share one tree shape is a table of operator, precedence and associativity mapped into uniform nodes. In a hand-written Rust parser that is one binding-power table and one loop. Adding an operator is a table edit plus a corpus test in the same change.
+- Calls, indexing, field access and method syntax that chain on one base expression are one suffix chain: parse the primary, then loop over postfix operators. A unified rule accepts broad forms, so test that invalid combinations are still rejected.
+
+**Plugin selection is a policy function.** Choosing among discovered implementations picks the maximum by an explicit priority, fails loudly when none is found, and uses a stable tie-breaker such as the name, since equal priorities are otherwise unspecified. Test that the intended provider wins.
+
+**Limits by value kind.** Configuration limits that share one operation but differ by value kind use one entry point that checks input compatibility and error shape, while each kind owns only its violation rule: `enum Limit { Bool(bool), Float(f64), Int(i64) }` with one `is_violated(&Value) -> Result<bool, TypeMismatch>`. Tests cover compatible and incompatible inputs for every kind.
+
+**Data-access ladder.** Escalate one step at a time: built-in create, read, update and delete; paging and sorting; a simple typed query; a hand-written query; raw SQL; a modifying statement. Before writing raw SQL, check whether the narrower typed layer can express it. Very complex queries belong in a dedicated query object.
+
+**One source of truth for a builder field.** A builder that accepts both a typed input and a pre-serialised escape hatch for the same field allows only one. `enum Bindings { Typed(Map), Raw(String) }` makes mixing unrepresentable; otherwise `build` returns an error. A library never panics for this.
+
+- The irreversible conversion to the wire form waits until `build`. Tests cover both call orders.
+
+**Middleware stages state the body form.** Interceptors that inspect or change the semantic request run before serialisation. Signing and authentication interceptors that need the final bytes run after it. Model this with `enum Body { Message(Request), Bytes(Bytes) }` or two typed stages, and let the transport normalise to bytes last.
+
+- Order is part of the contract. Test the common chain: mutate, serialise, sign.
+
+**Canonical structured registry keys.** A registry keyed by several user-provided identifiers canonicalises the key before storage (trim and lower-case identifiers, fill defaults, validate required parts) and uses a struct that derives `Hash` and `Eq`. A delimiter-joined string breaks when a part contains the delimiter.
+
+- Per-entry counters are atomics. A statistics snapshot is taken under the read lock and sorted by key, so output is deterministic.
+
+**Compile rules once.** User-authored rules or policies are validated and compiled once into lookup tables, with cross-references checked at that point. Run-time resolution is then cheap: exact match, then the largest subset match, then an ordered conflict winner.
+
+- The conflict order is an explicit schema field, and the documentation says whether lower or higher wins. Two rules for the same key with the same order are a compile error that names both. Nothing depends on map iteration order.
+- This does not fit rules that change constantly at run time.
+
+**A local rewrite in five steps.** An optimizer rewrite written as a local visitor checks its own setting first, proves the node shape with arity and type guards, checks that the rewrite preserves result type and nullability, mutates the tree, and re-resolves the replacement through the normal semantic resolution path instead of filling in its type by hand.
+
+- Each rewrite can be switched off independently. A rewrite that needs whole-plan reasoning is not a local visitor.
+
+**One identity contract for tree nodes.** Every node of a compiler or planner representation that is transformed, compared, cached and rendered supports structural equality, a hash consistent with that equality, deep clone, a debug dump and conversion back to source syntax. Prefer an enum with derived `PartialEq`, `Hash` and `Clone`, so no variant can forget a field.
+
+- Where nodes are trait objects, implement every hook before adding planner behaviour, and test that `clone(x) == x`, that the hashes agree, and that conversion to syntax and back round-trips.
+
+**Reload plugins by swap and version.** A long-running server builds the new plugin stack off to the side, swaps it in under a write lock or `ArcSwap`, and bumps a version counter so sessions and caches that hold decisions from the old stack invalidate them.
+
+- Plugins see a deliberately narrow, allow-listed host API. An allow-list is not a sandbox and does not make untrusted plugin code safe.
+
+**Recursion control as a value.** A tree walk returns what to do next as a first-class value from the pre-order and post-order hooks. A node type implements only `apply_children` and gets `visit` for free.
+
+```rust
+pub enum TreeNodeRecursion {
+    Continue, // keep walking
+    Jump,     // skip this subtree
+    Stop,     // end the whole walk
+}
+
+pub trait TreeNode: Sized {
+    fn visit<'n, V: TreeNodeVisitor<'n, Node = Self>>(
+        &'n self,
+        visitor: &mut V,
+    ) -> Result<TreeNodeRecursion> {
+        visitor
+            .f_down(self)?
+            .visit_children(|| self.apply_children(|child| child.visit(visitor)))?
+            .visit_parent(|| visitor.f_up(self))
+    }
+
+    fn apply_children<'n, F: FnMut(&'n Self) -> Result<TreeNodeRecursion>>(
+        &'n self,
+        f: F,
+    ) -> Result<TreeNodeRecursion>;
+}
+```
+
+- Visitors never encode control flow in side-effect flags. `Jump` hides children from later logic, so comment each early exit, and name and test the continue, jump and stop cases.
+- For shallow data of fixed shape, direct pattern matching is simpler.
+
+**Ordered pure rules with evidence.** A decision gate (access, quota, deployment, agent safety) evaluates pure rules sorted by priority, with the rule name as tie-breaker. Each rule returns a decision, structured evidence and a readable reason; evidence is collected from every evaluated rule, and a stable audit hash over decision, evidence and context is recorded.
+
+- Rules do no I/O. Facts are gathered beforehand and passed in the context. Each rule has a test for its interaction with higher-priority rules.
+
+**Context ladder.** Expensive context for an agent is an ordered ladder (summary card, skeleton, hot path, raw source). Start at the cheapest rung and escalate only when the current rung produced no new evidence, under a hard cap. Each rung declares a token estimate. Empty evidence is a coarse signal, so quality checks still apply downstream.
+
+**Lower the parse tree to a small typed tree first.** Do not run domain algorithms (graph building, analysis, rendering) on raw generic parser nodes. Lower the concrete syntax tree into the smallest typed representation that holds only the constructs the algorithm needs, and keep a byte range or source span on each node for diagnostics.
+
+```rust
+pub enum Statement {
+    Simple { text: String, span: Range<usize> },
+    Break { span: Range<usize> },
+    Continue { span: Range<usize> },
+    Return { text: String, span: Range<usize> },
+    If { cond: String, body: Box<Statement>, otherwise: Option<Box<Statement>>, span: Range<usize> },
+    While { cond: String, body: Box<Statement>, span: Range<usize> },
+    Block(Vec<Statement>),
+}
+```
+
+- A tree with single ownership uses `Box` and `Vec`, not `Rc<RefCell<_>>`.
+- Write the conversion tests before the graph or UI logic.
+- This does not fit work that needs exact syntax-tree fidelity, comments or trivia.
+
+**Scoped control-flow context.** A recursive lowering pass (control-flow graph builder, workflow compiler, state-machine lowering) carries the scoped exit targets for `break`, `continue`, `return` and labels explicitly in a traversal context, instead of rediscovering them from ancestor nodes.
+
+```rust
+#[derive(Clone, Copy)]
+struct Scope {
+    break_target: Option<NodeIndex>,
+    continue_target: Option<NodeIndex>,
+    source: NodeIndex,
+    sink: NodeIndex,
+}
+
+let body_scope = Scope {
+    break_target: Some(loop_exit),
+    continue_target: Some(loop_update),
+    source: body_source,
+    sink: body_sink,
+};
+build_graph(body, graph, body_scope)?;
+// the caller's `scope` is unchanged here
+```
+
+- Passing a small `Copy` scope by value makes the restore automatic. With a mutable context, save the fields before recursing and restore them immediately after; a missing restore creates bugs that cross branches.
+- Each new control construct gets a test with nesting.
+
+**Placeholder nodes never leave the builder.** Internal scaffolding (dummy nodes that simplify graph assembly, layout or pipeline planning) is allowed only when a normalisation pass removes it before the value leaves the builder. The boundary rejects any placeholder that survives with a hard error before serialisation or rendering.
+
+```rust
+while remove_unreachable_nodes(&mut graph) {}
+while remove_placeholder_nodes(&mut graph)? {}
+ensure_no_placeholders(&graph)?;
+```
+
+- Each cleanup loop runs to a fixed point, and the removal function returns whether it changed the graph, so every iteration makes progress.
+- Removal rewires edges without losing branch labels.
+
+**Render back ends behind one trait.** The pipeline is parse, then model, then render. Model construction knows nothing about output formats, and each format is a small implementation of one renderer trait over the shared model.
+
+```rust
+#[enum_dispatch]
+pub enum GraphDisplayBackend {
+    Dot,
+    Tikz,
+    D2,
+}
+
+#[enum_dispatch(GraphDisplayBackend)]
+pub trait GraphDisplay {
+    fn generate_from_graph(&self, graph: &Graph) -> Result<String>;
+}
+```
+
+- A closed set of back ends is an enum whose variants implement the trait, which gives static dispatch and exhaustive handling.
+- A new format implements the trait and joins the test matrix. It is never a branch inside core generation, and every back end handles each new node or edge variant.
+- This does not fit back ends that need different semantic models.
+
+**Typed attributes for overlaid graph views.** When syntax, control-flow and data-flow views are overlaid, serialised or composed, pick one interchange graph model and encode view-specific meaning as typed attributes, such as `enum EdgeKind { Ast, ControlFlow, DataFlow }`. A free-form attribute string degrades consumers silently when it is misspelled.
+
+- Validate the attribute vocabulary before export. Do not force one model on analyses with incompatible invariants.
+
+**Incremental parsing in an editor back end.** Translate each text change into the parser's native edit (start byte, old end byte, new end byte and the matching row and column points), apply it to the old tree, and reparse with the old tree as the base. Derived views such as highlighting and diagnostics are recomputed with a debounce.
+
+- Editor positions and parser points use different conventions (UTF-16 code units against bytes, zero-based against one-based lines). Convert in one tested function, since an off-by-one gives stale or shifted results.
+- Test insertion, deletion and multi-line edits, not only the initial parse. For tiny files a full reparse is simpler.
+- Classification from node type to highlight scope, including ancestor-sensitive overrides, lives in data files, and the renderer stays generic. Validate or regenerate that data when the grammar version changes. Scope classification is not semantic analysis.
 
 ### Domain context packs
 
@@ -1586,6 +1868,34 @@ assert!(matches!(cyclic.sort_all_nodes_topologically(), Err(TopoSortError::Cycle
 - Generate acyclic and cyclic graph families with `proptest`; fixed fixtures miss edge classes.
 - Keep cases for empty, disconnected, cyclic and multiple-valid-ordering inputs, and add the minimal failing input for each regression.
 
+**One default test configuration, small overrides.** A large integration suite builds one production-like default configuration, and each test overrides only what it needs through a closure or struct-update syntax. Do not copy the whole builder chain into each test.
+
+```rust
+let table = test_table(|config| config.replicas = 3);
+let config = TestConfig { table_name: "orders".into(), ..TestConfig::default() };
+```
+
+- Keep the defaults minimal and the override names explicit, so the setup a test depends on stays visible.
+
+**Snapshot matrix generated from fixtures.** For compilers, formatters, renderers, parsers and migrations, generate test cases from a fixture directory and multiply them across output back ends and expected-error cases with a custom harness (`harness = false`, one `libtest_mimic` trial per fixture and back end, `insta` for the snapshot). Adding syntax support then means adding one named fixture.
+
+```rust
+fn build_trials() -> Vec<Trial> {
+    let mut trials = Vec::new();
+    for case in collect_snapshot_cases() {
+        if should_skip_case(&case.name) {
+            continue;
+        }
+        let name = format!("dot::{}", case.name);
+        trials.push(Trial::test(name, move || run_snapshot_case(case, BackendKind::Dot)));
+    }
+    trials
+}
+```
+
+- Each trial has a specific name (back end, then fixture), so failures can be addressed and filtered. Skipped cases are explicit.
+- A snapshot accepted casually can bless a regression. Review snapshot diffs, and assert precise properties directly for security-sensitive or numeric logic.
+
 ### Verification rules by risk
 
 - **Bug-fix rule.** Reproduce the bug, write or strengthen a regression test, see it fail on the broken state, apply the fix, then see the regression test and the broader suite pass. Do not claim a regression test exists if it was never observed failing.
@@ -2042,6 +2352,223 @@ impl RpcError {
 - Tests keep an "ignore schedule" and a "respect schedule" mode and use a fake time source for check failure, scheduled delay and zero sleep.
 - This does not fit a low-latency loop. Add cancellation where a wait must be interruptible.
 
+**Inject shared dependencies through the builder.** An optional shared dependency (cache, authentication, policy) is passed in through a builder method, never read from a hidden global, so callers can share one instance across builds. Give it a default so simple callers need not supply it.
+
+```rust
+pub fn blob_cache(mut self, cache: BlobCache) -> Self {
+    self.blob_cache = Some(cache);
+    self
+}
+
+pub async fn build(mut self) -> Result<(Image, BuildDiagnostics)> { /* ... */ }
+```
+
+- `build` returns the product together with its diagnostics, so callers need no second query for what happened.
+- A runtime builder reports a missing required field only at `build`. Fields that must be enforced at compile time need a typestate builder.
+- The examples show the shared-instance path, since that is the one callers get wrong.
+
+**A callback inside an options struct.** When a config or options struct holds a trait-object callback, decide explicitly what `Clone` does with it: preserve it (`Arc<dyn Trait>`), drop it (a manual `Clone`, documented) or forbid cloning.
+
+```rust
+pub struct PushOptions {
+    pub retries: u32,
+    pub progress_callback: Option<Box<dyn PushProgressCallback>>,
+}
+
+impl Clone for PushOptions {
+    /// The progress callback is an observer and is not carried over.
+    fn clone(&self) -> Self {
+        Self { retries: self.retries, progress_callback: None }
+    }
+}
+
+impl std::fmt::Debug for PushOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PushOptions")
+            .field("retries", &self.retries)
+            .field("progress_callback", &self.progress_callback.is_some())
+            .finish()
+    }
+}
+```
+
+- Dropping on clone is right only for optional observers such as progress reporting, never for a callback that carries required behaviour.
+- `Debug` prints whether the callback is present, never its internals.
+
+**Raw and resolved paths are different types.** A tool that takes paths from flags or requests uses one type for untrusted input and another for a resolved, canonical path with symlinks followed. One resolver, built from an explicit base directory, converts the first into the second and rejects anything outside the base unless a visible `allow_outside` capability is set.
+
+- Never concatenate a user-supplied path into a file read.
+- Symlink and case-sensitivity behaviour differs by platform, so test each supported operating system.
+
+**Cloneable handle with per-call builders.** An SDK entry point is a small handle around `Arc`-shared internals: `Send + Sync + Clone`, cheap to clone, safe to move into tasks, with every method on `&self`. Advanced options for one call come from a fluent operation builder that implements `IntoFuture`, so the plain call stays short.
+
+```rust
+let bytes = op.read("hello.txt").await?;
+let bytes = op
+    .read_with("hello.txt")
+    .range(0..8 * 1024 * 1024)
+    .chunk(1024 * 1024)
+    .concurrent(4)
+    .await?;
+```
+
+- Document when configuration and layering must happen, because changing shared internals after use affects every clone.
+- This does not fit a handle that must own independent mutable state or a transaction scope.
+
+**Configuration round-trips.** A type that takes part in generic clone, tune or serialise protocols stores its declared configuration verbatim in the constructor and derives or normalises values later, in a build step. A factory that rebuilds objects from configuration asserts the round trip (rebuild, read the configuration back, compare) and fails loudly on a constructor that drops or rewrites a parameter.
+
+**Explainable scores.** A heuristic score returns the number together with its named factor contributions and a recommendation. Weights are injectable through a struct with a `Default`, and inputs are deterministic: a missing signal is reported as missing, never replaced by a random or invented value.
+
+- Do not let such a score drive irreversible automation.
+
+**All status writes go through one setter.** With a validated transition table, every status write uses one setter that consults the table. Decide whether an illegal transition is rejected or only logged, and make it fail in tests. When adding a status, update the table first, then every handler that enters or leaves it.
+
+- Do not add a second state machine when the state is derivable from one underlying object.
+
+**Apply a group of options atomically.** Applying several options as one logical update never leaves a half-changed object. Parse into a shadow copy and swap on success:
+
+```rust
+let mut next = self.clone();
+next.apply(options)?;
+*self = next;
+```
+
+- Where in-place mutation is unavoidable, capture the current valid configuration and restore it on failure. A rollback through a serialised snapshot restores only fields that round-trip, so test that every configurable field does.
+- Options with irreversible side effects are parsed first and applied after validation.
+
+**Finalise a fluent writer in `Drop`.** A fluent structured-event writer pairs a small state machine (expecting a key or a value, checked with debug assertions) with a `Drop` that closes the object and flushes exactly once. Values are escaped.
+
+- A temporary dropped at the end of a statement flushes there. Bind the writer to a name when one event spans statements.
+
+**Publish an immutable read model.** Analysis that needs many mutable stacks during traversal keeps the mutation inside the visitor and publishes through `finish(self) -> Catalog`, which consumes the builder so nothing can change after publication. Callers that need live incremental updates get an explicit mutable session.
+
+**Preflight checks through a provider.** When one business operation is shared by REST, gRPC and internal entry points that need different preflight checks, the shared helper does not take the raw context. It takes a provider whose only way to hand out the context is to run that entry point's checks first.
+
+```rust
+pub trait CheckedTocProvider {
+    async fn check_strict_mode(
+        &self,
+        request: &impl StrictModeVerification,
+        collection_name: &str,
+        timeout: Option<usize>,
+        auth: &Auth,
+    ) -> Result<&Arc<TableOfContent>, StorageError>;
+}
+```
+
+- The provider is chosen at the API boundary, never inside the helper.
+- The bypass implementation has an alarming name such as `UncheckedTocProvider` and never appears in a public handler.
+- If the check changes what the operation means, split the operation.
+
+**Precomputed snapshots for replay.** A replayable explainer, simulation or debugger view separates generating state from rendering it. One pure function computes every step as an immutable snapshot, and previous, next and reset only move an index over the `Vec` of snapshots.
+
+- Snapshots cost memory. For large or unbounded runs keep a window or generate lazily.
+
+**Non-concurrent protocol state.** A session, cursor, transaction or result stream with hidden mutable protocol state encodes that in its type first: `&mut self` methods, not `Sync`, no `Clone`, so misuse does not compile.
+
+- Where shared access is unavoidable (foreign handles, interior mutability), add a guard that fails loudly on a second concurrent entry, for example through `try_lock`, instead of interleaving silently. A debug-only guard still needs documentation and a test.
+
+**Read and write entry points as separate types.** A fluent request builder can be an immutable value whose chain methods consume `self` and return a new value. A marker type parameter, as in `Traversal<S, Read>`, makes a write step inside a read batch a compile error instead of a run-time failure. Mutate in place only when allocation is measured to matter.
+
+**Typestate for an edit transaction.** A multi-file edit, migration or agent-authored patch whose wrong call order can corrupt user files models its irreversible phases as type states. Each transition consumes `self` and returns the next state, so committing before applying does not compile.
+
+```rust
+pub struct Pending;
+pub struct Staged;
+pub struct Applied;
+
+pub struct Transaction<State = Pending> {
+    project_root: PathBuf,
+    edits: Vec<ValidatedEdit>,
+    staging: Option<StagingArea>,
+    backups: Option<FileBackupSet>,
+    _state: PhantomData<State>,
+}
+
+impl Transaction<Pending> {
+    pub fn stage(self) -> Result<Transaction<Staged>, BatchError> { /* ... */ }
+}
+
+impl Transaction<Staged> {
+    pub fn apply(self) -> Result<Transaction<Applied>, BatchError> { /* ... */ }
+}
+```
+
+- Inputs are already-validated types. Preview, apply, verify, commit and rollback are distinct states, never booleans on one mutable object.
+- A default type parameter keeps construction simple. For a single-file edit, writing a temporary file and renaming it is enough.
+
+**Push events to a sink.** When traversal is complex (search, scanning, parsing), keep the traversal strategy internal and push events to a caller-defined sink trait.
+
+```rust
+pub trait Sink {
+    type Error: SinkError;
+
+    fn matched(&mut self, searcher: &Searcher, mat: &SinkMatch<'_>) -> Result<bool, Self::Error>;
+
+    fn context(&mut self, _searcher: &Searcher, _context: &SinkContext<'_>) -> Result<bool, Self::Error> {
+        Ok(true)
+    }
+
+    fn finish(&mut self, _searcher: &Searcher, _finish: &SinkFinish) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+```
+
+- One method is required, and the optional hooks have defaults. `Ok(false)` means "stop early" and is not an error.
+- The associated error type is bounded by a small error trait, so the driver can create sink errors.
+- Items are lent as borrowed views, so nothing is allocated per match, and matching stays separate from rendering.
+- For a simple collection, return an iterator or a `Vec`.
+
+**One operation, several strategies.** One public operation may have several back-end strategies (memory map, whole buffer, incremental reader), chosen in one place from builder-owned configuration, input shape, platform or safety constraints.
+
+```rust
+fn check_config<M: Matcher>(&self, matcher: M) -> Result<(), ConfigError> {
+    if self.config.heap_limit == Some(0) && !self.config.mmap.is_enabled() {
+        return Err(ConfigError::SearchUnavailable);
+    }
+    // further checks against the matcher
+    Ok(())
+}
+```
+
+- Impossible configurations are rejected up front with a typed error, before any work.
+- An optional fast path never removes the slow path. The rarely taken path gets its own tests, since configuration bugs hide there.
+- This does not fit callers that need one exact algorithm.
+
+**Permissive ingest format, canonical compute format.** A permissive input format (a coordinate list with duplicates, unsorted) accepts messy data. The compact compute format has a documented representation invariant (sorted indices, no duplicates) that is established once at the conversion boundary.
+
+- Operations that need the invariant check it at entry and return a typed error instead of computing a wrong answer.
+- Canonicalising can change the element count, so callers do not cache counts taken before conversion.
+- Do not canonicalise silently in a hot path where the sort cost would surprise, or where duplicates are meaningful.
+- Construction after canonicalising returns `Result` or uses a constructor that cannot fail. It does not `unwrap`.
+
+**Bundle repeated bounds into one domain trait.** When the same long bound list repeats across generic numeric algorithms, name it once as a small trait whose supertraits are exactly the operations the algorithms call.
+
+```rust
+pub trait Scalar:
+    Copy + PartialEq + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self>
+    + Div<Output = Self> + num_traits::Zero + num_traits::One + fmt::Display
+{
+    fn pretty_string(&self, _config: Option<FmtFloatConfig>) -> String {
+        format!("{self}")
+    }
+}
+```
+
+- Type-specific presentation is a defaulted method that float and complex types override with precision controls.
+- Create the trait only after seeing the bounds repeat, and split it if implementors must supply far more than they use. Long supertrait lists make compiler errors noisy.
+
+**Scoped resource helper.** If a caller must remember cleanup, offer a `with_x(|resource| ...)` helper beside the raw constructor, so the safe lifetime is the default. The borrow checker stops the resource escaping the closure, and `Drop` covers the error path.
+
+- When native handles are exposed to JavaScript (Tauri, WebAssembly, Node bindings), provide the scoped helper on that side too, and test both the throwing and the resolving callback.
+
+**One `apply_update` for a streamed record.** A progressively streamed record, such as an agent trace or the status of a long job, is changed only through one `apply_update(Update)` method over a typed update enum (start a step, replace the last step of the same kind, set the answer). A separate consuming `compressed(self) -> Self` produces the outward or durable form with bulky payloads cleared.
+
+- The full internal trace and the redacted transport form are distinct. Run the redaction path before sending a trace to a client.
+- If updates can arrive from clients or out of order, an impossible update is a typed error, never a `panic!`. Replacing the last step assumes ordered, single-threaded updates.
+- Compression loses forensic detail unless full traces are kept elsewhere.
+
 ### Core idioms with code
 
 - **Expression-oriented code.** When a function computes a value, return the last expression. Use `if/else` and `match` as expressions and `let` bindings for clarity. Avoid `mut` accumulators where `map`/`fold` suffice, and stray semicolons that turn an expression into `()`.
@@ -2442,6 +2969,61 @@ impl<T: Internable + ?Sized> Drop for Interned<T> {
 
 **Index-handle interning.** A variant of interning hands out a `u32` index into a global table instead of a pointer: equality and hashing are O(1) on the integer, and the handle is `Copy`, small and easy to serialise. Caveats for index-handle interning: never hand out `&'static T` into a `Vec<T>` that can grow, because growth moves the items; box or leak each item, use an append-only arena with stable addresses, or return a clone or an `Arc`. Any `unsafe` lifetime extension states its invariant (entries are never removed or moved) at the block. The table never shrinks, so do not intern unbounded or attacker-controlled values.
 
+**Borrowed or owned without a `Clone` bound.** When a value is sometimes borrowed from a larger structure and sometimes synthesised on demand, return one small enum with standard trait implementations instead of duplicating the API as borrowed and owned functions.
+
+```rust
+pub enum MaybeOwns<'a, T> {
+    Owned(T),
+    Borrowed(&'a T),
+}
+
+impl<T> Deref for MaybeOwns<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        match self {
+            MaybeOwns::Owned(owned) => owned,
+            MaybeOwns::Borrowed(borrowed) => borrowed,
+        }
+    }
+}
+
+impl<'a, T> IntoIterator for &'a MaybeOwns<'_, T>
+where
+    &'a T: IntoIterator,
+{
+    type Item = <&'a T as IntoIterator>::Item;
+    type IntoIter = <&'a T as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&**self).into_iter()
+    }
+}
+```
+
+- Unlike `Cow`, it needs no `ToOwned` or `Clone` bound, so it works for types that cannot be cloned.
+- Use `Cow` when mutation on demand is needed, `Arc` when ownership is shared, and a plain owned type when transferring ownership is the point.
+- `Deref` can hide the cost of ownership, so keep the variant names explicit.
+
+**Lending iterators.** When iteration must lend items that borrow from the iterator's own buffer (database cursors, storage page scans, decoded buffers, index iterators), use a generic associated type, so the previous item must be dropped before the next call. The standard `Iterator` cannot express this.
+
+```rust
+pub trait LendingIterator {
+    type Item<'a>
+    where
+        Self: 'a;
+
+    fn next(&mut self) -> Option<Self::Item<'_>>;
+}
+```
+
+- Rebuild only the adapters actually needed (`map`, `filter`, `zip`, `flat_map`). Reuse an existing implementation where possible; do not improvise an unsafe lifetime extension, and keep any that exists beside a concrete safety comment and tests.
+- For ordinary owned sequences use the standard `Iterator`.
+
+**Iterators that own a resource.** An iterator over a cursor, transaction or file handle releases it on exhaustion, on explicit close, on an error from `next` and on drop. All paths converge on one idempotent cleanup: `take` the resource out of an `Option`, and have `Drop` call the same function.
+
+- Attach the cleanup to the smallest abstraction that crosses the API boundary. Release on exhaustion alone does not cover a caller who abandons the iterator early; `Drop` does.
+
 ### Iterators and closures
 
 - **`IntoIterator`, `iter`, `iter_mut`.** Accept `impl IntoIterator<Item = X>` for flexibility. Use `iter()`/`iter_mut()` when a borrow suffices; `into_iter()` on an owned container moves it. Arrays implement `IntoIterator` by value on modern editions; do not rely on edition-specific behavior.
@@ -2767,6 +3349,44 @@ pub enum Conversion<T> {
 - Each converter has tests for the happy path, the unsupported input, duplicate registration and the failure fallback.
 - Never swallow the failure of a mandatory transformation.
 
+**Domain questions as probe methods.** A public error enum is `#[non_exhaustive]`, keeps the low-level dependency error as `#[source]`, and answers the questions callers actually have (not found, retry, fall back) through small `is_*` methods.
+
+```rust
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum Error {
+    #[error("failed to pull {image_ref}: {message}")]
+    ImagePull {
+        image_ref: String,
+        message: String,
+        #[source]
+        source: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
+    },
+    #[error("invalid path: {message}")]
+    InvalidPath { message: String },
+}
+
+impl Error {
+    pub fn is_manifest_not_found(&self) -> bool {
+        match self {
+            Error::ImagePull { source: Some(source), .. } => source
+                .downcast_ref::<RegistryError>()
+                .is_some_and(RegistryError::is_not_found),
+            _ => false,
+        }
+    }
+}
+```
+
+- Callers never match on message strings or on a dependency's error enum.
+- Downcasting couples the probe to the dependency's error type, so keep each probe small and give it a test.
+- If callers need exhaustive matching, publish a stricter enum for that purpose.
+
+**API-client errors carry recovery data.** An error from a remote API holds what recovery needs as typed fields: the HTTP status, the retry-after delay, and the rate-limit limit, remaining count and reset time parsed from the headers.
+
+- Callers never scrape these from strings. An empty or non-JSON error body still yields a sensible message.
+- Rate-limit state is kept per credential, never as one mutable global shared by several tokens.
+
 ### Error and recovery taxonomy
 
 | Error class | Typical boundary | Recovery | Representation | Required tests |
@@ -2985,6 +3605,54 @@ self.running.insert(job.clone(), tokio::task::spawn_blocking(move || run_holding
 - The worker holds the lock guard itself, so the release happens at its real end. Releasing on timeout alone starts a second run over the same state.
 - Track live workers separately from scheduling state, and record the `timeout` and `still_running` transitions.
 - The work is idempotent. A long-lived timeout needs observability and a manual recovery path.
+
+**Parallel discovery, ordered merge.** Run independent per-item work in parallel, store each result by its input index with enough context to explain its error, and mutate the shared structure in one ordered merge pass after the workers finish.
+
+- Workers never mutate the shared graph. The worker count is the smaller of the CPU count and the item count.
+
+**Latest state plus stream.** A live "watch" view is the current state followed by updates, not an event log. The broker sends the current payload immediately on subscribe, keeps a bounded history, gives each client a channel of capacity one, copies data out before releasing its lock and removes disconnected clients. `tokio::sync::watch` is this primitive.
+
+- Document that the stream is lossy: a slow client misses intermediate states. That is fine for a dashboard and wrong for an audit trail or reliable delivery.
+
+**Repair outside the lock, then revalidate.** A read path that may perform a slow repair, such as reconnecting a stale upstream, never does it under the broad manager lock. Clone an `Arc` to the specific target, drop the guard, run the repair under `tokio::time::timeout`, then re-acquire and revalidate, because the entry may have been removed or shut down in the meantime.
+
+- Tests cover concurrent removal, shutdown and a failed reconnect.
+
+**Classify persisted recovery state.** When recovery state survives a restart, classify each field before loading it back: operator-visible telemetry (kept), durable policy (kept) or fresh-process control state such as failure counts and recovery flags (reset). A new process must not inherit an exhausted retry budget.
+
+- Pair the reset with process-level crash backoff so crash loops do not amplify load.
+- Do not reset counters that are deliberately global, such as abuse prevention or an external quota backoff.
+
+**Coalesce at the queue boundary.** The loss and merge policy for high-frequency UI messages lives at the queue as filters over the pending buffer (drop an older message of the same type, or merge), not inside every listener. Each noisy message type gets a filter and a test that shows which earlier messages are merged or discarded.
+
+- Only messages still queued can be coalesced. Never coalesce audit, financial or exactly-once events.
+
+**Construct outside the lock, publish once.** For a pool whose entries are expensive to build: check under the read lock, construct outside any lock, then check again under the write lock before publishing. The loser of the race shuts down its unused connection off the lock and returns the installed one.
+
+- Update pool metadata on both the installed path and the duplicate-shutdown path.
+- Under a thundering herd the temporary duplicates must stay within resource limits. Otherwise use a per-key in-flight cell so only one caller constructs.
+
+**Explicitly lossy maintenance queue.** Best-effort work (rollups, compaction hints, cache warming, telemetry aggregation) batches keys, uses `try_send` on a bounded channel and drops the batch when the channel is full, with a throttled consumer and reused buffers.
+
+- State in a comment that the queue is lossy, and expose drops through a metric. Dropping can starve cold keys, so add a periodic forced pass when freshness has a target.
+- Never use it for durability, accounting or user-visible changes.
+
+**Bounded batch processing in one loop.** A bulk processor for writes, migrations or maintenance couples admission, transaction scope and accounting: a concurrency cap (a semaphore permit per batch or `buffer_unordered(n)`, never a sleep-and-poll loop), one transaction per batch, a cancellation check before each batch and bounded retries per batch.
+
+- One collector records batches, retries, failures with the failing parameters, and update statistics.
+- Release per-batch references on completion, so finished batches do not pin memory.
+
+**Single-flight initialisation and failure.** Cache the in-flight initialisation, not only the finished value, so concurrent callers share one load of an expensive resource: `tokio::sync::OnceCell::get_or_try_init` per key, or a map from key to `Arc<OnceCell<T>>`.
+
+- Decide explicitly whether a failed initialisation is cached or retried. `get_or_try_init` leaves the cell empty, so the next caller retries; a cached failed future poisons the entry until it is cleared.
+- This does not fit user-specific or short-lived values.
+
+**Stable, debounced file-change batches.** A file watcher that triggers indexing, linting, previews or cache updates coalesces raw events into stable batches before any expensive work. Keep modified paths as path to last event time, and deleted paths in a separate set.
+
+- A delete removes the path from the pending modifications, and a later modification removes it from the deleted set.
+- Flush only paths that have been quiet for the debounce delay, as one batch of modified and deleted paths. Flush the remaining stable batch on shutdown, before cancelling the processing task.
+- A failed batch callback is returned or retried as a structured error, never printed.
+- Do not coalesce when every intermediate event matters, as in audit trails or collaborative edit logs.
 
 ### Async runtime discipline, in code
 
@@ -3456,6 +4124,33 @@ let results: Vec<Vec<Output>> = std::thread::scope(|scope| {
 - Do not use it for dependent jobs, ordered execution or cancellation inside an item.
 - A lock-protected facade that delegates every method is generated by a macro when signatures change often, with an explicit opt-out for intentionally lock-free methods. Generated locking still hides contention and deadlocks, and it is wrong where per-method invariants or cross-object ordering matter.
 
+**Chunked CPU work with cancellation.** Chunk size is `ceil(rows / threads)` clamped between a minimum and a maximum. Each worker has a stable index that selects its scratch buffers. Cancellation stops pulling from the upstream chunk iterator; skipping results alone keeps the work running.
+
+- Report progress per chunk, check each chunk's shape and type, and guard against nested execution on the same pool.
+- For I/O-bound work use an async semaphore instead.
+
+**Database-backed lock with a heartbeat.** A lock for long background work stored in an embedded database carries what recovery and user messages need: the owner, what is locked, and a heartbeat timestamp the holder refreshes during long phases, so another process or the UI can detect a stale lock.
+
+- The lock table enforces a single row by constraint. A plain insert path can create duplicate lock rows.
+- It is a single-host lock, not a distributed one.
+
+**Per-thread accumulators, one merge.** A shared counter, map or histogram updated inside a CPU-parallel loop becomes a per-thread accumulator merged once at an explicit reduction boundary, instead of a lock or atomic on every iteration.
+
+```rust
+let histogram = items
+    .par_iter()
+    .fold(Histogram::default, |mut local, item| {
+        local.record(item);
+        local
+    })
+    .reduce(Histogram::default, Histogram::merge);
+```
+
+- The identity must be a true identity and the merge associative, and also commutative when merge order is not fixed. Otherwise results are nondeterministic. Tests cover identity, merge and move-only values.
+- This does not fit updates that need a global order.
+
+**Execution-policy facade.** Write the algorithm against a small execution policy with a sequential adapter and a parallel adapter over the same body, so tests run the sequential one and separate algorithm correctness from scheduling. Add the sequential adapter before any parallel back end. Abstract the execution policy, never the data model.
+
 ### Cancellation, backpressure and primitive choice
 
 Primitive choice:
@@ -3603,6 +4298,26 @@ tokio::select! {
 - Validate and normalise a user-supplied plan once into typed work items before constructing workers. A worker never reinterprets raw input, and fan-out width is bounded by an explicit semaphore, not by input size.
 
 **Optimistic in-memory event append.** Append by compare-and-swap with a version check, retry contention with a capped retry count, and publish to subscribers only after the append is accepted. Test append ordering, version rejection and publication. This is not a durable high-volume log.
+
+**Throttled cancellation checks in a tight loop.** Separate the cheap check in the loop from the slower source of termination. The loop tests a small flag once before work and then every N iterations, and expensive monitor polling is throttled behind that flag.
+
+```rust
+const CHECK_EVERY: usize = 10_000;
+
+for (index, item) in items.iter().enumerate() {
+    if index % CHECK_EVERY == 0 && cancelled.load(Ordering::Relaxed) {
+        return Err(Error::Cancelled);
+    }
+    process(item);
+}
+```
+
+- N trades latency against overhead. Pass the flag through the context or builder, never a global, and give tests an implementation that is never cancelled.
+
+**A small result-set type over a stream.** If an async result stream is offered through a result-set type, give it `one`, `all` and raw stream access with explicit close and error semantics. Close is idempotent, and the terminal error is observable after the drain.
+
+- Tests cover one, all, empty, a delayed producer and close before drain.
+- When backpressure, cancellation or several subscribers are needed, expose a real `Stream`.
 
 ## 10. Unsafe and FFI
 
@@ -4016,6 +4731,70 @@ impl Drop for Parser {
 - Exactly one function frees the peer, and every method checks the capability and returns an error after close.
 - An atomic pointer makes the pointer read atomic. It does not make the native object thread-safe.
 
+**One native artifact, thin loaders.** A generated or native library consumed from several runtimes is one core product with a thin loader per runtime: one `extern` declaration, one exported constant, and generated metadata embedded with `include_str!`. No runtime-specific behaviour is maintained by hand in a binding.
+
+```rust
+#[test]
+fn can_load_grammar() {
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(&super::LANGUAGE.into())
+        .expect("the native parser should load in this runtime");
+}
+```
+
+- Every binding has this same smallest test, and it is added before any behaviour test. It catches packaging and link failures and proves nothing about correctness, so behavioural corpus tests stay with the core.
+- A native binding is justified only when the cost of the hot operation outweighs the complexity of the binding.
+
+- A wrapper around a native handle records explicitly whether it owns the handle, and never frees a borrowed one. Every public method checks for the closed state first and returns a "closed" error instead of touching the freed peer.
+
+**One gateway for foreign status codes.** Every call into a C library that returns integer status codes passes through one function that converts the raw code to a typed status and then to a domain error. The library's detailed error text is fetched through a lazy closure, called only on failure.
+
+```rust
+fn graphblas_result<F>(info: GrB_Info, detail: F) -> Result<Status, SparseLinearAlgebraError>
+where
+    F: Fn() -> String,
+{
+    match Status::from(info) {
+        Status::Success => Ok(Status::Success),
+        status => Err(status.into_sparse_linear_algebra_error(detail())),
+    }
+}
+```
+
+- Call sites never compare raw status integers.
+- Unknown codes map to an explicit `Unknown` variant, and the mapping is reviewed when the upstream library adds statuses.
+
+**Typed wrapper for a foreign handle.** A raw foreign handle is wrapped in a struct that carries its element type as `PhantomData<T>` and an `Arc` to the library context, so the context outlives the handle. `Drop` frees it.
+
+```rust
+pub struct SparseMatrix<T: ValueType> {
+    context: Arc<Context>,
+    matrix: GrB_Matrix,
+    value_type: PhantomData<T>,
+}
+
+impl<T: ValueType> SparseMatrix<T> {
+    /// # Safety
+    /// The caller takes over freeing the returned handle.
+    pub unsafe fn into_raw(mut self) -> (GrB_Matrix, Arc<Context>) {
+        let raw = std::mem::replace(&mut self.matrix, std::ptr::null_mut());
+        (raw, self.context.clone())
+    }
+}
+
+impl<T: ValueType> Drop for SparseMatrix<T> {
+    fn drop(&mut self) {
+        // SAFETY: the handle is owned by this wrapper, and the free function tolerates null.
+        unsafe { drop_graphblas_matrix(&self.context, &mut self.matrix) };
+    }
+}
+```
+
+- Transferring ownership out is an explicit unsafe method that nulls the wrapper's pointer, so `Drop` becomes a no-op.
+- A pointer borrowed from another owner gets a borrowed handle with a lifetime marker instead.
+- Review the drop path, clone path, extraction path and context lifetime together, and justify every `unsafe impl Send` or `Sync` again.
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -4101,6 +4880,11 @@ let (writer, _guard) = tracing_appender::non_blocking(file);
 
 - Choose and document the pressure policy: lossy (`try_send`, with drops counted and exposed as a metric) or blocking (`send`, so producers feel backpressure). Test both.
 - Never use it for audit or transactional records that must be durable before the program continues.
+
+**Staged prefetch over a ring of items.** For a memory-bound, pointer-chasing workload over many independent items (random walks, hash probes, graph lookups), process a small ring in stages: compute each address and issue a prefetch, then use the cached data and prefetch the next address, then update. The cache-miss latency of one item overlaps work on the others.
+
+- Keep the simple scalar path, and adopt the staged version only with benchmark evidence on the target CPUs, since manual prefetching can regress elsewhere.
+- This does not fit small data or latency-first code.
 
 ### Memory-efficiency examples
 
@@ -4617,6 +5401,212 @@ pub fn publish(&self, batch_seqno: u64) {
 - A syntax error or an unsupported language falls back to plain windows without failing the index.
 - Test nested ownership and the fallback. Skip this when retrieval benefits from overlapping context.
 
+**A cache miss is a value.** Absence in a local cache, memo store or content-addressed store is expected control flow: return `Ok(None)` for a miss and keep `Err` for real failures. Removing an entry that is already gone is success.
+
+```rust
+pub async fn get_blob(&self, digest: &str) -> Result<Option<Vec<u8>>> {
+    match cacache::read(&self.cache_path, digest).await {
+        Ok(data) => Ok(Some(data)),
+        Err(cacache::Error::EntryNotFound(..)) => Ok(None),
+        Err(source) => Err(Error::Cache {
+            message: format!("failed to read blob '{digest}'"),
+            source: Some(Box::new(source)),
+        }),
+    }
+}
+```
+
+- This does not fit an authoritative store, where absence means corruption.
+- Too much tolerance hides bad keys, so trace each miss with its key.
+
+**Two-stage cache key.** Before an expensive recomputation, look up a cheap key derived from metadata, then a stronger key derived from a content hash. Hashing and compression run in `spawn_blocking`.
+
+- Write down what the cheap key assumes. Metadata must carry enough entropy, and timestamp precision differs across platforms and filesystems, which gives false hits or misses.
+- Keep the content-key fallback until those assumptions are proven. Never use a metadata-only key where content can change without the metadata changing.
+
+**One capability boundary for several services.** A retrieval subsystem that needs a vector store and an embedding provider connects through one boundary: `connect` is idempotent, health-checks every dependency before any index or search path runs, fails with an actionable message (how to start the missing service) and creates the index only if absent.
+
+- Keep health per dependency visible when storage and embedding must degrade independently.
+
+**Batch each stage to its own bottleneck.** An offline indexing job separates expensive external inference from cheap storage writes. Embedding calls use a fixed chunk size and bounded concurrency over chunks (`buffer_unordered(n)` or a semaphore, with `n` in configuration), results go into a pre-sized `Vec` by index so order is preserved, and one bulk write follows once every vector exists.
+
+- Report progress per chunk.
+- This does not fit streaming ingestion, where partial results must be searchable at once.
+
+**Sync an inventory by minimal diff.** Synchronising a discovered inventory (tools, plugins, remote capabilities) into a store applies a diff, never a blind rebuild. Build the existing and new maps on a stable key, fingerprint only the meaningful mutable fields, and return `{ added, removed, updated, unchanged, errors }`, keeping per-item errors instead of failing the whole job.
+
+- The key's scope must make names unique, or a rename looks like a removal plus an addition.
+
+**Result count follows confidence.** With scores sorted in descending order, a large gap between the first and second result returns the minimum number of candidates, a medium gap a few, and a small gap the maximum. The minimum, maximum and gap thresholds are configuration, tuned offline on real queries.
+
+- This holds only when the scores are sorted and comparable.
+- Before asking a model to choose among many tools, group obvious overlaps by a deterministic normalised signature of name, description and parameter tokens. Signatures collide and miss synonyms, so treat the groups as hints.
+
+**Rank fusion details.** Cap the rank considered per list, validate that the number of weights equals the number of lists, and treat the fused score as relative rank evidence, not a probability. The fusion constant (commonly 60) is a parameter once evaluation exists.
+
+- Sort fused results by score descending with the key as tie-breaker. `HashMap` iteration order must never leak into a ranking.
+- Code search expands identifier tokens before lexical search: keep the original token and add its split form across camelCase, snake_case, kebab-case and acronym boundaries.
+
+**Swap derived structures together.** After a registry change, every in-memory structure derived from it (indexes, retrievers) is rebuilt and swapped as one unit, through `ArcSwap` or one `RwLock` over the group, so readers never see a half-updated pair.
+
+**Cache a derived index by immutable source identity.** The key is the repository and commit plus the tool version, the index schema version and the relevant environment. A key of repository and commit alone goes stale after a tool upgrade.
+
+- The key is invalid when uncommitted or generated files affect the index.
+
+**Graph results ready for analysis.** A graph algorithm exposed across a boundary returns analysis-ready structs, such as a component with an `is_cycle` flag, not raw traversal order.
+
+```rust
+let is_self_cycle = component.len() == 1
+    && graph
+        .get(&component[0])
+        .is_some_and(|children| children.contains(&component[0]));
+sccs.push(SccEntry { is_cycle: component.len() > 1 || is_self_cycle, nodes: component });
+```
+
+- Sort children and roots before traversal so the output is deterministic. Sort component members too when the contract needs it.
+- A single-node component is a cycle only when it has a self-edge. Test that case.
+- Recursive Tarjan can overflow the stack on unbounded graphs. Use an explicit stack there.
+
+**Split export files along import boundaries.** Bulk-export artifacts follow the same boundaries the destination imports: one file per node table and one per pair of endpoint labels for a bulk loader. Write the header only when the file is created, and put the path in every I/O error.
+
+- When export files are appended to across batches, define the batch boundaries and remove partial files after a failed write.
+
+**Incremental index plan with four outcomes.** The timestamp decides when to hash, and the content hash decides what changed. The plan keeps four outcomes separate instead of collapsing them into add and delete:
+
+| Observation | Planned step |
+|---|---|
+| Modification time newer, hash differs | index the new version and retire every old version |
+| Modification time newer, hash equal | bump the last-updated time only |
+| Path gone | remove |
+| Modification time not newer | nothing |
+
+- Files over a size cap are skipped before hashing.
+
+**Reference-count a shared cache by tag.** A content-addressed cache shared by several tags (branches, workspaces) tracks which tags use each artifact. Adding a tag to an existing artifact records the tag and recomputes nothing; removing a tag deletes the artifact only when it was the last one.
+
+- Artifact lifecycle is separate from tag membership. Tag rows need a transaction when indexers can run concurrently.
+- Skip reference counting when artifacts are cheap to recompute.
+
+**Decorate, compute, undecorate.** When an algorithm compares heavy values repeatedly (diff, longest common subsequence, deduplication over long strings or syntax nodes), map each distinct value to a small integer once, run the algorithm on the integers, then map back so the public result refers to the original values.
+
+```rust
+fn intern<'a, T: Eq + Hash>(
+    values: &'a [T],
+    ids: &mut HashMap<&'a T, u32>,
+    by_id: &mut Vec<&'a T>,
+) -> Vec<u32> {
+    values
+        .iter()
+        .map(|value| {
+            *ids.entry(value).or_insert_with(|| {
+                by_id.push(value);
+                (by_id.len() - 1) as u32
+            })
+        })
+        .collect()
+}
+```
+
+- The table from ID back to value is a `Vec` indexed by ID, so no second map and no `unwrap` are needed.
+- It is not worth doing when hashing costs more than the comparisons. For untrusted input, resistance to hash flooding depends on the hasher.
+- The same idea gives structural identity to subtrees: after normalising a syntax tree for the task (drop empty atoms, collapse wrapper lists), intern each node's shape plus its children's IDs into an integer from an interning table, not a hash, so subtree equality is one integer comparison without collisions. Such normalisation is tied to the task and is wrong where exact parser fidelity is needed.
+
+**Streamed text becomes lines first.** Convert streamed model output to lines before any diff or patch logic: append each chunk to a buffer, emit every complete line, keep the trailing partial line and flush the remainder at the end of the stream. Tests feed chunks that split in the middle of a line.
+
+- Fuzzy anchor matching for streamed edits uses a tolerance that shrinks with distance from the expected position, accepts lines equal after trimming and never matches blank lines.
+- Do not use fuzzy anchors for generated files or data formats where one character matters. A repeated line can still anchor wrongly.
+
+**Region formats as a small state machine.** A line-oriented format with a few mutually exclusive regions is parsed with one state enum and one exhaustive `match` per line. Write the enum first.
+
+```rust
+#[derive(Debug, Clone, Copy)]
+enum ConflictState { NoConflict, Left, Base, Right }
+
+for (index, line) in input.split_inclusive('\n').enumerate() {
+    if line.strip_prefix(START_LHS_MARKER).is_some() {
+        state = ConflictState::Left;
+        open_region_start = Some(index);
+        continue;
+    }
+    // the base, right-hand and end markers change `state` the same way
+    match state {
+        ConflictState::NoConflict => { lhs.push_str(line); rhs.push_str(line); }
+        ConflictState::Left => lhs.push_str(line),
+        ConflictState::Right => rhs.push_str(line),
+        ConflictState::Base => {}
+    }
+}
+```
+
+- `split_inclusive('\n')` keeps line endings, so content is rebuilt byte for byte. `strip_prefix` both tests the marker and yields the rest of the line.
+- Record where the open region started, so an unterminated region at the end of input is reported instead of accepted.
+- Nested or escaped markers need a stack or a real parser.
+
+**End a fixed-point loop with consolidation.** A recursive dataflow loop (transitive closure, reachability, iterative normalisation) must end its body with a consolidating operator such as `consolidate`, `distinct`, `count` or `reduce`, because the iteration operator does not insert one. Without it, cancelling differences (+1 and -1) circulate forever and the loop never ends, even though the logical result is empty.
+
+- A recursive API documents what the framework does not do for the caller.
+- A higher-ranked bound, `for<'inner> F: FnOnce(Scope<'inner>, Collection<'inner>) -> Collection<'inner>`, ties the loop body to the inner scope so inner collections cannot escape.
+
+**Consolidate updates in place.** Batches of `(data, time, diff)` updates are canonicalised at buffer boundaries, so later operators see fewer, denser records: sort by data and time, sum the diffs of equal keys, drop keys whose sum is zero and compact the survivors.
+
+```rust
+fn consolidate<D: Ord, T: Ord, R: Semigroup>(updates: &mut Vec<(D, T, R)>) {
+    updates.sort_unstable_by(|x, y| (&x.0, &x.1).cmp(&(&y.0, &y.1)));
+    let mut kept = 0;
+    for index in 0..updates.len() {
+        if kept > 0 && updates[kept - 1].0 == updates[index].0 && updates[kept - 1].1 == updates[index].1 {
+            let (head, tail) = updates.split_at_mut(index);
+            head[kept - 1].2.plus_equals(&tail[0].2);
+        } else {
+            if kept > 0 && updates[kept - 1].2.is_zero() {
+                kept -= 1;
+            }
+            updates.swap(kept, index);
+            kept += 1;
+        }
+    }
+    if kept > 0 && updates[kept - 1].2.is_zero() {
+        kept -= 1;
+    }
+    updates.truncate(kept);
+}
+```
+
+- Sorting by a tuple of references avoids clones.
+- Keep one shared utility, with tests for duplicate accumulation and for deletion at zero.
+- Consolidation does not preserve arrival order, so never use it where caller-visible order matters. It is valid only where the weights form a semigroup with a zero test.
+
+**Cross-language parity on structure.** Fixture and parity tests across languages compare canonicalised structure, ignoring object key order. Compare bytes only when the exact bytes are the contract.
+
+- Integers beyond the JavaScript safe range (2^53 - 1) must survive every client. A Rust service that exposes `u64` or `i64` identifiers to JavaScript sends them as strings or tests the round trip explicitly.
+- Fixtures include explicit cases for large integers, dates, bytes and nested arrays, and the Rust side asserts that the shared bundle survives serialising and deserialising.
+
+**Optional enhancement behind a capability check.** An optional enhancement (sparse lexical vectors beside dense ones, an optional index, an accelerator) sits behind a capability check, with the plain path kept as fallback. Initialise it lazily once and remember a failed initialisation in a `OnceLock<Option<T>>`, so it is not retried for every item.
+
+- Apply it only to the content types that benefit.
+- A silent fallback makes behaviour differ between deployments. Log the capability state and record it in the index metadata.
+
+**Deterministic resource IDs.** Resources that survive reconnects or UI refreshes (worktrees, sessions, tabs, watch targets) get IDs derived from a stable property: a fixed name for the primary one and a short hash of the absolute path for the rest, never a process-local counter. Decide the ID policy before wiring UI state or snapshot caches.
+
+- A short hash prefix is fine as a local UI key and wrong as a global identity, or anywhere a collision is catastrophic.
+- Do not expose a sensitive path through a public ID. Moving a path intentionally changes its ID.
+
+**Strict contracts and forward compatibility.** A shared JSON contract encodes domain variants as a tagged enum (`#[serde(tag = "type")]`) whose variants carry only the fields valid for that kind, and rejects unknown fields on contracts you own, so illegal mixed states fail instead of being dropped.
+
+- `#[serde(default)]` on a new nullable field is a deliberate compatibility valve.
+- A strict schema needs a migration when fields are added. Exploratory ingestion that must preserve unknown fields should not be strict.
+- Add the discriminant and the validation before adding consumers.
+
+**Graph context pack.** A structural context pack around a symbol is a deterministic projection of the in-memory graph with no disk access, so the command line, the server and the UI share it. For each neighbour return the fields that explain it (ID, name, kind, path, signature, edge type, weight), sort by weight descending and then by name, cap each list and return an explicit `truncated` flag beside it.
+
+- Dangling edge endpoints are skipped but counted, as a signal of index integrity.
+- First-hop references do not replace tests, traces or source review when debugging behaviour.
+
+**Conflict semantics for incremental patches.** An incremental update protocol (live graph, incremental index, websocket patches) defines what happens when one patch both removes and upserts the same ID, and enforces it in a reconcile phase before publishing. With upsert-wins, the removal is netted away, so a client that applies removals and upserts in either order ends in the same state.
+
+- Applying a patch filters out removed and upserted IDs, appends the upserts and recomputes derived counts. Nodes and edges are reconciled the same way.
+- Test removing and recreating an ID in one pass. Use delete-wins with tombstones for replication and audit logs.
+
 ### Benchmark harness (criterion)
 
 ```rust
@@ -4637,6 +5627,24 @@ fn benchmark_message_processing(c: &mut Criterion) {
 criterion_group!(benches, benchmark_message_processing);
 criterion_main!(benches);
 ```
+
+**One outcome vocabulary across back ends.** A benchmark or probe harness over several back ends gives every operation the same wall-clock budget and the same result type, normalised at the harness boundary and not in each adapter:
+
+```rust
+pub enum Outcome {
+    Elapsed(Duration),
+    Timeout,
+    Failed(String),
+}
+```
+
+- Never use a column that mixes numbers with strings such as "timeout". Return the structured status first and format it for display afterwards.
+- Use a per-operation timeout (`tokio::time::timeout`, or a child process killed at the deadline). Process-global timers interfere with threads and nesting.
+
+**Name the benchmark phases.** A benchmark names its phases (load, start service, readiness probe, query loop, cleanup) and records which phase each metric belongs to.
+
+- Setup acceleration, such as a bulk loader or a reused data directory, stays out of the measured query phase when that keeps the comparison fair.
+- The measured path is the one users actually run, through the same service boundary. Skipping an already-loaded dataset needs an explicit reset switch.
 
 ### Panic strategy
 
@@ -5060,6 +6068,45 @@ impl IntoResponse for RegistryError {
 - A handler that offers buffered and streaming responses runs one parse, validate and authorise path that produces one options value, and branches on output mode last. An error after the first chunk cannot become a status code, so errors after headers are sent get their own tests, and every new option is tested in both modes. Split the handlers when the modes differ in authorisation, consistency or limits.
 - Data-version negotiation is an explicit parameter in the route-to-domain call (requested version in, actual version out and echoed in a response header), never ambient global state. When an option can arrive by query string or by JSON body, document and test the precedence.
 
+**Monotonic, demand-driven readiness.** Readiness that depends on expensive or distributed conditions is a flag that flips once: an `AtomicBool` plus a `Notify` for waiters. The fast path is one atomic load, and the expensive check runs in a background task that the readiness probe wakes, instead of polling constantly.
+
+```rust
+pub async fn check_ready(&self) -> bool {
+    if self.is_ready() {
+        return true;
+    }
+    self.notify_task();
+    self.wait_ready().await
+}
+
+fn set_ready(&self) {
+    self.is_ready.store(true, Ordering::Relaxed);
+    self.is_ready_signal.notify_waiters();
+}
+```
+
+- Once ready it stays ready, so later regressions belong in a separate, non-monotonic health endpoint. For each new criterion decide which of the two it belongs to.
+- Document for operators what "ready" means, since partial peer failure can give a false positive.
+
+**Wire payloads become small internal types at the boundary.** JSON-RPC, server-sent events and webhook payloads are converted into a minimal internal type with explicit defaults. Framing and parsing are separate from domain extraction, and a real event parser is used, not a regular expression.
+
+- A malformed payload is logged or returned as an error, never turned silently into an empty list. "No results" is a documented outcome distinct from "parse failed".
+
+**One wrapper for transactional retries.** Retrying a transactional callback is one wrapper around a narrow callback, never loops scattered through callers. It owns open, commit and rollback, the delay generator (initial delay, multiplier, jitter), an overall deadline on a monotonic clock, cancellation, explicit retryable classification and the choice of final error.
+
+- Non-retryable errors propagate at once.
+- The callback may run more than once. Its documentation says so, and it must be idempotent or free of external side effects.
+
+**Parse graph values with the grammar.** Graph and path results are parsed by the grammar first and hydrated second through a visitor that keeps an identity cache keyed by entity ID for the parse session, so a vertex repeated in a path resolves to one object (an `Arc` or an arena index). Never split graph values by hand. Parser and mapping failures are typed errors, never panics.
+
+**Decompose a logical write into ordered statements.** A write that spans several tables or projections is decomposed by one function into an ordered list of statements (the parent row first, then one per child item). A separate executor applies the list in order inside one transaction.
+
+- Parameter conversion has one source of truth and uses bound parameters. Tests cover empty and optional child collections.
+
+**Recursive SQL for graph traversal.** A recursive query can run a graph algorithm in the database when the graph is relational and the result must join back to relational data. Review the base case, the recursive case, the termination condition or iteration cap, and the final path reconstruction as four separate units, and check that pruning bounds the intermediate rows.
+
+- For reusable path services with complex policies, use an application-level algorithm that can be unit-tested.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
@@ -5167,6 +6214,34 @@ impl Drop for Pkcs12Archive {
 - Tests assert `std::mem::needs_drop::<T>()` and that `zeroize()` clears each field.
 - An `into_parts()` that moves the fields out hands the duty to the caller, and its doc says so.
 - Do not claim secrecy for data that was copied elsewhere, interned, logged, or passed to a library that keeps its own buffer.
+
+**User-supplied expressions.** A formula or filter string from a user is parsed into a syntax tree, validated recursively against an allow-list of node kinds, operators, functions and known variable names, and only then evaluated in a constrained scope. Never pass it to a general evaluator.
+
+- An unknown name produces an error with a close-match suggestion.
+- Tests cover each disallowed node kind.
+
+**Extractor order is a security gate.** Where the framework runs extractors in parameter order, a synchronous authorisation extractor on an upload or import route comes before any extractor that consumes the body, so an unauthorised request is rejected before the body is buffered or spooled to disk. In axum the body extractor must be last, and authorisation belongs in an earlier extractor or in middleware.
+
+```rust
+async fn upload_snapshot(
+    // Must come before `MultipartForm`: reject unauthorised requests before the body reaches disk.
+    early_auth: ActixAccessManage,
+    form: MultipartForm<SnapshotUpload>,
+) -> Result<HttpResponse, HttpError> { /* ... */ }
+```
+
+- Leave a comment stating the ordering contract, and test that an unauthorised upload creates no temporary file.
+- If authorisation needs the body, enforce a tight body limit before parsing.
+
+**Embedding one query language in another.** When a position cannot be a bound parameter, validate dynamic identifiers (graph, table and column names) against a strict pattern such as `^[A-Za-z_][A-Za-z0-9_]*$` and reject everything else. Quote a free-form embedded body with a delimiter proven absent from the body: try `$$`, then generate tagged delimiters until the body does not contain one.
+
+- Never assume a quoting delimiter cannot occur. Prefer real bind parameters wherever the driver allows them.
+
+**Untrusted commands and repository configuration.** A bot, webhook handler, command-line bridge or agent that takes untrusted user or repository input dispatches through a static command table (an enum and a `match`, with aliases mapped to the same handler), never dynamic loading named by the input.
+
+- Validate user-supplied arguments against an allow-list, and refuse security-relevant settings on the command line with a message that points to the configuration file.
+- Configuration provided by a repository is untrusted until validated. It cannot override host-only keys (secrets, filesystem paths, endpoints), and environment-variable precedence is restored after it is loaded.
+- Adding a command or setting changes the dispatch table, the validation tests and the repository-configuration allow-list in the same change.
 
 ### Database pool and compile-time checked queries
 
@@ -7613,6 +8688,101 @@ entries.sort_by(|a, b| a.path().cmp(b.path())); // parallel walk order is not de
 - A source is recorded as used only after its data is present. The bundle renders its errors and provenance, so a partial bundle never looks complete.
 - Do not return partial output where it is unsafe and every source must be present.
 - Trimming a bundle to a token budget follows an explicit ladder ordered by regeneration cost and decision value, not by section order or size. Drop what can be fetched again first (call neighbours, then raw code), and keep facts that are expensive to recover (decisions, observations) longest. Recount tokens after each rung and stop as soon as it fits. A new section declares its rung and has a budget test for when it survives and when it drops.
+
+**One durable artifact for long-running agent work.** A multi-step or multi-agent workflow keeps its state in one durable, human-readable artifact with explicit lifecycle fields (status, plan status, and a table of round, actor, what changed and why), never in conversation memory.
+
+- Plain Markdown has weak concurrency: simultaneous writers conflict. High-frequency machine coordination needs structured storage with locking.
+
+**Managed block in a user-owned file.** An installer that writes generated text into a file the user also edits marks its range with stable start and end sentinels and replaces only that range, so a rerun is idempotent and never duplicates the block.
+
+- A structured config with a real parser or merge API uses that API instead of text sentinels.
+- Validate the accepted targets. Local mode and remote bootstrap mode are separate, explicit paths.
+
+**Agent hooks that add context.** A hook that augments a tool call returns early for the wrong event, a missing index or a pattern that is too short, runs the augmenter under a hard timeout, fails quietly, and emits structured output only when it has context to add.
+
+- Attach augmentation where intent is clearest (the search call), not at session start.
+- Search patterns can be sensitive. Do not send them to a remote service.
+- Tools provisioned for an agent in disposable shells are standalone executables on `PATH`, never shell state that must be sourced.
+
+**Generate dialects from one source.** When several consumers need almost the same declarative rules (editor query dialects, configuration variants), generate each from one canonical source through a table of flavours: name, tag, replacements and allow-lists. Lines tagged to skip a flavour are dropped, replacements are applied, and the output is validated against that flavour's allow-list.
+
+- Adding a flavour is one table entry, never a copied file. Generated files are not edited by hand, and broad replacements still need review.
+
+**Documented examples as checked specifications.** Parse documented examples into the same data model a hand-written test uses and run them. Compare documented argument names with the real signature and documented result tables with real output.
+
+- When a documented signature changes, the code and the example change together, and the documentation test tool is run, not only the unit tests.
+- Human-runnable API request examples take the base URL and credentials from a per-environment file and carry a minimal response assertion. Private secrets live in an uncommitted file. Such examples do not replace a regression suite.
+
+**A large tool registry is a retrieval problem.** Embed "name: description" for each tool once, rank by similarity to the query, inject only the top few tool descriptions into the prompt, log the scores so the selection can be audited, validate the chosen tool's arguments against its schema, and keep a text-search fallback.
+
+- Re-embed when the registry changes. Skip all of this for a tiny tool set or when every tool must be available.
+
+**Atomic writes and reverse-order rollback.** Create the temporary file in the same directory as the target, so both are on one filesystem and the rename is atomic. Then `write_all`, `sync_all` and persist.
+
+```rust
+pub fn atomic_write(target: &Path, content: &[u8]) -> Result<(), BatchError> {
+    let parent = target
+        .parent()
+        .ok_or_else(|| BatchError::NoParent { path: target.to_path_buf() })?;
+    let write_error = |source| BatchError::Write { path: target.to_path_buf(), source };
+    let mut temp_file = NamedTempFile::new_in(parent).map_err(write_error)?;
+    temp_file.write_all(content).map_err(write_error)?;
+    temp_file.as_file().sync_all().map_err(write_error)?;
+    temp_file
+        .persist(target)
+        .map_err(|e| BatchError::Rename { path: target.to_path_buf(), source: e.error })?;
+    Ok(())
+}
+```
+
+- Every error carries the target path and the I/O source.
+- Rollback walks in reverse order: remove created files first, then restore the backups of edited files.
+- For stronger crash guarantees, also sync the parent directory. Tests cover edits, creates, nested directories and injected failures.
+
+**Cascading verification with first-class skips.** The order of verification steps encodes their dependency (lint, then types, then tests), with cheap structural checks first. When an earlier step fails, later steps do not run and are recorded as skipped with the reason, so the summary never shows a missing or falsely passing step.
+
+```rust
+pub enum StepStatus {
+    Pass,
+    Fail,
+    Skipped { reason: String },
+}
+```
+
+- Tool output is parsed into a typed step result, and status is an enum, never a string.
+- Stopping early can hide unrelated later failures. Run every check when a complete inventory of failures is wanted.
+
+**Typed state for a generate, validate, retry loop.** A self-repair or agent patching loop keeps the attempt count, the retry limit, the last validation result and the error history as fields of one typed state struct with defined merge semantics: history appends, the rest overwrites. The retry decision is a pure function of that state.
+
+- Bound or summarise the history. An append-only log grows, anchors the model on repeated failures and can leak secrets back into prompts.
+- Isolate attempts when safety requires it.
+
+**Scored, capped and labelled context packs.** Sort candidates by score with a deterministic tie-break, keep the top files, include a small file whole and for a large file only the symbols that were hit with their line spans, and stop at a hard size budget.
+
+- Label each section with its path, score, line spans and an explicit truncation marker, so the consumer can judge the evidence. Truncate at a symbol or line boundary, never in the middle of a function.
+- Keyword ranking misses security and deep data-flow bugs whose relevant file shares no surface terms. Pair it with graph traversal or tests.
+
+**Expand recall only when the first pass is weak.** An expensive recall strategy (a model-generated hypothetical document, query rewriting, a wider search) runs only when the cheap first pass is measurably weak: a result count below a named minimum, or a score gap. The common case then pays nothing.
+
+```rust
+const CODE_SEARCH_LIMIT: u64 = 10;
+const MINIMUM_RESULTS: usize = CODE_SEARCH_LIMIT as usize / 2;
+
+let mut results = self.semantic_search(&query, CODE_SEARCH_LIMIT).await?;
+if results.len() < MINIMUM_RESULTS {
+    if let Some(synthetic) = self.hypothetical_documents(&query).await?.first() {
+        results.extend(self.semantic_search(synthetic, CODE_SEARCH_LIMIT).await?);
+    }
+}
+```
+
+- Thresholds are named constants. Extended results are deduplicated and sorted deterministically before presentation, and the log records when a synthetic query influenced retrieval.
+- Do not use it for exact symbol lookup or security-sensitive search, where generated text biases toward false positives.
+
+**Named degradation modes for a context budget.** Context selection for a model over arbitrary input is a budgeted pipeline with named modes: the full content if it fits under the model limit minus an output reserve, otherwise compressed content, otherwise a list of the remaining files or several calls.
+
+- Log the mode taken, and disclose in the final prompt what was omitted. Never truncate raw text blindly.
+- In compliance, legal or safety workflows an omission halts the operation instead of pruning silently.
 
 ### Gate discipline
 
