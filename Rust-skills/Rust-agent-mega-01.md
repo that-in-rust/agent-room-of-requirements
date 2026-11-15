@@ -2458,6 +2458,8 @@ When a gate fails, return to the workflow step that gate checks instead of redoi
 - **Mocks drift on the provider's schedule.** Compare each mock with the real API's contract on a calendar, not only when tests change. Keep an inventory of what each mock simulates per external system, generated from the mock definitions where the framework allows, so "what do we assume about the payment API" has an answer without reading every test. A test name that states the journey and the concern makes the suite self-describing.
 - **Suite speed.** Track suite wall time, per-test setup cost and time to the first test on a new service. When wall time rises, review which speedups leave the isolation boundaries intact before optimizing, because sharing state is the easiest speedup and the wrong one. A suite developers stop running locally has lost its value.
 
+- **Where the single-app harness stops.** The harness assumes one service, one database the test owns, and a suite one team runs whole. A second service in one journey calls for contract tests: split the journey into one harness test per service plus a contract pair, not one test that spawns three services by hand. A shared datastore calls for schema-level isolation with the boundary documented. A suite too slow to run locally calls for tiered execution, valid only while every merge still answers to the full matrix somewhere. A test that is awkward to write is a sign one of these assumptions no longer holds. If most of the runtime is setup and not assertions, parallel runs or template databases cut it without touching a test.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
