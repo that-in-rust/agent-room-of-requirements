@@ -1535,6 +1535,36 @@ Tests round-trip representative payloads, assert that the subject constants matc
 - **Names resolved on demand need an allowlist.** A lookup that falls back to treating an unknown name as a URL or path accepts only explicit schemes and returns a clear error for the rest.
 - **Hand-written mini-languages stay tiny.** A hand-written lexer and parser is acceptable for a controlled internal format with a handful of constructs (variables, one conditional, comments, sections). Once it needs expressions, loops, escaping, includes or untrusted input, use a maintained crate.
 
+**Module depth and seams.**
+
+- **Judge a module by its depth.** A module's interface is everything a caller must know: signatures, invariants, ordering rules, errors, configuration and performance. A deep module hides much behaviour behind a small interface. Run the deletion test: if deleting the module only moves the same complexity to every caller, it was earning its place; if the complexity disappears, it was a pass-through.
+- **A seam needs two adapters.** Put a trait where behaviour really varies: several backends, or a production and a test implementation. A trait with one implementation and no test double is not yet a seam.
+- **Semantics belong to the interface.** When correctness depends on transaction conflicts, scan order or write ordering, state those rules on the trait. Each adapter implements them or returns an explicit unsupported error.
+- **One required method, many defaults.** When many view or wrapper types share operations, the trait requires one accessor to the core storage and provides the rest as default methods. Wrappers opt in with a marker trait and a blanket implementation that delegates to their base. Tests compare the wrapped view with direct storage through the same trait.
+- **Plugin seams are object-safe.** A trait that plugins or remote adapters call through `dyn` has no generic methods; generic convenience lives on builder types. Publish one implementation-independent test suite that every adapter runs.
+
+**Protocols, journals and actors.**
+
+- **Byte parsing without I/O.** A frame codec takes a byte slice and returns a borrowed frame view plus the bytes consumed. It validates lengths once, and its accessors are then infallible. The transport owns reads, timeouts, encryption and backpressure. Tests cover a short header, a declared length beyond the buffer, length overflow, several frames in a row and round trips; a fuzz target asserts that decoding never panics.
+- **A journal over narrow storage.** The storage trait offers only positioned read and write. The journal trait above it owns append, lookup, recovery and draining a range. The same behaviour tests run against a temporary file and an in-memory adapter, including reopen and corrupted entries.
+- **Actors behind a typed mailbox.** The actor trait carries queue capacity, an observable state, and initialise and finalise hooks with an exit status. Callers hold a mailbox, never a raw channel. Tests work at the mailbox: send after exit, a full bounded queue, a dropped reply, priority order and a panic reported as an exit status.
+
+**Analysis engines and compiler extensions.**
+
+- **Algorithm variants share one output.** An analysis takes extracted facts and an algorithm selector, and every variant returns the same output type. Add a compare variant that runs the simple and the optimised version and fails when they differ. Debug dumps come from the same output, not a second code path.
+- **Pluggable algorithms receive a payload.** An extension algorithm gets a payload that owns typed option extraction, input lookup, arity checks, source spans and cancellation. It never sees raw syntax nodes. Tests check that a missing or mistyped option names the rule and its location.
+- **Compiler extensions keep a thin driver.** Everything that touches unstable compiler internals sits in one adapter. A query override captures what the tool needs and then delegates to the original provider. Lint or plugin authors depend on a stable API crate, and the driver translates spans and diagnostics. Tests are fixture directories of passing and failing programs.
+- **Proof-only interfaces stay out of the runtime.** Specification models and ghost state are separate traits and types that are erased, and proof operations are never callable as ordinary helpers. Tests include programs that must verify and programs that must fail.
+
+**Grammar crates and language registries.**
+
+- **A grammar crate exports little.** It exports the language handle and the node-type data, with query files as optional constants. It holds no semantic analysis. Tests load the grammar, compile every query against it and parse sample files without error nodes.
+- **Nested grammars sit behind one parser.** For a host language with an embedded one (block and inline, markup and script), expose one parser, one combined tree and one cursor. Inside, parse the outer tree, set the included ranges for the inner grammar and index the inner trees. An edit is applied to the outer and every inner tree. Tests cover cursor crossings and reparsing after an edit.
+- **A registry owns everything about a language.** One language value bundles the grammar, its queries, comment syntax and brackets. Callers look it up by file name or alias and never open query files themselves.
+- **Loading state lives in the registry.** A lazily loaded resource is an enum: not loaded, loading with a list of waiters, loaded, or failed with the cached error. Concurrent requests join the one load.
+- **Test across a corpus of grammars.** Keep vendored grammar versions apart from production. A harness compiles queries and parses samples for each and reports failures per grammar.
+- **External tools are candidates.** Detection, installed-or-not checks, installation and version metadata for an external tool sit behind one trait that receives a command runner. Tests pass a fake runner.
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -9205,6 +9235,8 @@ if results.len() < MINIMUM_RESULTS {
 - **Libraries do not print progress.** A library used outside a terminal takes a callback or a writer.
 - **Embedded template trees.** A project generator embeds its templates in the binary and writes a base layer, then a template-specific layer that may override it, then extras named in a per-template manifest. File names carry conditions and renames. Snapshot-test the generated project for each supported combination and assert the override order.
 - **Bindings forward.** A Node or Python binding crate exposes functions that forward to the Rust library and holds no behaviour. The binding's smoke test and the Rust tests run the same fixture arguments.
+
+**Paths that write differ from paths that read.** After validation, an existing target and a writeable target are separate types, and the writeable one carries its cleanup. Validation also rejects hidden components, backslashes and doubled separators. Every error shows the path as the user typed it.
 
 ### Gate discipline
 
