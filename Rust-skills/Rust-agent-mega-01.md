@@ -1128,6 +1128,15 @@ Document `# Errors`, `# Panics` and `# Safety` on public items; an undocumented 
 pub fn parse(_s: &str) -> Result<(), Error> { Ok(()) }
 ```
 
+- **Parser fixtures.** Keep input and expected tree together as diffable fixtures. For a behaviour change, add the smallest new fixture first, then change the parser until the expected output is intentional; a snapshot can bless a wrong tree if nobody reads it. Keep the parse structure stable and put consumer-specific meaning (highlighting, tags) in separate query files with their own tests.
+- **Immutable fixture builders.** Each `with_x` returns a new value, so one case overrides one detail without contaminating the next, and each scenario runs in a fresh context that is closed afterwards.
+- **Disposable real infrastructure.** For integration tests against a container, feed its runtime connection details through the same configuration path production uses.
+- **Regression test for a UI or runtime bug.** Pair it with the smallest fixture app that reproduces the exact state change, and select elements by stable test ids, not styling.
+- **Compile-fail tests for lifetime contracts.** When a wrapper must not outlive its parent, add a `trybuild` case that fails to compile with the expected borrow error.
+- **Deterministic checks before model-based checks.** When output is generated or AI-assisted, run one named deterministic check per invariant that needs no model (required keys present, forbidden combinations absent), then the semantic check, and report both. Refresh the deterministic checks when the schema changes.
+- **Suppressed failures still fail the run.** A tracker that records individual failures and continues must assert overall success or emit the final report at the end. Do not suppress where the first failure must abort.
+- **A verifier beside every benchmarked kernel.** One shared driver runs each kernel with the same trial loop and timing and calls a verifier outside the timed region. A kernel without a verifier is marked unverified explicitly.
+
 ### Verification rules by risk
 
 - **Bug-fix rule.** Reproduce the bug, write or strengthen a regression test, see it fail on the broken state, apply the fix, then see the regression test and the broader suite pass. Do not claim a regression test exists if it was never observed failing.
@@ -1174,6 +1183,15 @@ Each pattern: why it matters, when to use it, when to avoid it.
 - **Flat public API facades with `pub use`.** Internal file layout and public API shape should not be welded together; re-exports let a crate reorganize internals without breaking callers. Use when a crate has several internal modules and wants one stable import surface. Avoid when it only hides useful structure.
 - **`PhantomData<fn() -> T>` invariance for typed handles.** Handle types, arena indices and lifetime-sensitive tokens can be unsound if variance is too permissive. Use when the type parameter carries lifetime or aliasing implications that must not be coerced. Avoid when ordinary covariance is correct.
 - **Type-state plus a drop bomb for must-complete protocols.** Some APIs are wrong if partially used. Type-state makes legal transitions explicit, and a debug-time bomb in `Drop` catches "forgot to complete or abandon" immediately. Use for parser markers, staged builders, transactions and protocol objects that must be finalized. Avoid when the state machine is trivial and the extra types would outweigh the gain.
+
+- **Commands as data.** For a protocol with many commands, write one descriptor per command (a trait with a `const CODE`, an encoder for the input and a decoder for the response) and one generic executor. A new command is a descriptor plus serializer tests, not new transport code.
+- **Variants as typed specs.** When variants differ only in names, extensions and queries, put them in one table of typed specs (a static slice of structs, or an enum with a `spec()` method) and keep the engine generic. Require a test per entry, and move a variant into code only when its control flow really differs.
+- **Name the unit of an offset.** Offsets that cross a runtime boundary (Rust UTF-8 bytes against JavaScript UTF-16 code units) get the unit in the type, for example `Utf8Span` and `Utf16Span`, with a separate API per unit and tests on multi-byte text.
+- **A validated resource issues its children.** A checked directory, session or connection hands out child handles only while its own state is healthy, through a method that returns `Result`. Callers do not bypass it with raw opens.
+- **Keep direct and derived results apart** until the last step that needs them merged.
+- **Extension points are explicit.** Register hooks by name and type; never infer one from a method that happens to match a naming pattern. Hook order is part of the API: document and test it. Give a plugin a narrowed registry facade scoped to its own namespace instead of the root mutable service, and fail loudly on a namespace violation.
+- **Selection is not traversal.** A selector value (all, none, one, range, neighbours) describes a subset without the data it applies to, and a method such as `fn iter<'g>(&self, graph: &'g Graph) -> impl Iterator<Item = NodeId> + 'g` realises it. Common subsets then need no allocation.
+- **Closed enum at a dynamic boundary.** When a runtime value must select typed code, use a closed enum and one central `match`. Keep generic APIs statically dispatched and offer an explicit conversion to `Arc<dyn Trait>` only at FFI, scripting or dynamic-storage boundaries; benchmark boxed iterators and trait objects before putting them in a hot path.
 
 ### Core idioms with code
 
@@ -1259,6 +1277,10 @@ match res {
 - **Additive features, sealed traits and coherence.** API stability also depends on whether features compose and whether downstream crates can safely implement your traits. Keep features additive, never mutually exclusive. Seal a trait when you still need freedom to evolve it.
 - **Macro and proc-macro hygiene.** A macro bug repeats at every expansion site. Use absolute paths in expansions, disciplined spans and compile-time diagnostics. Do not panic inside a proc macro on user error, and do not rely on the caller's imports.
 - **`NonZero` niches, ZSTs and uninhabited types.** Use `NonZero*` and `Option<NonZero*>` when the niche is real and semantically clean, zero-sized marker types with `PhantomData` for compile-time state that costs nothing at runtime, and uninhabited types for impossible states in place of sentinel values. Use them because the model is clearer, not because the layout looks clever.
+
+- **Native and WASM bounds behind local aliases.** For a library that runs on both, hide target-specific bounds behind a few named traits defined once per target (`Spawnable`, `Stream`, `SpawnableOutput`, `TransportStream`: with `Send` on native, without it on wasm). Code uses the aliases, never a direct `Send` bound, and both targets are built before a bound changes.
+- **One wrapper around the HTTP request builder.** Wrap the client's builder once so hooks, guards (for example a keep-awake guard held for the duration of the call) and target-specific execution apply to every request. Call sites never reach the underlying builder.
+- **External tools with the same lifecycle.** One trait (minimum version, can auto-install, install, update, instructions) with an implementation per tool and a shared command runner that logs each step. Run a version check after an automatic update, and remember that logged transcripts can carry values from the environment.
 
 ### Trait and language details
 
@@ -1428,6 +1450,30 @@ let ok: Result<Vec<_>, _> = items.into_iter().collect();
 ```
 
 - **RAII guards.** Acquire in the constructor, release in `Drop`, keep guards short-lived, and do not share a guard beyond the scope that needs it.
+
+- **Interning for immutable, highly repeated values.** A canonical `Arc` per distinct value turns equality into a pointer comparison:
+
+```rust
+pub struct Interned<T: Internable + ?Sized> { arc: Arc<T> }
+
+// lookup by precomputed hash in a sharded map; Occupied clones the Arc, Vacant inserts it
+impl<T: Internable + ?Sized> PartialEq for Interned<T> {
+    fn eq(&self, other: &Self) -> bool { Arc::ptr_eq(&self.arc, &other.arc) }
+}
+
+impl<T: Internable + ?Sized> Drop for Interned<T> {
+    fn drop(&mut self) {
+        if Arc::strong_count(&self.arc) == 2 { self.drop_slow(); }   // only the map and this handle remain
+    }
+}
+```
+
+  Pointer equality is correct only because every constructor goes through the interner. Use it for compiler types, paths and terms, not for mutable or low-cardinality values. For plain strings, a map from `Arc<str>` with a read lock on the hit path is enough; re-check under the write lock on a miss when one canonical `Arc` is required.
+- **Deduplicating live resources.** Key by canonical identity (absolute path, case-folded on case-insensitive platforms) and hold `Weak` references so the registry does not keep the resource alive; remove the entry when `upgrade()` fails, and reject a second open whose options conflict with the first.
+- **Move-only handle with ownership states.** When an entry may be cached, owned, borrowed or transferred, use one handle with an enum of states and a single release path in `Drop`. Adding a state means updating every transition.
+- **Stateful result handles.** A pending or resumable handle checks "still executable" in every public method that advances it, not only at construction, and a stale handle returns a clear error.
+- **Bootstrap builders.** Provide "copy an existing dependency set" separately from "override one", so tests and embedders do not restate everything. Adding a dependency touches the copy path, the setter and the accessor together.
+- **Snapshots as iterators.** Turn an engine's point-in-time file set into a closeable iterator at the boundary, so callers never manage commit handles; an empty store yields an empty iterator, not an error.
 
 ### Iterators and closures
 
@@ -1602,6 +1648,38 @@ struct ParseErr {
 
 fn parse(_s: &str) -> Result<()> { Err(ParseErr { src: "x+y".into(), span: (2..3).into() }.into()) }
 ```
+
+- **Retryability lives on the error type.** Classify with a trait, not by matching message strings, and inject the sleep so tests never wait on a real clock:
+
+```rust
+pub trait Retryable {
+    fn is_retryable(&self) -> bool { false }   // permanent unless a variant opts in
+}
+
+pub enum Retry<E> { Permanent(E), Transient(E) }
+
+#[async_trait::async_trait]
+pub trait MockableSleep {
+    async fn sleep(&self, duration: Duration);
+}
+
+pub async fn retry_with_mockable_sleep<T, E, Fut>(
+    params: &RetryParams,
+    op: impl Fn() -> Fut,
+    sleep: impl MockableSleep,
+) -> Result<T, E>
+where
+    E: Retryable + std::fmt::Debug + 'static,
+    Fut: Future<Output = Result<T, E>>,
+{ /* loop: run op, return on Ok or a non-retryable error, else back off through sleep */ }
+```
+
+  A wrong `is_retryable` creates a retry storm, so every new error enum gets explicit transient and permanent tests plus a no-sleep test path. Never wrap a non-idempotent operation.
+- **One retry state at the operation boundary.** For a managed transaction or work closure, keep max total retry time, injected sleep, backoff and the dead-connection limit in one state object that loops while it may continue and produces the final error itself. Call sites do not retry. Say in the API docs that the closure may run more than once, honour cancellation and deadlines inside the loop, and test cancellation, the time limit, error classification and commit failure.
+- **Retries for streams.** Use the same classification for value-returning and streaming calls: retry 429, 500, 502, 503 and 504, never 400, 401, 403, 404 or 422; bound attempts and total time; add jitter; honour `Retry-After`. Retrying a stream restarts it from the beginning, so the caller must tolerate repeated partial output or pass on only committed chunks.
+- **Actionable startup and configuration diagnostics.** Match the known typed cause, then print a description plus one concrete action in the user's terms, with the original error still attached. Analyse only failure types you know, so the real cause is not replaced by a guess.
+- **User-facing diagnostics are a boundary format.** Route every interpolated value, identifier and type name through shared quoting and escaping helpers, so error constructors carry facts and the helpers own the presentation. Changing a helper changes many snapshot tests at once; review that diff.
+- **Rate-limited logging.** For a log line on a hot failure path, keep the state per call site (a `static AtomicU64` count and last-reset time inside the macro), check it, then call `tracing`; no allocation and no shared map. Pair it with a counter metric, because suppressed lines hide how often the failure happens. Never rate-limit security or audit events.
 
 ### Error and recovery taxonomy
 
@@ -1953,6 +2031,11 @@ loom::model(|| {
 });
 ```
 
+- **Several keyed locks.** Take them in one global order (sort by a stable key), keep the guards in a `Vec` so they are released together, and never let a call site choose its own order. Striped locks bound the number of locks, but unrelated keys can share a stripe. No long I/O inside. Test the two-key collision case.
+- **Double-buffered work sets.** An iterative scheduler keeps a current and a next set, and at the start of each round does `std::mem::swap(&mut cur, &mut next); next.clear();`, so work scheduled during a round cannot change the set being consumed. Test the first round, the swap, "also this round" and the early stop when nothing new was scheduled.
+- **Dependency-aware scheduling.** Dependency traversal, timeout interruption, error propagation and removal of the failed task belong to the scheduler; a task exposes `run`, its children and its termination state. Dependent work never bypasses the scheduler.
+- **Engine and callbacks.** The engine owns loading, scheduling, storage and iteration; user code implements a trait with one required method and default no-op lifecycle hooks. Add a hook only when the algorithm needs that state, since an empty default can hide a missed lifecycle need.
+
 ### Cancellation, backpressure and primitive choice
 
 Primitive choice:
@@ -1993,6 +2076,27 @@ Shutdown and cleanup:
 - **Classify a failure before retrying it.** Never retry a compiler error, a panic, an invariant violation, a deterministic assertion, an authorization failure or a schema incompatibility. Retry hazards: a timeout after the remote effect already succeeded, a library retry nested inside an application retry, cancellation between an effect and its acknowledgment, jitter that outlasts the parent deadline, and a retry that discards the first error chain. Keep both the first and the terminal error. A bounded channel does not bound the system if another producer is unbounded.
 - **Backpressure is part of correctness.** It lets the system reject and explain work before resource exhaustion destroys the evidence needed to diagnose it.
 - **Telemetry that maps to the design.** Record the parent of each task and its shutdown result, queue depth with its capacity, the typed terminal result and the cancellation reason. Keep cancellation distinct from other terminal states. Do not build metric labels from user input, do not let a span guard cross an `.await` by accident, and check that panic paths and sampling do not drop the rare terminal failures. A library should not impose telemetry policy: typed errors and executable examples are its diagnostics.
+
+- **`try_send` on a reactor thread.** A blocking send on a full inbox parks the thread that drives every other task. Use `try_send` and decide each outcome:
+
+```rust
+match inbox.try_send(msg) {
+    Ok(()) => {}
+    Err(TrySendError::Full(_)) => warn!(shard_id, "inbox full, dropping message"),
+    Err(TrySendError::Disconnected(_)) => warn!(shard_id, "inbox closed"),
+}
+```
+
+  Choose drop or backpressure explicitly and write down the recovery path (write-ahead log, retransmission). Without one, a dropped message is data loss.
+- **Drop guard for completion.** When "finished" must be signalled on every exit path, return a guard whose `Drop` sends the notification (for example the generation number on a `watch` channel, unless a newer generation was already processed). `Drop` cannot await and a failed send is silent, so do not use it when success, failure and cancellation must be told apart. Name the guard after its side effect and test overlapping generations.
+- **Stale results from cancelled work.** For typeahead or search, cancel the previous request's `Arc<AtomicBool>`, install a fresh one, and also give each request a monotonically increasing id; the consumer rejects any result whose id is not the latest. Use an ordered queue instead when every request must complete.
+- **Share in-flight loads.** For an expensive lazy load, cache finished results and the work in progress, so concurrent callers await one load (`tokio::sync::OnceCell` per key, or a map of shared futures). Remove the in-flight entry when it ends and decide whether a failure is cached; otherwise a failing load is retried by every caller forever. Not when each caller needs its own instance or its own cancellation.
+- **Coalescing requests.** Merging pending requests under a lock is fine for level-triggered state ("needs a rerun"); keep edge-triggered events (one-shot triggers, queued items) explicitly or they are lost. Test the timing cases.
+- **Round-robin with `Relaxed`.** `counter.fetch_add(1, Ordering::Relaxed) % candidates.len()` is acceptable for spreading load across candidates that were already filtered and partitioned (local first, then remote). It is not acceptable where the order is part of correctness.
+- **In-process event broker.** Key subscriptions by event type (`trait Event: Debug + Clone + Send + Sync + 'static`), make `subscribe` `#[must_use]` and return a handle that unsubscribes on drop, keep payloads cheap to clone, and give slow subscribers a timeout or a bounded queue. Not for cross-process or durable delivery.
+- **Worker-owned resources.** Bind a client or connection that is expensive or not thread-safe to one worker and send only job payloads through the queue. When worker errors are not returned to the submitter, report them through the job's result or a callback. A pool is a small scheduler: a queue, a registry of workers with a state, a maximum size, and a completion hook that starts the next job. Cancellation must cover queued and in-flight work; test both and test saturation.
+- **Bounded blocking reads behind an async API.** Keep the public API async, run the blocking storage read in `spawn_blocking`, and gate it with a configurable `tokio::sync::Semaphore`. Too many permits overload storage; too few slow every reader.
+- **Shutdown owns its queue.** A temporary owner of concurrent cleanup work verifies at shutdown that nothing is still queued: every accepted job either ran and closed, or was closed without running.
 
 ## 10. Unsafe and FFI
 
@@ -2098,6 +2202,54 @@ unsafe impl<T: Sync> Sync for MyType<T> {}
 // Justify invariants in docs: why concurrent access is safe.
 ```
 
+- **Child handle tied to its parent.** The wrapper owns the raw pointer, keeps alive the option state the C side still points into, and borrows the parent through `PhantomData`:
+
+```rust
+pub struct RawIterator<'a, D: DbAccess> {
+    inner: std::ptr::NonNull<ffi::iterator_t>,
+    _readopts: ReadOptions,          // C side keeps pointers into this
+    db: PhantomData<&'a D>,          // iterator cannot outlive the database
+}
+```
+
+  Prove it with a compile-fail test whose expected output is the borrow error. Not needed when the C library hands out independent owned handles.
+- **One macro for a C error out-parameter.** Copy the message, free it with the library's own free function, and return early:
+
+```rust
+pub(crate) unsafe fn from_cstr_and_free(ptr: *const c_char) -> String {
+    let s = String::from_utf8_lossy(unsafe { CStr::from_ptr(ptr) }.to_bytes()).into_owned();
+    unsafe { ffi::lib_free(ptr as *mut c_void) };      // never Rust's allocator
+    s
+}
+
+macro_rules! ffi_try {
+    ( $($function:ident)::*( $($arg:expr,)* ) ) => {{
+        let mut err: *mut ::libc::c_char = ::std::ptr::null_mut();
+        let result = $($function)::*($($arg,)* &mut err);
+        if !err.is_null() {
+            return Err(Error::new(unsafe { from_cstr_and_free(err) }));
+        }
+        result
+    }};
+}
+```
+
+  The early return fits only functions with a compatible `Result`. Test the success and the error path of each wrapper.
+- **`Cow` where a view must be normalised for C.** Return `Cow::Borrowed` when the storage already has the required form and `Cow::Owned` when a sliced view must be rebased. A pointer taken from the `Cow` is valid only while it lives: bind `let proper = indptr.to_proper();` in a scope that outlives the call and never call `.as_ptr()` on a temporary.
+- **Safe shape bounds, private unsafe fast path.** Public APIs carry the shape constraints in types; the implementation takes the unchecked path only after it has established them:
+
+```rust
+if self.data.is_contiguous() && rhs.data.is_contiguous() && out.data.is_contiguous() {
+    // shapes already equal: one flat loop over as_slice_unchecked()
+} else {
+    // nested column and row loop through checked accessors
+}
+```
+
+  A storage trait whose `is_contiguous` or `strides` the fast path trusts is an `unsafe trait`, because a wrong implementation is undefined behaviour.
+- **`extern "C"` entry points.** Set the out-parameters to null or zero first, convert opaque pointers once at the top, and validate every size and type relation between the inputs before any work.
+- **Packed bitmaps and other low-level copies.** Write the common fast paths explicitly (tiny copies bit by bit, byte-aligned bulk copy, unaligned shifting) and return a useful summary such as "any null seen". Do not simplify without benchmarks and tests for zero, tiny, aligned, unaligned, inverted and boundary-spanning ranges.
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -2157,6 +2309,24 @@ command_matcher! {
 }
 ```
 
+- **Buffer pool with a returning guard.** The guard holds `Option<Vec<u8>>` so `Drop` can take it, and a `Weak` to the pool so a buffer that outlives the pool is simply freed:
+
+```rust
+impl Drop for PooledBuffer {
+    fn drop(&mut self) {
+        if let (Some(buf), Some(pool)) = (self.buf.take(), self.pool.upgrade()) {
+            pool.lock().put_back(buf);        // clear, and cap the capacity kept
+        }
+    }
+}
+```
+
+  A pool retains peak memory, so cap the capacity it keeps and stress-test before changing that. Not worth it in a small command-line tool.
+- **Permissive builder, compact final form.** Collect sparse entries as triplets (row, column, value) in any order, convert once to the compressed form, and sum duplicates in that conversion. Build compressed adjacency by counting degrees, prefix-summing to offsets, then filling one contiguous array. Constructors that `assert!` on lengths and bounds panic on bad input; give untrusted data a fallible constructor. Test directed, symmetrised, self-loop, duplicate and weighted inputs.
+- **Compile-time and run-time sizes under one trait.** In numeric libraries, a `Const<const N: usize>` and a `Dyn(usize)` can implement one dimension trait, with arithmetic as traits that have an associated `Output`. Implement each operation for both, and compile static-static, static-dynamic and dynamic-dynamic examples. Not for business objects.
+- **Dense internal ids.** Compact ids on input and expand results on output at the I/O boundary, never inside the kernel. Decide the mapping, one sentinel for "no result", and the output format before calling the kernel.
+- **Two representations with a switch.** When a cost model switches between two representations of the same data at a threshold, the thresholds depend on the workload: test at the switch boundary and keep a result verifier.
+
 ### Allocator and build-time optimization
 
 - **Global allocator.** Switch to jemalloc or mimalloc only when allocator behavior is a measured bottleneck; measure throughput, latency and RSS.
@@ -2202,6 +2372,40 @@ let out = df.lazy()
 ```
 
 - **In-memory analytics.** Arrow with DataFusion gives columnar, vectorized SQL; do not convert Arrow data to row structs early.
+
+- **Cache identity includes policy.** Settings that change validity (time to live, maximum entries, persistence, authorization scope) are part of the cache's key or identity type, not only a closure argument. Reuse a cache only when they match and close the old storage before replacing it. When adding an option, update the equality check, the storage context and the replacement tests together.
+- **Negative results.** Cache a failed optional lookup separately from successes, and accept that it can go stale. A global cache needs an invalidation path and a test with changed credentials or options.
+- **Cache keys from every semantic input.** Hash the tool version, the source file, dependency directories (excluding outputs), and each environment knob; separate fields with a tag and a zero byte; sort directory entries before hashing so traversal order cannot change the key; never use timestamps as identity.
+
+```rust
+let mut entries: Vec<_> = fs::read_dir(dir)?.collect::<Result<_, _>>()?;
+entries.sort_by_key(|e| e.file_name());
+for entry in entries {
+    hasher.update(b"file\0");
+    hasher.update(entry.file_name().as_encoded_bytes());
+    hasher.update(b"\0");
+    hasher.update(&fs::read(entry.path())?);
+}
+```
+
+  Size and modification time may serve as a shortcut to skip re-reading an unchanged file, never as the identity. Namespace cached output by the extractor version, write the index with a temporary file and an atomic rename, and keep a `--force` escape hatch.
+- **Invalidate by contract when that is the unit.** When downstream work depends only on the public structure, hash the sorted structural facts (name, signature, parameters, return type, imports) and classify a change as none, cosmetic or structural. The hash ignores bodies by design; add behaviour inputs explicitly if they matter.
+- **Per-thread worker state in rayon.** Share immutable data in an `Arc`, build the mutable, non-thread-safe state once per worker thread, and count with atomics:
+
+```rust
+files.par_iter().for_each_init(
+    || Highlighter::with_store(store.clone()),          // once per worker thread
+    |highlighter, path| match process(highlighter, path) {
+        Ok(()) => { done.fetch_add(1, Ordering::Relaxed); }
+        Err(e) => { failed.fetch_add(1, Ordering::Relaxed); eprintln!("{}: {e}", path.display()); }
+    },
+);
+```
+
+  Per-thread processing does not give a stable output order; collect results with an index and sort when order matters.
+- **Parallel export with one sink per chunk.** Share the schema, give each chunk its own sink and decoder through a factory, and let one generic driver own the orchestration (`(0..size).into_par_iter().step_by(chunk_size)` with `try_for_each`, each chunk calling `sink.finish()?`). Use it only where independent output chunks are acceptable; keep a single ordered writer where order or one transaction is required.
+- **Batch writes by shape.** Group bulk writes by statement shape (same table, label or statement), not only by count. Parallel batches each need their own connection and a first-error policy. Not when ordering across shapes matters.
+- **Append-only chunk writer.** Reuse one buffer (clear it, and shrink it to a soft maximum after an unusually large batch), write a placeholder length header, stream the records through a compressing encoder wrapped in a checksum hasher, backfill checksum and length in a fixed order, and issue one `write_all`. Add a round-trip reader test whenever the chunk format changes. Not for random updates or per-record `fsync`.
 
 ### Benchmark harness (criterion)
 
@@ -2514,6 +2718,48 @@ When a gate fails, return to the workflow step that gate checks instead of redoi
 
 - **Where the single-app harness stops.** The harness assumes one service, one database the test owns, and a suite one team runs whole. A second service in one journey calls for contract tests: split the journey into one harness test per service plus a contract pair, not one test that spawns three services by hand. A shared datastore calls for schema-level isolation with the boundary documented. A suite too slow to run locally calls for tiered execution, valid only while every merge still answers to the full matrix somewhere. A test that is awkward to write is a sign one of these assumptions no longer holds. If most of the runtime is setup and not assertions, parallel runs or template databases cut it without touching a test.
 
+- **One outbound client wrapper.** Correlation ids, trace propagation, token refresh and retry logging live in one wrapper so every operation gets them. It does not retry non-idempotent writes.
+- **Protocol error translation in one place.** Map internal errors to responses at the boundary, narrow cases first and the catch-all last, keep the source error as context, and log server-side failures.
+- **Required and enhancing dependencies.** Classify each dependency of a request. A required one fails the request; an enhancing one degrades with a warning and a result tagged with the path that produced it:
+
+```rust
+let dense = dense_res.map_err(|e| anyhow!("dense search failed: {e}"))?;
+let sparse = match sparse_res {
+    Some(Ok(hits)) => Some(hits),
+    Some(Err(e)) => {
+        warn!("sparse channel failed, falling back to dense-only: {e}");
+        return Ok(dense_only(dense, limit));      // every candidate tagged CandidateSource::DenseOnly
+    }
+    None => None,
+};
+```
+
+  Count each path in metrics, or the fallback hides an outage. No silent degradation where audit or exact-match guarantees need every back end.
+- **Per-tenant services.** Share the expensive resources and cache one service facade per tenant in a registry with single creation under concurrency. Handlers obtain the service from the registry, tenant identity travels in request-scoped state, tenant existence is validated before creation, and services of removed tenants are dropped. Not when tenants need process isolation or their own credentials.
+- **Pipelined protocols.** Every send enqueues the handler for its expected reply in the same order and every received message pops one. A reply with no handler waiting is a protocol error. Add "append message" and "enqueue handler" together. When replies can arrive out of order, use correlation ids instead.
+
+- **Size results for the consumer.** Derive output limits from the consumer's capacity with a safety margin, and never clip silently:
+
+```rust
+const MAX_OUTPUT_TOKENS: usize = 52_000;
+const SAFETY_MARGIN: f32 = 0.85;
+const SAFE_OUTPUT_TOKENS: usize = ((MAX_OUTPUT_TOKENS as f32) * SAFETY_MARGIN) as usize;
+
+// when the serialized result is too large, keep a prefix of the array and say so
+obj.insert("_truncated".into(), json!({
+    "original_items": item_count,
+    "kept_items": keep_items,
+    "reason": "result exceeded the output limit",
+}));
+```
+
+  Every array-returning operation goes through the same function and returns enough metadata for a follow-up page. When filling a budget by priority, add items while they fit, cut the first one that does not in a stated order (lowest-value parts first, main content last), then stop. Approximate limits do not fit records that must be exact and auditable.
+- **Tool schemas are executable contracts.** List every tool in one registry (name, description, parameter schema), look the tool up and validate the parameters on the server before dispatch even though a model read the schema, and dispatch in one place. Test that every listed tool has an implementation and that the schemas serialize.
+- **Pluggable storage behind one `open`.** Route by capability (the first back end that can handle the path, else the default), wrap the handle (for example with decompression) only when the access mode allows it, and reject unsupported combinations before the caller gets a handle. Registration order is part of the API.
+- **Canonical ids.** One small module owns id normalisation (Unicode NFKC, separators, case folding) and every producer calls it; a test proves each producer gives the same output on non-ASCII input. Normalisation can collide, so pair the id with source path and kind when uniqueness matters.
+- **Reverse impact walks.** Seed a breadth-first walk with the queried node and its direct members, then follow only dependency relations backwards to a depth limit. Ownership edges stay out of the dependency set.
+- **External programs with shared arguments.** One function builds the invariant `Command` (common parameters, stream handling, expected exit code) and takes the variable part from one narrow hook. Argument order is part of the contract, and a logged command line can expose paths or credentials.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
@@ -2564,6 +2810,14 @@ Auth and recovery flows:
 - **Across services.** A local transaction and typed states do not span independent services, and exactly-once delivery cannot be assumed. Carry idempotency and correlation identifiers explicitly, define authorization and replay semantics at each interface, give each queue one owner, and define rollback order. One endpoint review does not certify a distributed workflow.
 
 - **Levels of security evidence.** Documented is not locked, locked is not reachable, tested is not deployed, deployed is not observable, and observed once is not attacker-resistant. State which level each security claim rests on. Compile success proves no authorization property and one abuse test proves no general one. After a framework, runtime or advisory change, re-check the exact locked versions, reproduce the public response behavior, and update the abuse tests. Do not copy a security middleware example without checking it against the locked version and the flow.
+
+- **Server-side fetch of a user-supplied URL.** One `validate_url(url) -> Result<Url, _>` runs before every such fetch: allow only `http` and `https`; reject private, loopback, link-local and cloud metadata addresses and internal hostnames. Checking the hostname is not enough: resolve it, check the address, and connect to the address you checked, so a second DNS answer cannot differ (DNS rebinding). Validate every redirect the same way and cap the response size. Test IPv4, IPv6, IPv4-mapped IPv6 and metadata hosts. Make intranet exceptions explicit instead of weakening the default.
+- **Local paths from input.** Canonicalize, then require the result to be inside the allowed base directory (`canonical.strip_prefix(&base)`), and return `Result`. A wrapper that remaps paths sends every path parameter through the same fallible encoder; that alone is not a security boundary.
+- **Deserialization across a trust boundary.** Prefer a structured format with a closed schema: `#[serde(deny_unknown_fields)]` and closed enums. Never accept an open, self-describing set of types from untrusted input; if a polymorphic format is unavoidable, restrict the accepted types before construction and test that an unrelated type is rejected.
+- **Running commands.** Prefer `std::process::Command` with a program and separate arguments, no shell. If shell text must be accepted from a user or an agent, split it into pipeline segments, parse each, check the program against an allowlist, block redirects and subshells, and test the dangerous shapes. This lowers risk; it does not make arbitrary shell text safe. When a remote shell is unavoidable, model the shell dialect in a type that owns quoting, build the command in one function, and reject multi-line arguments with a real error, not only `debug_assert!`.
+- **Wrapping a command-line tool as a service.** Keep command construction and output parsing in one adapter. Do not pass credentials as arguments (they show in process listings), do not infer success from output text where an exit code or structured output exists, and do not ignore a failed write to the child's stdin. Internal administration only.
+- **Secrets redact by default.** Hold secrets in a type whose `Debug` and serialization print a placeholder, such as `secrecy::SecretString`, and require a narrow explicit call (`expose_secret()`) at the one place that needs the value. Replace a secret instead of mutating it. Validation messages must not reveal a secret or its exact shape.
+- **Text handed to a model or an agent.** Put a policy step between retrieval and presentation: deny by path pattern (`.env`, `*.pem`, `*.key`, `id_rsa`, `*.tfvars`), replace secret-shaped text with a fixed marker, and report how many items were excluded or redacted. Every new context field goes through the same step. Pattern scans miss unusual secrets, so pair them with a dedicated scanner, and keep secret and prompt-injection fixtures in the tests.
 
 ### Database pool and compile-time checked queries
 
@@ -2721,6 +2975,17 @@ struct Event { id: u64, msg: String }
 let bytes = to_vec_named(&Event { id: 1, msg: "hi".into() })?;
 let evt: Event = from_slice(&bytes)?;
 ```
+
+- **Typed option definitions.** One validated settings struct per group, checked at startup. Each option carries its parser, default and a reusable predicate such as a range check, so text becomes a typed value once, at the boundary. Test parsing, a wrong type and an out-of-range value.
+- **Versioned payloads.** Persisted or queued payloads carry a format version; the version number and the old-version decode branches sit next to the serializer, not at call sites. Add a round-trip test and at least one old-version fixture. A change to serialized state is a wire-format change: update size constants, encoder, decoder and edge-case tests together.
+- **No raw struct bytes on disk or wire.** Write fields one by one (`to_le_bytes`), or use a derive that guarantees a padding-free layout, so padding never leaks into the format.
+- **Snapshot emission apart from mutation.** An atomic "write queued" flag can collapse redundant snapshot writes, and the state lock and the file-write lock stay separate. A crash between mutation and persistence loses the latest progress, so this does not fit audit-critical state.
+- **Checkpoint before side effects.** Before starting asynchronous work that edits user files, write the rollback data and register the pending state, and define what happens when the checkpoint itself fails.
+- **Scoped key-value storage.** A shared key-value store exposes a scoped handle so the owner of a namespace is explicit. Plain strings leave serialization and versioning to the caller; typed domain records get their own schema and migrations.
+- **SQLite as a local coordination store.** Use WAL journal mode with a `busy_timeout`, reconcile liveness periodically and delete rows of dead processes. A process id alone does not prove identity because ids are reused: store the start time or working directory with it and verify before sending work. Not for several hosts, or for messaging that needs authentication.
+- **Edited text as input.** Human- or agent-edited text that updates a database is an input format, not trusted data: parse into typed records, validate, apply in one transaction, verify against the stored state, and only then remove or advance the input. Keep a test per accepted shape.
+- **Idempotent reload of providers and plugins.** Purge the entries owned by a stable source id before registering the replacement set, debounce file-watch events, and keep the old entries when a reload fails on a partially written file.
+- **Synchronization tokens are a set.** For bookmarks and continuation tokens, an update removes the old ones and adds the new ones under one lock. A persistence hook that runs inside the update can fail the caller and lengthens the lock, so keep it short.
 
 ## 15. Tauri desktop apps
 
@@ -4285,6 +4550,18 @@ Workspace hygiene:
 - Keep optional dependencies behind features, grouped by feature set.
 - Re-export the public API from `lib.rs`.
 - Run `cargo clean` after a major dependency or workspace-configuration change, or when build errors make no sense, before trusting a critical test run.
+
+- **Protocol on stdout, logs on stderr.** A binary that speaks a protocol over stdout (JSON lines, LSP, MCP stdio) sends `tracing` output to stderr and never calls `println!` for diagnostics. A helper daemon started detached gets a health check before spawning and cleanup of stale instances.
+- **Fallback ladders.** When there are several ways to obtain a dependency (installed, then vendored build), use a fixed order, log each fallback, and surface an unavailable option. Building at load time is slow and surprising in production; an automatic download needs a single retry limit and a pinned checksum, and is off in offline or reproducible builds.
+- **Cargo-integrated analysis tools.** Run ordinary `cargo check` with the tool re-entered as `RUSTC_WRAPPER`, pass the tool's own arguments serialized in one environment variable with a versioned format, detect an existing wrapper such as `sccache`, and apply a timeout to the child process.
+- **Accumulating validation.** For intake, registries and admin tools where a complete fix list helps, collect issues with field, message and severity and report them together; the input is invalid only when an error-severity issue exists. Keep hot paths fail-fast.
+- **One source for schema, type and validation.** Derive the runtime validation, the Rust type and the advertised schema from one definition (for example `serde` plus `schemars`), so they cannot drift.
+- **Diagnostic log for a desktop or local app.** Append-only JSON lines with typed entries (RFC 3339 timestamp, level enum, event, command, message, error code). Redact on write and again on export, and add a test for every credential shape; redaction is a second line of defence, not permission to log secrets.
+
+- **Command registries.** When the argument parser does not already give you the tree, one command trait carries name, description, usage, aliases and `execute`; the registry is a case-insensitive map that rejects a duplicate name or alias at registration, and no other code dispatches on strings. In a first-match table the order is the priority and a catch-all last entry sends unknown input into the normal error flow; an earlier broad matcher shadows later ones, so test each new matcher with varied whitespace and case.
+- **REPL input buffering.** Track only the lexical state needed to know when a statement ends (comments, quotes, escapes, the awaited closing delimiter), recognise meta-commands only before a statement has started, and leave validation to the real parser. Test terminators inside comments and quotes, escaped quotes and unterminated text.
+- **Caching external responses in a test harness.** Normalise volatile fields (ids, timestamps) at the adapter before caching so keys and values are deterministic, and keep a bypass for live runs.
+- **Multi-stage ranking or routing.** Keep each stage's score and timing as separate fields in the result, and compute an explanation with the same function production uses, not a copy. Test stage scores, final order and the timing fields, not only the top result.
 
 ### Gate discipline
 
