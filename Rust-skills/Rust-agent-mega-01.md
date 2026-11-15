@@ -2444,6 +2444,8 @@ When a gate fails, return to the workflow step that gate checks instead of redoi
 
 - **When generating backend tests.** Start from the concerns the change touches, not from the module structure of the diff. Reuse the existing harness instead of inventing setup; if the service has no harness, building one is the first task. State which concern each new test certifies. Do not write mirror tests (one unit test per touched function, asserting that a handler returns what it returns). Existing tests are copied as the style guide, so fix a fixed-port or live-API test before adding more beside it. If no concern in the matrix covers a new path such as a webhook, raise it. An intermittent failure is usually isolation debt or a missing mock: check which tests share state first.
 
+- **Realism, isolation and helper trade-offs in tests.** Default: run the real migrations in test setup so tests see the production schema shape, isolate state per test, and use helpers that state intent without hiding logic. Each deviation is a documented exception. A fake states which behaviors of the real dependency it does not reproduce. An in-memory repository is fine for pure domain tests, which then certify domain rules and never database behavior. Do not make the whole suite slightly less isolated to run faster: one intermittent test taxes every build, so relax isolation per documented boundary or not at all. A fast unit tier on every commit with the full integration tier on merge is acceptable if each tier's coverage claim stays accurate.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
