@@ -4287,6 +4287,9 @@ Rule to test to gate:
 
 - **What a passing gate proves.** Each gate proves only its own contract, and completion is all of them together. A zero exit code can hide skipped or ignored tests, so read how many ran. Run the command from the workspace root you mean, and do not reuse an earlier result after the code changed. Where feasible, see a gate fail on the defect it guards before trusting its pass. If a tool such as Miri is unavailable, use a reviewed substitute and record the remaining risk, or report the gate as blocked; do not invent evidence.
 
+- **Release-mode tests complement the debug run.** `cargo test --release` is not a superset of `cargo test`. Release mode removes debug assertions and overflow checks and changes optimization-dependent behavior, so the two runs catch different failures. Run both for a high-risk change; never replace the debug run with the release run.
+- **Apply each gate in its phase.** The no-placeholder rule audits finished code, not the stub step of the test-first loop. Do not shape a design around tool gates before the requirements exist; the requirement-shaped rejections (ambiguous wording, claims with no threshold) apply from the first draft.
+
 ### Completion contract for an agent
 
 - "It compiles" is not done. Done is: the four required commands green with their output shown, the release checklist affirmed item by item, and none of the review rejections present. If you cannot run commands, list them as follow-up for a human; do not claim them.
