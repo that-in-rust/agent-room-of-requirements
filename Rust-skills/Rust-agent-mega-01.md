@@ -4292,6 +4292,10 @@ Rule to test to gate:
 
 - **Sizing the gate set.** Keep the mandatory floor small and trigger the extras (release tests, coverage, `loom`, Miri) by risk. A coverage threshold is a team policy: justify the number locally and do not inherit one from a guide. Over-gating shows up as complaints, while under-gating is silent until an incident, so check now and then that the extra tier does run on high-risk changes. Moving an extra into the floor for a release-critical crate is fine when the reason is recorded with the change.
 
+- **Design against the avoid-rules, review against the verify-checks.** The async rules run twice: as constraints while designing and as checks at review (no blocking work on the executor, no lock across `.await`, cancellation and timeouts handled, no secrets in logs). Run both phases. The timeout check asks whether a decision was made, so a documented unbounded wait passes; it does not mandate a value. Secret logging is a correctness gate, reviewed before shipping. When a check does not apply (secret logging in a pure computation crate), record that scoping call.
+- **Performance claims at review.** Reject a claim with no test on the first read, and check again at release readiness that every claim has a threshold test. A benchmark and a contract test are different kinds of evidence, so record which one was accepted. A claim whose threshold sits near the noise needs release-mode evidence.
+- **Gates across a workspace.** Run the command floor once at the workspace root and give a readiness verdict per crate. A workspace coverage number can hide one untested crate behind well-tested siblings, so read coverage per crate.
+
 ### Completion contract for an agent
 
 - "It compiles" is not done. Done is: the four required commands green with their output shown, the release checklist affirmed item by item, and none of the review rejections present. If you cannot run commands, list them as follow-up for a human; do not claim them.
