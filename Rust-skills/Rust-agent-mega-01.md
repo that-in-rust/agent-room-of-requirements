@@ -2404,6 +2404,9 @@ Output order: Backend Work Mode, Executable Requirements, Service Design, Verifi
 
 - **A task that resists quick classification is compound.** Split it into slices that each classify cleanly (for example a migration-plus-worker ticket becomes two). When the guidance you applied did not answer the task, re-classify with the new information before re-reading the same material.
 
+- **Configuration.** Parse configuration once at startup into typed settings and fail fast: an invalid or missing value kills the process at boot with a specific error. No environment-variable string lookups scattered through handlers. Settings parsed at startup but held as raw strings leave invariants unenforced. Test it: boot with deliberately broken configuration and confirm a loud, specific failure.
+- **Operational adoption order.** Typed fail-fast configuration and secret redaction first, structured correlated tracing second, honest health surfaces third, then CI gates, image size, and migration sequencing. Do not write migration runbooks for a service that still crash-loops on malformed environment variables or prints passwords in logs. Tracing, correlation, health checks and failure classification are design concerns from the start, not polish.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
