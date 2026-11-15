@@ -4045,6 +4045,8 @@ cargo test --all-targets --all-features
 cargo build --all-targets --all-features
 ```
 
+Run these in the order listed: it is also cheapest-first, so the fastest check fails first. Keep `--all-targets --all-features` on every one; dropping the flags quietly shrinks the gate, and feature-gated code that never builds in CI is the usual way a defect gets through. `clippy` without `-D warnings` does not count as the gate. A waiver with a stated reason may apply to a local convention (four-word naming on a stable public API, Mermaid diagrams where the project has no such standard), never to these commands. When you skip the higher-risk gates (release-mode tests, coverage floor) on a low-risk change, record that risk call.
+
 Optional advanced gates:
 
 ```bash
