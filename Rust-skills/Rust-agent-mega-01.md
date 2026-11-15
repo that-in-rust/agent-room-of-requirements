@@ -267,6 +267,8 @@ Working terms:
 - **Unsafe islands (must).** Isolate unsafe code in the smallest private module or helper that can uphold a stable safe interface, with a `SAFETY` comment on each block. Never use unsafe for convenience around the borrow checker. Verify with invariant-focused tests, Miri or sanitizers, and a module-level safety review.
 - **Measure first.** Profile, isolate the hotspot, benchmark representative workloads, optimize, re-measure. Do not add unsafe, caches, clone avoidance or lock-free structures because they "should be faster". An optimization that cannot name its metric is not justified.
 
+**Check that source is really source.** Before drawing conclusions from a repository, list its manifests and source files. A repository or file name proves nothing, and a keyword hit is only a lead. An empty manifest, an empty `src`, or Git LFS pointer stubs (files that begin with `version https://git-lfs.github.com/spec/v1`) are not code: fetch the real content or report that the source is unavailable.
+
 ## 2. Work modes and output contract
 
 Choose one or more modes before planning or coding.
@@ -1492,6 +1494,14 @@ Tests round-trip representative payloads, assert that the subject constants matc
 **Eager object, lazy plan, physical execution.** A query-style engine keeps three layers apart: a stable eager object that users hold, a logical plan behind a `#[must_use]` lazy handle that the optimiser may rewrite, and an execution trait that is bound late. Each layer changes for a different reason.
 
 **Language registry details.** Build the registry once in a `LazyLock`. Names, aliases and file extensions are case-insensitive keys to one shared entry, and a duplicate key fails at construction. Resolve grammar node-kind names to numeric ids at that point; an id of zero means the grammar does not know the kind, which is an error unless absence is intended. Tests cover canonical names, aliases, upper-case extensions and unknown extensions.
+
+**Lifecycle metadata apart from payloads.** For commands or jobs with large request and response bodies, a registry trait owns the lifecycle record (id, state, attempts, deadlines, timestamps, sizes, last error, routing) and a separate key-value or object store holds the bodies. Leases, retries, upload completion and status polling then change without touching payload storage. Tests cover a small inline payload and a large stored payload in both directions.
+
+**A macro DSL for state machines pays off at scale.** When dozens of controllers share one state-machine contract and differ only in handler bodies, an attribute macro can generate the state enum and the transitions from annotated handlers. It rejects at compile time a missing entry handler, a duplicate handler and an illegal transition, and terminal states are declared explicitly. A runtime test covers a handler that stays in its state up to a retry limit and then moves to a timeout state. One or two workflows are clearer written by hand.
+
+**Transform the typed plan, never the query text.** When a runtime must split or redistribute a stage that a planner already knows how to build (a partial and a final aggregate, for example), take the typed plan apart and rebuild it. Planner tests compare the resulting plan and assert the schema of the intermediate stage.
+
+**Detection is pure; verification is a later step.** A tool that accepts several invocation forms classifies its arguments with slice patterns over the argument vector in a function with no side effects. File-system checks and execution happen in a separate, explicit step.
 
 ### Domain context packs
 
@@ -3562,6 +3572,8 @@ pub struct ErrorEnvelope {
 
 **Debug strategy for error construction.** A library with many validation sites can route every error message through one constructor that reads a strategy once from the environment: normal, panic at the construction site, or append a captured backtrace to the message. Every `ensure!` and `bail!` call site gains the debugging aid with no change. Keep the default strategy for anything a client parses, and document the variables. The strategy is read once per process, so the panic and backtrace modes are tested in subprocesses.
 
+**Two projections of one error.** An error container has a sanitised external projection, which hides internal errors, and a detailed internal projection. The web framework's response conversion always uses the external one, and the internal one is not reachable from a public HTTP edge.
+
 ### Error and recovery taxonomy
 
 | Error class | Typical boundary | Recovery | Representation | Required tests |
@@ -3840,6 +3852,10 @@ self.running.insert(job.clone(), tokio::task::spawn_blocking(move || run_holding
 **Concurrency limit as deployment policy.** An optional limit in configuration becomes `Option<Arc<Semaphore>>` in the application context. A unit of work holds its `OwnedSemaphorePermit` on the stack. Where a permit must live in a per-unit context object, the release is idempotent and also runs on the error and cancellation paths. With a limit of one, a test asserts that two units never overlap.
 
 **Best-effort "only one starts" marker.** A store write that sets a key only if it is absent, with an expiry, returns a boolean: this caller won, or another already holds the marker. The return type makes the caller handle both. It suits idempotent job starts where expiry is acceptable. It is not a distributed lock; strict ownership needs a fencing token and renewal. Integration tests assert true for the first insert, false for the second, true again after a delete, and exactly one true among many concurrent calls.
+
+**Backpressure in the unit that costs.** When messages differ widely in size, a count-bounded channel bounds nothing useful. Wrap the channel so that the sender reserves capacity in the real unit (rows, bytes, tokens, cost) before sending and waits while the queue is over its limit; the receiver releases the capacity and notifies. With `tokio::sync::Notify`, create the `notified()` future first, check the condition again, and only then await it, so a wakeup between the check and the wait is not lost. An item larger than the whole limit needs a defined rule, such as admitting it when the queue is empty. Tests cover one oversized item, many small items and a slow receiver.
+
+**Shutdown that saves state has a deadline.** A process that manages a resumable job asks for a final checkpoint on shutdown and waits for the stopped or failed state under a timeout. When the timeout passes it logs an error and exits. A test with a fake client and a simulated interrupt asserts that the checkpoint stop was requested and that the timeout path ends the process.
 
 ### Async runtime discipline, in code
 
@@ -5858,6 +5874,10 @@ impl ValidityBuilder {
 
 **A memo entry has a pending state.** An async memo keyed by a fingerprint of the inputs stores `Pending` or `Ready(Option<T>)` per key, so a second caller waits for the first and a finished empty result is not taken for unfinished work. Use it only for deterministic work, or include every side-effect dimension in the fingerprint. A race test sends two concurrent requests for one fingerprint and asserts that one producer ran.
 
+**Checkpoint layout and cleanup.** Checkpoint objects live under deterministic paths with a zero-padded epoch (`{job}/checkpoints/checkpoint-{epoch:0>7}/metadata`), and one module reads and writes the metadata. Cleanup of each operator's files runs concurrently; an operator's metadata is deleted only after its files are gone, and the minimum epoch is advanced last. Deletion goes by reference and never by epoch alone: a compacted file that the retained checkpoint still references must survive, and a test proves it.
+
+**Optional enrichment stays optional.** A network lookup that only enriches data runs when its token is present and its skip flag is unset, and it changes entries that are already parsed and valid. The offline path and the tests work without the token.
+
 ### Benchmark harness (criterion)
 
 ```rust
@@ -6363,6 +6383,31 @@ fn set_ready(&self) {
 **Shutdown is a process concern.** The server passes one dedicated shutdown future to the framework's graceful-shutdown hook. That future waits for SIGTERM or SIGINT on Unix and for Ctrl-C on Windows, in `cfg` branches, and logs which signal arrived. Signal handling stays out of application state and route handlers.
 
 **Health listener on an ephemeral port.** A worker, agent or plugin runtime that needs a readiness endpoint binds `127.0.0.1:0`, reads the assigned port from `local_addr`, registers that port with its host, and only then spawns the accept loop. Fixed ports collide across instances and parallel tests; a `--port` flag that defaults to 0 gives a CLI the same behaviour. An internet-facing server still needs shutdown, limits and backpressure around the loop. The test asserts that the returned port is the one registered and that a request to it succeeds.
+
+**A library router is generic over a state capability.** A crate that ships routes for embedding does not fix the application state type. It defines a small trait that hands out what its handlers need, and its router and handlers are generic over any state that implements the trait.
+
+```rust
+pub trait HasCommandServer {
+    fn command_server(&self) -> &Arc<CommandServer>;
+}
+
+impl HasCommandServer for Arc<CommandServer> {
+    fn command_server(&self) -> &Arc<CommandServer> {
+        self
+    }
+}
+
+pub fn create_router<S>() -> Router<S>
+where
+    S: HasCommandServer + Clone + Send + Sync + 'static,
+{
+    Router::new()
+        .route("/commands", post(create_command::<S>))
+        .route("/commands/{command_id}", get(get_command_status::<S>))
+}
+```
+
+The host application implements the trait on its own state, and a test uses the service itself as the state. No global singleton is needed.
 
 ### Backend security hardening checklist
 
@@ -9064,6 +9109,12 @@ if results.len() < MINIMUM_RESULTS {
 - **Findings as labelled source snippets.** An analyser or audit tool prints each finding as a diagnostic with the source span labelled and a bounded context window (`saturating_sub` at the start, `min` against the file length at the end). A second label marks related code outside the window. Snapshot the output for a finding at the start of a file, at the end, and with an outside label.
 - **A `cargo foo` subcommand.** The top-level parser has `bin_name = "cargo"` and a subcommand enum with one variant named after the tool, so `cargo foo` parses and the help text reads correctly. Repeatable selectors use `ArgAction::Append`, and a `#[clap(last = true)] Vec<String>` forwards everything after `--` to the wrapped cargo command. Snapshot the help text and the parse of `cargo foo -- --features x`.
 - **Generated files are checked in CI.** CI runs each generator and fails when the working tree differs from the committed output.
+
+**File and directory tooling shapes.**
+
+- **Validate a directory contract once.** A CLI that works on a required folder layout builds one config value at startup. It checks that the path exists, is a directory and holds the required files, with errors that name the path, and it exposes optional inputs as methods that return `Option<PathBuf>`. Later code takes the validated config and does no existence checks of its own. A test builds the layout in a temporary directory.
+- **Split large files with a config and a result.** A chunking utility takes an explicit config, validates it before any I/O, rejects an empty input, keeps compound extensions such as `.tar.gz`, and reads through a fixed-size buffer so the file is never held whole in memory. It returns the chunk list with sizes. Tests cover a small file, a compound extension and the parsing of size strings.
+- **One model, two artifacts.** A generator that produces both a human document and a machine-readable file renders both from one validated and sorted model. For generated text, tests assert stable section headings and predictable file names; a full-file snapshot alone is brittle.
 
 ### Gate discipline
 
