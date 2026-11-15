@@ -2461,6 +2461,9 @@ Auth and recovery flows:
 - **Release blockers in auth and recovery code.** Raw credentials past the adapter; secrets in logs; public failures that depend on identity; reusable or overbroad reset tokens; idempotency keys not bound to actor and normalized request; a lock or transaction held across a remote effect; retry of a permanent failure; a remote call with no timeout; a job that is not durable; an acknowledgment before durable completion; a status transition written after the acknowledgment. Reset tokens are not sessions: single use, scoped, hashed. An unmodeled intermediate state is the most dangerous defect, because it can leak information and duplicate effects at once.
 - **Check framework behavior against the locked version.** Read `Cargo.lock`, enabled features and the matching docs for extractor rejection shape, middleware order, timeout semantics and graceful shutdown; latest docs may not match. A correct runtime and framework can still compose into an unsafe flow, so test the composed flow. A type wrapper is not access control.
 
+- **Design order for a security-sensitive flow.** Assets and actors; public observations; durable states and effects; typed boundaries and error classes; idempotency and transaction scope; inline or worker; abuse and crash tests; staged rollout with a rehearsed rollback. Decide the state and observation contract before coding.
+- **Test fixtures for these flows.** `cargo test` alone is not enough. Use a database-backed fixture with isolated state, controlled clock and randomness, and a fake remote that can fail both before and after its effect. Run concurrent requests, not only sequential ones. Make sure background tasks do not outlive the test. Run password hashing on the blocking pool, not on the async executor. A read-only route may omit write-replay tests if the scope is stated.
+
 ### Database pool and compile-time checked queries
 
 ```rust
