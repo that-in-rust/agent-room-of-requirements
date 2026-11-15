@@ -2770,6 +2770,8 @@ Match each test to the boundary where the risk lives. Passing frontend tests do 
 
 Write one plan per request; coupled changes may share one when the coupling is named. A plan rejected at review goes back to the step that failed (a vague requirement to the requirements step, an incoherent design to the design step) and is not patched at the surface. Record each gate's own result, not "all green". Many open questions are honest when they truly block and a warning when they were decidable; no open questions on every plan is a warning too. A question answered after handoff goes into a dated revision of the plan, not a verbal amendment.
 
+When a request would weaken permissions or lifecycle safety, do not simply comply: pause, say what it weakens, and propose the least-privilege version. Keep a repo's established permission model or plugin stack unless it is broader than needed. That exception allows tightening only; never widen an existing scheme to match an example. A half-adopted permission scheme is not an established model to keep, and replacing ad hoc plugin bridging with official plugins is argued for, not assumed.
+
 ### Tauri priorities by task type
 
 | Task type | Prioritize |
@@ -3740,6 +3742,11 @@ test('loads settings through IPC', async () => {
 - Use `shouldMockEvents: true` when testing event-driven flows.
 - Use `mockWindows(...)` for label-oriented frontend logic.
 - Tauri's WebDriver-based desktop end-to-end support excludes macOS desktop clients.
+- Mocks left in place after a test let later tests pass against stale handlers; that is what the `clearMocks()` call prevents.
+- The mock handler checks the command name and returns data in the shape the real command serializes, so the test pins the invoke contract. Returning an object where the command returns a JSON string changes the contract under test without anyone noticing.
+- Test both ends of a changed boundary. Green frontend mocks can sit over a broken backend, and green Rust tests can sit under a drifted invoke contract. A backend-only refactor with an unchanged contract may skip the mocked layer when that is recorded.
+- When a contract change lands on both ends but not in the mocks, the app works and the mocked suite fails; update the stale mocks, the code has not regressed. Mocks kept only for the riskiest commands are acceptable when the partial coverage is stated.
+- Treat the mocking imports and the platform support list as version-dependent: check them against the docs for the project's Tauri version before relying on them.
 
 **Build hooks** (`tauri.conf.json`)
 
