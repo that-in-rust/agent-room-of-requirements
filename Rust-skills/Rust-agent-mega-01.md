@@ -460,6 +460,8 @@ Use this shape when a request is not ready for immediate coding:
 
 - Keep each `SHALL` independently testable.
 - Use explicit units for latency, memory, throughput, retries and concurrency limits.
+- Retry behavior is a requirement, not a loop added in review: state the retry count, the backoff shape and the concurrency ceiling with units, and link each to a test. A metric showing thirty retries against a stated three is then a violated requirement. State what the requirement assumes about retries in the infrastructure below it. A correct retry requirement can still be implemented on a future that is not cancel-safe, so check the implementation as well.
+- A latency regression on a path with no stated threshold violates nothing; add the missing clause. Ask whether a requirement set that is silent on performance is indifferent or avoiding the test.
 - Split requirements; do not stack unrelated behavior into one clause.
 
 ## 4. Architecture and boundaries
