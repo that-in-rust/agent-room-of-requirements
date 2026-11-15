@@ -2447,6 +2447,17 @@ Data protection:
 - [ ] Memory wiping with `zeroize` for sensitive data
 - [ ] Constant-time comparison with `subtle` for crypto
 
+Auth and recovery flows:
+
+- **Secrets.** Wrap credentials and tokens in typed, redacting values, keep their exposure minimal, hash passwords, and store reset tokens hashed and scoped. A secret wrapper formatted into a log line is still a leak.
+- **One public shape for auth failures.** Login and reset return the same response, status code, redirect and timing whether or not the account exists. Operator diagnostics go to logs and traces, not to the client. Keep login and reset as separate flows.
+- **Commit, then effect.** Persist the intent, commit, then perform the remote effect from a deduplicated worker with visible status. Never send mail or call a remote system inside the transaction, and never return success before the intent is durable. Synchronous remote work is acceptable only when it is bounded, idempotent and safely recoverable.
+- **Idempotency keys** are bound to the request content and the caller; a replay must not return a response the caller is no longer authorized to see. Keys and tokens expire.
+- **Workers** acknowledge a job only after durable completion and tolerate duplicate delivery.
+- **Every externally visible result corresponds to a durable, authorized state** that can be explained after a crash. Model each flow as an explicit state machine.
+- **Tests for these flows.** Compare public failure responses and timing for known and unknown accounts; race identical writes; replay and reuse reset tokens concurrently; crash before and after commit; inject each remote failure class and a timeout after remote success; replay jobs; check that an operator can see and reconcile stuck state.
+- **Scope.** This list is not a threat model. Authorization, CSRF, SSRF, TLS, key management, dependency risk and data retention need their own review. If no durable store for idempotency and recovery exists, narrow the operation, fail closed, or require manual reconciliation. Choose hashing crates and parameters from current documentation for the locked version.
+
 ### Database pool and compile-time checked queries
 
 ```rust
