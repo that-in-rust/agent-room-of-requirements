@@ -49,6 +49,16 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - Tell repo-local conventions (four-word naming, the executable requirements format, one feature per version, Mermaid-only docs) apart from general Rust practice (typed boundaries and newtypes, typed library errors, no blocking in async, cancel-safe `select!`, `loom`, `proptest`, doctests, compile-fail tests, `#[non_exhaustive]`, `Cow`, `OnceLock`, `ExitCode`, `tracing`). The general practice applies everywhere.
 - This file covers libraries, CLIs, async services, application backends, moderately low-level systems code and FFI wrappers with contained unsafe. It is not a specialist manual for compiler internals, kernel-grade lock-free systems, deeply embedded no-std firmware or advanced proc-macro internals.
 
+**Working habits for an agent on a long task.**
+
+- **Orient before analysing.** In an unfamiliar codebase, look at its size and layout first, then search for the entry point, then follow callers and callees. Deep analysis of one function comes last.
+- **Work in rounds.** Explore broadly, apply the constraints, refine, then verify. Critique the result between rounds; the first output is a starting point.
+- **Review your own answer before finishing.** State the problem, the constraints, the approach and why it was chosen. Then list the assumptions that may not hold, the edge cases not considered and the likely bottlenecks. For a subtle block of code, say for each line what it does and what breaks if it is removed.
+- **Keep a file of past bugs.** Record each bug as a wrong and right pair with its root cause, load the file with the project context, and add to it after every bug. Two typical entries: `std::thread::sleep` inside an async function, fixed with `tokio::time::sleep(..).await`; an `Rc` moved into `tokio::spawn`, fixed with `Arc` and `Send + Sync` bounds.
+- **Checkpoint long work in a file.** After each milestone, write a short summary of decisions and progress, keep it in step with the code, and read it back before continuing. Early context is otherwise lost.
+- **Report plainly.** Give the measured result and its source, for example "query latency fell from 5 ms to 500 µs in the benchmark". Leave out superlatives and say what is uncertain.
+- **Finished means end to end.** The feature works in the release binary, all tests pass and not only the new ones, integration is tested, and docs and scripts are updated. No stub, placeholder or "will be implemented" note remains.
+
 ### Decision ladder for any Rust task
 
 Work down this ladder; do not pick patterns at random.
@@ -1436,6 +1446,12 @@ Cover unit, integration, error-path and concurrency cases. Add performance tests
 In STUB, write one or more tests per requirement id and define the interface signatures and fixtures.
 
 For each requirement cover the happy path, the error path and the edge path. Add property-based tests for invariant-heavy logic and integration tests for cross-module workflows.
+
+**Checks at each step of the loop.**
+
+- At RED, read the failure. A missing-function compile error is the expected first failure; an unrelated error means the test is not yet testing the behaviour.
+- A cheap pre-commit check greps the added lines of the diff for `TODO`, `STUB` and `FIXME`, and the added lines under `src/` for `.unwrap()` and `.expect(`.
+- A requirement states the empty case: no matches returns an empty `Vec`, never an error or a missing value.
 
 ### Test matrix example
 
