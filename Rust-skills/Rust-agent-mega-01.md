@@ -2446,6 +2446,10 @@ When a gate fails, return to the workflow step that gate checks instead of redoi
 
 - **Realism, isolation and helper trade-offs in tests.** Default: run the real migrations in test setup so tests see the production schema shape, isolate state per test, and use helpers that state intent without hiding logic. Each deviation is a documented exception. A fake states which behaviors of the real dependency it does not reproduce. An in-memory repository is fine for pure domain tests, which then certify domain rules and never database behavior. Do not make the whole suite slightly less isolated to run faster: one intermittent test taxes every build, so relax isolation per documented boundary or not at all. A fast unit tier on every commit with the full integration tier on merge is acceptable if each tier's coverage claim stays accurate.
 
+- **Suite manifest.** Keep one page per service suite, updated in the same change as the infrastructure it describes: harness entry point, isolation strategy per resource, documented sharing boundaries, the mocks that exist for each external system, and coverage status per concern. "Unknown" and "missing" are valid entries; a manifest that claims full coverage it does not have is worse than none.
+- **Reference endpoint test.** Spawn the app on a random port against an isolated, migrated database; send the request; assert the response and the persisted row; mock the downstream API and assert the shape of the outbound request. A mock that matches any request passes everything, so see the outbound-shape assertion fail once before trusting it. A spawned app against a shared database, or a mock that asserts nothing, only looks like integration testing.
+- **Flake accounting.** A quarantined flaky test is triage, not a fix; keep counting it. A falling flake rate may only mean a growing quarantine list.
+
 ### Backend security hardening checklist
 
 DoS mitigation:
