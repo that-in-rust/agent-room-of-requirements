@@ -280,6 +280,8 @@ Trace every requirement to a test in a concise table:
 | req_id | test_id | test_type | assertion | metric |
 | --- | --- | --- | --- | --- |
 
+Keep all seven sections in this order, even when one is short: a reviewer can then check that a section is present before reading its content, and an output with no Quality Gate Results is rejected unread. Open Questions is the easiest section to skip and the most useful signal. An empty list on a vague or under-specified task reads as overconfidence, so list what was assumed. Where a section owes nothing, say so in it: a refactor with no stated performance requirement owes no thresholds.
+
 ### Mode precedence and defaults
 
 Default mode combinations:
