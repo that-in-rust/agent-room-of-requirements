@@ -1198,3 +1198,128 @@ impl EdgeKind {
 - **A local rewrite does five things in order:** check its own switch, prove the node's shape (arity, types), prove the result type and nullability are preserved, rewrite, then re-resolve the new node through the normal resolution path instead of filling in its type by hand. A rewrite that needs whole-plan reasoning is not a local visitor.
 - **Limits that differ by value kind** share one entry point that checks compatibility, and each kind owns only its own rule: `enum Limit { Bool(bool), Int(i64), Float(f64) }` with one `is_violated(&Value) -> Result<bool, TypeMismatch>`.
 
+### Trees, lowering and decision gates
+
+**Recursion control is a value.** A tree walk's hooks return what to do next, and a node type
+implements only `apply_children` to get the walk for free.
+
+```rust
+pub enum Recursion {
+    Continue, // keep walking
+    Jump,     // skip this subtree
+    Stop,     // end the whole walk
+}
+
+pub trait TreeNode: Sized {
+    fn apply_children<F>(&self, f: F) -> Result<Recursion>
+    where
+        F: FnMut(&Self) -> Result<Recursion>;
+
+    fn visit<V: Visitor<Node = Self>>(&self, visitor: &mut V) -> Result<Recursion> {
+        match visitor.pre_visit(self)? {
+            Recursion::Stop => return Ok(Recursion::Stop),
+            Recursion::Jump => return visitor.post_visit(self),
+            Recursion::Continue => {}
+        }
+        if let Recursion::Stop = self.apply_children(|child| child.visit(visitor))? {
+            return Ok(Recursion::Stop);
+        }
+        visitor.post_visit(self)
+    }
+}
+```
+
+- Visitors do not smuggle control flow through side-effect flags. Each early exit has a comment, and the continue, jump and stop cases each have a test.
+- **Recursion depth follows input depth.** For trees built from untrusted or generated input, cap the depth and return an error, or walk with an explicit stack. A stack overflow is an abort, not a `Result`.
+- *Skip for* shallow data of fixed shape: a `match` is simpler.
+
+**Lower the parse tree to a small typed tree first.** Do not run domain logic on generic parser
+nodes with string kinds. Convert into the smallest typed tree that holds what the algorithm
+needs, keeping a span on every node for diagnostics.
+
+```rust
+pub enum Statement {
+    Simple { text: String, span: Range<usize> },
+    Return { text: String, span: Range<usize> },
+    If { cond: String, then: Box<Statement>, otherwise: Option<Box<Statement>>, span: Range<usize> },
+    While { cond: String, body: Box<Statement>, span: Range<usize> },
+    Block(Vec<Statement>),
+}
+```
+
+- The lowering is where "unsupported construct" is reported, once, with a span. After it, the algorithm matches exhaustively and has no string comparisons.
+- A tree with single ownership is `Box` and `Vec`. `Rc<RefCell<_>>` is for real sharing; a graph is usually better as an arena, a `Vec` of nodes addressed by index.
+- Test the conversion before building anything on it.
+- *Skip when* the work needs full fidelity: comments, whitespace, exact tokens (formatters, refactoring tools).
+
+**Scoped context is passed by value.** A recursive pass that needs "where does `break` go from
+here" carries the answer in a small `Copy` struct, not in mutable state it must remember to
+restore.
+
+```rust
+#[derive(Clone, Copy)]
+struct Scope {
+    break_target: Option<NodeIndex>,
+    continue_target: Option<NodeIndex>,
+}
+
+let body_scope = Scope { break_target: Some(loop_exit), continue_target: Some(loop_update) };
+build(body, graph, body_scope)?;
+// the caller's scope is untouched here
+```
+
+- With a mutable context the save and restore must bracket every recursive call, including the early-return paths; a missed restore leaks one branch's state into the next. If mutation is unavoidable, restore through a guard whose `Drop` does it.
+- Every new control construct gets a test with nesting.
+
+**Placeholders never leave the builder.** Internal scaffolding (dummy nodes, sentinel entries)
+is acceptable while building, provided a normalisation pass removes it and the boundary rejects
+any survivor with a hard error before the value is returned, serialised or rendered.
+
+```rust
+while remove_unreachable_nodes(&mut graph) {}
+while remove_placeholder_nodes(&mut graph)? {}
+ensure_no_placeholders(&graph)?;
+```
+
+- A cleanup loop runs to a fixed point: the function returns whether it changed anything, and each iteration must make progress, or the loop does not terminate.
+- Stronger still is two types, a builder node with a `Placeholder` variant and a final node without one, so the conversion is the check.
+
+**Ordered pure rules with evidence.** A decision gate (access, quota, deployment, safety)
+evaluates pure rules in priority order, with the rule name as tie-breaker. Each returns a
+decision, structured evidence and a readable reason.
+
+- Rules do no I/O. Facts are gathered first and passed in, which makes every rule a table test and makes the decision reproducible from the recorded inputs.
+- Record the decision, the deciding rule and the evidence. "Denied" with no rule name cannot be debugged.
+- State the combination policy (first match, or deny overrides allow) and what happens when no rule matches. For anything security-relevant, no match means deny.
+- Each rule is tested alone and in interaction with the rules above it.
+
+**Render back ends behind one trait.** Parse, then build the model, then render. The model
+knows nothing about output formats, and each format is one small implementation over it.
+
+```rust
+pub trait Render {
+    fn render(&self, graph: &Graph) -> Result<String>;
+}
+
+pub enum Backend { Dot, Tikz, D2 }
+
+impl Render for Backend {
+    fn render(&self, graph: &Graph) -> Result<String> {
+        match self {
+            Backend::Dot => dot::render(graph),
+            Backend::Tikz => tikz::render(graph),
+            Backend::D2 => d2::render(graph),
+        }
+    }
+}
+```
+
+- For a closed set of back ends an enum with a `match` needs no macro and no boxing. The `enum_dispatch` crate generates the same thing when the trait has many methods.
+- Escaping belongs to the back end. Every back end is tested with labels containing its own special characters (quotes, braces, backslashes, newlines).
+- Output is deterministic: iterate in a defined order, so the rendered text can be compared in a snapshot test.
+
+**Fetch context in rungs.** When gathering context is expensive (for an agent or a tool), order
+the sources from cheapest to dearest (summary, outline, the relevant path, raw source). Start at
+the cheapest and go up a rung only when the current one did not answer the question, under a
+hard cap.
+
