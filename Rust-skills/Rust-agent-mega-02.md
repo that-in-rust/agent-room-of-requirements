@@ -9841,3 +9841,148 @@ A stress test passing does not prove the absence of a race or a blocked executor
 fails to find one. Where a rule can be checked statically (a lint, a type), prefer that to
 a test that depends on timing.
 
+### What a gate proves
+
+- **Match the gate to the obligation.** `cargo check` proves nothing about behaviour, `cargo test` proves little about concurrency, and Clippy is not design review. For an interface claim, compile a caller. For an error claim, test each variant. For a bounded channel, fill it. For cancellation, cancel.
+- **Each gate proves only its own contract.** Completion is all of them together.
+- **A zero exit code can hide tests that did not run.** Read the count: how many ran, how many were ignored or filtered out. A filter that matches nothing passes.
+- **Run from the workspace root you mean.** A command run in one member checks that member only. With several workspaces, run the gates in each; one record must not sign for a workspace its commands never touched.
+- **Where feasible, see a gate fail on the defect it guards** before trusting its pass. A test that cannot fail is not evidence.
+- **Release-mode tests complement the debug run; they do not replace it.** Release removes debug assertions and overflow checks and changes optimisation-dependent behaviour. The two catch different failures.
+- **If a tool is unavailable** (Miri on an unsupported target), use a reviewed substitute and record the remaining risk, or report the gate as blocked. Do not invent evidence.
+- **Keep rarely run gates working.** A gate that runs only for high-risk changes breaks when it is needed most. A command copied from a guide, this one included, has been read and not run until it runs in your repository with your tool versions.
+
+**False proxies.** Zero Clippy warnings do not prove the design. Fewer clones do not imply
+speed. More traits do not imply testability. High coverage does not imply the assertions
+check anything. The useful signal is fewer surprises at boundaries: callers, errors, tasks
+and features behave as the design said they would.
+
+**Two layers of gate.** The required commands are owed on every change. The heavier gates
+are owed by the boundary a change touches: `loom` for hand-written synchronisation, Miri
+for unsafe, fuzzing for an input frontier, compile-fail tests for a misuse contract. A
+change that is never classified by boundary gets only the floor, which under-verifies
+exactly the concurrent, unsafe and FFI work that needs more.
+
+- **Scale strictness to the code.** Public, concurrent and invariant-heavy code needs stronger explicit contracts than private glue.
+- **Keep the mandatory floor small** and trigger the extras by risk. Over-gating produces complaints; under-gating is silent until an incident. Check occasionally that the extra tier does run on high-risk changes.
+
+**Scope a change by the contracts it crosses, not by its size.** Count public items,
+downstream callers, error variants, spawned tasks, locks and channels, external effects,
+feature sets and supported toolchains.
+
+- A three-line patch that changes a public enum, cancellation behaviour or feature resolution needs the full treatment.
+- A thousand-line mechanical rename can be reviewed as one unit once behaviour and contracts are shown unchanged.
+- **A change is too large when one person cannot list the affected contracts and verify them.** Split along a public interface, a runtime lifecycle, a persistence effect or a rollback unit, and keep one owner for the integration.
+- Couplings that defeat a split: shared types between nominally separate crates, feature unification, migrations that outlive binaries, and a rollback order that differs from the deployment order.
+
+**Where a review misses callers and code:** macro expansions, build scripts, examples and
+doc tests, non-default features, target-specific code, callers outside the repository, and
+tests that run on a different runtime flavour from production.
+
+**Looking up current behaviour.** Go to the owning source for the locked version: the
+crate's documentation at that version, its changelog, its source. A search snippet or a
+remembered API is not evidence. The usual traps are stable against nightly, major-version
+differences in Tokio, Axum and Tauri, examples written against an unreleased branch, and
+lints that were renamed or removed.
+
+**How gates decay.** Each of these keeps the visible artefacts and verifies less:
+
+- Flags trimmed from commands to save CI time. Review that as a change to the gate, not as minutes saved.
+- The reading pass dropped while the badges stay green.
+- Universal rules reclassified one by one as waivable conventions.
+- Checklist boxes ticked from a template, with pointers that no longer resolve.
+
+Compare the CI configuration with the stated commands now and then, and follow a sampled
+pointer to its evidence. Require the commands in branch protection. A hotfix that bypasses
+review under incident pressure says so and gets the review afterwards.
+
+- **A failed required command is fixed, not rerun.** Format, lint and build are deterministic for the same source and toolchain. A test that flakes is reporting an isolation or environment defect.
+- **Lint drift is not a flake.** Clippy failing right after a toolchain update is a new lint generation. Pin the toolchain and take updates as planned work, so new lints arrive on your schedule.
+- **Gate cost is paid per handoff.** Automate the commands and prefer small, frequent changes. Batching work to pay the gate less often makes review shallow and defects hard to attribute.
+
+### Completion contract for an agent
+
+- **"It compiles" is not done.** Done is: the required commands green on the final code, the claimed behaviour covered by tests, and none of the rejections of section 13 present.
+- **If you could not run a command, say so and list it for a human.** Never report an unrun command as passed, and never describe output you did not see.
+- **Before handoff, search your own diff** for `todo!()`, `unimplemented!()`, `dbg!`, stray `println!`, commented-out code and placeholder `TODO` markers.
+- **Never invent an identifier, a number or a citation to satisfy a gate.** A requirement link points at a real requirement. If a checklist item does not apply, say why.
+- **Commands see what a machine can see:** formatting, lints, failing tests, build breaks. They do not see an unmeasurable requirement, a layer leak that compiles, a design that cannot be tested in isolation, or concurrency that passed one run. Check those by reading, and ask of every design: what here cannot be tested?
+- **Do not weaken a check to make it pass:** no deleted or `#[ignore]`d test, no loosened assertion, no blanket `#[allow]`, no special case for the test's input. If a test is wrong, say so and fix the test as its own visible change.
+- **Do not rename a published interface to satisfy a naming convention.** Keep the stable surface and give new surfaces the clear names.
+
+**The record at handoff:**
+
+1. The commands run, their results, and the toolchain version.
+2. The risk classification, and which heavier gates ran or were skipped, with the reason.
+3. What was verified by test, what by reading, and what not at all.
+4. Known limitations and anything left for a human.
+
+A later defect can then be traced to a gate that failed or a gate that was skipped, which
+need opposite fixes.
+
+**Wording of performance and security statements.** Every performance statement in
+requirements, documentation or release notes carries a threshold and a method ("p95 under
+10 ms on the named benchmark"), or is marked unverified. "Significantly faster" fails.
+A threshold with no runnable method fails as surely as no number.
+
+**The secret-logging check has no compiler behind it.** Do it per handoff. Look first at
+debug, error and crash paths: a handler that prints the whole request is invisible on the
+success path.
+
+### Packaging and upkeep
+
+- **A published crate lists exactly what it ships.** Set `include` to an allow-list and check it with `cargo package --list`. Otherwise fixtures, CI files and occasionally secrets get published, and a published version cannot be deleted, only yanked.
+- A crate whose Rust sources sit in a subdirectory of a polyglot repository sets `build` and `[lib] path` explicitly, and `autoexamples = false` when `examples/` holds sample inputs, not Rust programs.
+- **Discover a workspace with `cargo metadata`** (the `cargo_metadata` crate), not by walking manifests. Hand-rolled discovery gets glob members, `exclude`, path dependencies and inherited keys wrong.
+- **A program's own version is a compile-time constant:** `env!("CARGO_PKG_VERSION")` or the argument parser's version attribute. `Cargo.toml` is not shipped with the binary. A Git hash comes from a build script through `cargo:rustc-env`, with a fallback for builds outside a checkout, such as from a published crate.
+- **A deprecation warning is fixed, or suppressed at one wrapper** with `#[allow(deprecated)]` and a comment naming the version or event that removes it. Never crate-wide.
+- **Vendored sources are pinned, with the upstream version recorded.** Advance one at a time to a chosen commit, regenerate, run the tests, commit. Never bulk-advance to branch tips. A scheduled job reports drift from upstream.
+- **Subcommands share output flags and one emitter.** Format flags are one flattened struct; commands emit typed messages through one trait with a human and a JSON-lines implementation, and do not call `println!` themselves.
+- **The second occurrence of an architectural violation becomes a machine-checked rule:** a `disallowed_methods` or `disallowed_types` entry, a structural-search rule or a custom lint, run in CI. Its message says what to do instead.
+- **A dependency or analysis report states its denominators:** what was scanned and what was excluded. "No cycles" or "no findings" means nothing without the scope.
+- **A release review is split into named areas, each with its own verdict** (security, correctness, compatibility, documentation). One failing area blocks. A headline claim gets its own validation.
+
+## 17. Review checklist
+
+**Review in rejection-first order:**
+
+1. Read the diff for the fatal anti-patterns of section 13. This takes minutes.
+2. Check that every requirement or claimed behaviour has a test.
+3. Run the gates.
+4. Check release readiness.
+
+Do not spend a full gate run on a change a short read would reject. It is a pipeline, not a
+filter to stop at: a change that passes the first read still goes through every later step.
+
+**Questions for any review, and before any handoff:**
+
+- What is the smallest set of checkable requirements that makes this work testable?
+- Which types and invariants belong in the core, and are any leaking into adapters?
+- Does the public interface expose concrete containers or dependency types it need not?
+- Are error variants actionable, and do they carry context?
+- Is any lock or borrow held longer than necessary, or across an await?
+- Does any async path block the runtime?
+- Which failure modes deserve a doc test, compile-fail test, property test, fuzz target, `loom` or Miri, not unit tests alone?
+- Which public names must stay stable, even if a cleaner name exists?
+- Do the tests prove every major claim the change makes?
+
+**Design sign-off.** Before finalising a design, check:
+
+- **Requirements:** each is checkable, with an identifier where the project uses them; preconditions, postconditions and error conditions are stated; performance claims have a measurable contract.
+- **Testability:** the core can be tested without external systems. Boundaries that touch the network, the clock, the filesystem or a database are behind a seam. A trait is one kind of seam; a function parameter, a generic, or a real dependency in a container are others. Do not add a trait with one implementation only to mock it.
+- **Layering:** the core is independent of transport and storage; outer dependencies are justified and few; there is a path from the simple version to the complex one.
+- **Resources:** ownership ends every resource. Types that hold raw handles, or need an ordered or fallible shutdown, have an explicit close; `Drop` is the backstop. Most types need no hand-written `Drop`. Shutdown is defined and bounded.
+- **Errors:** typed errors where callers branch; context added at boundaries; messages a user or operator can act on.
+- **Concurrency:** shared state is identified and its synchronisation stated; ordering and cancellation are specified; tests exercise contention. Tests can find races and deadlocks, not prove their absence; say which guarantees come from types and which from testing.
+- **Domain:** the data model handles real cases, not only the tidy example.
+- **Verification:** each feature has one command that verifies it.
+
+**Rules by phase:**
+
+| Phase | Do |
+|---|---|
+| Requirements | Write checkable criteria; replace "better", "faster", "easier" with something measurable |
+| Design | Fix the types, errors and boundaries first; decide how each will be tested |
+| Implementation | Test first where the behaviour is known; use ownership for clean-up; add error context; exercise concurrency |
+| Maintenance | Keep documentation checked against code; keep one command per feature; run the full suite in CI |
+
