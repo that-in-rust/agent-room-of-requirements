@@ -6700,3 +6700,82 @@ pub enum Outcome {
 - **Name the phases** (load, start, readiness, measured loop, clean-up) and attach every metric to one. Set-up shortcuts stay out of the measured phase, and the measured path is the one users actually run.
 - A run that reuses loaded data needs an explicit reset switch, and the report says whether the run was warm or cold.
 
+### Numbers you state
+
+- **State the gate before measuring, and report a miss plainly.** Write the threshold down first. If the run misses it, the headline says so. A feature that fails its gate ships off by default, or not at all.
+- **A projected number is labelled a projection,** with the measurement that would confirm it. An estimate written like a result will be quoted as one.
+- **A performance figure names its conditions:** build profile, machine, input, warm or cold, tool version. A debug-build number says nothing about release.
+- **A size or cost reduction is reported with the quality it kept.** A smaller context or a faster search with unmeasured recall is not a result.
+- **One or two inputs do not support a general claim.** Say how many were used and which.
+- **A later result that contradicts an earlier one supersedes it visibly.** Mark the earlier document superseded; do not delete it.
+- **A backtest uses only what was known at the time.** Evaluate each historical case at its own commit, and exclude signals that leak the answer.
+- **A memory benchmark says which lifetime it measures.** Constructing the object fresh per iteration shows the peak a batch job would cause; reusing it shows steady state. Report allocations and peak memory, not only time.
+- **Inputs that once caused a failure stay as benchmark inputs:** the huge literal, the deep nesting, the very long function.
+- **A benchmark file says how to run it:** the command and features in its header, fixtures built outside the timed closure, one named case per input shape, and `Throughput::Bytes` when sizes differ so results compare as bytes per second.
+- **Benchmark settings are documented environment variables, parsed once.** A malformed value is an error naming the variable, not a panic in a lazy static. Generator parameters are named constants shared with the benchmark.
+- **A count names its unit and method.** A token count names its tokenizer; a line count says whether blanks and comments are included.
+- **A report opens with tool version, input and totals,** so two runs can be compared.
+
+Two last structural notes for this section:
+
+- **Order conditions cheap and selective first.** Test the inexpensive predicate that rejects most inputs before a regex or a parse.
+- **A sparse set** gives constant-time insert, membership and clear over a bounded integer universe: a dense vector of members plus a vector mapping value to dense index. It beats a bitmap that must be cleared between many small sets. Adopt it on a measurement from the real workload.
+
+## 12. Naming, modules and documentation
+
+### Names
+
+**A name says what the thing is or does at the call site,** in the vocabulary of the domain.
+Length follows scope: a loop index may be `i`; a public function may not be `process`.
+
+- **Follow the Rust API naming conventions:** `as_`, `to_`, `into_` by cost; `iter`, `iter_mut`, `into_iter`; `new` and `with_` constructors; `try_` for the fallible twin; `is_` and `has_` for predicates; getters without a `get_` prefix; `_mut` and `_unchecked` suffixes.
+- **Casing:** `UpperCamelCase` types and traits, `snake_case` functions and modules, `SCREAMING_SNAKE_CASE` constants. Acronyms are words: `HttpClient`, `parse_url`. Crate names avoid `-rs` and `rust-`.
+- **A name carries its unit when the type does not:** `timeout_ms`, `size_bytes`. Better, let the type carry it (`Duration`, a newtype).
+- **Do not repeat the module in the item:** `cache::Config`, not `cache::CacheConfig`, unless items are usually imported bare.
+- **One concept, one word.** If the code says `fetch`, `load` and `get` for the same operation, the reader assumes three operations.
+- **Avoid names that say nothing:** `data`, `info`, `manager`, `helper`, `util`, `handle_it`, `do_work`.
+- **Booleans read as assertions,** positively: `is_enabled`, not `not_disabled` or `flag`.
+- **Follow the repository's own scheme where it has one.** Some codebases adopt a fixed pattern such as four-word `verb_constraint_target_qualifier` names (`filter_implementation_entities_only`). That is a local convention: apply it there, and nowhere else by default. Never count words where the result is a worse name.
+- **A risky rename of a public item is done in two steps:** add the new name, deprecate the old with `#[deprecated(note = "use `new_name`")]`, and remove it in the next major version.
+
+### Modules and crate roots
+
+- **A module has one reason to exist** and a name that states it. `utils`, `common` and `misc` are where unrelated code goes to be forgotten.
+- **Name what the crate root exports.** Write named re-exports (`pub use counter::{LineStats, count_file};`), so the public API is readable in one place and an internal addition cannot leak. A glob re-export is acceptable only for a deliberate prelude.
+- **Default to private.** `pub(crate)` for what the crate shares internally; `pub` is a promise.
+- **Binary orchestration is not library API.** Argument handling and the main flow live in the binary or in private modules. `main.rs` parses, calls the library and maps the result to an exit code.
+- **One module per subcommand** in a CLI, under `commands/`, with the parent module only declaring them.
+- Split a file when it holds two things that change for different reasons, not at a line count.
+
+### Documentation
+
+- **Document the contract, not the implementation:** what it does, what it returns, when it errors (`# Errors`), when it panics (`# Panics`), what the caller must uphold (`# Safety`).
+- **Comments say why.** The code already says what. A comment that restates the next line will drift from it.
+- **Documentation is checked like code.** Examples are doctests, and `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps` fails on a broken intra-doc link. Libraries set `#![warn(missing_docs)]`.
+- **Crate docs open with one complete example** of the main use. Mark it `no_run` when it needs a real service, and hide a `fn main() -> Result<..>` wrapper so `?` works.
+- **A shipped example is a complete program:** `fn main() -> Result<(), Error>`, inputs from arguments, usage printed when one is missing.
+- **A hand-written parser carries its grammar in the module doc,** and states what the module does not check.
+- **Field comments give meaning, unit and format.** An analogy is not a definition.
+- **Docs do not describe code that is not there.** A doc naming a crate the module no longer uses is drift; fix it in the same change as the code.
+- **A workaround cites its issue.** A bound, attribute or pin that exists because of an upstream limitation carries the reference, so it can be removed later.
+- **Each stable error code has a page:** what happened, usual causes, the fix. The message prints the code.
+- **A shared data file opens with a legend and provenance:** every field defined, and the date and source it was synced from.
+- **Diagrams follow the project's convention.** Where Mermaid is used: one statement per line, direction in the header. Do not add a diagram format the repository does not already use.
+- **Never log or document secrets or sensitive payloads,** including in examples.
+
+**Decision records** are for choices that are expensive to reverse: a foundational
+dependency, a storage format, a public protocol.
+
+- State the problem, the options considered, the choice, what was rejected and why, and **what the choice costs**.
+- Give it a status: draft, accepted, superseded.
+- **Say how it could be reversed:** the assumptions, the signal that would show one is wrong, and the migration in bounded steps.
+- *Not for* decisions that a later commit can undo cheaply. A record for every choice is noise.
+
+### Rules not to turn into universal law
+
+- "Run `cargo clean` constantly": it discards the incremental cache and fixes nothing in a healthy build. Use it for a suspected stale-artefact problem.
+- A fixed word count for names.
+- One diagram format for all documentation.
+- Doctrine copied verbatim into every plan or prompt.
+- "MVP" as cover for skipping tests, contracts or verification. A smaller scope is fine; an unverified one is not.
+
