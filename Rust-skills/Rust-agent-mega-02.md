@@ -6584,3 +6584,119 @@ and reconciles before publishing.
 - **An append-only segment writer** uses positioned writes at its tracked offset, takes `fsync` as an explicit policy so the caller sees the cost, and publishes the new size only after the write succeeds. Concurrent writers reserve their range first or are serialised. After recovery, the counter equals the file length.
 - **A null-aware column builder appends a value for every row,** a default for null rows, and tracks validity separately, so the values buffer and logical length always agree. The validity bitmap is created at the first null and back-filled.
 
+### Lazy side structures, memos and multi-file output
+
+**Create an optional side structure on first need.** When the all-default case dominates
+(no nulls, nothing dirty, no overrides), keep only a count until the first exception, then
+build the structure and back-fill it.
+
+```rust
+pub struct ValidityBuilder {
+    bitmap: Option<BitmapBuilder>,
+    valid_before_bitmap: usize,
+}
+
+impl ValidityBuilder {
+    pub fn append_valid(&mut self, count: usize) {
+        match self.bitmap.as_mut() {
+            Some(bitmap) => bitmap.append_n(count, true),
+            None => self.valid_before_bitmap += count,
+        }
+    }
+
+    pub fn append_null(&mut self) {
+        let seen = self.valid_before_bitmap;
+        self.bitmap
+            .get_or_insert_with(|| {
+                let mut bitmap = BitmapBuilder::new();
+                bitmap.append_n(seen, true);
+                bitmap
+            })
+            .append(false);
+    }
+
+    pub fn finish(self) -> Option<Bitmap> {
+        self.bitmap.map(BitmapBuilder::finish)
+    }
+}
+```
+
+- The common case pays one integer add and no allocation; consumers get `None` and skip the check entirely.
+- Property-test that the side structure's length equals the main length after any sequence of appends.
+- *Not when* a placeholder stored for an absent row is costly, or could be read by a consumer that skips the validity check.
+
+**An async memo entry has a pending state.** Keyed by a fingerprint of the inputs, each
+entry is `Pending` or `Ready(Option<T>)`: a second caller waits for the first, and a
+finished empty result is not mistaken for unfinished work.
+
+- *Only for* deterministic work, or with every side-effect dimension in the fingerprint.
+- **A producer that fails or is cancelled must clear or fail its pending entry,** or every waiter hangs. A guard that removes the entry on drop covers cancellation.
+- Decide whether errors are cached. Usually they are not, or a transient failure becomes permanent.
+- Race test: two concurrent requests for one fingerprint, and assert that one producer ran.
+
+**Schema inference is deterministic.** To infer one schema from heterogeneous JSON or CSV,
+infer a type per value and merge with fixed, written rules: nothing seen gives null, one
+type stays, structs union their fields, lists merge element types, integer with float gives
+float, null with a type gives that type made nullable.
+
+- **Incompatible types are a typed conflict error or an explicit, documented fallback.** A silent fall back to string loses data and hides the bad rows.
+- Field order follows first appearance (an insertion-ordered map), so the same input gives the same schema. Table-test each merge rule.
+- Inference from a sample is a guess. Say how many rows were sampled, and validate the remaining rows against the result.
+
+**Files written in parts.**
+
+- **Clean up on failure.** A step that creates several outputs records each path as it is created and removes them all if a later step fails. A guard whose `Drop` removes them unless committed also covers panics and early returns.
+
+```rust
+pub struct OutputSet {
+    paths: Vec<PathBuf>,
+    committed: bool,
+}
+
+impl OutputSet {
+    pub fn commit(mut self) {
+        self.committed = true;
+    }
+}
+
+impl Drop for OutputSet {
+    fn drop(&mut self) {
+        if !self.committed {
+            for path in &self.paths {
+                let _ = std::fs::remove_file(path); // best effort; the original error is what matters
+            }
+        }
+    }
+}
+```
+
+- A kill or power loss skips `Drop`. Write under temporary names and rename on commit, so leftovers are recognisable and a start-up sweep can remove them.
+- **Validate a split by hashing:** the original through one hasher, the ordered parts through another, and compare. Where part order is not authoritative, keep a manifest with each part's index, size and hash. Tests delete a part, reorder two and flip one byte.
+- **Archives need explicit parent directories.** A tar writer emits an entry for every ancestor, top-down, once each.
+- **Retention deletes by reference, never by age alone.** Cleaning up old checkpoints removes a file only when no retained checkpoint refers to it: a compacted file from an old epoch may still be live. Delete data before the metadata that names it, advance the "oldest kept" marker last, and test the still-referenced case.
+- Zero-pad sequence numbers in paths (`checkpoint-{epoch:07}`), so lexical order is numeric order.
+
+**Smaller rules.**
+
+- **Optional enrichment stays optional.** A network lookup that only improves data runs when its credential is present and its skip flag is unset, and only on entries already valid without it. The offline path and the tests work without the credential.
+- **A vector with a read cursor is a queue** in allocation-free code: push to the back and advance an index. Otherwise use `VecDeque`; `Vec::remove(0)` in a loop is quadratic.
+- **A failed push to a fixed-capacity container is handled,** not discarded, unless an invariant proves the capacity.
+- **A size-bounded cache keeps a running total,** updated on insert and evict. Re-summing entries on every insert makes each insert linear.
+
+**More on benchmarks.**
+
+- **A fast path and the general path are two benchmarks over the same input,** named for the path (`dot_generic`, `dot_dense`). A specialisation with no paired benchmark has no evidence behind it.
+- **A harness comparing several back ends has one outcome type,** normalised at the harness and not in each adapter. Format for display last; never mix numbers and words such as "timeout" in one column.
+
+```rust
+pub enum Outcome {
+    Elapsed(Duration),
+    Timeout,
+    Failed(String),
+}
+```
+
+- Each operation gets the same wall-clock budget, enforced per operation (`tokio::time::timeout`, or a child process killed at the deadline).
+- **Name the phases** (load, start, readiness, measured loop, clean-up) and attach every metric to one. Set-up shortcuts stay out of the measured phase, and the measured path is the one users actually run.
+- A run that reuses loaded data needs an explicit reset switch, and the report says whether the run was warm or cold.
+
