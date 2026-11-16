@@ -2701,3 +2701,117 @@ date syntax) behind one `match` with no wildcard arm. A new value type then fail
 until its arm exists, and arrives with an export-then-import round-trip test. Formatting
 scattered across call sites is how one path forgets to escape.
 
+### Handles, options and dependencies
+
+**A cloneable handle, with a builder per call.** An SDK or client entry point is a small
+handle around `Arc`-shared internals: `Clone + Send + Sync`, cheap to clone, every method on
+`&self`. Options for one call come from an operation builder that implements `IntoFuture`, so
+the plain call stays short.
+
+```rust
+let bytes = op.read("hello.txt").await?;
+
+let bytes = op
+    .read_with("hello.txt")
+    .range(0..8 * 1024 * 1024)
+    .concurrent(4)
+    .await?;
+```
+
+- Callers clone the handle into tasks; they never wrap it in their own `Arc<Mutex<_>>`. If they have to, the handle is wrong.
+- Per-call options do not mutate the handle. Settings on the handle are defaults fixed at construction.
+- *Skip the per-call builder* when an operation has one or two options; a plain argument or an options struct is enough.
+
+**Dependencies are injected, never read from a hidden global.** A shared cache, credential
+source, clock or policy is passed through the constructor or builder, with a default so simple
+callers need not supply one.
+
+- Callers can then share one instance across several builds, and tests can substitute it.
+- Show the shared-instance path in the example; it is the one callers get wrong.
+- `build` may return the product together with its diagnostics (`(Image, BuildReport)`), so callers need no second call to learn what happened.
+
+**A callback in an options struct: decide what `Clone` and `Debug` do.**
+
+```rust
+#[derive(Clone)]
+pub struct PushOptions {
+    pub retries: u32,
+    pub on_progress: Option<Arc<dyn Fn(Progress) + Send + Sync>>,
+}
+
+impl fmt::Debug for PushOptions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PushOptions")
+            .field("retries", &self.retries)
+            .field("on_progress", &self.on_progress.is_some())
+            .finish()
+    }
+}
+```
+
+- `Arc<dyn Fn>` makes the clone carry the callback, which is what a reader of `.clone()` expects. A hand-written `Clone` that silently drops a field is a trap; if a callback must not be shared, do not implement `Clone`.
+- `Debug` says whether a callback is present and prints nothing of it.
+- Say on which thread or task the callback runs, and that it must not block.
+
+**Raw and resolved paths are different types.** Untrusted path input is one type; a
+canonical path known to be inside an allowed root is another. One resolver, built from an
+explicit base directory, converts the first into the second.
+
+```rust
+pub struct ResolvedPath(PathBuf);
+
+impl Resolver {
+    pub fn resolve(&self, raw: &RawPath) -> Result<ResolvedPath, PathError> {
+        let joined = self.base.join(raw.as_path());
+        let canonical = joined.canonicalize().map_err(PathError::Io)?;
+        if !canonical.starts_with(&self.base) {
+            return Err(PathError::OutsideBase);
+        }
+        Ok(ResolvedPath(canonical))
+    }
+}
+```
+
+- Never join a user-supplied path onto a root and open it. `..`, an absolute path (which replaces the base in `join`) and a symlink all escape.
+- `canonicalize` needs the path to exist and follows symlinks; the base must itself be canonical. For a file about to be created, canonicalise the parent and validate the final component separately.
+- A check followed by an open is a race if someone else can modify the directory. Where that matters, open relative to a directory handle (`cap-std`, `openat`) instead of checking a string.
+- Case sensitivity, symlinks and prefixes differ by platform; test each supported one.
+
+### Algorithms, dispatch and dynamic data
+
+**An algorithm is written against the smallest contract it needs.** Not against one concrete
+container: a trait with the few operations used (node count, neighbours, degree), which each
+representation implements. Run it against at least two implementers in tests. *Skip the trait*
+while there is one representation and no second in sight.
+
+**Results cannot be read before the run.** `fn run(self) -> Finished`, or a `run` that returns
+the result, makes "read before running" and "read after a failed run" impossible to write.
+
+- Where a flag is unavoidable (bindings to another language), set it false at the start, true only after complete results exist, never on the error path, and every getter checks it.
+- A reusable algorithm object separates its state (with `reset`) from its driver. Test by running the same instance twice; stale state from the first run is the usual bug.
+
+**Shared scaffolding lives in a provided method.** The trait's provided method sets up what
+every implementation needs (progress, naming, accounting) and calls one small required
+method. Implementers write only that. A change to the provided method changes every
+implementation at once, so keep it conservative, and do not let implementers override it.
+
+**Register by type, dispatch by dense index.** Registration stays ergonomic and typed; at
+start-up it is compiled once into a `Vec` indexed by a compact, stable code.
+
+- Before the hot loop, check that every advertised code has a handler and is in range.
+- Codes that are sparse, untrusted or change at run time use a map, and an unknown code is an error, not an index panic.
+
+**Dynamic side data has typed handles.** Attributes chosen at run time live in a registry of
+type-erased storages; reads and writes go through a typed handle. Attaching rejects a duplicate
+name; a typed read checks the stored type and returns an error on mismatch; a handle is
+invalid after detach. *A fixed set of attributes is plain struct fields.*
+
+**Smaller rules.**
+
+- **An optional consistency check is an explicit value on the request** (`Option<ExpectedVersion>`), not a side channel in the executor. Test "absent" and "mismatch".
+- **A command that can return several shapes carries the expected shape** beside the statement, so encoding, execution and decoding share one contract.
+- **Dynamic, stringly-typed access is for the edge only:** a remote API whose endpoints are not known when the client ships. Wherever a typo must fail at compile time, write typed methods.
+- **Operator overloading must not surprise.** Use `std::ops` where the algebra is the ordinary one (vectors, durations, money in one currency). For a DSL, where precedence or laziness would mislead, prefer named methods.
+- **Messy input forms are normalised once** into a small typed value; the accepted forms and their error messages are public API with a test each.
+- **One gate owns timing policy.** A scheduler or load driver asks one place "may this run now", backed by an injectable clock. Tests use a fake clock; callers never repeat schedule checks.
+
