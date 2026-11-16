@@ -2374,3 +2374,133 @@ pub enum Query {
 - Callers compose values; an invalid composition fails at construction; execution is one interpreter with an exhaustive `match`. There is no injection, because there is no string.
 - *Not when* users need an open textual language. Then parse the text into this tree and keep the rest.
 
+### Boundary types
+
+**Normalise once at a security boundary.** Parse and normalise into a named type; every policy
+check, comparison and audit line then uses that type, never the raw string. Two code paths
+that normalise differently are how allow-lists get bypassed.
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Host(String);
+
+impl Host {
+    pub fn parse(input: &str) -> Result<Self, HostError> {
+        let normalised = normalise_host(input)?; // lower-case, strip trailing dot, unbracket IPv6
+        if normalised.is_empty() {
+            return Err(HostError::Empty);
+        }
+        Ok(Self(normalised))
+    }
+}
+
+pub enum NetworkDecision {
+    Allow,
+    Deny { reason: DenyReason, source: PolicySource },
+}
+```
+
+- A denial carries its reason and which rule produced it. "Denied" alone cannot be debugged or audited.
+- Keep the raw input beside the parsed value only when diagnostics need it, and never compare on it.
+- Write the tests for odd inputs first: bracketed IPv6, a trailing dot, an embedded port, mixed case, an internationalised name, a wildcard, the empty string.
+- The same rule applies to paths (canonicalise, then check the root), URLs and identifiers used in access checks.
+
+**Capability arguments for dangerous operations.** Running a process, opening the network,
+writing outside a root: require a token in the signature that only trusted code can create.
+
+```rust
+pub struct ExecCap(()); // private field: constructed only in one trusted module
+
+pub fn run_tool(_cap: &ExecCap, program: &Path, args: &[OsString]) -> io::Result<Output> {
+    std::process::Command::new(program).args(args).output()
+}
+```
+
+- The signature now shows which functions can spawn processes, and a reviewer can follow the token.
+- **Back it with a lint, or it is only a convention.** In `clippy.toml`: `disallowed-methods = ["std::process::Command::new", "std::env::set_var"]`, with `#[allow]` in the wrapper module alone.
+- This is a tool for auditability inside one code base. It is not a sandbox: it does not constrain dependencies or unsafe code.
+- *Skip when* the program is small enough that the dangerous calls are all visible in one file.
+
+**Opaque text offsets and ranges.** Parsers, editors and diagnostics pass a named offset and
+range, never a bare `usize`.
+
+```rust
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TextSize(u32); // a byte offset
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TextRange {
+    start: TextSize,
+    end: TextSize, // private: the constructor checks start <= end
+}
+```
+
+- `u32` halves the size of every span and caps a file at 4 GiB, so conversion from `usize` is `TryFrom`, not `as`.
+- Offsets into `str` must fall on character boundaries; slicing at any other offset panics. Check with `is_char_boundary` wherever an offset arrives from outside.
+
+**Unit-bearing values are parsed once, at the edge.** Sizes such as `10MB`, durations, rates
+and percentages become a domain type in the argument parser (a `clap` `value_parser` returning
+`ByteSize` or `Duration`); nothing downstream parses units again.
+
+- State the suffix policy: `KB` is 10^3 and `KiB` is 2^10, or say which you chose.
+- An unknown suffix is an error that quotes the input. Multiplication is checked for overflow.
+- Test a bare number, each suffix, upper and lower case, a fractional value, a negative value and rubbish.
+
+**A join states what was missing.** A view that joins stored records with live state marks
+each joined part: `enum Joined<T> { Present(T), Missing }`, or simply `Option<T>` with a
+documented meaning. Never a `bool` beside an `Option`; the two can disagree.
+
+### Builders
+
+Use a builder when construction has many optional settings, or when validity depends on
+several fields together. For two or three required fields, a `new` function is clearer.
+
+```rust
+pub struct ServerBuilder {
+    addr: SocketAddr,
+    workers: Option<usize>,
+    tls: Option<TlsConfig>,
+}
+
+impl ServerBuilder {
+    pub fn new(addr: SocketAddr) -> Self {
+        Self { addr, workers: None, tls: None }
+    }
+    #[must_use]
+    pub fn workers(mut self, workers: usize) -> Self {
+        self.workers = Some(workers);
+        self
+    }
+    pub fn build(self) -> Result<Server, BuildError> {
+        let workers = self.workers.unwrap_or_else(default_workers);
+        if workers == 0 {
+            return Err(BuildError::ZeroWorkers);
+        }
+        Ok(Server { addr: self.addr, workers, tls: self.tls })
+    }
+}
+```
+
+- **Required inputs go in `new`; options go in setters.** A builder whose `build()` fails because a required field was never set has moved a compile error to run time.
+- **`build()` is the one validation boundary.** It rejects incompatible combinations with an error naming both options. Tests call `build()`; they do not inspect the builder's fields.
+- **Defaults are applied in one place** (`build` or `Default`), and documented.
+- Consuming setters (`self -> Self`) chain cleanly; `&mut self -> &mut Self` suits builders configured in loops or conditionals. Pick one per builder.
+- **A deferred error keeps the chain intact.** A setter that can fail may record the first error in the builder and return `self`; `build()` starts by returning it. *Not when* the caller needs to react at the failing call.
+- **A builder that tracks a "current" item** (the current group, the current subject) documents which methods set and reset it, and returns an error when a method needs context that is absent.
+- A new option touches the field, the setter, the default, the validation and a test, together.
+- Use typestate only when a step is required *and* must come in order; otherwise it is weight without benefit.
+- **Make a choice visible at the call site.** When an argument affects correctness or layout (row-major or column-major, inclusive or exclusive), take a small named type, not a tuple or `true`.
+
+### Smaller API rules
+
+- **Lazy values are `#[must_use]`** with a message saying they do nothing until consumed. So are builders and guards. `Result` already is.
+- **Commands as data.** For a protocol with many commands, write one descriptor per command (its code, how to encode the request, how to decode the response) and one generic executor. A new command is a descriptor and a round-trip test, not new transport code.
+- **Variants as a table of typed specs.** When variants differ only in data (names, extensions, flags), keep one table and a generic engine. Move a variant into code only when its control flow really differs.
+- **A validated resource issues its children.** A checked directory, session or connection hands out child handles through its own methods; callers do not open things beside it.
+- **Extension points are explicit.** A hook is registered by name and type, never inferred from a naming pattern. Hook order is part of the contract: document and test it. A plugin gets a registry narrowed to its own namespace.
+- **Selection is not traversal.** A selector value (all, one, a range, neighbours) describes a subset without the data; a method applies it to a collection and returns an iterator. Common selections then allocate nothing.
+- **An extension trait separates required from optional.** A few required methods; the rest have default implementations in terms of them, which an implementer may override for speed. Test that an override agrees with the default.
+- **A mutating business action is one unit:** validate, run in one transaction, fail with a typed error. Transport handlers stay thin. Do not turn every helper into a command object.
+- **A deep deserialisation error reads as a path** from root to leaf (`serde_path_to_error`). Bound the size of any input fragment quoted in a message.
+- **A small language is a long-term promise** about syntax and error text. Prefer existing structured selectors; if a DSL is needed, the parser, the printer and a `parse(print(x)) == x` test change together.
+
