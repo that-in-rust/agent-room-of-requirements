@@ -7592,3 +7592,94 @@ async fn get_user(
 - Timeouts, body limits and state are set from typed settings, not literals in the router.
 - Path syntax, layer order and extractor rules differ between framework versions. Write against the version in `Cargo.lock`.
 
+### Configuration, storage and messaging choices
+
+**Layered configuration:** defaults, then a file, then the environment, deserialised into
+one typed struct in one place.
+
+```rust
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Settings {
+    database_url: SecretString,
+    workers: usize,
+}
+
+let settings: Settings = config::Config::builder()
+    .set_default("workers", 4)?
+    .add_source(config::File::with_name("config").required(false))
+    .add_source(config::Environment::with_prefix("APP").separator("__"))
+    .build()?
+    .try_deserialize()?;
+```
+
+- Document the precedence. A prefix keeps unrelated environment variables out.
+- Each option has one parser, one default and one range check, applied at this boundary. Test a wrong type and an out-of-range value.
+- A `.env` file is a development convenience. It is not loaded in production and never committed with real secrets.
+
+**Choosing components.** Pick on the property you need, and measure the rest.
+
+| Need | Options | Watch for |
+|---|---|---|
+| Relational queries | `sqlx` (checked SQL), Diesel (typed query builder, generated `schema.rs` kept in sync), SeaORM | Async or sync; build-time database access |
+| Embedded key-value | RocksDB (write-heavy, needs tuning, C++ build), LMDB (memory-mapped, fast reads, one writer), `redb` (pure Rust) | Space and write amplification; maintenance status of the crate |
+| Local coordination | SQLite in WAL mode with a `busy_timeout` | One host only |
+| Cache, ephemeral state | Redis through a pool | Timeouts; connections held across awaits |
+| Simple pub/sub | NATS; JetStream for at-least-once | Ack waits, redelivery |
+| Partitioned log | Kafka (`rdkafka`) | Rebalances, commit policy, C library build |
+| Search | The official OpenSearch or Elasticsearch client | 429 with backoff; bulk requests chunked |
+| Compact binary payloads | MessagePack (`rmp-serde`), Protobuf (`prost`) | Size caps; a version field |
+
+- Check a crate's maintenance and the client library's current API before adopting it. Examples in old guides often use deprecated clients.
+
+**Message consumers.**
+
+- **Assume at-least-once.** Handlers are idempotent, with a dedupe key. Exactly-once is not available end to end.
+- **Acknowledge or commit after processing,** not before. Committing first turns a crash into a lost message.
+- **A consume loop handles its errors.** `while let Some(Ok(message)) = stream.next().await` exits silently on the first error and the consumer stops. Match on the error: log, back off and continue, or fail loudly.
+- **A message that always fails goes to a dead-letter destination** after a bounded number of attempts. Otherwise it blocks its partition forever.
+- Bound in-flight work, and size ack deadlines above the worst handler time.
+- Choose manual or automatic offset commit explicitly, and handle rebalances: work in flight for a revoked partition may be redone elsewhere.
+
+```rust
+loop {
+    match consumer.recv().await {
+        Ok(message) => {
+            if let Err(error) = handle(&message).await {
+                dead_letter_or_retry(&message, error).await?;
+            }
+            consumer.commit_message(&message, CommitMode::Async)?;
+        }
+        Err(error) => {
+            tracing::warn!(%error, "consumer error");
+            tokio::time::sleep(backoff.next_delay()).await;
+        }
+    }
+}
+```
+
+**Pooled connections** (Redis, databases) are taken for a short operation and returned. Set
+a maximum size and timeouts, and do not hold one across a long chain of awaits.
+
+**Persisted and queued payloads.**
+
+- **Every payload carries a format version.** The version and the old-version decode branches sit beside the serialiser, not at call sites. Keep at least one old-version fixture.
+- **No raw struct bytes on disk or wire.** Write fields explicitly (`to_le_bytes`) or use a derive that guarantees a padding-free layout. Padding leaks memory and breaks across compilers.
+- **Untrusted binary input is size-capped** before decoding, including nested lengths. Do not rely on map key order.
+- A change to serialised state updates the encoder, decoder, size constants and tests together.
+
+**Local state and coordination.**
+
+- **A process id does not prove identity;** ids are reused. Store the start time with it and verify before acting on a liveness record. Reconcile and delete rows of dead processes.
+- **Checkpoint before side effects.** Before asynchronous work that edits user files, write the rollback data and register the pending state. Define what happens when the checkpoint itself fails.
+- **Coalesced snapshot writes** (an atomic "write queued" flag, separate locks for state and file) lose the newest progress on a crash. Fine for convenience state; wrong for audit-critical state.
+- **Human- or agent-edited text that updates a store is an input format:** parse into typed records, validate, apply in one transaction, verify, and only then remove or advance the input.
+- **Reload is idempotent.** Remove the entries owned by a source before registering its replacement, debounce file-watch events, and keep the old entries when a reload fails on a half-written file.
+- **A shared key-value store hands out scoped handles,** so the owner of each namespace is explicit.
+- **Continuation tokens and bookmarks are replaced as a set** under one lock: remove the old, add the new.
+
+**Transaction guarantees are documented where handles are created:** a read transaction is
+a snapshot that may coexist with writes; a write transaction is the single writer. Keep
+read transactions short, because a long-lived reader pins old state and blocks space
+reclamation. Do not wrap a whole workflow in one transaction by default.
+
