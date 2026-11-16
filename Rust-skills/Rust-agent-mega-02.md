@@ -8789,3 +8789,51 @@ test("the settings screen shows the stored theme", async () => {
 - Use `mockWindows(...)` for logic that depends on window labels, and `shouldMockEvents: true` for flows driven by events.
 - The WebDriver-based end-to-end support does not cover the macOS desktop webview. Plan another check for macOS-only behaviour: a manual run list, or a smoke script.
 
+### Contract drift, build seam and packaging in practice
+
+**Mocks pin the contract only if they return what the real command serialises.**
+
+- **A mock that returns an object where the command returns a string** (or the reverse) changes the contract under test without anyone noticing. Derive mock payloads from the shared fixture or generated types.
+- **Test both ends of a changed boundary.** Green front-end mocks can sit over a broken command, and green Rust tests under a drifted `invoke` call.
+- **When a contract changes on both ends but not in the mocks,** the application works and the mocked suite fails. Update the stale mocks; the code has not regressed. The reverse case, mocks updated and one end forgotten, is the dangerous one, and only a shared contract check catches it.
+- A Rust-only refactor that leaves the contract unchanged may skip the mocked layer. Say so in the change.
+- The mocking imports and the list of supported platforms depend on the Tauri version. Check them against the documentation for the version in the project.
+
+**The build seam is configuration:**
+
+```json
+{
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  }
+}
+```
+
+- **The hooks call the real front-end scripts,** and `devUrl` and `frontendDist` match what the front-end tool serves and emits. A port that is not fixed on the front-end side breaks `devUrl` when it is taken.
+- **The configuration is the source of truth for how the application is built,** not the README.
+- **Commit both lock files,** so the Rust and front-end halves reproduce together. Keep the `@tauri-apps/*` packages and the `tauri*` crates on matching minor versions.
+- The dev server is plain HTTP on localhost and behaves differently from the packaged protocol: different origin, different CSP effects, different path resolution. A feature is not verified until it has run in a built application.
+
+**Platform differences go in platform configuration files first:**
+
+- `tauri.windows.conf.json`, `tauri.macos.conf.json`, `tauri.linux.conf.json` and the mobile variants are merged over the base file. The merge follows JSON Merge Patch: objects merge key by key, **arrays are replaced whole**, and `null` removes a key.
+- Use them for packaging, identifiers, bundle resources and plugin shape before reaching for runtime `cfg` branches.
+- Use `--config` with a small overlay for a flavour such as a beta build. Do not copy the whole configuration tree.
+- A beta that can be installed beside the stable release needs its own identifier, or the two share data directories and updater state.
+
+**External binaries:**
+
+```json
+{ "bundle": { "externalBin": ["binaries/indexer"] } }
+```
+
+- **The path is relative to the Tauri configuration file,** and each binary exists on disk with a `-<target-triple>` suffix, for example `binaries/indexer-aarch64-apple-darwin`.
+- **`shell().sidecar("indexer")` takes the file name alone,** not the path from `externalBin`.
+- **One name, three places:** the bundle configuration, the capability file and the runtime call. Rename all together.
+- **Build the sidecar in CI for every target you ship,** in the same pipeline. A binary copied in by hand is the one that is stale or built for the wrong architecture.
+- **A bundled binary is part of your release:** it is signed and notarised with the application where the platform requires it, and its licence and vulnerabilities are yours.
+- Read-only resources go in `bundle.resources` and are located through the path API at run time. The installation directory is not writable; anything the application modifies is copied to the data directory first.
+
