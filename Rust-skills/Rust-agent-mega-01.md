@@ -1656,6 +1656,46 @@ Tests round-trip representative payloads, assert that the subject constants matc
 - **Performance work.** Path: representative benchmark cases, profile first, algorithmic wins and boundary simplification before unsafe or lock-free code. Stretch: worst-case complexity guards, cache-aware layout, allocation budgets. Tools: `criterion`, `iai-callgrind`, `cargo-bloat`, flamegraphs. Risks: optimizing the wrong metric, overfitting microbenchmarks, freezing internals into the public API.
 - **When Rust is the wrong tool.** Ultra-short scripts; deadline prototypes that do not need a typed service; one-off binaries with no reusable contract; integration surfaces so dynamic that safe boundary modeling is out of proportion; cases where the dominant latency is outside the process.
 
+### Parsers, syntax queries and code-intelligence pipelines: further rules
+
+- **Two-level capture names for definitions and references.** In a tags or symbol query, capture the identifier and the whole node separately, with one vocabulary across every language: `@name.definition.<kind>` inside `@definition.<kind>`, and `@name.reference.<kind>` inside `@reference.<kind>`. Type uses (a base class, a constructor call, a generic bound, a declared variable type) are references to the type, so they produce edges and not new definitions.
+
+```scheme
+(function_declarator
+  declarator: (identifier) @name.definition.function) @definition.function
+
+(call_expression
+  function: (identifier) @name.reference.call) @reference.call
+```
+
+- **One pattern per syntactic form of the same concept.** A declaration, an expression and an arrow form of a function each get their own pattern and outer capture, and share the inner capture names. Where the name is optional or absent, the consumer names the entity from the enclosing assignment or property, or gives it a deterministic synthetic name; it never drops an anonymous function.
+- **Query the error nodes too.** An error-recovering parser returns a tree for broken input. Capture `(ERROR)` and missing nodes explicitly and report or mark those ranges, so a region that failed to parse is visible and is not indexed as if it were valid.
+- **Comment a non-obvious pattern with the source it matches.** One line above the pattern gives a concrete snippet and what is captured in it.
+- **Embed query text at compile time, stream the matches, then deduplicate.** `include_str!` removes the missing-file failure at run time. Where the binding yields query matches as a streaming iterator, consume them in a `while let Some(m) = matches.next()` loop and copy out what you need; do not collect borrowed matches. Overlapping patterns match one node more than once, so deduplicate entities by kind and byte range.
+- **Local additions to vendored material live in their own directory.** Queries or patches that upstream will not accept sit in a separate folder with a short note saying why, so an upstream sync stays a mechanical copy. Vendored grammars and queries keep a note of their upstream source, the upstream commit they were taken from (a version suffix is enough) and their licence.
+- **Chunk by syntax, not by character window.** A chunk for retrieval is a complete logical unit (a function, a type, an impl block). Each chunk carries three separate groups of metadata: its identity, its relationships to other units, and its source text.
+- **Resolve a position to the innermost enclosing entity, with the file as fallback.** A cursor line maps to the smallest entity that contains it; when none does, use the file-level node. An impact walk from that entity is breadth-first and stops at a configured depth.
+- **Document every pipeline phase by its input, its output and the edges it adds.** For example: the parse phase takes the walker's file entries, adds one node per symbol and adds a defines edge from each file to its symbols.
+- **State the condition under which a reuse shortcut is valid.** An optimisation that reuses in-memory parse results instead of re-reading files names the work it avoids, the shared extraction function that makes both paths produce equal results, the exact condition that enables it (for example a fresh database or a forced full parse) and the path that runs otherwise.
+- **One undecodable file does not abort a batch, and unsupported is not empty.** An indexer reads bytes and decodes lossily (`String::from_utf8_lossy`) for a file that is not valid UTF-8, and records that it did. A file in an unsupported language returns `None`, a skipped status or an error, never the same empty result as a supported file with no findings.
+- **Versioned formats dispatch on the version first.** An evolving text format carries a version header. The parser reads it and dispatches; a caller that already knows the version passes it explicitly. Keep one entry point per syntactic category (query, schema, type), each with a with-version variant.
+- **Parse complex input through small named validators into one typed request, and return warnings as data.** Layer it as tokenizer, then option tables, then request builder. The library never prints.
+
+```rust
+fn parse(input: &str) -> Result<(Request, Vec<Warning>), ParseError>
+```
+
+- **Split statements with the tokenizer.** A REPL or script runner finds the statement terminator with a rule that respects quotes and comments, never `split(';')`. Incomplete input returns a continuation prompt; empty input is handled explicitly.
+- **Large repetitive tool output is a versioned, column-oriented encoding.** Give the encoding an identifier, describe each table by its columns and column types, intern repeated strings such as file paths, and keep confirmed results in a different table from potential ones.
+- **Write down the output formats you support and the ones you deliberately do not.** Keep the allowlist in one place. A result that describes the whole invocation (a prediction, a trend) goes in a structured envelope; do not disguise it as a per-location finding.
+- **A heavy optional back end is a Cargo feature at a module boundary.** `#[cfg(feature = "...")]` goes on the `mod` line, not on statements inside functions. Every back end implements the same trait, and a setting the library may choose for the caller is an `Option` with a documented default.
+- **Read back the effective configuration of an external tool.** After starting a tool or service, read the path, port, URL and workspace it actually recorded and check health and readiness before using it. Do not assume the values you requested took effect. Give each run its own folder, pin the tool version and clean old run folders on a stated retention rule.
+- **A code generator returns its tokens and its shared definitions separately.** The caller emits each shared definition once, in a dedicated submodule. Concatenating generated fragments duplicates definitions.
+- **Declare modified files before parallelising work items.** Each item lists its wave, its dependencies and the files it will modify. Items run concurrently only when those file sets are disjoint.
+- **Storage bootstrap is idempotent.** Schema and index creation can run on every start, writes that may repeat are explicit upserts, and each public storage operation documents its layout and guarantees.
+- **Bound the time of a parse you do not control.** In an async analyzer, wrap the parse of an arbitrary file in a timeout and report the timeout as a per-file result. A parser kept behind a standard mutex is never held across an `.await`.
+- **A downloader streams.** Decompress an archive through a buffered reader as it arrives, keep URLs and git references as typed values, report progress through a channel or handle and not by printing from workers, and set the executable bit in an explicit step after the file is complete.
+
 ## 5. Verification and test-first delivery
 
 ### Verification selection matrix
@@ -2209,6 +2249,11 @@ fn build_trials() -> Vec<Trial> {
 | compile-time misuse | compile-fail UI tests |
 | performance claim | benchmark with threshold |
 | unsafe or FFI boundary | harness + Miri or sanitizer |
+
+### Fixture paths: further rules
+
+- **Fixture paths start from `CARGO_MANIFEST_DIR`.** A test that opens a checked-in fixture builds the path with `env!("CARGO_MANIFEST_DIR")`, so it does not depend on the working directory. Name the test after the fixture it reads.
+- **Path tests include awkward paths.** Use a temporary directory whose name contains spaces, and pass quoted input paths, not only plain alphanumeric ones.
 
 ## 6. Types and API design
 
@@ -3218,6 +3263,15 @@ macro_rules! for_all_classified_sources {
 
 **Dump and parse back generated code.** Write the expansion as a plain function from `proc_macro2::TokenStream` to `TokenStream`, with the `#[proc_macro]` entry point as a thin wrapper. When a development environment variable is set, the wrapper parses the expansion as a `syn::File` and prints it with `prettyplease` to stderr. Tests call the inner function, parse the result with `syn::parse2::<syn::File>` and assert on the items. Text assertions on the pretty-printed output are smoke checks; compile-fail and runtime tests still carry the semantics.
 
+### Closed sets and normalised inputs: further rules
+
+- **Finite CLI choices are a `ValueEnum`, and paths are `PathBuf`.** The argument parser then validates and documents the choices, and a path is never a `String`.
+- **A closed set of kinds is an enum, not a `String` explained in a comment.** Map file extensions to it case-insensitively (`eq_ignore_ascii_case`, or one `to_ascii_lowercase`) and return `None` for an unsupported extension.
+- **Normalise empty and null once, at the boundary.** When a wire format uses an empty string, a null and an absent field for the same thing, decode all three into one representation such as `Option<NonEmptyString>`. Code past the boundary does not call `is_empty()` again. Wire field names are constants.
+- **A fixed set of roles is a struct with one typed field per role.** A theme with a field per semantic role (comment, keyword, invalid code, current line) makes a missing role a compile error, where a `HashMap<String, Style>` makes it a silent default. Include a role for invalid code so parse errors are shown.
+- **Normalise a symmetric operation by swapping its arguments once,** instead of writing both branch orders. When the wrap itself is the signal being tested, use `overflowing_sub` and read the flag.
+- **Units live in the field name or the type.** A configuration field is `timeout_ms` or a `Duration` with an explicit serde adapter; a unit that exists only in a comment will be misread.
+
 ## 7. Ownership, borrowing and data handling
 
 - Prefer expression-oriented style and iterators over mutable accumulator code.
@@ -3809,6 +3863,13 @@ enum UndoOp {
 - Every operation starts with the lookup and applies leadership and permission checks immediately after it, before touching the engine.
 - "Leader changed" and "leader lease failed" are distinct codes, so a client can re-route or retry.
 - A local invariant violation still panics; it does not become a status value.
+
+### External errors and responses: further rules
+
+- **Status first, then a typed decode, then a bounded snippet.** An HTTP client checks the status before reading the body as data and decodes into a typed response struct. When decoding fails, the error carries the status and a length-capped piece of the body. It never returns an untyped value.
+- **Capture the OS error on the next line.** After a failing libc or FFI call, read `std::io::Error::last_os_error()` immediately, before any other call can overwrite it, and keep `raw_os_error()` in the typed error.
+- **A drop-in replacement keeps the original's error contract.** Preserve the stable error class codes, the structured fields, and any wording or remediation hints that callers match on, and document how each maps to a host-language exception. Derive `Clone` on the error only where it has to cross a host boundary.
+- **SQL-style NULL propagation is `Option` and `?`.** Write the inner computation to return `Option<T>` so a NULL operand short-circuits, and convert to the public error type in a separate outer function. A cache of dynamically compiled patterns is bounded when its keys come from users.
 
 ## 9. Async and concurrency
 
@@ -5229,6 +5290,22 @@ A bridge test calls several methods through the foreign ABI, so the shared runti
 - The box is reclaimed with `Box::from_raw` in exactly one place, reached both when the callback is replaced and when the owning wrapper is dropped. Clear the registration in the C library before freeing, so the library never holds a dangling pointer.
 - State exposed to a single-threaded host runtime (an editor's scripting engine, a UI thread) can be `Rc<RefCell<T>>`; the wrapper type is then `!Send`, which is the correct statement of the host's threading rule. Do not reach for `Arc<Mutex<T>>` to silence the compiler here. Positions crossing that boundary are newtypes (byte offset, point, range) converted at the edge, because the host and the library often count in different units.
 
+### Foreign handles and generated C: further rules
+
+- **One opaque Rust type per foreign object type.** Declare a distinct zero-sized `#[repr(C)]` struct for each kind of foreign object and expose it only behind a pointer alias, so two handle types cannot be passed for each other. Take integer and boolean widths from the platform `-sys` crate's typedefs, never from a guess.
+
+```rust
+#[repr(C)]
+pub struct Store {
+    _data: [u8; 0],
+    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
+}
+
+pub type StoreRef = *const Store;
+```
+
+- **Generated C is not held to your warning policy, and its ABI version is checked at load.** When a build script compiles a generated grammar with `cc`, turn warnings off for that unit (`.warnings(false)`). Setting a grammar on a parser returns an error when the grammar's ABI version is outside the range the runtime supports; handle that error and name the grammar in it.
+
 
 ## 11. Performance
 
@@ -6154,6 +6231,13 @@ Use `panic = "abort"` in release binaries (CLIs, embedded) where unwinding is un
 panic = "abort"
 ```
 
+### Memory benchmarks and stated numbers: further rules
+
+- **A memory benchmark mirrors the consumer's object lifetime and says which one it measures.** To observe peak allocation as a batch indexer would cause it, create the parser fresh in each iteration; reusing it measures steady state. Keep the real pathological inputs that once exhausted memory (very long functions, huge literals, deep nesting) as benchmark inputs, and report allocations and peak memory, not only time.
+- **A benchmark file states how to run it.** Its header gives the exact command and the Cargo features it needs. Fixtures are built before `b.iter`, there is one case per branch or input class, compilation, planning and execution are measured as separate benchmarks, and an optional benchmark dependency cannot break unrelated suites.
+- **Performance contracts name the build profile.** A threshold in a module doc gives one number for release and one for debug (for example a parse time per thousand lines in each), and a test enforces the one it can.
+- **Projected numbers are labelled as projections.** A design document that states a speed-up or a memory reduction before anything was measured says so beside the number and names the measurement that would confirm it.
+
 ## 12. Naming, modules and documentation
 
 - Use four-word names for new functions and commands when feasible.
@@ -6195,6 +6279,11 @@ good: create_database_connection_pool_async()
 bad:  filter_entities()                    (2 words)
 bad:  detect_cycles_in_dependency_graph()  (5 words)
 ```
+
+### Module documentation: further rules
+
+- **A hand-written parser carries the grammar of its format in the module doc.** Put the grammar there verbatim so the code can be reviewed against it, and state what the module does not check (for example: it validates a patch into hunks and does not check that the patch applies to the filesystem).
+- **Mermaid: one statement per line.** The graph direction goes in the header line (`graph TD`), and a `direction` statement never shares a line with a node definition.
 
 ## 13. Anti-patterns
 
@@ -9449,6 +9538,11 @@ Rule to test to gate:
 - **More than one workspace.** One gate record must not sign for a workspace its commands never ran against. Run the commands per workspace and combine the results into one record.
 
 - **Two gate layers.** The four commands are owed on every change. The heavier gates are owed by the boundary a change touches: `loom` for shared-state interleavings, Miri for unsafe, fuzzing for an input frontier, compile-fail for a misuse contract. They add up; neither replaces the other. A change that is never classified by boundary gets the four commands only, and that under-verifies exactly the concurrent, unsafe and FFI work that needs more.
+
+### Packaging and upkeep: further rules
+
+- **A binding crate inside a polyglot repository publishes by allowlist.** Point `build` and `[lib] path` at the binding directory, list exactly what ships in `include` (the binding, the generated source, the query files) and set `autoexamples = false` when the repository's examples directory is not Rust examples.
+- **A scheduled readiness check for dependency and vendored drift.** A standard-library-only script checks whether plugin or grammar releases accept a new core version and whether vendored upstream files have changed, prints a Markdown report, exits non-zero while blockers remain and updates one tracking issue from CI. It has an offline mode and an assert-current mode for local runs and tests.
 
 ## 17. Review checklist
 

@@ -19,8 +19,8 @@ Each file goes through the same cycle:
 | # | File | Lines to read | Phase | Lines read | Gaps found | Gaps added |
 |---:|---|---|---|---:|---:|---:|
 | 1 | `meta-rust-ref-202606-Part1.md` | 1003-5319 | DONE | 4317 | 26 | 22 |
-| 2 | `meta-rust-ref-202606-Part2.md` | 754-5188 | RED | 0 | 0 | 0 |
-| 3 | `meta-rust-ref-202606-Part3.md` | 1112-5162 | STUB | 0 | 0 | 0 |
+| 2 | `meta-rust-ref-202606-Part2.md` | 754-5188 | DONE | 4435 | 61 | 48 |
+| 3 | `meta-rust-ref-202606-Part3.md` | 1112-5162 | RED | 0 | 0 | 0 |
 | 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | STUB | 0 | 0 | 0 |
 | 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | STUB | 0 | 0 | 0 |
 | 6 | `critique-JD-01.md` | 1-4166 | STUB | 0 | 0 | 0 |
@@ -31,6 +31,44 @@ Each file goes through the same cycle:
 ## Checkpoints
 
 Newest first.
+
+### Checkpoint 2: `meta-rust-ref-202606-Part2.md` done
+- Phase: DONE (RED, GREEN and REFACTOR complete).
+- Lines read: 754 to 5188, all 4,435, displayed page by page. Most generated sections show a
+  generated parser header, a one-function C binding or a "skipped repo" record; the useful
+  ones are query files, Rust module docs, manifests and tool sources.
+- Gaps found: 61 candidate items. 13 were already in the mega file (typed errors that keep
+  path and source, wire types apart from domain models, newtypes over sentinels, parser fuzz
+  targets, token-budgeted context, `pub use` facades, real-snippet fixtures, tests for
+  degraded paths, a grammar crate that exports one handle, per-worker parsers, inherited
+  queries, operator precedence as a table, one feature per version).
+- Gaps added: the other 48, written as 45 rules in 8 places of the mega file:
+  - Architecture (23): definition and reference capture names, one pattern per syntactic
+    form, error nodes, commented patterns, embedded queries with streamed and deduplicated
+    matches, vendored material and local additions, syntax-aware chunks, innermost-entity
+    lookup, documented pipeline phases, reuse shortcuts with a stated condition, lossy reads
+    and unsupported-is-not-empty, versioned formats, warnings as data, tokenizer-aware
+    statement splitting, compact tool output, output-format contracts, optional back ends,
+    effective tool configuration, generator output, parallel work items, idempotent storage
+    bootstrap, parse timeouts, streaming downloads.
+  - Verification (2): fixture paths from `CARGO_MANIFEST_DIR`, awkward paths in path tests.
+  - Types (6): CLI enums and `PathBuf`, enums for closed kinds, empty and null normalised
+    once, typed role structs, symmetric operations, units in field names.
+  - Errors (4): typed HTTP decoding, OS error capture, error contracts of drop-in
+    replacements, NULL propagation with `Option`.
+  - Unsafe and FFI (2): one opaque type per foreign object, generated C and grammar ABI checks.
+  - Performance (4): memory benchmarks, benchmark file headers, per-profile thresholds,
+    projected numbers.
+  - Documentation (2): grammar in a parser's module doc, one Mermaid statement per line.
+  - Quality gates (2): binding crates published by allowlist, scheduled drift checks.
+- Checks: code fences balanced, no source paths or evidence lines in the mega file, which went
+  from 9,554 to 9,648 lines. The three new Rust snippets and the query snippet were not
+  compiled or run. `cargo test`, clippy and fmt do not apply: no Rust project is involved.
+- Decision: one source fragment states large speed and memory gains for a design that was
+  not measured. It was not copied as a fact; it became the rule that projected numbers are
+  labelled as projections.
+- Next step: read `meta-rust-ref-202606-Part3.md` from line 1112.
+- Open question: whether to read the 7 deleted JSON index files line by line (row 9).
 
 ### Checkpoint 1: `meta-rust-ref-202606-Part1.md` done
 - Phase: DONE (RED, GREEN and REFACTOR complete).
