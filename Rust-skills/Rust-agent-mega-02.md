@@ -710,3 +710,70 @@ pub struct Function {
 - **Model what a requirement uses, and be explicit about the rest.** Either keep the unparsed remainder (a span or the raw text) or return an "unsupported" error. Never drop it silently, because a quietly incomplete result is worse than a failure.
 - *Skip the full model when* the tool needs one fact (a name, a count). Extract that fact, and still test it against the awkward samples.
 
+### Embedded and `no_std` essentials
+
+This file is not an embedded manual. These are the rules an agent needs so as not to break a
+firmware project it is asked to touch. HAL and executor APIs (Embassy, RTIC, the chip HALs)
+change between releases: read the versions in `Cargo.lock` and the project's own examples
+before writing any of it from memory.
+
+```rust
+#![no_std]
+#![no_main]
+
+use embassy_executor::Spawner;
+use embassy_time::Timer;
+use {defmt_rtt as _, panic_probe as _};
+
+#[embassy_executor::main]
+async fn main(spawner: Spawner) {
+    let p = embassy_stm32::init(Default::default());
+    spawner.spawn(blink(p.PA5.into())).unwrap(); // spawn fails only if the task pool is full
+    loop {
+        Timer::after_secs(1).await;
+    }
+}
+```
+
+- **No heap by default.** Use fixed-size buffers, `heapless` collections and `&'static` data. Add a global allocator only if the project already uses `alloc`, and never allocate in an interrupt handler.
+- **Never block in an async task.** Use the executor's timer (`Timer::after_millis`), not a busy-wait delay, which stalls every other task on that executor.
+- **Exactly one panic handler,** minimal and non-allocating: signal the fault, then halt or reset. In a debug build `panic-probe` reports over the probe; decide separately what production does (usually reset).
+
+```rust
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    // put outputs in a safe state, then halt or reset
+    loop {}
+}
+```
+
+- **Write against `embedded-hal` traits** so a driver is not tied to one chip, and so it can be tested on the host with a fake pin or bus. Keep logic in a `no_std` library crate that also builds for the host; keep the chip-specific binary thin.
+- **Serialisation:** `postcard` into a fixed buffer. Check lengths and treat every received frame as untrusted.
+
+```rust
+let mut buf = [0u8; 64];
+let written: &mut [u8] = postcard::to_slice(&reading, &mut buf)?; // Err if it does not fit
+let back: Reading = postcard::from_bytes(written)?;
+```
+
+- **Target and memory layout live in configuration, not in code.** The target goes in `.cargo/config.toml`; flash, RAM and stack go in `memory.x`. Take the numbers from the chip's datasheet, never from another project.
+
+```toml
+# .cargo/config.toml
+[build]
+target = "thumbv7em-none-eabihf" # Cortex-M4F / M7F
+```
+
+```text
+/* memory.x */
+MEMORY {
+  FLASH : ORIGIN = 0x08000000, LENGTH = 512K
+  RAM   : ORIGIN = 0x20000000, LENGTH = 128K
+}
+```
+
+- **Logging:** `defmt` over RTT. No semihosting in production, no formatting or blocking prints in interrupt handlers, no verbose logs on time-critical paths.
+- **Shared state between an interrupt and the main code** goes through a critical-section mutex, an atomic or a channel made for it. `static mut` is the anti-pattern.
+- **Pin dependency versions.** `"*"` as a version requirement makes a firmware build unreproducible.
+- **Verification an agent can do without hardware:** `cargo build --release --target <target>`, `cargo clippy --target <target>`, host-side unit tests of the logic crate, and a check of the binary size against flash (`cargo size`). Say plainly that the code was not run on a device.
+
