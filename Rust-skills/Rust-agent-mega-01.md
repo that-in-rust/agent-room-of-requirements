@@ -1695,6 +1695,64 @@ fn parse(input: &str) -> Result<(Request, Vec<Warning>), ParseError>
 - **Storage bootstrap is idempotent.** Schema and index creation can run on every start, writes that may repeat are explicit upserts, and each public storage operation documents its layout and guarantees.
 - **Bound the time of a parse you do not control.** In an async analyzer, wrap the parse of an arbitrary file in a timeout and report the timeout as a per-file result. A parser kept behind a standard mutex is never held across an `.await`.
 - **A downloader streams.** Decompress an archive through a buffered reader as it arrives, keep URLs and git references as typed values, report progress through a channel or handle and not by printing from workers, and set the executable bit in an explicit step after the file is complete.
+- **A Markdown pipe-table reader is three small pure functions.** One splits a row (trim, drop one leading and one trailing pipe, split on `|`, trim each cell). One recognises the separator row (only spaces, colons, pipes and dashes, with at least one dash). One walks the lines, skips the header and separator, and remembers the current heading so that every row records its section. Rows decode into a typed struct per table. Decide what an escaped pipe inside a cell means: handle it or reject the row, never split on it.
+- **A code-graph tool surface for agents is a few verbs keyed by one stable entity id.** Group the tools by purpose: traversal (callers, callees, impact to a stated depth, cycles), code (source by key; details as info, dependencies and source) and administration (files, statistics, schema). Exactly one tool returns source text. A raw-query tool, where offered, sits apart from the curated ones.
+- **Extra context gets its own named entry point over one private worker.** `parse_file(source, language)` and `parse_path(source, language, path)` both call a private function that takes `Option<&Path>`; the path only selects a path-specific grammar variant. Callers never write `None` themselves.
+- **An orchestrator's module doc numbers its responsibilities, and says why work is sequential when it is.** A typical list: load each grammar lazily and once, sharing concurrent loads; release every tree on every path (a `Drop` guard for FFI or WebAssembly trees); isolate failures per file; attach the file path at the one layer that knows both the path and the parsed result, so the parser stays path-agnostic. A deliberate choice against parallelism carries its reason (for example, a flat heap), so nobody parallelises it without measuring.
+- **Index configuration and infrastructure formats too.** Manifests, YAML, TOML, env files, container files, SQL, schema and build files each get a small parser behind the same trait as source languages. A relaxed format is normalised by a separately tested pure helper before a strict parse: strip comments and trailing commas from JSON-with-comments, leaving string contents untouched, then parse JSON.
+- **In a query-driven formatter, mark verbatim nodes first.** Comments, strings and other opaque literals get a leaf capture that means "emit this text unchanged and do not descend", so no spacing rule can alter them. Keywords that share a spacing rule sit in one alternation.
+- **Write the formal syntax before the grammar.** Implement a grammar in phases: scaffold and tooling, core rules, the external scanner for context-sensitive tokens, error recovery, the test corpus, integration tests. Error recovery and the corpus are phases with their own exit checks, not afterthoughts. Record the known risks and trade-offs beside the plan.
+- **Extract outgoing edges; derive incoming ones.** Pass one records each symbol and the references it makes. Pass two resolves those references and builds the called-by index. Incoming edges are never extracted directly, so the two directions cannot disagree.
+- **Read per-language facts from the grammar's manifest.** When a grammar ships a metadata file, take file types, query file paths and the injection name pattern from it, validated against its schema. Do not restate them in a hand-written table per language.
+- **Behaviour that differs between languages only by data is a query directive argument.** An editor feature such as inserting a closing keyword is one engine plus query rows; captures mark the cursor position and the node that can be closed, and the directive supplies the text. The consumer reads directive predicates explicitly and rejects an unknown directive when the query is loaded.
+
+```scheme
+((if_statement "then" @cursor) @endable @indent (#endwise! "fi"))
+((while_statement "do" @cursor) @endable @indent (#endwise! "done"))
+```
+
+- **The query table has two enum keys.** Look queries up by language and by query kind (definitions, references, folds) through one exhaustive `match`. A dialect row that reuses a base language's query says so explicitly. Nested string-keyed maps hide a missing pair.
+
+```rust
+fn query_for(language: Language, kind: QueryKind) -> Option<&'static str> {
+    match (language, kind) {
+        (Language::Rust, QueryKind::Definitions) => Some(include_str!("queries/rust/definitions.scm")),
+        (Language::Tsx, QueryKind::Definitions) => query_for(Language::TypeScript, kind),
+        (Language::Rust, QueryKind::Folds) => None,
+        // every remaining pair is listed; no wildcard arm
+    }
+}
+```
+
+- **Helper captures are private, argument positions are anchored, output captures are namespaced.** To find embedded-language strings by API use (a regex passed to a constructor), match the call, constrain the callee with `#eq?`, and anchor the first argument with `.`. A capture needed only by a predicate starts with an underscore and is not emitted. Cover every literal kind in one alternation, and prefix the output capture with the consumer's name.
+
+```scheme
+(object_creation_expression
+  type: (identifier) @_type
+  (argument_list . (argument [(string_literal) (verbatim_string_literal)] @regex.pattern))
+  (#eq? @_type "Regex"))
+```
+
+- **A partial parser rejects what it does not support before it parses.** A preflight pass finds unsupported clauses and returns a typed error that names the construct. The clause extractors then run only on input known to be inside the supported subset, so an unsupported query is never half-understood.
+- **Resolve a grammar artifact in a fixed order and report which one was used.** Look beside the binary first, then in a documented fallback location. Both tables are exhaustive over the language enum, a language with no fallback is an explicit `None`, and the selected source is logged or returned.
+- **A parser cache can be cleared.** A process-wide cache of parsers or grammars exposes a reset for tests and long-running hosts.
+- **A syntax finding carries the whole range and a context line.** A start position alone cannot be underlined or deduplicated.
+
+```rust
+struct SyntaxFinding {
+    file: PathBuf,
+    range: Range<Position>,
+    kind: SyntaxErrorKind,
+    message: String,
+    context: String,
+}
+```
+
+- **Give a review model parser facts beside the diff.** Functions, types, imports, call sites and their exact ranges come from the parser and travel with the raw diff. Line numbers in the model's answer are checked against those ranges and are never the source of truth.
+- **A tree dump is bounded.** Serialising a syntax tree for a caller takes an options struct (include children, include text, maximum depth) with no unbounded default, reports start and end positions, and returns `None` for a missing node.
+- **Tokenise code from syntax-tree leaves.** Code tokens come from leaf spans, with a list of node kinds to leave out. A regex tokenizer is for free text such as doc comments only, compiled once in a `LazyLock`.
+- **Probe the corpus for feature use before dropping a feature.** A small script or test reports which checked-in queries and fixtures use a given language feature, and a probe that is only a text heuristic is labelled approximate.
+- **A generator fails or omits the record when an input is unreadable.** A read error is reported as a diagnostic; its message is never written into the artefact where the content belongs.
 
 ## 5. Verification and test-first delivery
 
@@ -2250,10 +2308,34 @@ fn build_trials() -> Vec<Trial> {
 | performance claim | benchmark with threshold |
 | unsafe or FFI boundary | harness + Miri or sanitizer |
 
-### Fixture paths: further rules
+### Fixtures and test helpers: further rules
 
 - **Fixture paths start from `CARGO_MANIFEST_DIR`.** A test that opens a checked-in fixture builds the path with `env!("CARGO_MANIFEST_DIR")`, so it does not depend on the working directory. Name the test after the fixture it reads.
 - **Path tests include awkward paths.** Use a temporary directory whose name contains spaces, and pass quoted input paths, not only plain alphanumeric ones.
+- **A fixture writer reports the calling test, and a fixture reader names the path.** The helper creates parent directories, fails at once on an I/O error and returns the path. `#[track_caller]` makes the panic point at the test, and a missing fixture fails with its path before any parsing, so it cannot look like a parse failure.
+
+```rust
+#[track_caller]
+fn write_fixture(root: &Path, rel: &str, body: &str) -> PathBuf {
+    let path = root.join(rel);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).unwrap_or_else(|e| panic!("create {}: {e}", parent.display()));
+    }
+    fs::write(&path, body).unwrap_or_else(|e| panic!("write {}: {e}", path.display()));
+    path
+}
+
+#[track_caller]
+fn read_fixture(path: &Path) -> String {
+    fs::read_to_string(path).unwrap_or_else(|e| panic!("fixture {}: {e}", path.display()))
+}
+```
+
+- **An incremental-update test uses a fixture whose graph is written down.** The fixture is a tiny file with a known set of entities and edges (one function, a second that calls it, a third that calls both). The test edits the file and asserts that the index holds exactly the expected entities and edges before and after.
+- **Tests for an optional dependency are gated, not failing.** Put them behind `#[cfg(feature = "...")]` so the default run stays green, and run the feature matrix in CI.
+- **A domain assertion helper checks the representation before the value.** It first asserts that both operands have the expected representation (sparse, borrowed, compressed) and only then compares their canonical forms, so a test cannot pass because a value silently fell back to another representation.
+- **One authoritative path per event kind.** When a provider's response exposes the same datum in two places, the decoder reads each event kind from exactly one of them; reading both emits duplicates. For each kind, one test shows the authoritative path produces the event and another shows the same data on the other path produces none. The tests use plain stand-in values, no network.
+- **Every listed language loads.** The language enum exposes a complete list (`Language::ALL` or a derived iterator); a test loads each grammar and parses a trivial snippet. Language-name normalisation lives in one function.
 
 ## 6. Types and API design
 
@@ -3271,6 +3353,28 @@ macro_rules! for_all_classified_sources {
 - **A fixed set of roles is a struct with one typed field per role.** A theme with a field per semantic role (comment, keyword, invalid code, current line) makes a missing role a compile error, where a `HashMap<String, Style>` makes it a silent default. Include a role for invalid code so parse errors are shown.
 - **Normalise a symmetric operation by swapping its arguments once,** instead of writing both branch orders. When the wrap itself is the signal being tested, use `overflowing_sub` and read the flag.
 - **Units live in the field name or the type.** A configuration field is `timeout_ms` or a `Duration` with an explicit serde adapter; a unit that exists only in a comment will be misread.
+- **Whitespace-only is missing.** A required text field is checked with `trim().is_empty()` and reported through one variant that carries the field name (`MissingRequiredField { field: &'static str }`). The decoding error is kept as the source, not flattened to a string, so line and column survive.
+- **A parse is a function to an immutable value.** Avoid a parser object whose fields fill in step by step and can be read half-parsed. Use a function from input to a finished value, or a builder consumed by `build()`.
+- **Allowed conversions are one table.** Legal casts are a `const` slice of (from, to) pairs or one exhaustive `match (from, to)`, with the null or empty type rows written out. Evaluation consults the table first, and anything absent is a type error.
+- **Per-type storage facts live on a trait; generic functions do the rest.** The table name is an associated constant, and conversion takes the whole slice and returns one columnar batch. Validate that parallel slices have equal length.
+
+```rust
+pub trait Record: Clone + Send + Sync + 'static {
+    const TABLE_NAME: &'static str;
+
+    fn to_batch(rows: &[Self], embeddings: &[Vec<f32>], dim: usize) -> Result<Batch, StoreError>;
+}
+
+fn store<R: Record>(db: &Db, rows: &[R], embeddings: &[Vec<f32>], dim: usize) -> Result<(), StoreError> {
+    if rows.len() != embeddings.len() {
+        return Err(StoreError::LengthMismatch { rows: rows.len(), embeddings: embeddings.len() });
+    }
+    db.append(R::TABLE_NAME, R::to_batch(rows, embeddings, dim)?)
+}
+```
+
+- **A published tree format is modelled as the specification writes it.** Node kinds are an enum with the specification's type tag as the serialised discriminant (`#[serde(tag = "type")]`), a parent's children are an enum of only the variants the specification allows there, and the type's documentation links the specification.
+- **A hand-rolled entry point has one usage constant.** Where an argument parser is not available (a host-function binding, an FFI command), every arity and type error prints the same `USAGE` constant, and the file header lists the accepted call forms.
 
 ## 7. Ownership, borrowing and data handling
 
@@ -3870,6 +3974,20 @@ enum UndoOp {
 - **Capture the OS error on the next line.** After a failing libc or FFI call, read `std::io::Error::last_os_error()` immediately, before any other call can overwrite it, and keep `raw_os_error()` in the typed error.
 - **A drop-in replacement keeps the original's error contract.** Preserve the stable error class codes, the structured fields, and any wording or remediation hints that callers match on, and document how each maps to a host-language exception. Derive `Clone` on the error only where it has to cross a host boundary.
 - **SQL-style NULL propagation is `Option` and `?`.** Write the inner computation to return `Option<T>` so a NULL operand short-circuits, and convert to the public error type in a separate outer function. A cache of dynamically compiled patterns is bounded when its keys come from users.
+- **Only "not found" selects the defaults.** A loader for an optional file opens it and matches on the error kind; a permission error or invalid UTF-8 is returned. Do not test `exists()` first, because the file can change between the check and the read. Keep reading the file and parsing the text as two functions, so the parser is tested without a file system.
+
+```rust
+fn load_rules(path: &Path) -> io::Result<Rules> {
+    match fs::read_to_string(path) {
+        Ok(text) => Ok(Rules::parse(&text)),
+        Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(Rules::parse(DEFAULT_RULES)),
+        Err(e) => Err(e),
+    }
+}
+```
+
+- **A missing optional dependency is a typed state, not a null and a printed warning.** Do not catch a load failure at initialisation, print, and leave a `None` that every later use must check. Gate the capability with a Cargo feature, or return an explicit unsupported or failed-to-load error at start-up. A library never configures global logging; only the binary installs a logger or subscriber.
+- **A status that is assigned along the way starts as failure.** An exit code or a foreign status variable is initialised to a non-success value, so an early return cannot report success. A kernel-style function documents which input states it accepts (sorted or unsorted, for example) and which of them the output inherits.
 
 ## 9. Async and concurrency
 
@@ -4672,6 +4790,7 @@ match inbox.try_send(msg) {
 - **Share in-flight loads.** For an expensive lazy load, cache finished results and the work in progress, so concurrent callers await one load (`tokio::sync::OnceCell` per key, or a map of shared futures). Remove the in-flight entry when it ends and decide whether a failure is cached; otherwise a failing load is retried by every caller forever. Not when each caller needs its own instance or its own cancellation.
 - **Coalescing requests.** Merging pending requests under a lock is fine for level-triggered state ("needs a rerun"); keep edge-triggered events (one-shot triggers, queued items) explicitly or they are lost. Test the timing cases.
 - **Round-robin with `Relaxed`.** `counter.fetch_add(1, Ordering::Relaxed) % candidates.len()` is acceptable for spreading load across candidates that were already filtered and partitioned (local first, then remote). It is not acceptable where the order is part of correctness.
+- **Least-connected selection rotates its ties.** A load-balancing strategy implements one strategy trait and receives the connection pool by injection. It picks the address with the fewest active connections and keeps a separate round-robin index for readers and for writers, so equal candidates rotate and the first address is not always chosen.
 - **In-process event broker.** Key subscriptions by event type (`trait Event: Debug + Clone + Send + Sync + 'static`), make `subscribe` `#[must_use]` and return a handle that unsubscribes on drop, keep payloads cheap to clone, and give slow subscribers a timeout or a bounded queue. Not for cross-process or durable delivery.
 - **Worker-owned resources.** Bind a client or connection that is expensive or not thread-safe to one worker and send only job payloads through the queue. When worker errors are not returned to the submitter, report them through the job's result or a callback. A pool is a small scheduler: a queue, a registry of workers with a state, a maximum size, and a completion hook that starts the next job. Cancellation must cover queued and in-flight work; test both and test saturation.
 - **Bounded blocking reads behind an async API.** Keep the public API async, run the blocking storage read in `spawn_blocking`, and gate it with a configurable `tokio::sync::Semaphore`. Too many permits overload storage; too few slow every reader.
@@ -6237,6 +6356,8 @@ panic = "abort"
 - **A benchmark file states how to run it.** Its header gives the exact command and the Cargo features it needs. Fixtures are built before `b.iter`, there is one case per branch or input class, compilation, planning and execution are measured as separate benchmarks, and an optional benchmark dependency cannot break unrelated suites.
 - **Performance contracts name the build profile.** A threshold in a module doc gives one number for release and one for debug (for example a parse time per thousand lines in each), and a test enforces the one it can.
 - **Projected numbers are labelled as projections.** A design document that states a speed-up or a memory reduction before anything was measured says so beside the number and names the measurement that would confirm it.
+- **Benchmarks reuse the test fixtures.** A `fixture_path(language, file)` helper built on `CARGO_MANIFEST_DIR` points benches at the same per-language fixture projects the tests use. One `benchmark_group` is parameterised by language with `BenchmarkId` instead of one copied benchmark per language.
+- **A context-reduction claim reports quality beside size.** State the corpus date, file and token counts, index size and build time, the full-file baseline, the tokens left after each stage and combined, and precision and recall at a fixed cut-off. A saving without retrieval quality is not a result.
 
 ## 12. Naming, modules and documentation
 
@@ -6284,6 +6405,10 @@ bad:  detect_cycles_in_dependency_graph()  (5 words)
 
 - **A hand-written parser carries the grammar of its format in the module doc.** Put the grammar there verbatim so the code can be reviewed against it, and state what the module does not check (for example: it validates a patch into hunks and does not check that the patch applies to the filesystem).
 - **Mermaid: one statement per line.** The graph direction goes in the header line (`graph TD`), and a `direction` statement never shares a line with a node definition.
+- **A decision record for a foundational dependency lists what was rejected and what the choice costs.** It states the problem and goals, the alternatives considered, the reasons for the choice and the known drawbacks of the chosen option.
+- **Name what the crate root exports.** A small crate may glob re-export a facade module. As a crate grows, write named re-exports (`pub use counter::{LineStats, count_file};`) so the public API is readable in one place and an internal addition cannot leak.
+- **Library roots warn on missing docs and keep binary orchestration private.** Put `#![warn(missing_docs)]` and a `//!` summary in `lib.rs`. Modules that only drive the command-line program (argument handling, the main process flow) belong to the binary or stay private; they are not public library API.
+- **One module per subcommand.** A CLI keeps each subcommand in its own file under `commands/`, and `mod.rs` only declares them.
 
 ## 13. Anti-patterns
 

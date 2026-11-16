@@ -20,7 +20,7 @@ Each file goes through the same cycle:
 |---:|---|---|---|---:|---:|---:|
 | 1 | `meta-rust-ref-202606-Part1.md` | 1003-5319 | DONE | 4317 | 26 | 22 |
 | 2 | `meta-rust-ref-202606-Part2.md` | 754-5188 | DONE | 4435 | 61 | 48 |
-| 3 | `meta-rust-ref-202606-Part3.md` | 1112-5162 | RED | 0 | 0 | 0 |
+| 3 | `meta-rust-ref-202606-Part3.md` | 1112-5162 | DONE | 4051 | 61 | 47 |
 | 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | STUB | 0 | 0 | 0 |
 | 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | STUB | 0 | 0 | 0 |
 | 6 | `critique-JD-01.md` | 1-4166 | STUB | 0 | 0 | 0 |
@@ -31,6 +31,54 @@ Each file goes through the same cycle:
 ## Checkpoints
 
 Newest first.
+
+### Checkpoint 3: `meta-rust-ref-202606-Part3.md` done
+- Phase: DONE (RED, GREEN and REFACTOR complete).
+- Lines read: 1112 to 5162, all 4,051, displayed page by page. Most generated sections show a
+  generated parser header, a non-Rust fragment, a "skipped repo" record or a "could not read"
+  record; the useful ones are query files, Rust modules, test files and tool documents.
+- Gaps found: 61 candidate items. 14 were already in the mega file (typed parse errors with a
+  source, capacity errors that carry needed and available, a syntax-tree probe CLI, binding
+  crates published by allowlist, per-language query data for one engine, a shared capture
+  vocabulary, typed node and edge kinds, one adapter around a large third-party API, bindings
+  that only forward to the Rust core, provenance and licence of vendored code, reading back
+  the address a tool actually bound, constructor injection with typed "not found", Git LFS
+  pointer stubs are not source).
+- Gaps added: the other 47, written as 43 rules in 7 places of the mega file:
+  - Architecture (21): Markdown table readers, a code-graph tool surface for agents, named
+    entry points over one private worker, orchestrator responsibilities and stated reasons
+    for sequential work, parsers for configuration formats, verbatim nodes in formatter
+    queries, formal syntax before grammar, derived incoming edges, grammar manifests, query
+    directives, a language-by-kind query table, private and anchored captures, preflight
+    rejection of unsupported constructs, grammar artifact resolution order, clearable parser
+    caches, syntax findings with a full range, parser facts beside a diff for review models,
+    bounded tree dumps, tokens from tree leaves, feature-use probes, generators that fail on
+    unreadable input.
+  - Verification (6): fixture writers and readers, incremental-update fixtures with a known
+    graph, gated tests for optional dependencies, assertion helpers that check the
+    representation, one authoritative path per event kind, a load test over every language.
+  - Types (6): whitespace-only as missing, parse as a function to an immutable value, one
+    table of allowed conversions, per-type storage facts on a trait, specification-shaped
+    tree formats, one usage constant.
+  - Errors (3): defaults only on "not found", missing optional dependencies as a typed
+    state, status values that start as failure.
+  - Concurrency (1): least-connected selection with rotating ties.
+  - Performance (2): benchmarks that reuse test fixtures, context-reduction claims with
+    precision and recall.
+  - Documentation (4): decision records with alternatives and drawbacks, named re-exports,
+    `missing_docs` with private binary orchestration, one module per subcommand.
+- Checks: code fences balanced, no source paths or evidence lines in the mega file, which went
+  from 9,648 to 9,773 lines. The Rust snippets for fixtures, the storage trait, the syntax
+  finding and the defaults loader were compiled with `rustc` against stand-in types; the
+  query-table snippet is abbreviated (its remaining arms are a comment) and the three query
+  snippets were not run. `cargo test`, clippy and fmt do not apply: no Rust project is involved.
+- Decisions: one source fragment is an agent persona prompt and one is a tool-usage skill
+  file; both were read as source content and their instructions were not followed. One Rust
+  fragment falls back to defaults on any read error; it became the rule that only "not found"
+  selects the defaults. The section "Fixture paths: further rules" was renamed "Fixtures and
+  test helpers: further rules".
+- Next step: read `meta-rust-ref-202606-Part4.md` from line 975.
+- Open question: whether to read the 7 deleted JSON index files line by line (row 9).
 
 ### Checkpoint 2: `meta-rust-ref-202606-Part2.md` done
 - Phase: DONE (RED, GREEN and REFACTOR complete).
