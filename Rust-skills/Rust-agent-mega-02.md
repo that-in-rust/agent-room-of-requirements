@@ -4116,3 +4116,137 @@ impl WireCode {
 - Send the code, a stable machine name and a human message as separate fields. Clients branch on the code, never on the message, which is then free to improve.
 - Use the stable name in metrics and logs. *Not for* internal errors, which should stay free to change.
 
+### Resilience patterns
+
+**Retry as a decorator.** A wrapper that implements the same trait as the backend it holds
+(`struct Retrying<B> { policy: RetryPolicy, inner: B }`) keeps retry out of every call site
+and every backend. Wrap reads and writes separately: reads are usually safe to repeat, writes
+only when the backend deduplicates them. One policy object serves the blocking, async and
+streaming entry points, so their rules cannot drift.
+
+**A circuit breaker records exactly one outcome per admitted call.**
+
+| State | Behaviour |
+|---|---|
+| Closed | Calls pass; failures are counted |
+| Open | Calls are rejected at once until the cooldown ends |
+| Half-open | Exactly one probe is admitted; others are rejected with a retry-after |
+
+```rust
+pub enum Outcome {
+    Success,
+    Failure,
+    /// Says nothing about the dependency's health.
+    Neutral,
+}
+
+pub struct Permit<'a> {
+    breaker: &'a Breaker,
+    recorded: bool,
+}
+
+impl Permit<'_> {
+    pub fn record(mut self, outcome: Outcome) {
+        self.recorded = true;
+        self.breaker.record(outcome);
+    }
+}
+
+impl Drop for Permit<'_> {
+    fn drop(&mut self) {
+        if !self.recorded {
+            self.breaker.record(Outcome::Neutral);
+        }
+    }
+}
+```
+
+- **Caller cancellation, a caller-side timeout and a client error (a 4xx) are neutral.** They release the probe without changing health. Counting them as failures opens the breaker because of bad requests; never recording them wedges it half-open for ever.
+- The permit's `Drop` guarantees a record on every path, including a cancelled future. Call sites never touch breaker state.
+- Release the breaker's lock before awaiting the wrapped call.
+- "Rejected because open" is its own error variant, distinct from the upstream failure, so callers and dashboards can tell them apart.
+- Inject the clock. *Use for* remote dependencies that fail for a while; not for cheap local operations, where it only adds a failure mode.
+
+**Partial failure across two systems is reported item by item.** An operation that changes
+two durable systems (object storage and a metadata table) returns which items succeeded, which
+failed on each side, and each side's error. One opaque error hides which system needs repair.
+
+```rust
+#[derive(Debug, thiserror::Error)]
+#[error("deleted {} items; {} failed in storage, {} in metadata",
+    .deleted.len(), .storage_failed.len(), .metadata_failed.len())]
+pub struct DeleteError {
+    pub deleted: Vec<ItemId>,
+    pub storage_failed: Vec<(ItemId, StorageError)>,
+    pub metadata_failed: Vec<(ItemId, MetadataError)>,
+}
+```
+
+- Change the second system only for the items that succeeded in the first.
+- Choose the order so that the leftover state after a crash is the harmless one: an orphaned blob can be garbage-collected, a metadata row pointing at nothing is a user-visible error.
+- The same shape suits any batch API: return per-item results, not the first error.
+
+### Error surfaces for callers
+
+**Answer the caller's question with a method.** Callers want to know "was it not found?",
+"should I retry?", "can I fall back?". Give them `is_*` methods, so they never match on
+message text or on a dependency's error type.
+
+```rust
+impl Error {
+    pub fn is_not_found(&self) -> bool {
+        match self {
+            Error::Pull { source: Some(source), .. } => source
+                .downcast_ref::<RegistryError>()
+                .is_some_and(RegistryError::is_not_found),
+            _ => false,
+        }
+    }
+}
+```
+
+- The dependency's error stays a boxed `#[source]`, out of your public API, so upgrading the dependency is not a breaking change for your callers.
+- A probe built on `downcast_ref` breaks silently if the dependency changes its error type. Keep each probe small and cover it with a test that produces the real error.
+
+**An API client's error carries what recovery needs as fields:** the HTTP status, the parsed
+`Retry-After` delay, and the rate-limit limit, remaining count and reset time. Callers never
+scrape strings. An empty or non-JSON error body still produces a sensible message that
+includes the status. Rate-limit state is kept per credential, not in one global.
+
+**Absent, unsupported and failed are three outcomes.** An optional converter, accelerator or
+plugin lookup says which happened, and the fallback is a visible decision.
+
+```rust
+pub enum Conversion<T> {
+    Converted(T),
+    NoConverter,
+    Unsupported(Reason),
+    Failed(Error),
+}
+```
+
+- Collapsing the last three into `None` hides real failures behind a silent fallback. If a fallback is taken, log or count the reason.
+- A mandatory transformation's failure is an error, never a fallback.
+
+**A plugin-facing error is a small stable type.** An extension trait returns a public error
+with the few variants an extension can act on (a timeout with its duration, invalid input) and
+an opaque `Other` for the rest. One `From<InternalError>` does the mapping, so internal errors
+can change freely. *Not when* callers need the full internal error as a contract.
+
+**Diagnostics that accumulate context.** In compilers, linters and language servers, an error
+gains a file path, span, category and severity as it travels up. Build that into the error
+type (`error.with_file_path(path).with_span(span)`), each call wrapping and keeping the
+source, and decide at each `?` whether this layer knows something worth adding. The rendered
+result still has one clear primary message. A plain internal error enum does not need this.
+
+**Scoped panic context, for debugging only.** A thread-local stack of "what I am doing"
+frames, printed by a panic hook installed once, turns a bare panic into one with a story.
+
+```rust
+let _ctx = panic_context::enter(format!("request: {method}"));
+```
+
+- The guard pops its frame on drop; `let _ = ...` would drop it at once.
+- It is thread-local, so it does not follow an async task that moves between threads. There, use `tracing` spans.
+- It explains crashes. It is not error handling and must not replace a `Result`.
+
