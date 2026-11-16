@@ -7360,3 +7360,125 @@ scope; inline or worker; abuse and crash tests; staged rollout with a rehearsed 
 - Prefer the design with the fewest ambiguous states over the one with the lowest latency or least code.
 - When state is unclear during an incident, slow or stop intake. More requests obscure which effects already happened. Keep the evidence: do not restart in a way that erases it.
 
+### Untrusted input at the edges
+
+These apply to any Rust program that takes input from outside, not only to web services.
+
+**Server-side fetch of a user-supplied URL.** One `validate_url` runs before every such
+fetch.
+
+- Allow only `http` and `https`. Reject loopback, private, link-local and cloud-metadata addresses, and internal hostnames.
+- **Checking the hostname is not enough.** Resolve it, check the address, and connect to the address you checked, so a second DNS answer cannot differ.
+- Validate every redirect the same way, or disable redirects. Cap the response size and set a timeout.
+- Test IPv4, IPv6, IPv4-mapped IPv6 (`::ffff:127.0.0.1`), and decimal or octal spellings of an address.
+- An intranet exception is an explicit allow-list, not a weaker default.
+
+**Paths from input.** Canonicalise, then require the result to lie inside the allowed base.
+
+```rust
+fn resolve_inside(base: &Path, requested: &Path) -> Result<PathBuf, PathError> {
+    let base = base.canonicalize()?;
+    let candidate = base.join(requested).canonicalize()?;
+    if candidate.starts_with(&base) {
+        Ok(candidate)
+    } else {
+        Err(PathError::OutsideBase)
+    }
+}
+```
+
+- `canonicalize` requires the path to exist. For a file about to be created, canonicalise the parent and validate the file name separately.
+- Compare with `Path::starts_with`, which works on whole components. A string prefix test accepts `/data-evil` for base `/data`.
+- A check followed by a later open can be raced by a symlink swap. Where that matters, open relative to a directory handle (`cap-std`, `openat`) and do not re-resolve.
+
+**Recursive walkers use no-follow calls.** `Path::exists` and `fs::metadata` follow links,
+so a walker using them can loop forever or leave the tree. Use `fs::symlink_metadata`.
+
+```rust
+pub fn is_symlink_or_junction(path: &Path) -> bool {
+    let Ok(meta) = fs::symlink_metadata(path) else { return false };
+    if meta.file_type().is_symlink() {
+        return true;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
+        if meta.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return true;
+        }
+    }
+    false
+}
+```
+
+- Windows junctions are reparse points, not symlinks, so check both.
+- Following links is an opt-in mode with cycle detection.
+
+**Deserialising across a trust boundary.** Use a closed schema: named fields, closed enums,
+`#[serde(deny_unknown_fields)]` where an unknown field signals a mistake, and limits on
+size and nesting depth. Never let untrusted input choose which type gets constructed.
+
+**Running commands.**
+
+- **Use `Command` with a program and separate arguments. No shell.** Arguments passed this way are not re-parsed, which removes injection at its source.
+- An argument beginning with `-` can still be read as an option. Put `--` before data-derived positional arguments where the program supports it.
+- **Do not pass credentials as arguments;** they appear in process listings. Use the environment, standard input or a file with restricted permissions.
+- Success is the exit status or structured output, not a phrase in the text. A failed write to the child's standard input is an error.
+- If shell text must be accepted, parsing it against an allow-list of programs and rejecting redirects and subshells lowers the risk. It does not make arbitrary shell text safe; say so.
+
+**User-supplied expressions** (formulas, filters) are parsed into a syntax tree, validated
+recursively against an allow-list of node kinds, operators, functions and variable names,
+then evaluated in a constrained scope, with limits on depth and cost. Never hand one to a
+general evaluator. An unknown name gets an error with a close-match suggestion.
+
+**Embedding one query language in another.** Where a position cannot take a bound
+parameter:
+
+- Validate identifiers against a strict pattern such as `^[A-Za-z_][A-Za-z0-9_]*$` and reject everything else.
+- Quote a free-form body with a delimiter proven absent from it. Never assume a delimiter cannot occur.
+- Prefer real bind parameters wherever the driver allows them.
+
+**Authorisation before the body.** On an upload or import route, the authorisation check
+runs before anything buffers the body or spools it to disk.
+
+- In Actix, extractors run in parameter order: put the authorising extractor first and leave a comment saying why.
+- In Axum, the body extractor must be last anyway; authorise in an earlier extractor or in middleware.
+- Test that an unauthorised upload creates no temporary file.
+
+**Untrusted commands and repository configuration.** A bot, webhook handler or agent bridge
+dispatches through a static table (an enum and a `match`), never by loading something named
+by the input.
+
+- **Configuration found in a repository is untrusted.** It cannot set host-only keys: secrets, filesystem paths, endpoints, the commands to run.
+- Security-relevant settings are refused on the command line with a pointer to the host configuration.
+
+**Text handed to a model or agent** passes a policy step between retrieval and
+presentation: exclude by path (`.env`, `*.pem`, `*.key`, `id_rsa`), replace secret-shaped
+text with a marker, and report how many items were excluded. Pattern scans miss unusual
+secrets, so treat this as reduction, not a guarantee.
+
+**Secret carriers are wiped on drop.** A struct holding key material derives
+`ZeroizeOnDrop`.
+
+```rust
+#[derive(Zeroize, ZeroizeOnDrop)]
+pub struct Pkcs12Archive {
+    der: Vec<u8>,
+    passphrase: String,
+}
+```
+
+- An `into_parts()` that moves the fields out hands the duty to the caller, and says so.
+- **Wiping is best effort.** It does not reach copies made by a reallocating `Vec`, a clone, a log line, or a library that kept its own buffer. Do not claim more.
+
+**Authorisation data is indexed by the questions asked.** For hot-path checks, keep maps
+shaped like the questions (`HashMap<(UserId, StreamId), Permissions>`), so a check is a
+lookup or two. Every update and delete path maintains every derived set. Test that a
+revoked permission is denied: a stale allow is the dangerous failure.
+
+**State the level of evidence behind a security claim.** Documented is not configured;
+configured is not reachable; tested is not deployed; observed once is not attacker-proof.
+Compilation proves no authorisation property. After a framework upgrade or an advisory,
+re-check behaviour against the locked version and rerun the abuse tests.
+
