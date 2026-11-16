@@ -8266,3 +8266,49 @@ async fn sync_workspace(on_event: Channel<SyncEvent>) -> Result<(), AppError> {
 - **Its permission names the executable and its expected arguments.** No generic shell escape.
 - **External binaries are declared exactly:** name, one file per target triple, and who builds them.
 
+### Lifecycle and build
+
+- **Setup is bounded.** Initialise only what the first window needs, and hand long work to an owned, supervised task. A slow or failing setup is a blank window or an application that never opens. The setup hook returns `Result`; an error aborts start-up, so decide which failures deserve that.
+- **Single instance: a second launch is routed to the first.** Register the single-instance plugin before the others, forward the second launch's arguments and working directory, and focus the existing window.
+
+```rust
+tauri::Builder::default()
+    .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+        }
+        launch::handle_arguments(app, &args); // the same parser as a cold start
+    }))
+```
+
+- **A deep link is untrusted input from outside the application.** Any web page can trigger one. Parse it into a typed action, validate it, and never let it perform a destructive or privileged action without confirmation. Cold start and already-running both go through the same handler.
+- **Launch arguments are a contract.** Parse them with one function, used on first launch and on handoff.
+- **Tray:** one place wires tray events, and menu state is derived from application state. Closing the last window either quits or hides to the tray; decide which, per platform, and make quitting reachable.
+- **Window state is restored before the window is shown.** Create the window hidden, apply the saved size and position, then show it. Check that the saved position is still on a connected display.
+- **The front-end build is part of the design:** the dev command, the build command and the output directory in the Tauri configuration must match what the front-end tooling produces. A stale or empty output directory ships a blank application.
+- **Platform differences live in configuration** (platform-specific config files, `cfg` at one seam), not in runtime branches scattered through commands.
+- **On exit, stop what you started:** sidecars, background tasks, file watchers. Flush state before the process ends, since exit does not wait for detached work.
+
+**Managed state is keyed by type.** Only one value of each concrete type can be managed, and
+managing a second one of the same type does not replace the first.
+
+```rust
+struct PrimaryDb(Pool);
+struct AuditDb(Pool);
+
+app.manage(PrimaryDb(primary));
+app.manage(AuditDb(audit));
+
+#[tauri::command]
+async fn audit_count(db: State<'_, AuditDb>) -> Result<u64, AppError> { /* ... */ }
+```
+
+- Wrap two values of the same type in distinct newtypes.
+- **A poisoned lock is a decision, not an `unwrap`.** Either map it to an error variant, or recover the guard with `into_inner` when the state is valid after any partial update. Say which in a comment.
+
+**An error serialised as a plain string** (`serializer.serialize_str(&self.to_string())`) is
+the shortest way to satisfy Tauri, and enough for an application that only displays
+messages. Once the front end must branch (retry, re-authenticate, show a field error), use
+the tagged form shown earlier. Do not parse message text.
+
