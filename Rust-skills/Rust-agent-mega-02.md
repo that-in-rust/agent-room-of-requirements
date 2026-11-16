@@ -4904,3 +4904,121 @@ impl Drop for TrackerGuard {
 - Thread-local context does not follow an async task across threads; use `tokio::task_local!` or pass the value explicitly.
 - Ambient context is a hidden parameter. Prefer an explicit argument, and keep thread-locals for boundaries where the signature is not yours to change.
 
+### Checking lock order, and CPU-parallel loops
+
+**Lock ranks, checked in debug builds.** When a component has more than a handful of locks,
+"one documented order" stops being checkable by reading. Give each lock a rank and assert on
+every acquisition that it is higher than every rank the thread already holds.
+
+```rust
+#[cfg(debug_assertions)]
+thread_local! {
+    static HELD: RefCell<Vec<LockRank>> = const { RefCell::new(Vec::new()) };
+}
+
+pub struct RankedMutex<T> {
+    rank: LockRank,
+    inner: Mutex<T>,
+}
+
+pub struct RankedGuard<'a, T> {
+    guard: MutexGuard<'a, T>,
+    rank: LockRank,
+}
+
+impl<T> RankedMutex<T> {
+    pub fn lock(&self) -> RankedGuard<'_, T> {
+        // Checked before blocking, so a violation panics instead of deadlocking.
+        #[cfg(debug_assertions)]
+        HELD.with(|held| {
+            let mut held = held.borrow_mut();
+            assert!(
+                held.iter().all(|other| *other < self.rank),
+                "lock order violation: {:?} taken while holding {:?}",
+                self.rank,
+                held
+            );
+            held.push(self.rank);
+        });
+        RankedGuard {
+            guard: self.inner.lock().unwrap_or_else(PoisonError::into_inner),
+            rank: self.rank,
+        }
+    }
+}
+
+impl<T> Drop for RankedGuard<'_, T> {
+    fn drop(&mut self) {
+        #[cfg(debug_assertions)]
+        HELD.with(|held| {
+            let mut held = held.borrow_mut();
+            if let Some(position) = held.iter().rposition(|other| *other == self.rank) {
+                held.remove(position);
+            }
+        });
+    }
+}
+```
+
+- The check fires on the first run that takes locks in a bad order, even when no deadlock happens that time. That is its whole value: a deadlock needs an unlucky interleaving, a rank violation does not.
+- Every lock gets a rank when it is added. One unranked lock makes the check meaningless.
+- It is per-thread, so it does not see a guard held across `.await` on another thread; that case is already forbidden.
+- For two or three locks, a comment stating the order is enough.
+
+**Per-thread accumulators, one merge.** A counter, map or histogram updated inside a parallel
+loop becomes one accumulator per worker, merged at the end, instead of a lock or atomic
+touched on every iteration.
+
+```rust
+let histogram = items
+    .par_iter()
+    .fold(Histogram::default, |mut local, item| {
+        local.record(item);
+        local
+    })
+    .reduce(Histogram::default, Histogram::merge);
+```
+
+- The identity must be a true identity and the merge associative. `rayon` splits the work differently on each run, so a merge that depends on grouping gives different answers on different runs. Floating-point sums are the usual trap: they are not associative, so parallel totals differ in the last bits.
+- *Not when* updates need one global order.
+
+**Index-stealing workers** are the dependency-free form of the same thing: a shared atomic
+"next index" hands each item out exactly once and balances uneven items without pre-split
+ranges.
+
+```rust
+let next = AtomicUsize::new(0);
+let per_worker: Vec<Vec<(usize, Output)>> = thread::scope(|scope| {
+    let handles: Vec<_> = (0..workers)
+        .map(|_| {
+            scope.spawn(|| {
+                let mut local = Vec::new();
+                loop {
+                    let index = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(item) = items.get(index) else { break };
+                    local.push((index, process(item)));
+                }
+                local
+            })
+        })
+        .collect();
+    handles
+        .into_iter()
+        .map(|handle| handle.join().expect("worker panicked"))
+        .collect()
+});
+```
+
+- Results carry their index and are sorted after the merge when order matters. `Relaxed` is correct here: `fetch_add` is atomic, and nothing else is published through the counter.
+- Run serially when there are few items or one worker. Not for dependent jobs or ordered execution.
+
+**Smaller rules.**
+
+- **Write the algorithm against an execution policy** with a sequential and a parallel adapter over the same body. Tests run the sequential one, which separates "the algorithm is wrong" from "the scheduling is wrong". Abstract the execution, never the data model.
+- **Chunked CPU work** sizes chunks as `ceil(items / threads)` clamped to a minimum and maximum, and gives each worker a stable index for its scratch buffers. **Cancellation stops pulling new chunks;** discarding results while the work continues is not cancellation.
+- **Parallel workers, one writer.** Workers send whole results to a single thread that owns the `BufWriter`, so output lines never interleave.
+- **A metric or timer guard records in `Drop`,** so early returns and `?` are covered. Held across an `.await`, it also times the suspension, which may or may not be what you want to measure.
+- **An `accept` error does not end the server.** Log it and continue, with a short pause on resource exhaustion (`EMFILE`) so the loop does not spin. Only a bind failure is fatal. Each connection is handed off under a concurrency bound, so one slow client cannot block the next accept.
+- **A lock held in a database row** for long background work records the owner, what is locked and a heartbeat the holder refreshes, so a stale lock can be detected and explained. A constraint enforces the single row. It is a single-host convenience, not a distributed lock.
+- **State for a callback whose signature cannot carry it** may go in a `thread_local!` `RefCell`, set before the call and read inside. Keep borrows short and never hold `borrow_mut` across a call that may re-enter. Valid only while the whole call runs on one thread.
+
