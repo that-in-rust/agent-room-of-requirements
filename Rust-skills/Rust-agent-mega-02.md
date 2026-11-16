@@ -4813,3 +4813,94 @@ while candidate > current {
 - **The scheduler owns the cross-cutting concerns:** dependency order, timeouts, error propagation and removal of failed work. A task exposes `run` and its dependencies; it does not start its dependents itself.
 - **An engine with user callbacks** owns loading, scheduling and iteration; user code implements a trait with one required method and a few defaulted hooks. Add a hook only when an algorithm needs it: an empty default can hide a step that an implementer should have handled.
 
+### Shared resources that are slow to create
+
+**One key, two states: connecting and connected.** When a miss starts slow async set-up, the
+map holds both states under the key, and the decision is taken under the lock as a plain
+value. All awaiting happens after the guard is gone.
+
+```rust
+enum Slot {
+    Connecting(watch::Receiver<()>),
+    Connected(Arc<Tunnel>),
+}
+
+enum Action {
+    Use(Arc<Tunnel>),
+    Wait(watch::Receiver<()>),
+    Connect(watch::Sender<()>),
+}
+
+let action = match self.slots.lock().expect("slot map poisoned").entry(key.clone()) {
+    Entry::Occupied(slot) => match slot.get() {
+        Slot::Connected(tunnel) => Action::Use(Arc::clone(tunnel)),
+        Slot::Connecting(ready) => Action::Wait(ready.clone()),
+    },
+    Entry::Vacant(slot) => {
+        let (done, ready) = watch::channel(());
+        slot.insert(Slot::Connecting(ready));
+        Action::Connect(done)
+    }
+};
+// The guard ended with the statement above.
+```
+
+- **If the connecting caller fails or is cancelled, a drop guard removes the `Connecting` entry.** Without it, every waiter waits for ever. This is the part most often missed.
+- **Waiters look the key up again after being woken;** the attempt may have failed and the entry gone.
+- The entry is removed when its last user releases it, or by an idle timeout.
+- *Do not share* when callers need separate credentials, quotas or independent cancellation.
+
+**A `Mutex<()>` can serialise an external side effect.** For "download once, then everyone
+reads", probe without the lock, take the lock, probe again, then do the work. The second probe
+is what makes concurrent first use perform one download. In a service, bound the wait with a
+timeout, since the lock hides a long operation.
+
+**Never run a callback while holding your own lock.** A timer or delayed-task scheduler keeps
+a heap of due times (`BinaryHeap<Reverse<(Instant, TaskId)>>`) under a mutex that guards only
+the heap. It pops the due task, drops the guard, runs the callback, and locks again. A
+callback that schedules or cancels would otherwise deadlock, and a slow one would block every
+insertion. Say what cancelling a task that is already running does: wait for it, or report
+that it was too late.
+
+**Active and pending copies.** Readers use a stable active structure while a replacement is
+prepared on the side. A change clones the active copy into pending if there is none and
+edits only pending; promotion swaps it in atomically (`ArcSwap`, or a short write lock) and
+fixes everything that referred to the old copy in the same step. Readers never see a half
+built structure. The cost is two copies in memory during preparation.
+
+**Multi-key batches take their locks in key order, before anything else.** Keep the batch in
+a `BTreeMap` so it iterates in lock order; acquire every lock; only then start the change.
+Keep the phases apart (lock, mutate, publish, mark dirty), and bound the batch size, since a
+large batch holds many locks. Where persistence progress has several stages, model them as an
+enum keyed by epoch and object, and assert that a final state is never overwritten. This is
+storage-engine machinery; a simple cache needs none of it.
+
+**A scoped thread-local restores the previous value.** A guard that sets ambient context at a
+callback or FFI boundary puts back what was there before, so nested scopes unwind correctly.
+
+```rust
+thread_local! {
+    static CURRENT: Cell<Option<Tracker>> = const { Cell::new(None) };
+}
+
+pub struct TrackerGuard {
+    previous: Option<Tracker>,
+}
+
+impl TrackerGuard {
+    pub fn enter(tracker: Tracker) -> Self {
+        Self { previous: CURRENT.with(|cell| cell.replace(Some(tracker))) }
+    }
+}
+
+impl Drop for TrackerGuard {
+    fn drop(&mut self) {
+        CURRENT.with(|cell| cell.set(self.previous.take()));
+    }
+}
+```
+
+- Clearing instead of restoring breaks the outer scope as soon as two are nested.
+- Thread-local context does not follow an async task across threads; use `tokio::task_local!` or pass the value explicitly.
+- Ambient context is a hidden parameter. Prefer an explicit argument, and keep thread-locals for boundaries where the signature is not yours to change.
+
