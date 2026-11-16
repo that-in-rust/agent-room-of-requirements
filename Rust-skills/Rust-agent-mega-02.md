@@ -1881,3 +1881,77 @@ fn req_006_filter_10k_stays_under_budget() {
 - For a real measurement or a comparison of two versions use `criterion`; for CI gating that must not flake, count instructions (`iai-callgrind`) or allocations instead of wall-clock time.
 - **A performance claim has four parts:** the current value, the target, the percentile and the population ("from 5 ms to under 1 ms at p99 for 10,000 entities"). A new system with no current value still states percentile and population.
 
+**Layout claims as tests.** When a size or an identity is part of the design (a cache-line
+budget, an interning guarantee, a niche-optimised `Option`), pin it.
+
+```rust
+#[test]
+fn node_layout_stays_within_budget() {
+    assert!(std::mem::size_of::<Node>() <= 64, "Node must fit one cache line");
+    assert_eq!(std::mem::size_of::<Option<NodeId>>(), std::mem::size_of::<NodeId>());
+}
+
+#[test]
+fn interning_returns_the_same_allocation() {
+    let a = Interned::new("common_name");
+    let b = Interned::new("common_name");
+    assert!(std::ptr::eq(a.as_str(), b.as_str()));
+}
+```
+
+- Prefer an upper bound (`<=`) to an exact size unless the exact size is the contract (FFI, an on-disk format). Exact sizes differ between 32-bit and 64-bit targets and may change with the compiler for `repr(Rust)` types.
+- For a hard guarantee, check at compile time: `const _: () = assert!(std::mem::size_of::<Node>() <= 64);`.
+- *Skip* for types whose size nobody depends on; the test then only blocks harmless refactors.
+
+**Mixed readers and writers, with a final consistency check.** `JoinSet` owns the tasks, so a
+panic in any of them surfaces and none outlives the test.
+
+```rust
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn concurrent_reads_and_writes_keep_the_store_consistent() {
+    let store = Arc::new(Store::new().await);
+    let mut tasks = JoinSet::new();
+
+    for writer in 0..10 {
+        let store = Arc::clone(&store);
+        tasks.spawn(async move {
+            for n in 0..100 {
+                store.add(node(writer * 100 + n)).await.unwrap();
+            }
+        });
+    }
+    for _ in 0..20 {
+        let store = Arc::clone(&store);
+        tasks.spawn(async move {
+            for _ in 0..50 {
+                let _ = store.get_any().await;
+            }
+        });
+    }
+
+    while let Some(joined) = tasks.join_next().await {
+        joined.unwrap(); // a panicked task fails the test
+    }
+    assert_eq!(store.count().await.unwrap(), 1_000);
+}
+```
+
+- The final count is the assertion that matters. Stronger still: assert the exact set of IDs, which also catches a duplicate hiding a loss.
+- Give readers something to check too (every value they see is complete and valid), or they only add load.
+
+**A validation property states the rule independently.**
+
+```rust
+proptest! {
+    #[test]
+    fn content_validation_matches_the_rule(content in ".*", max_len in 1usize..10_000) {
+        let accepted = validate_content(&content, max_len).is_ok();
+        let expected = !content.trim().is_empty() && content.len() <= max_len;
+        prop_assert_eq!(accepted, expected);
+    }
+}
+```
+
+- This is useful when the rule is simpler to state than the implementation is to write. When the "expected" line is a copy of the implementation, the test proves nothing; write example tests at the boundaries instead (empty, whitespace only, exactly `max_len`, one over).
+- Decide and state what a length means: bytes (`len()`), `char`s, or grapheme clusters. They differ for non-ASCII text, and the generator `".*"` will find the difference.
+
