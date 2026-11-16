@@ -7006,3 +7006,111 @@ asynchronous?
 idempotency definition; unclassified remote failure paths; rollout steps with no rehearsed
 rollback.
 
+### The service test suite
+
+**Choose the test kind by concern, not by rank.**
+
+| Concern | Cheapest test that catches it |
+|---|---|
+| Endpoint behaviour, routing, serialisation, wiring | Spawned-app integration test over the wire |
+| Domain invariants | Unit or property test |
+| Queries and transactions | Integration test against a real, migrated database |
+| Outbound calls | Mock-server contract test |
+| Auth flows | Both: unit tests for rules, an integration pass for the wire |
+| Migration safety | Schema tests plus the rollout plan |
+
+- **Build the suite in order:** a harness that boots the app under test configuration; isolation (random port, database state per test); mocks for external calls; then helpers and property tests. If a service has no harness, building one is the first task.
+- **A test reads as a user journey:** "create user, post order, expect 201 and a stored row". A helper states intent; a helper that hides the logic under test turns every failure into a harness investigation.
+- **Start from the concerns a change touches,** not from the modules in the diff. No mirror tests that assert a handler returns what it returns.
+- **Existing tests are copied as the style guide.** Fix a fixed-port or live-API test before adding more beside it, and stop the first bypass of the harness.
+- **A mock that matches any request passes everything.** Assert the shape of the outbound request, and see that assertion fail once before trusting it.
+- **Mocks drift on the provider's schedule.** Re-check each against the real contract periodically, not only when tests change.
+- **A fake states what it does not reproduce.** An in-memory repository certifies domain rules, never database behaviour.
+- Repair fixtures in the same change as the migration that breaks them.
+- A second service in one journey calls for a contract pair, one harness test per service, not one test that spawns three services by hand.
+
+**Reject in a service suite:** a fixed port; shared state with no documented boundary; a
+live external call in the deterministic suite; automatic retries of failing tests.
+
+**Flaky tests.**
+
+- A deterministic failure is fixed; rerunning it changes nothing. Never merge on the third rerun's green.
+- An intermittent failure is usually shared state or a missing mock. Check what the test shares first, and run the suite in shuffled order now and then.
+- **Quarantine is triage, not a fix.** A quarantined test has an owner and a date, and the list is capped. A falling flake rate may only mean a growing quarantine.
+- **Sharing state is the easiest speed-up and the wrong one.** Parallel runs and template databases cut set-up cost without touching isolation. A suite developers stop running locally has lost its value.
+
+### Service building blocks
+
+**One error family implements the response contract.** At the service boundary, one
+implementation maps each variant to a status and a serialised body. Handlers never
+hand-build JSON errors.
+
+```rust
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let (status, code) = match &self {
+            ApiError::NotFound { .. } => (StatusCode::NOT_FOUND, "not_found"),
+            ApiError::Invalid { .. } => (StatusCode::UNPROCESSABLE_ENTITY, "invalid"),
+            ApiError::Conflict { .. } => (StatusCode::CONFLICT, "conflict"),
+            ApiError::Internal(source) => {
+                tracing::error!(error = ?source, "internal error");
+                (StatusCode::INTERNAL_SERVER_ERROR, "internal")
+            }
+        };
+        (status, Json(ErrorBody { code, message: self.public_message() })).into_response()
+    }
+}
+```
+
+- **Internal detail is logged, not returned.** The client gets a stable code and a safe message; the cause, the SQL and the stack stay on the server, joined by the correlation id.
+- A new variant gets its message, code and status in the same change. Narrow cases first, catch-all last.
+- Core crates do not implement HTTP traits. The mapping lives in the service crate.
+
+**A failure table for each route.** For every dependency a handler calls, one row: the
+failure (timeout, refused, malformed reply), the status and body the client receives, what
+is logged or counted, and whether the call is retried. A dependency with no row has
+undecided behaviour. Each row has a test that injects the failure.
+
+**Required and enhancing dependencies.** A required dependency fails the request. An
+enhancing one degrades, with a warning and a result tagged by the path that produced it.
+
+```rust
+let primary = primary_result.map_err(SearchError::Primary)?;
+let enriched = match secondary_result {
+    Ok(extra) => merge(primary, extra, Source::Both),
+    Err(error) => {
+        tracing::warn!(%error, "secondary search failed; serving primary only");
+        metrics::counter!("search_degraded_total").increment(1);
+        tag(primary, Source::PrimaryOnly)
+    }
+};
+```
+
+- **Count each path.** A silent fallback hides an outage for as long as the primary holds.
+- *No degradation* where audit or exactness requires every back end.
+
+**One wrapper around outbound clients.** Correlation ids, trace propagation, timeouts, token
+refresh and retry logging live in one wrapper, so every operation gets them.
+
+- It maps transport status to domain errors with context from the call site: service, method and the most specific resource name (a key, a path, a secret's name and never its value). `NotFound` for a known key becomes `KeyNotFound { key }`; the rest become a generic call error carrying the code.
+- Endpoint methods are domain-specific and return domain types. Status handling, decoding and URL building sit in one helper beneath them.
+- It does not retry non-idempotent writes. Generated clients (gRPC, OpenAPI) are always called through it.
+
+**Background work after the response.** Before offering a "run this later" helper, define
+how tasks are registered, observed, drained and reported.
+
+- Track them (`JoinSet`, `TaskTracker`) and await what is pending at shutdown, with a deadline. One task's failure is recorded and never blocks the drain.
+- **This is not a durable queue.** Work that must survive process death goes through the outbox or a job table.
+
+**Smaller rules.**
+
+- **Start a new service with one thin slice** through every layer: typed input, one domain function, persistence, error mapping, a spawned-app test of success and of one failure. It settles the boundaries and the harness while they are cheap to change.
+- **A module of database operations states its transaction contract:** each operation runs inside the caller's transaction; a failure that depends on current state is an error; never panic on a path user input can reach.
+- **Per-tenant services** share expensive resources and cache one facade per tenant in a registry with single creation under concurrency. Tenant identity travels in request-scoped state and is validated before anything is created. *Not when* tenants need separate processes or credentials.
+- **Size results for the consumer and never clip silently.** One function caps every list-returning operation and returns what was cut and how to get the next page.
+- **Tool and RPC schemas are checked on the server** before dispatch, whatever the client claims to have read. One registry lists every operation; a test proves each has an implementation.
+- **Pipelined protocols** enqueue a handler for each expected reply as the request is sent, and pop one per reply. A reply with no handler waiting is a protocol error. Out-of-order replies need correlation ids instead.
+- **Canonical ids come from one module** (Unicode normalisation, case, separators) that every producer calls. Normalisation can collide, so pair the id with its source when uniqueness matters.
+- **One function builds the invariant part of an external command,** with the variable part passed in. A logged command line can expose credentials.
+- **Turning on autoscaling or rolling deploys makes the service multi-instance that day,** not at the first scale-out. Stepwise migrations become mandatory in the same change.
+
