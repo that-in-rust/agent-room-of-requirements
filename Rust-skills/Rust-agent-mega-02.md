@@ -8051,3 +8051,76 @@ separate requirements, not clauses of one.
 
 - **Generated bindings remove payload drift at its source.** Tools such as `tauri-specta` or `ts-rs` derive the TypeScript types from the Rust ones. Without them, keep one fixture that both a Rust test and a front-end test parse.
 
+### Tauri test examples
+
+Write one test per requirement, and name it after the behaviour.
+
+**The command's core, with no runtime:**
+
+```rust
+#[tokio::test]
+async fn sync_rejects_an_empty_workspace_path() {
+    let result = sync_workspace(&test_state(), SyncRequest { path: String::new() }).await;
+    assert!(matches!(result, Err(AppError::InvalidRequest { .. })));
+}
+
+#[test]
+fn app_error_serialises_to_the_shape_the_front_end_expects() {
+    let json = serde_json::to_value(AppError::InvalidRequest { field: "path".into() }).unwrap();
+    assert_eq!(json, serde_json::json!({ "kind": "invalid_request", "field": "path" }));
+}
+```
+
+The second test pins the error's wire shape. That shape is a contract with the front end,
+and a serde attribute change would otherwise break it silently.
+
+**The front end, with IPC mocked:**
+
+```ts
+import { mockIPC, clearMocks } from "@tauri-apps/api/mocks";
+
+afterEach(() => clearMocks());
+
+it("shows a recoverable error when the sync command is denied", async () => {
+  mockIPC((cmd) => {
+    if (cmd === "sync_workspace") {
+      throw { kind: "permission_denied" };
+    }
+  });
+  render(<SyncWorkspaceScreen />);
+  await userEvent.click(screen.getByRole("button", { name: /sync/i }));
+  expect(await screen.findByText(/permission/i)).toBeVisible();
+  expect(screen.getByRole("button", { name: /retry/i })).toBeEnabled();
+});
+```
+
+- Throw the same shape the real command rejects with. A mock that throws `new Error("...")` when the command returns a tagged object tests a path that does not exist.
+- Test the failure and the recovery, not only the success.
+
+**The lifecycle, on a real build:**
+
+1. Launch the primary instance.
+2. Trigger a second launch, or open a deep link.
+3. Assert the arguments or link reach the primary window, and that it takes focus.
+4. Assert there is still one process and one set of background workers.
+
+**A latency bound** belongs in a benchmark or a dedicated performance job with a named
+fixture and machine. A wall-clock assertion inside an ordinary unit test fails on a loaded
+CI runner and gets deleted.
+
+### Tauri review questions
+
+- **Trace one interaction end to end:** front-end event, command, permission declaration, Rust handler, packaged-application behaviour. Does each step have a strict input type, a timeout and a recovery path?
+- What belongs in the front-end contract, the command layer and the core respectively? Is anything in the wrong one?
+- Which boundary needed a capability, sidecar or lifecycle-ownership decision, and where is that decision written down?
+- Which command names, event names and window labels must stay stable? They are public API to the front end and to capability files.
+- Which risk is covered only by a unit test but lives at IPC, permission or lifecycle level?
+
+**What to measure in a shipped desktop application:** command duration, front-end error
+rate, start-up time, bundle size, failure rate by platform, update success and rollback
+count.
+
+**Failure modes to model:** permission drift, unvalidated command input, a blocked main
+thread, path behaviour that differs by platform, a failed or half-applied update, and a
+serialisation mismatch across IPC.
+
