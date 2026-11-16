@@ -5465,3 +5465,97 @@ fn check_compatible(plugin: &BuildInfo, host: &BuildInfo) -> Result<(), PluginEr
 - **Prefer alternatives.** A C-ABI interface (`abi_stable` or hand-written), WebAssembly, or a separate process over IPC all give versioning and isolation that a Rust-ABI `dylib` cannot. Untrusted plugins always run sandboxed or out of process; a loaded library has the host's full privileges.
 - **A binding mirrors the C library's supported ABI version range** and checks a loaded artefact against it before use.
 
+### Fixed layouts, exported ABIs and handlers
+
+**A fixed binary header is checked at compile time and validated after the cast.** For a
+fixed-width network, disk or shared-memory record read by reinterpreting bytes:
+
+```rust
+pub const HEADER_SIZE: usize = 256;
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, CheckedBitPattern, NoUninit)]
+pub struct Header {
+    pub magic: [u8; 4],
+    pub version: u32,
+    pub kind: RecordKind, // #[repr(u8)], also CheckedBitPattern
+    _reserved: [u8; 247],
+}
+
+const _: () = {
+    assert!(size_of::<Header>() == HEADER_SIZE);
+    assert!(offset_of!(Header, kind) == 8);
+};
+
+let header: &Header = bytemuck::checked::try_from_bytes(&buffer[..HEADER_SIZE])?;
+header.validate()?; // magic, version range, lengths within the file
+```
+
+- `NoUninit` refuses a struct with padding, so no uninitialised byte is ever written out. `CheckedBitPattern` rejects bytes that are not a valid `bool` or enum value, where a plain cast would be undefined behaviour.
+- **The cast proves only that the bytes are a valid `Header`.** A `validate()` step checks meaning before any field is used: magic, version, and every length and offset against the real buffer size.
+- **Decide endianness.** A byte cast reads native-endian integers. Store explicitly little-endian fields (`zerocopy`'s byte-order types, or `from_le_bytes` on read) if the data crosses machines. The cast also needs the buffer aligned for the struct; `try_from_bytes` fails otherwise, and `pod_read_unaligned` copies instead.
+- Changing the header changes the assertions and the invalid-byte tests in the same commit.
+- *Not for* formats that must grow. Those want a length-prefixed or tagged encoding, parsed field by field.
+
+**A C ABI exported from Rust** publishes opaque handles and status codes, never a Rust struct
+layout.
+
+- Every handle has a `create` and a `destroy`. Every function returns a status enum with fixed values: zero for success, negative for errors, stable across releases.
+- Callers never see inside a handle; the header declares `typedef struct lib_session lib_session;` and nothing more. In the other direction, never reach into a C library's private struct.
+- For overload-like convenience, generate one real typed symbol per type with a macro, and put any generic facade on the Rust side.
+- The header is generated (`cbindgen`) and checked in CI for freshness.
+
+**Generated bindings and files.**
+
+- A generated file begins with a header naming its generator and the command that regenerates it. Nobody edits it by hand. CI regenerates and fails on a difference.
+- Review the generator and one representative output, not thousands of generated lines; generated code hides a bad abstraction well.
+- **One core, many languages:** a single interface definition generates every language's package around the same opaque core type (`uniffi`, or per-language tools such as `pyo3` and `napi-rs` driven from one definition). A new method goes into the definition and into each language's end-to-end tests, never by hand into one package.
+- **A blocking host method that drives an async Rust future** releases the interpreter lock while it waits, checks for interrupts so Ctrl-C works, and says in its documentation that it blocks.
+- **Bulk data crosses in a columnar or batch format** (Arrow's C data interface, a byte buffer), not as one host object per record. Per-record crossings dominate the run time.
+
+**Untrusted extension code runs in a sandbox behind a byte protocol.** With WebAssembly, the
+host owns a small protocol: serialised input in, bytes out, explicit registration of what
+may be called.
+
+- Every call is fallible I/O: it can trap, time out or return nonsense. Give it fuel or a deadline and a memory limit, and validate the output like any external input.
+- Each host function or WASI capability you grant widens the sandbox. Do not call it a security boundary without reviewing what is exposed.
+- Trusted first-party extensions are plain Rust; the sandbox is a cost paid only for code you do not control.
+
+**A crash signal handler reports once and re-raises.**
+
+```rust
+extern "C" fn on_fatal_signal(signal: i32) {
+    static ENTERED: AtomicBool = AtomicBool::new(false);
+    if !ENTERED.swap(true, Ordering::SeqCst) {
+        // One minimal write(2) to stderr. Nothing else.
+    }
+    restore_default_and_reraise(signal); // sigaction(SIG_DFL), then raise
+}
+```
+
+- Re-raising with the default disposition lets the shell and core-dump tooling see the real termination. The atomic guard stops recursion if the handler itself faults.
+- **Almost nothing is safe inside a signal handler:** no allocation, no locks, no logging framework, no `println!`. A backtrace allocates; printing one is a knowing compromise. No recovery logic belongs there.
+- **For ordinary shutdown signals, do not write a handler.** Use `tokio::signal` or `signal-hook`, which only set a flag or wake a task; the real work runs in normal code.
+
+**Typed arena handles with a niche.**
+
+```rust
+pub struct Handle<T> {
+    index: NonZeroU32,
+    _marker: PhantomData<fn() -> T>,
+}
+
+impl<T> Clone for Handle<T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+impl<T> Copy for Handle<T> {}
+```
+
+- `NonZeroU32` makes `Option<Handle<T>>` four bytes. Store `index + 1`, or reserve slot zero, so that zero never names an element.
+- The type parameter stops a `Handle<Expr>` being used where a `Handle<Type>` is expected. It does not stop a handle from one arena being used with another arena of the same type; that needs a generation or arena id, checked in debug builds.
+- **Implement `Clone`, `Copy`, `PartialEq`, `Eq` and `Hash` by hand.** A derive would add `T: Clone` and the rest, which the handle does not need.
+- `PhantomData<fn() -> T>` keeps the handle `Send` and `Sync` whatever `T` is, and tells the compiler the handle does not own a `T`.
+- This is entirely safe code. Indices plus an arena are the usual way to avoid unsafe pointer graphs.
+
