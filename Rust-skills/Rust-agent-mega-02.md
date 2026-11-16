@@ -4574,3 +4574,95 @@ fn two_increments_are_both_counted() {
 - The code under test must use `loom`'s atomics and locks when built with `--cfg loom`, usually through one small `sync` module of re-exports.
 - For ordinary lock-based code, a stress test under ThreadSanitizer and a look at lock order are better value.
 
+### Concurrency patterns
+
+**Fan out, tag, merge in order.** Workers compute from an immutable input and never touch the
+shared structure. Each result carries its identity; one merge step applies them in a
+deterministic order.
+
+```rust
+let mut tasks = JoinSet::new();
+for (index, item) in items.into_iter().enumerate() {
+    let limit = Arc::clone(&limit);
+    tasks.spawn(async move {
+        let _permit = limit.acquire_owned().await.expect("semaphore is never closed");
+        (index, analyse(item).await)
+    });
+}
+
+let mut results = Vec::new();
+while let Some(joined) = tasks.join_next().await {
+    results.push(joined?); // a JoinError is a panic, kept apart from a domain error
+}
+results.sort_by_key(|(index, _)| *index);
+```
+
+- **Take the permit inside the task,** so every task is spawned and the semaphore alone decides how many run. Size it from the scarce resource (memory, connections, CPU), not from a worker count.
+- Completion order is not input order. Sort by the tag when order matters; output that depends on scheduling is a flaky test and an irreproducible build.
+- **For CPU-bound passes over a shared structure,** each `rayon` worker builds its own diff (`fold`), diffs are merged (`reduce`), and one apply step mutates at the end. The merge must be associative and order-independent, or the merged diff is sorted before applying. *Not when* later items must see earlier mutations.
+- **A sequential and a parallel form of the same kernel** (a plain update and a `compare_exchange` update) must be semantically identical. Test them against each other on the same input.
+- **Build the index first.** Linking records by repeated linear search is quadratic; one pass builds the key-to-parent map.
+
+**Do slow work outside the lock, then recheck.** Construction, I/O and repair never happen
+under a broad lock.
+
+```rust
+if let Some(found) = self.pool.read().get(&key) {
+    return Ok(Arc::clone(found));
+}
+let fresh = Arc::new(Connection::open(&key).await?); // no lock held
+let mut pool = self.pool.write();
+Ok(Arc::clone(pool.entry(key).or_insert(fresh))) // another caller may have won
+```
+
+- The loser of the race discards its duplicate. That is acceptable when construction is cheap enough to waste occasionally.
+- **When it is not, use single-flight:** cache the in-flight initialisation, so concurrent callers share one load. A map from key to `Arc<tokio::sync::OnceCell<T>>` with `get_or_try_init` does this.
+- **Decide what a failed initialisation does.** `get_or_try_init` leaves the cell empty, so the next caller retries, which under a persistent failure is a retry per request; add backoff or cache the failure briefly.
+- **After re-acquiring, revalidate.** The entry may have been removed, replaced or shut down while the lock was released.
+- **Lazy construction moves failures from start-up to first use.** Good for optional or numerous backends; for a required dependency, connect at start-up so a bad configuration fails the deploy, not the first request.
+
+**Backpressure and loss are decisions, written down.**
+
+- **Bound by the unit that costs.** When messages vary widely in size, a count-bounded channel bounds nothing. Reserve capacity in bytes, rows or tokens before sending (a `Semaphore` with `acquire_many` does it), and define what happens to one item larger than the whole limit.
+- **With `Notify`, create the `notified()` future, recheck the condition, then await,** so a wake-up between the check and the wait is not lost.
+- **A lossy queue says so.** Best-effort work (cache warming, compaction hints, telemetry) may `try_send` and drop when full. Comment that it is lossy, count the drops in a metric, and add a periodic full pass if freshness matters. Never for anything durable, billed or user-visible.
+- **Supersedable events coalesce; semantic events do not.** For progress updates and text deltas, keep only the latest pending one per class when the output is full. Before sending a semantic event (start, end, error), flush the pending ones so order holds.
+- **Latest-state streams are `watch`:** a subscriber gets the current value at once, then changes, and may skip intermediate values. Right for a dashboard, wrong for an audit trail.
+- **Debounce file events into stable batches.** Track each path's last event time, flush only paths quiet for the delay, keep deletions and modifications consistent (a delete cancels a pending modify and the reverse), and flush what remains on shutdown.
+- **One writer task behind a bounded channel** owns the file or log, batches, and flushes the remainder when the channel closes. Do the expensive encoding before queueing, not in the writer.
+
+**Lifecycle as explicit states.** A long-running job whose phases have different event loops
+is clearer as one type per state, each returning the next, than as one loop with a status
+flag.
+
+```rust
+pub enum Transition {
+    Stop,
+    Advance(Box<dyn State>),
+}
+
+#[async_trait]
+pub trait State: Send {
+    async fn next(self: Box<Self>, ctx: &mut JobContext) -> Result<Transition, StateError>;
+}
+```
+
+- Each state owns its `select!` loop; allowed transitions are visible in the return values. For a short handler, a plain enum and a `match` is enough.
+
+**Shutdown and restart.**
+
+- **Shutdown has a deadline.** Stop accepting work, cancel, wait for tasks to drain or checkpoint under a timeout, then exit and log what was abandoned. A shutdown that waits for ever is a hang; one that does not wait loses work.
+- **Race a CLI command against Ctrl-C** in `select!`; cancellation is a typed outcome with its own exit code.
+- **Classify persisted recovery state before reloading it.** Durable policy and operator-visible history are kept. Per-process control state (failure counts, an exhausted retry budget, an open breaker) is reset, or a restarted process inherits a failure it has not experienced. Pair the reset with crash backoff so a crash loop does not hammer dependencies.
+- **A "set if absent, with expiry" marker** returns whether this caller won. It suits idempotent "only one starts" jobs. It is not a lock: strict mutual exclusion needs a fencing token checked by the resource.
+- **A concurrency limit from configuration** is `Option<Arc<Semaphore>>`; the unit of work holds an `OwnedSemaphorePermit`, so release happens on every path, including cancellation.
+
+**Smaller rules.**
+
+- **A timeout on every external call,** and one overall deadline passed down, so nested timeouts do not add up past what the caller will wait.
+- **Stdio servers:** blocking threads own stdin and stdout; bounded channels connect them to the async loop.
+- **Streaming HTTP clients** (server-sent events): check the status first, buffer across chunks, split only on complete lines. A line or a UTF-8 character can span two chunks.
+- **Validate a stream's contract before returning it** (schema, arity), then adapt every item the same way; fail once at the start, not on each item.
+- **Never read mutable UI or editor state across an `.await`.** Take an immutable snapshot, work on it off the main thread, and apply the result in one update after checking it is not stale.
+- **A library accepts a runtime handle** instead of creating its own runtime.
+
