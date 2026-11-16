@@ -9362,3 +9362,152 @@ disallowed-methods = [
 - `disallowed-types` and `disallowed-macros` work the same way. Keep exceptions few and justified.
 - The lint matches the resolved path, so it does not catch the same function reached through a re-export it does not know, or through a dependency. It is a guard-rail for your own code, not a sandbox.
 
+### External processes, retries and shared vocabularies
+
+**A timed child process, without pipe deadlock.** A parent that waits for exit before
+reading the child's output deadlocks as soon as the child fills a pipe buffer. Drain both
+pipes while waiting.
+
+```rust
+use std::io::Read;
+use std::process::{Command, Stdio};
+use wait_timeout::ChildExt;                       // adds wait_timeout to std's Child
+
+pub enum TimedOutput {
+    Finished { status: ExitStatus, stdout: Vec<u8>, stderr: Vec<u8> },
+    TimedOut { stdout: Vec<u8>, stderr: Vec<u8> },
+}
+
+fn drain(pipe: Option<impl Read + Send + 'static>, cap: u64) -> JoinHandle<Vec<u8>> {
+    std::thread::spawn(move || {
+        let mut kept = Vec::new();
+        if let Some(pipe) = pipe {
+            let mut limited = pipe.take(cap);
+            let _ = limited.read_to_end(&mut kept);
+            // Keep reading and discarding, so a noisy child never blocks on a full pipe.
+            let _ = std::io::copy(&mut limited.into_inner(), &mut std::io::sink());
+        }
+        kept
+    })
+}
+
+pub fn run_with_timeout(mut command: Command, timeout: Duration) -> io::Result<TimedOutput> {
+    let mut child = command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+    let stdout = drain(child.stdout.take(), OUTPUT_CAP_BYTES);
+    let stderr = drain(child.stderr.take(), OUTPUT_CAP_BYTES);
+
+    let status = match child.wait_timeout(timeout)? {
+        Some(status) => Some(status),
+        None => {
+            let _ = child.kill();
+            let _ = child.wait();                 // reap it, or it stays a zombie
+            None
+        }
+    };
+    let stdout = stdout.join().unwrap_or_default();
+    let stderr = stderr.join().unwrap_or_default();
+    Ok(match status {
+        Some(status) => TimedOutput::Finished { status, stdout, stderr },
+        None => TimedOutput::TimedOut { stdout, stderr },
+    })
+}
+```
+
+- **One wrapper owns the child's lifecycle and pipes.** Every external command goes through it.
+- **A timeout is data, with the partial output kept.** After the deadline: kill, then wait.
+- **Cap what is captured, and keep draining past the cap.** Stopping the read at the cap brings the deadlock back.
+- **Give the child no terminal input** (`Stdio::null()`) unless it needs some. A tool that prompts would otherwise hang until the deadline.
+- **Killing the child does not kill its children.** A grandchild that inherited the pipes keeps them open, and the drain threads never finish. Where the tool spawns its own processes, put it in a process group (Unix) or a job object (Windows) and kill the group.
+- In async code, `tokio::process::Command` with `kill_on_drop(true)` and `tokio::time::timeout` around `wait_with_output` does the same job, with the same grandchild caveat.
+- Test: a timeout, a non-zero exit, and output larger than the pipe buffer on both streams.
+- This is for run-to-completion tools. Interactive and long-lived children need a supervisor (section 15 shows one).
+
+**When a child's stdio is a protocol transport,** stdout carries framed messages only and
+stderr carries its logs.
+
+- Deny `clippy::print_stdout` in that crate, and point the logger at stderr.
+- Each direction (stdin writer, stdout reader, stderr reader) is its own task or thread. Reading stderr is not optional: an unread stderr pipe fills and blocks the child.
+- Use a socket or a named pipe when stdout must stay user-facing.
+
+**Classify a failure before retrying it.** Automation that retries CI or a flaky command
+decides first whether the failure is transient, and **deterministic is the default.**
+
+```rust
+const MAX_CLASSIFY_INPUT_SIZE: usize = 1024 * 1024;
+
+pub fn classify_failure(output: &str) -> FlakeClassification {
+    let mut end = output.len().min(MAX_CLASSIFY_INPUT_SIZE);
+    while !output.is_char_boundary(end) {
+        end -= 1;                 // slicing inside a multi-byte character panics
+    }
+    for line in output[..end].lines() {
+        let line = line.trim().to_lowercase();
+        if line.contains("eaddrinuse") || line.contains("address already in use") {
+            return FlakeClassification::Transient {
+                category: FlakeCategory::PortConflict,
+                matched_line: line,
+            };
+        }
+    }
+    FlakeClassification::Deterministic
+}
+```
+
+- **Only a named transient category retries,** under a capped policy, and each retry is logged with the line that matched.
+- Each category has a positive fixture and a near-miss negative one.
+- **Count the retries and review them.** A category that fires weekly is a defect to fix, not a flake to absorb. A test that fails because of a real race is not "transient".
+- Do not add a classifier before the failure kinds are understood. It hides regressions.
+- The boundary loop above is the general rule for cutting a `str` at a byte limit. `str::floor_char_boundary` does it in one call on toolchains where it is stable.
+
+**Integration metadata lives in one table.** Identifiers, aliases, credential environment
+keys and defaults for each provider are one `const` table, not conditionals spread through
+the code.
+
+```rust
+pub struct ProviderMetadata {
+    pub canonical_id: &'static str,
+    pub aliases: &'static [&'static str],
+    pub auth_env_keys: &'static [&'static str],
+    pub routing_defaults: Option<ProviderRoutingDefaults>,
+}
+
+pub const PROVIDER_METADATA: &[ProviderMetadata] = &[/* one entry per provider */];
+```
+
+- Adding an integration starts with its entry. A test checks that identifiers and aliases are unique across the table.
+- A static table suits a set known at build time. It does not suit plugins registered at run time, or data that changes faster than releases.
+
+**Telemetry names are an interface.** Attribute keys, metric names and propagation header
+names that cross crates, or that a dashboard or alert reads, are constants in one module.
+
+```rust
+pub mod attribute {
+    pub const RETRY_ATTEMPT: &str = "retry.attempt";
+    pub const JOB_ID: &str = "execution.job.id";
+    pub const SESSION_ID: &str = "session.id";
+}
+```
+
+- **Renaming one breaks dashboards and alerts silently.** Treat a rename as a breaking change.
+- Search the module before adding a key. Follow an existing convention (OpenTelemetry's semantic conventions) where one covers the concept.
+- One-off debug labels stay local. Give the module naming rules and an owner, or it becomes a dumping ground.
+
+**Resolve resource locations before entering a sandbox.** Resolve and cache the paths the
+process needs before dropping privileges, and derive the sandbox's access list from the
+same function. A new location then cannot be added to one and forgotten in the other.
+Development-only fallbacks, such as searching the working directory, are compiled out or
+guarded in production.
+
+**Smaller rules from editing and analysis tools.**
+
+- **After an automated edit, confirm structurally that the intended item changed and report every unexpected one.** Pair this with a build or tests: structure does not prove behaviour.
+- **A scanner layers its ignore rules in a documented order** (built-in defaults, the tool's ignore file, the project's; `ignore::WalkBuilder`), reports which are active, and offers an explicit include override for audits.
+- **A repair pass at an ingestion boundary returns counts and reasons** for what it normalised or dropped. It does not hide a violation that should fail.
+- **Read parse-tree children by field name, not by position** (`node.child_by_field_name("name")`). Positions change when the grammar adds an optional child.
+- **Dense per-character metadata over a large text is stored as runs,** not one object per character.
+- **An excerpt shown to a reader or a model is cut on structure:** whole lines, with the enclosing signature, overlapping ranges merged, in a deterministic order.
+
