@@ -5144,3 +5144,116 @@ loop {
 - **Round-robin by `fetch_add(1, Relaxed) % len`** is fine for spreading load over candidates that are already filtered. A least-loaded picker rotates its ties, or the first candidate always wins.
 - **Bridging to a foreign event loop** (a UI loop, another language's runtime): the Rust future holds a guard that cancels the foreign task if dropped early, and all calls into the foreign loop go through its thread-safe entry point. Prefer a maintained adapter crate to a hand-written bridge.
 
+### Streams, hedging and tight loops
+
+**Hedged requests, for idempotent reads only.** Start the primary; start a backup on another
+replica only if the primary has not answered after a grace period. The first success wins.
+
+```rust
+let primary = fetch(replica_a, &key);
+tokio::pin!(primary);
+
+tokio::select! {
+    result = &mut primary => match result {
+        Ok(value) => return Ok(value),
+        Err(_) => return fetch(replica_b, &key).await, // failed early: fall back now
+    },
+    _ = tokio::time::sleep(grace) => {}
+}
+
+tokio::select! {
+    Ok(value) = &mut primary => Ok(value),
+    Ok(value) = fetch(replica_b, &key) => Ok(value),
+    else => Err(Error::BothReplicasFailed),
+}
+```
+
+- Set the grace period near the 95th-percentile latency, so only the slow tail is duplicated: a few per cent more load for a much shorter tail.
+- Dropping the loser cancels it locally; the remote server may still do the work.
+- **Never hedge a write or anything with a side effect.** Never hedge into an overloaded cluster: the duplicates make the overload worse. Cap hedges as a fraction of traffic.
+
+**A stream ends when its channel closes.** Turning a blocking producer (a database cursor, a
+directory walk) into an async stream: a thread or `spawn_blocking` task sends items on a
+bounded channel and the receiver is the stream.
+
+- The end is the last sender being dropped, which also happens on early return and on panic. Never an in-band magic value that a real item could equal. If "finished cleanly" must be distinguished from "producer died", send `Result` items and a final explicit `Done`.
+- The producer stops when the send fails, which means the consumer went away. That is the cancellation path, so check every send.
+- Fan-out width comes from an explicit limit, never from the size of the input.
+- A small result-set type over a stream offers `one`, `all` and the raw stream, with an idempotent `close` and a terminal error that can still be read after the drain.
+
+**Check for cancellation every N iterations of a tight loop.** Synchronous CPU work cannot be
+dropped like a future; it has to look.
+
+```rust
+const CHECK_EVERY: usize = 10_000;
+
+for (index, item) in items.iter().enumerate() {
+    if index % CHECK_EVERY == 0 && cancelled.load(Ordering::Relaxed) {
+        return Err(Error::Cancelled);
+    }
+    process(item);
+}
+```
+
+- N trades cancellation latency against overhead; choose it from the cost of one iteration so the check runs every few milliseconds. The flag is passed in, not global.
+- In an async task, a long loop also needs `tokio::task::yield_now().await` at intervals, or it starves its neighbours and cannot be cancelled either.
+
+## 10. Unsafe and FFI
+
+**Defaults.**
+
+- **Most code needs no `unsafe`.** Before writing it, look for a safe form: slices and iterators in place of pointer arithmetic, `bytemuck` or `zerocopy` in place of transmutes, `std` atomics and locks, a maintained `-sys` crate with a safe wrapper.
+- **`unsafe` does not switch off the rules; it makes you the one who checks them.** Each block rests on an invariant the compiler cannot see. Write it down.
+- **Keep it small, private and behind a safe API** whose every use is sound. If safe callers can cause undefined behaviour through your safe function, the function is unsound, however unlikely the call.
+- **Unsafe as an optimisation needs a measurement.** `get_unchecked` to skip a bounds check is rarely worth it; restructuring into iterators usually removes the check safely.
+- Application crates can set `#![forbid(unsafe_code)]`. Crates that need unsafe set `#![deny(unsafe_op_in_unsafe_fn)]` and `clippy::undocumented_unsafe_blocks`.
+
+### Writing an unsafe block
+
+```rust
+/// Returns the element at `index` without a bounds check.
+///
+/// # Safety
+///
+/// `index` must be less than `self.len()`.
+pub unsafe fn get_unchecked(&self, index: usize) -> &T {
+    // SAFETY: the caller guarantees `index < self.len`, and `self.ptr` points to
+    // `self.len` initialised elements for as long as `self` is borrowed.
+    unsafe { &*self.ptr.as_ptr().add(index) }
+}
+```
+
+- **An `unsafe fn` has a `# Safety` section** stating what the caller must guarantee. **Every `unsafe` block has a `// SAFETY:` comment** stating why those guarantees hold here. "This is safe" is not a reason; name the invariant and where it is established.
+- **One unsafe operation per block where practical,** so each comment covers one claim.
+- **The invariant lives in a type.** Fields that the unsafe code relies on are private, and every safe method preserves the invariant. The whole module is the trust boundary: any code that can touch those fields can break the unsafe block, even though it contains no `unsafe` itself.
+- **An `unsafe trait`** is for a property that unsafe code elsewhere relies on (`Send`, `Sync`, "this layout is plain bytes"). The `unsafe impl` carries its own `SAFETY` comment.
+- **Hand-written `unsafe impl Send` or `Sync` is a strong claim.** State why access from several threads is sound: the type owns its pointee exclusively, or every access is synchronised.
+
+### What must always hold
+
+| Rule | The usual violation |
+|---|---|
+| `&mut T` is unique; `&T` is not mutated (outside `UnsafeCell`) | two `&mut` made from one raw pointer; writing through a pointer while a `&` is live |
+| A reference is non-null, aligned and points to a valid, initialised `T` | `&*ptr` on a null or dangling pointer; a reference to a `repr(packed)` field |
+| Every value is valid for its type | a `bool` other than 0 or 1, an enum with an unknown discriminant, a `char` that is a surrogate, uninitialised integers |
+| Pointer arithmetic stays within one allocation | `ptr.add(n)` past the end plus one |
+| Memory is freed once, by the allocator that made it, with the same layout | `Box::from_raw` on a pointer from C's `malloc`; a `Vec` rebuilt with the wrong capacity |
+| No data races | a `static mut` touched from two threads |
+
+- **Breaking these is undefined behaviour even when the program appears to work.** The optimiser assumes they hold, so the failure can appear later, elsewhere, or only at another optimisation level.
+- **Creating an invalid reference is already undefined behaviour,** used or not. Stay with raw pointers (`&raw const`, `&raw mut`, `ptr::read`, `ptr::write`) until a valid reference can be made.
+- **`MaybeUninit<T>` for memory not yet initialised.** Write through `as_mut_ptr()` or `write()`, and call `assume_init` only after every part is written. Never make a `&mut T` or `&T` to it earlier. `mem::uninitialized` and `mem::zeroed` on a type with invalid zero bytes are always wrong.
+
+```rust
+let mut buffer = [const { MaybeUninit::<u8>::uninit() }; 4];
+for (index, slot) in buffer.iter_mut().enumerate() {
+    slot.write(index as u8);
+}
+// SAFETY: the loop above initialised all four elements.
+let bytes: [u8; 4] = unsafe { mem::transmute(buffer) };
+```
+
+- **Panic safety.** If code between two unsafe steps can panic (a user closure, `clone`, an allocation), the unwind runs destructors over the half-finished state. Keep the structure valid at every panic point, or use a guard whose `Drop` repairs it. Setting a length before the elements are written is the classic mistake.
+- **`static mut` is almost never right.** Use an atomic, a `Mutex`, `OnceLock`, or an `UnsafeCell` wrapper with a documented `Sync` argument.
+- **`transmute` is the last resort.** Prefer `to_ne_bytes`/`from_ne_bytes`, pointer `cast`, `bytemuck`, or a `union`. Never transmute between types whose layout is unspecified, and never to extend a lifetime.
+
