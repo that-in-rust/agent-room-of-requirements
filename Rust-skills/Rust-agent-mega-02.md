@@ -9293,3 +9293,72 @@ fn hint_for_source<'a>(config: &'a Config, source: &SessionSource) -> Option<&'a
 - `cargo clean` is a last resort for build errors that make no sense, usually after a toolchain or workspace-configuration change. If it is needed routinely, a build script or cache key is wrong; find it.
 - Fuzz targets live in the repository (`cargo fuzz init`, `cargo fuzz add parse`), with a committed seed corpus and every minimised crash kept as a regression test. CI runs each target briefly; long runs are scheduled.
 
+### Further tooling patterns
+
+Most of these come from tools that serve automated callers. They are narrower than the
+rules above; apply one when you are building that kind of thing.
+
+**A runner emits a typed event for every transition,** independent of how events are
+transported, and takes its side-effecting call as an injected trait or closure so it can be
+tested without the effect.
+
+```rust
+enum PlanEvent {
+    PlanStarted { plan_id: PlanId, step_count: usize },
+    StepCompleted { step_id: StepId, tool: String, output_preview: String },
+    StepFailed { step_id: StepId, tool: String, error: StepError },
+    PlanAborted { plan_id: PlanId, failed_step: StepId },
+    PlanCompleted { plan_id: PlanId },
+}
+```
+
+- A failure to bind arguments is a different error kind from a failure of the tool itself.
+- Previews are length-capped. Extend behaviour by adding variants, not by changing existing ones.
+- This fits a linear plan. Replanning, fan-out and conditionals need a real state machine.
+
+**Limits and truncation.**
+
+```rust
+pub(crate) const READ_FILE_SOFT_CAP_BYTES: usize = 500 * 1024;       // truncate, and say so
+pub(crate) const READ_FILE_HARD_CAP_BYTES: usize = 2 * 1024 * 1024;  // refuse
+pub(crate) const CALL_GRAPH_DEFAULT_LIMIT: usize = 200;
+```
+
+- **Size limits are named constants with a soft cap and a hard cap,** and every list-returning operation has a default limit.
+- **Apply a cap before formatting, and carry the truncation fact with the data** (the original count beside the kept rows), not in a side channel. Later transformations preserve it, and the warning is rendered from it at the end. Test under the limit, over it, and an invalid limit setting.
+- **An empty result is a first-class response,** with a hint about what to try next, and is tested as carefully as a success. Keep hints from being so prescriptive that they steer callers off valid paths.
+- **When evidence is quoted from files, re-check it is current before emitting it.** A snippet whose source range no longer hashes to the stored value is dropped; stale evidence is worse than none. Say what was omitted.
+- **A threshold is `Option<f32>` when "no threshold" is a valid setting.** `0.0` and absent are different.
+
+**Wire-level details.**
+
+- **Chunked framing:** each chunk is a length followed by that many bytes, and a zero-length chunk ends the message. The sender need not know the total size, and the receiver can skip an unknown message whole. Decoder tests: one chunk, several, two messages back to back, the end marker, and **the input split at every byte boundary.** That last test finds most framing bugs.
+- **Version negotiation:** the opening frame is fixed-size, the server answers with one chosen version or an explicit "none", and any reserved escape value is a protocol constant, never treated as an ordinary version. Test rejection, highest-common selection and the escape. Use a standard negotiator (TLS ALPN, HTTP) where one is available.
+- **A tool's advertised schema and its handler are separate,** and the schema is derived from the typed argument struct (`schemars::JsonSchema`, doc comments as descriptions). An unknown tool name is an explicit error. A test inspects the generated schema.
+
+**Heuristics and hints.**
+
+- **Keyword heuristics are pure functions that match on word boundaries** (`\b` with `regex::escape`, compiled once in a `LazyLock`), so `class` does not match `classification`. Each keyword has one positive test and one near-miss negative test.
+- **Model output handed to code is parsed into a contract.** "Could not parse" is a typed result, distinct from "parsed, no match".
+- **Historical data is a bounded hint, never a dependency of a latency-sensitive path.** The lookup runs under a timeout, and a miss or timeout yields `None`. Advice from it applies only above a named sample floor and success threshold.
+- Deterministic policy rules win over similarity scores.
+
+**A local environment launcher** separates "what this service is" from "how services are
+started, logged, checked and stopped". A new service implements a small description trait
+(identifier, image, ports) and reuses the shared tasks for logs, lifecycle and readiness.
+Keep a seam around command execution so the launcher is testable without starting anything.
+
+**Encode a dependency boundary as a lint with an actionable message:**
+
+```toml
+# clippy.toml
+disallowed-methods = [
+    { path = "std::process::Command::new", reason = "use crate::exec::run_command (sandboxed, logged)" },
+]
+```
+
+- **Deny `clippy::disallowed_methods` at the crate root;** the wrapper module carries the only `#[allow]`, with a reason.
+- **Add the rule only once the replacement exists and is good enough.** A ban with no usable alternative produces a scatter of `#[allow]` attributes.
+- `disallowed-types` and `disallowed-macros` work the same way. Keep exceptions few and justified.
+- The lint matches the resolved path, so it does not catch the same function reached through a re-export it does not know, or through a dependency. It is a guard-rail for your own code, not a sandbox.
+
