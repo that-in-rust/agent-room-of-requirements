@@ -8703,3 +8703,89 @@ async fn upload_attachment(request: Request<'_>, state: State<'_, AppState>) -> 
 - **Never grant broad shell access because the application needs one safe sidecar.**
 - The binary is declared in the bundle configuration (`externalBin`) and exists on disk once per target, with the target triple as a suffix. A missing triple fails only when building for that platform.
 
+### Windows, tray and test layers in practice
+
+**Each window has a unique, stable label, and capabilities attach to labels:**
+
+```rust
+.setup(|app| {
+    WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+        .title("Notes")
+        .build()?;
+    WebviewWindowBuilder::new(app, "preview", WebviewUrl::App("preview.html".into()))
+        .title("Preview")
+        .build()?;
+    Ok(())
+})
+```
+
+```json
+[
+  { "identifier": "main-window", "windows": ["main"], "permissions": ["core:default", "dialog:allow-open"] },
+  { "identifier": "preview-window", "windows": ["preview"], "permissions": ["core:window:allow-close"] },
+  { "identifier": "desktop-only", "windows": ["main"], "platforms": ["macOS", "windows", "linux"], "permissions": ["global-shortcut:allow-register"] }
+]
+```
+
+- **Capabilities that name the same window add up.** A window's real permission set is the union of every capability listing its label, including any with a wildcard. Review the union, not one file.
+- **Keep a high-privilege window isolated:** its own label, its own capability, and no shared wildcard.
+- **A window that renders untrusted or remote content gets the smallest set,** ideally none. Markdown previews, embedded web pages and anything showing user-supplied HTML are in this group.
+- **The ability to create windows is itself a privilege.** A low-privilege window that can open a window with a privileged label has escalated. Create windows from Rust, with labels chosen there.
+- **Dynamic labels** (`editor-1`, `editor-2`) need a capability pattern; make the pattern as narrow as the naming scheme.
+- Use the `platforms` field for a capability that should exist only on some operating systems.
+- Key all runtime window logic by label. Titles are for people and get translated.
+
+**Tray and menu events are handled in one place, by stable identifier:**
+
+```rust
+.setup(|app| {
+    let show = MenuItem::with_id(app, "show", "Show window", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&show, &quit])?;
+
+    TrayIconBuilder::with_id("main-tray")
+        .icon(app.default_window_icon().cloned().ok_or("missing application icon")?)
+        .menu(&menu)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "show" => window::reveal_main(app),
+            "quit" => lifecycle::request_quit(app),
+            other => tracing::warn!(id = other, "unhandled tray menu item"),
+        })
+        .build(app)?;
+    Ok(())
+})
+```
+
+- **Menu item identifiers are stable and machine-readable;** labels are display text.
+- **Quit goes through one function** that stops sidecars and flushes state, whether it came from the tray, a menu, a shortcut or the last window closing.
+- The tray needs the `tray-icon` feature enabled on the `tauri` crate.
+- Build the tray once. Rebuilding it on every state change leaves duplicate icons on some platforms; update the existing menu items.
+- Tray behaviour differs by platform: left click, right click and whether a tray exists at all (some Linux desktops have none). Never make the tray the only way to reach a function.
+
+**Test layers.** Two carry most of the weight: front-end tests with IPC mocked, and Rust
+tests of commands and the core. End-to-end tests on a built application add confidence
+about packaging and lifecycle, and are kept few.
+
+```typescript
+import { clearMocks, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
+
+afterEach(() => clearMocks());
+
+test("the settings screen shows the stored theme", async () => {
+  mockWindows("main");
+  mockIPC((cmd, args) => {
+    if (cmd === "read_settings") return { theme: "dark" };
+    throw new Error("unexpected command " + cmd);
+  });
+  render(<SettingsScreen />);
+  expect(await screen.findByLabelText(/theme/i)).toHaveValue("dark");
+});
+```
+
+- **Test your code through the mock, not the mock itself.** A test that calls `invoke` and asserts the value the mock just returned verifies nothing.
+- **Make the mock reject unexpected commands.** A handler that returns `undefined` for unknown names hides a renamed command.
+- **Assert the arguments** the code sent, since argument drift is the common failure.
+- **`clearMocks()` after every test,** or later tests pass against a stale handler.
+- Use `mockWindows(...)` for logic that depends on window labels, and `shouldMockEvents: true` for flows driven by events.
+- The WebDriver-based end-to-end support does not cover the macOS desktop webview. Plan another check for macOS-only behaviour: a manual run list, or a smoke script.
+
