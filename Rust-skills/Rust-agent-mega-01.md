@@ -1633,6 +1633,18 @@ Tests round-trip representative payloads, assert that the subject constants matc
 - **Compiler objects do not cross a process or interface boundary.** A tool that shows compiler state defines serialisable domain types beside its compiler adapter. Snapshot tests assert the structure of the output, not debug strings.
 - **A compiler callback only chooses the phase.** It stops on errors, skips build scripts, runs the analysis, and then stops in test runs or continues so that Cargo still gets its build. An analysis that needs borrow-checker facts enables them in the adapter, and one fixture fails if they are missing. The dataflow engine is tested alone on a tiny control-flow graph.
 
+**Syntax queries, grammar lookup and degraded modes.**
+
+- **Captures name roles, not node kinds.** A query file tags nodes with role captures that mean the same thing in every language: `@open` and `@close` (plus `@intermediate` and `@container`) for bracket matching, or `@function.name`, `@function.params`, `@function.return_type`, `@function.body` and `@function.def` for extraction. Alternations (`["[[" "["] @opening`) absorb syntax variants and `(_)?` marks an optional child, so one consumer reads every language's query file without a per-language branch.
+- **One function maps a language name to a grammar, and an unknown name is `None`.** The caller decides what a missing grammar means: skip the file, report it, or fall back. A missing or unloadable grammar disables that one feature for that one file and never fails the whole run. Dialects with their own grammar get their own arm (TypeScript and TSX are two grammars); parsing a dialect with a "close enough" grammar yields error nodes and silently wrong facts.
+- **A file that mixes languages is split before it is parsed.** Feeding a whole template or component file (front matter, markup, script blocks) to one language's grammar produces a top-level error node and no facts. Locate the regions first, parse each with its own grammar or included ranges, and keep a fixture with an unterminated or malformed region.
+- **A degraded mode does strictly less, never a guess.** When the syntax tree is unavailable, the text fallback performs only transformations that are safe without structure (strip comments, normalise whitespace) and reports that it ran. It never renames identifiers or rewrites code.
+- **Language differences are table rows.** A metric or extractor that differs by language only in which node kinds count (branch nodes for a complexity score, declaration nodes for a symbol list) keeps one generic tree walker and a per-language table of node kinds. Adding a language adds a row and a fixture, not a function.
+- **Fields filled by a later pass say so.** A syntax-tree field that the parser cannot know (a resolved scope depth, a symbol id, an inferred type) is an `Option` initialised to `None`, with a doc comment naming the pass that fills it. Code after that pass reads it through an accessor that returns an error, not a default, when it is still `None`. When many fields share the pattern, give the later stage its own tree type.
+- **Long parses read chunks and can be cancelled.** A parser driven from a rope or a paged buffer takes a chunk callback keyed by byte offset instead of one contiguous string, and a progress callback or deadline lets the caller abandon a parse that a newer edit has made stale.
+- **An intermediate representation documents its producer and has an interpreter.** The module that defines an IR states which pass produces it and which consumes it. A small interpreter over the IR lets lowering be tested by running programs before the final back end exists, and it stays as the reference when the back end is later optimised.
+
+
 ### Domain context packs
 
 - **CLI and batch tools.** Path: `clap`, `tracing`, `ExitCode` for process semantics, typed config parsed at startup, `anyhow` at `main` and `thiserror` in the reusable core. Risks: ambiguous exit behavior, config parsing drift, poor diagnostics, blocking or unbounded memory on large input. Verify: command golden tests, config parse failures, exit-code tests, large-input behavior.
@@ -2169,6 +2181,14 @@ fn build_trials() -> Vec<Trial> {
 - **One recording fake tests every layer.** A fake inner adapter records calls and injects errors. Each wrapper layer is tested with it for forwarding of untouched operations, retry counts, timeout cancellation, metric emission and error preservation.
 - **Sinks do not change matches.** Run one matcher with two sinks and assert identical offsets. A sink that returns `false` stops the search, and the finish step runs exactly once.
 - **Every bundled query compiles.** Continuous integration compiles each query file against its grammar and fails on an unknown capture name.
+
+**Fixtures, stubs and quality benchmarks for analysis tools.**
+
+- **One fixture per language feature.** An indexer, highlighter or extractor keeps small input files named after the syntax feature they exercise (private members, nested generics, decorators), with expected output in a parallel directory. Coverage is counted in features handled, not files processed.
+- **A reported crash becomes a fixture.** The smallest input from a bug report (deeply nested unterminated delimiters, a truncated declaration) is committed as a test input carrying the issue reference, so termination and recovery on malformed input stay tested.
+- **An unimplemented check must not look like a clean result.** A detector, rule or analyser whose body is still a stub returns an explicit "not implemented" error or status, or is left out of the registry. A stub that returns an empty list is indistinguishable from "no findings" and turns a missing feature into a false all-clear. A test asserts that every registered check reports at least one finding on a fixture built to trigger it.
+- **A quality benchmark names its ground truth.** A benchmark of an analysis or retrieval tool declares one primary measure (recall of callers, for example), its secondary measures (precision, latency), an independent source of truth (a language server or compiler's answer over a fixed corpus) and a dataset version constant. Every tool under comparison runs through the same adapter interface, and a result is reported with the dataset version it was measured on.
+
 
 ### Verification rules by risk
 
@@ -2842,6 +2862,17 @@ pub trait Scalar:
 - The full internal trace and the redacted transport form are distinct. Run the redaction path before sending a trace to a client.
 - If updates can arrive from clients or out of order, an impossible update is a typed error, never a `panic!`. Replacing the last step assumes ordered, single-threaded updates.
 - Compression loses forensic detail unless full traces are kept elsewhere.
+
+**Borrowed conversions between representations.** When a conversion only reads its source (dense to sparse, tree to flat list, config to plan), implement `From<&Source>` so the caller keeps the original, and have it delegate to a named function that can be tested and benchmarked on its own. Add `From<Source>` only when consuming the source saves a copy.
+
+```rust
+impl From<&DenseMatrix> for SparseMatrix {
+    fn from(dense: &DenseMatrix) -> Self {
+        dense_to_sparse(dense)
+    }
+}
+```
+
 
 ### Core idioms with code
 
@@ -5192,6 +5223,13 @@ A bridge test calls several methods through the foreign ABI, so the shared runti
 
 **Temporary OS resources need more than `Drop`.** A type that creates a temporary system resource through external commands (a signing keychain, a mount) deletes it in `Drop` and also offers an explicit cleanup call, because `Drop` does not run on abort or kill. Every command goes through one helper that maps a failure to a structured error. A mock command runner asserts the command sequence.
 
+**Closures and state handed to a C library.**
+
+- A callback registered with a C API that takes a function pointer and a user-data pointer is a boxed context struct (the closure plus any buffer the callback must keep alive between calls). Pass `Box::into_raw` as the user data and register an `extern "C"` function that casts the pointer back and calls the closure.
+- The box is reclaimed with `Box::from_raw` in exactly one place, reached both when the callback is replaced and when the owning wrapper is dropped. Clear the registration in the C library before freeing, so the library never holds a dangling pointer.
+- State exposed to a single-threaded host runtime (an editor's scripting engine, a UI thread) can be `Rc<RefCell<T>>`; the wrapper type is then `!Send`, which is the correct statement of the host's threading rule. Do not reach for `Arc<Mutex<T>>` to silence the compiler here. Positions crossing that boundary are newtypes (byte offset, point, range) converted at the edge, because the host and the library often count in different units.
+
+
 ## 11. Performance
 
 ### Performance without sacrificing correctness
@@ -6062,6 +6100,12 @@ impl ValidityBuilder {
 - **Archives need explicit parent directories.** A tar builder emits a directory entry for every ancestor, top-down, and keeps a set of the ones already written.
 - **A vector with a read cursor is a queue.** In fixed-capacity or allocation-free code, push to a vector and advance an index instead of removing from the front. Do not discard a failed push on a fixed-capacity vector unless an invariant proves the capacity.
 
+**Benchmarks for paired paths and for caches.**
+
+- A generic path and its specialised fast path are two benchmarks over the same input, built the same way, with the path in the benchmark name (`dot_generic`, `dot_dense_specialised`). A specialisation that has no paired benchmark has no evidence that it is faster.
+- A cache bounded by memory keeps its total size as a running counter updated on insert and evict. Re-summing entry sizes on each insert makes every insert linear in the cache size. Benchmark eviction and size accounting separately from lookup, with warm-up iterations before timing.
+
+
 ### Benchmark harness (criterion)
 
 ```rust
@@ -6604,6 +6648,13 @@ The host application implements the trait on its own state, and a test uses the 
 **Clients of external APIs.** The client takes its base URL as a parameter so tests can point it at a mock server. It sets a timeout and a user agent, and clamps paging parameters to the provider's limits. Each status maps to a domain error: authentication, rate limit after retries, and invalid query with the provider's validation message parsed out. Tests use tiny delays or an injected sleep, never real waits.
 
 **Dynamic SQL identifiers go through one helper.** Every public method that formats a table or column name into SQL calls the same validation function first; values are always bound parameters. A batch upsert runs in one transaction, and an empty batch returns early. Database tests use random table names and probe concurrency through cloned handles.
+
+**Instants and query modules in the database layer.**
+
+- An absolute point in time is stored in a time-zone-aware column type and mapped to `DateTime<Utc>`. A zone-less column forces every writer to strip the offset and every reader to remember that the value "is really UTC". When migrating an existing zone-less column, convert in place and state in the migration which zone the old values are interpreted in.
+- Database code is split into one module per aggregate, each adding methods to the database handle. A method is named after the domain operation (`join_channel_buffer`, not `insert_row`), takes id newtypes, and its doc comment states what it returns and what it changes.
+- An operation whose completion requires telling other parties returns a result struct listing them (the remaining collaborators, the affected connections). The caller sends the notifications after the transaction commits; the database layer never sends them itself.
+
 
 ### Backend security hardening checklist
 
@@ -9323,6 +9374,9 @@ if results.len() < MINIMUM_RESULTS {
 - **Bindings forward.** A Node or Python binding crate exposes functions that forward to the Rust library and holds no behaviour. The binding's smoke test and the Rust tests run the same fixture arguments.
 
 **Paths that write differ from paths that read.** After validation, an existing target and a writeable target are separate types, and the writeable one carries its cleanup. Validation also rejects hidden components, backslashes and doubled separators. Every error shows the path as the user typed it.
+
+**Canonical paths handed to other programs.** On Windows `std::fs::canonicalize` returns extended-length paths (`\\?\C:\...`) that many compilers, shells and build tools reject. When a canonical path is passed to a child process, written into a generated file or shown to the user, simplify it with a helper such as `dunce::canonicalize`, and cover the case with a test that runs on Windows.
+
 
 ### Gate discipline
 
