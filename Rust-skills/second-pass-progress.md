@@ -23,7 +23,7 @@ Each file goes through the same cycle:
 | 3 | `meta-rust-ref-202606-Part3.md` | 1112-5162 | DONE | 4051 | 61 | 47 |
 | 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | DONE | 4,787 | 71 | 61 |
 | 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | DONE | 4,502 | 77 | 55 |
-| 6 | `critique-JD-01.md` | 1-4166 | RED done | 4,166 of 4,166 | 34 | 0 |
+| 6 | `critique-JD-01.md` | 1-4166 | DONE | 4,166 of 4,166 | 34 | 19 |
 | 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
 | 8 | 19 June `generated-references` files (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
 | 9 | 7 JSON index files (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
@@ -31,6 +31,28 @@ Each file goes through the same cycle:
 ## Checkpoints
 
 Newest first.
+
+### Checkpoint 6: `critique-JD-01.md`
+- Phase: DONE.
+- Lines read: 1 to 4166, all displayed. The file is 99 sections of one 42-line template; about
+  35 lines per section repeat word for word and the rest come from roughly 12 topic variants.
+- Gaps found: 34 candidate items. 15 were already in the mega file from the first pass (the
+  production-readiness questions, the Rust and back-end signals, the Tauri block, test-loop
+  health) or were not about Rust (front-end, Kotlin, Python, creative-art metrics).
+- Gaps added: the other 19, as 19 rules: 4 working habits (debugging loop, boundary as a
+  hypothesis, repository preflight, bounded agent steps), 2 documentation rules (reversible
+  decision records, documentation checks), 1 back-end rule (replay-safe webhooks) and 12
+  review checks (command, hook, integration, configuration, plugin, reproducible output,
+  terminal width, operations model, threat model, crate health, rerunnable evidence, deferred
+  refactoring).
+- Checks: code fences balanced (756 fence lines), no source paths in the mega file, which went
+  from 9,949 to 9,968 lines. The rustdoc command in the documentation rule was run on a scratch
+  crate with a broken link. No other new rule contains code.
+- Decision: the source is a critique of documents, not Rust code, so each rule is the Rust or
+  agent practice the critique implies.
+- Next step: restore `critique-SD-01.md` from git history and read it in 500-line steps,
+  committing after each step.
+- Blockers: none. Open question: whether unit 9 (the JSON index files) should be read.
 
 ### Checkpoint 5: `meta-rust-ref-202606-Part5.md` done
 - Phase: DONE (RED, GREEN and REFACTOR complete).
