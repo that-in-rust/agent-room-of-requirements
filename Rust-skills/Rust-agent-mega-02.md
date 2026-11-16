@@ -3699,3 +3699,170 @@ impl<T> Deref for MaybeOwned<'_, T> {
 - **A resumable handle checks that it is still valid in every method that advances it,** not only at construction; a stale handle returns a clear error.
 - **A point-in-time snapshot is handed out as an iterator or guard that releases on drop,** so callers never manage the underlying commit handle. An empty store yields an empty iterator, not an error.
 
+- **Which wrapper:** `Cow` when the borrowed value may need changing; `MaybeOwned` when the type cannot be cloned; `Arc` when ownership is really shared; a plain owned value when handing it over is the point.
+
+### Iterators in depth
+
+**Accept `impl IntoIterator`, return `impl Iterator`.**
+
+```rust
+pub fn total_len<'a>(names: impl IntoIterator<Item = &'a str>) -> usize {
+    names.into_iter().map(str::len).sum()
+}
+
+pub fn active(users: &[User]) -> impl Iterator<Item = &User> + '_ {
+    users.iter().filter(|user| user.active)
+}
+```
+
+- The caller can pass a `Vec`, a slice, a set or another iterator, and decides whether to collect the result.
+- A returned iterator is lazy: nothing happens until it is consumed, and it borrows its source until then. Say so in the docs when the work is expensive or has effects.
+- `Box<dyn Iterator>` when the concrete type differs by branch or must be stored. The cost is an allocation and a virtual call per item; it matters only in inner loops.
+- **Do not build intermediate `Vec`s** between stages, and do not `collect` only to iterate again.
+- Implement `FromIterator` for a custom collection so `collect()` works, and `Extend` so it can be appended to.
+- **Do not call `next()` after `None` unless the iterator is fused.** Call `.fuse()` if the code might; make your own iterators fused when that is cheap, and implement `FusedIterator` to say so.
+- Implement `DoubleEndedIterator` only where going backwards is natural, and test that `next` and `next_back` meet in the middle without overlap.
+
+**Closure bounds: ask for the least you need.**
+
+| You will call it | Ask for | Callers may pass |
+|---|---|---|
+| At most once | `FnOnce` | any closure, including one that consumes its captures |
+| Several times, one at a time | `FnMut` | closures that mutate their captures |
+| Several times, possibly at once or through `&` | `Fn` | closures that only read |
+
+- Asking for `Fn` when you call once rejects closures for no reason.
+- A closure sent to a thread or task is `move`, and its captures must be `Send + 'static`. Clone the `Arc` outside the closure and move the clone in.
+- Do not require `'static` or `Send` from a callback that is only called before the function returns.
+
+**A lending iterator, when items must borrow from the iterator itself.** A cursor that
+decodes into its own buffer cannot be a standard `Iterator`, whose items must outlive the
+next call. A generic associated type expresses the loan:
+
+```rust
+pub trait LendingIterator {
+    type Item<'a>
+    where
+        Self: 'a;
+
+    fn next(&mut self) -> Option<Self::Item<'_>>;
+}
+```
+
+- The previous item must be dropped before the next call, which is exactly the constraint the buffer needs. The price: no `for` loop (use `while let`), none of the standard adapters, and no `dyn`.
+- *First ask* whether returning owned items is fast enough, or whether a callback (`for_each(|row| ...)`) would do. Both are simpler.
+- Never fake it by extending a lifetime with `unsafe` to fit `Iterator`. That is a use-after-free as soon as a caller collects.
+
+**An iterator that owns a resource releases it on every path.** Exhaustion, an error, an
+explicit close and an early drop all reach one idempotent clean-up.
+
+```rust
+pub struct Rows {
+    cursor: Option<Cursor>,
+}
+
+impl Rows {
+    fn release(&mut self) {
+        if let Some(cursor) = self.cursor.take() {
+            cursor.close();
+        }
+    }
+}
+
+impl Iterator for Rows {
+    type Item = Result<Row, DbError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let cursor = self.cursor.as_mut()?;
+        match cursor.advance() {
+            Ok(Some(row)) => Some(Ok(row)),
+            Ok(None) => {
+                self.release();
+                None
+            }
+            Err(error) => {
+                self.release();
+                Some(Err(error))
+            }
+        }
+    }
+}
+
+impl Drop for Rows {
+    fn drop(&mut self) {
+        self.release();
+    }
+}
+```
+
+- Releasing on exhaustion alone leaks when the caller stops early (`.take(10)`, `?` in the loop body). `Drop` covers that.
+- After an error the iterator yields `None`, so a caller who ignores the error cannot loop forever.
+- If closing can fail and the failure matters, offer `close(self) -> Result<()>` as well; `Drop` can only log.
+
+### Collections in depth
+
+- **`IndexMap` removal:** `swap_remove` is O(1) and breaks insertion order; `shift_remove` keeps it and is O(n). Choose deliberately; plain `remove` is deprecated for this reason.
+- **Never change a key in place** in a way that alters its hash or order (through interior mutability). The entry becomes unfindable. Remove, change, reinsert.
+- **`BinaryHeap::from(vec)` builds in O(n);** pushing n items one at a time is O(n log n). For the k largest of a stream, keep a min-heap of size k rather than sorting everything. For the k largest of a slice, `select_nth_unstable` is linear.
+- **A min-heap, or a heap over floats, needs an explicit total order.** `Reverse(x)` flips a key that is already `Ord`. For floats, define the order with `total_cmp` and add a tie-break so equal priorities pop in a deterministic order.
+
+```rust
+struct Candidate {
+    cost: f64,
+    node: NodeId,
+}
+
+impl Ord for Candidate {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other
+            .cost
+            .total_cmp(&self.cost) // reversed: the smallest cost is popped first
+            .then_with(|| self.node.cmp(&other.node))
+    }
+}
+impl PartialOrd for Candidate {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl PartialEq for Candidate {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+impl Eq for Candidate {}
+```
+
+  All four traits agree because three are defined from `cmp`. A derived `PartialEq` on a float beside a hand-written `Ord` disagrees on NaN and on signed zero, and collections misbehave quietly when they disagree.
+- **Packed bits:** `Vec<bool>` spends a byte per flag, which is fine for small sets. For large bitmaps or wire layouts use `bitvec` or a fixed-size bitset, with bit order and storage type written out (`BitVec<u8, Msb0>`).
+- **A read-mostly shared map** is best published as an immutable snapshot: `ArcSwap<HashMap<K, V>>` (or `RwLock<Arc<HashMap<K, V>>>`), where a writer builds a new map and swaps it in. Readers never block and always see a consistent whole. For many concurrent writers, a sharded map such as `DashMap`; do not hold one of its references while touching the same map again, which can deadlock on the shard lock.
+- **`SmallVec<[T; N]>`** avoids the heap when a small bound usually holds. It makes the value larger and every access branch; adopt it from a profile, not from a hunch.
+
+**Edit-heavy, then read-heavy: two types.** Mutations go into a builder; an explicit
+`finish(self) -> Frozen` sorts, deduplicates and computes totals; read-optimised algorithms
+take only `Frozen`. A convention that says "call `update()` before reading" will be broken;
+the type cannot be. *Not for* data where every mutation must be visible at once.
+
+**Compressed sparse row layout for a static graph.** Neighbours of `u` are a contiguous
+slice, which is cache-friendly and trivially partitioned for parallel work.
+
+```rust
+pub struct Csr {
+    offsets: Vec<usize>, // length: vertices + 1
+    targets: Vec<u32>,
+}
+
+impl Csr {
+    pub fn neighbours(&self, u: usize) -> &[u32] {
+        &self.targets[self.offsets[u]..self.offsets[u + 1]]
+    }
+}
+```
+
+- The constructor checks the invariants once: `offsets.len() == vertices + 1`, offsets never decrease, the last equals `targets.len()`, and every target is a valid vertex. Every reader then relies on them.
+- Rebuild for large updates; in-place insertion is O(edges). For a graph that changes constantly, use adjacency lists.
+
+**Values and validity in parallel buffers, for columnar data.** A null still advances the
+value buffer by one slot, so both buffers always have the same length and position `i` means
+the same row in each. For anything small, `Vec<Option<T>>` is simpler and right.
+
