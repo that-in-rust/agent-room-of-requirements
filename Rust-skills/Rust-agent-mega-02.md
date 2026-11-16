@@ -4736,3 +4736,36 @@ async fn run(mut store: Store, mut inbox: mpsc::Receiver<Command>) {
 - A branch whose future is created inside the loop is created afresh each iteration. A timer that should span iterations (`sleep`, `interval`) is created outside and pinned.
 - Use a `CancellationToken`, not a shared boolean: a flag cannot wake a task that is waiting on something else.
 
+### Threads
+
+**Scoped threads borrow; no `Arc` and no `'static` needed.** Every thread spawned in the
+scope is joined before it returns, so borrowing local data is sound.
+
+```rust
+let (left, right) = data.split_at_mut(data.len() / 2);
+let (sum_left, sum_right) = thread::scope(|scope| {
+    let a = scope.spawn(|| process(left));
+    let b = scope.spawn(|| process(right));
+    (a.join(), b.join())
+});
+```
+
+- Split mutable data into disjoint parts first (`split_at_mut`, `chunks_mut`); each thread then owns its part exclusively. Do not wrap data in `Arc<Mutex<_>>` only to satisfy a `'static` bound.
+- **`join()` returns `Err` if the thread panicked.** Decide what that means: propagate it, or record it. An unjoined, unnamed thread that panics is a silent loss of work.
+- For "apply this to every item in parallel", `rayon`'s `par_iter` is less code and balances load. Keep I/O out of the `rayon` pool; a blocked worker stalls unrelated parallel work.
+- **Async has no equivalent of a borrowing scope.** A spawned Tokio task must be `'static`. To run borrowing futures concurrently, keep them on the current task with `join!` or `FuturesUnordered`.
+
+**Thread-side channels and locks.**
+
+- `std::sync::mpsc` is enough for many producers and one consumer. For several consumers, `select` over channels, or timers and deadlines, use `crossbeam-channel` or `flume`. Pick one family per project.
+- **Every receive loop handles disconnection.** A `recv` error means all senders are gone and is the normal way a worker learns to stop. Dropping the last sender is the shutdown signal; a clone kept alive by accident is a worker that never exits.
+- **A zero-capacity (rendezvous) channel** makes the producer wait until the consumer takes the item; a small capacity throttles. `send_timeout` gives a producer a bounded wait and a point at which to shed load. Never busy-wait in place of a blocking receive.
+- **`parking_lot` locks** are smaller, do not poison, and can be faster under contention; `std`'s are good since 1.62 and need no dependency. Choose from a measurement, and use one kind per project so guards and conventions are not mixed.
+- **Poisoning:** a `std` mutex is poisoned when a holder panicked, since the data may be half-updated. `lock().unwrap()` spreads the panic, which is right when the invariant may be broken. Recover with `into_inner` only where every critical section leaves the data valid at each step.
+
+**Runtime choice.** Tokio is the default and has the ecosystem. Other runtimes
+(single-threaded, or thread-per-core over `io_uring`) are specialist choices that follow from
+a measured need. Do not mix runtimes in one process without a clear boundary: a future built
+on one runtime's I/O types generally fails on another. A library should depend on `futures`
+traits and take the runtime's pieces from its caller where it can.
+
