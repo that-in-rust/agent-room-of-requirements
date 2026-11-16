@@ -374,3 +374,104 @@ unmeasurable adjective ("robust", "scalable", "user-friendly"). One requirement 
 `AND` clauses and one test. A requirements list written after the code to match what it does.
 A threshold copied from another project with no benchmark behind it.
 
+### The contract on the function
+
+An agent cannot ask the author what a function is supposed to do, so the contract sits on the
+function: what it needs, what it guarantees, what it changes and how it fails. Use the rustdoc
+headings tools already understand (`# Errors`, `# Panics`, `# Safety`), and move every
+precondition you can into a parameter type.
+
+```rust
+/// Stores a message, or returns the stored one if `client_message_id` was seen before.
+///
+/// On success: inserts one row, updates the room's `last_message_at` and broadcasts to
+/// the room's subscribers. A repeated `client_message_id` causes none of these.
+///
+/// # Errors
+/// - [`MessageError::Forbidden`] if the user has no access to the room.
+/// - [`MessageError::Database`] if the write fails; nothing is broadcast.
+pub async fn create_message(
+    &self,
+    content: MessageContent, // 1..=10_000 chars, checked when the value was built
+    room: RoomId,
+    user: UserId,
+    client_message_id: Uuid,
+) -> Result<Message, MessageError>;
+```
+
+- **A precondition a type can carry is not written in prose.** "Content must be 1 to 10,000 characters" became `MessageContent`, and the `InvalidContent` error left this function for the constructor.
+- **Document side effects and their order on failure.** "Nothing is broadcast if the write fails" is the line a caller needs and the signature cannot say.
+- **Every documented error and effect has a test.** A contract line with no test drifts.
+- **Do not restate the signature.** "Takes a room ID and returns a message" adds nothing.
+- `# Panics` lists every way the function can panic; the best version of that section is absent because there is none. `# Safety` is mandatory on every `unsafe fn`.
+
+*Use when* the function is public, has side effects, or has failure behaviour a caller must
+plan for. *Skip for* private helpers whose name and types say everything.
+
+### Levels of specification
+
+| Level | Holds |
+|---|---|
+| Constraints | System-wide invariants and rules that every part obeys |
+| Architecture | Data models, the error hierarchy, interface contracts |
+| Module | Function-level contracts, built test-first |
+| User journey | End-to-end checks of what a user or caller sees |
+
+A requirement belongs at the widest level where it is true. "No handler blocks the runtime" is
+a constraint, not a note on one function.
+
+**Acceptance criteria name the command, the input and the bound:**
+
+```markdown
+1. WHEN I run `tool ingest <file>` on a dump with `FILE:` markers THEN the system SHALL
+   extract every public function signature from each marked file.
+2. WHEN the input is the 2.1 MB reference dump THEN ingestion SHALL finish in under 5 s.
+```
+
+**Write the scenarios beside the interface while designing,** as given, when, then. Each one
+becomes a test name, so the list is the test plan:
+
+```text
+Scenario: duplicate client id
+  Given a stored message with client_message_id X
+  When  create_message is called again with X
+  Then  it returns the stored message and inserts nothing
+```
+
+**Tie tests and docs to requirements.** A test name or a comment carries the requirement ID, so
+a failing test names the broken requirement and a search for the ID finds its proof. Doc
+examples are doctests that run, not illustrations:
+
+```rust
+#[test]
+fn blast_radius_stays_under_budget_req_perf_003() { /* asserts REQ-PERF-003.0 */ }
+
+/// ```
+/// # use mycrate::{Graph, NodeId};
+/// # fn main() -> Result<(), mycrate::Error> {
+/// let graph = Graph::from_edges(&[(1, 2), (2, 3)])?;
+/// assert_eq!(graph.blast_radius(NodeId(1), 3)?.len(), 2);
+/// # Ok(())
+/// # }
+/// ```
+pub fn blast_radius(&self, start: NodeId, depth: u32) -> Result<Vec<NodeId>, Error> { /* ... */ }
+```
+
+Lines starting with `#` inside a doctest compile but are hidden in the rendered docs; they are
+how an example uses `?` without showing boilerplate. An example that cannot run (it needs a
+network or a database) is marked `no_run` so it still compiles; `ignore` is a last resort
+because an ignored example rots.
+
+### Vague to executable
+
+| Vague | Executable |
+|---|---|
+| "Make it faster." | "Reduce p99 latency from 5 ms to under 1 ms for 10,000 entities on the reference benchmark." |
+| "Improve reliability." | "Return a typed validation error for malformed input; no panic and no task left running." |
+| "Handle async correctly." | "Cancellation propagates to every spawned task within 1 s; no blocking call and no lock guard is held across `.await`." |
+| "Make the API cleaner." | "Take borrowed inputs, expose no dependency types, and reject invalid values at construction." |
+
+- **Start at the first thing that is missing.** A vague request starts with the rewrite. A request with testable requirements starts at the design. Test skeletons come after requirements and design exist; a trivial fix goes straight to its test. Starting at the skeletons because they look most like code yields tests for requirements nobody stated.
+- **A filled-in template can be hollow.** A `WHEN` that says "sometimes" or a metric that says "fast" has the shape and defeats the purpose. Review what is in the blanks, not that the headings are present.
+- **If the rewrite needs a number you do not have, ask or measure.** Do not invent a threshold; record the current measured value as the baseline and state that the target is still to be agreed.
+
