@@ -25,12 +25,38 @@ Each file goes through the same cycle:
 | 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | DONE | 4,502 | 77 | 55 |
 | 6 | `critique-JD-01.md` | 1-4166 | DONE | 4,166 of 4,166 | 34 | 19 |
 | 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | DONE | 2,878 of 2,878 | 11 | 5 |
-| 8 | 22 June `generated-references` files (deleted in pass 1, read from history) | all | RED | 4,599 of 4,599 | 9 | 0 |
+| 8 | 22 June `generated-references` files (deleted in pass 1, read from history) | all | DONE | 4,599 of 4,599 | 9 | 3 |
 | 9 | 7 JSON index files (deleted in pass 1) | none | SKIPPED | 0 | 0 | 0 |
 
 ## Checkpoints
 
 Newest first.
+
+### Checkpoint 8: 22 June `generated-references` files
+- Phase: DONE (RED, GREEN and REFACTOR complete). This was the last unit; unit 9 (the JSON index
+  files) is skipped by the user's decision.
+- Read: all 4,599 lines of the 22 files, restored from git history and read in 500-line steps
+  with a push after each.
+- Found: 9 candidates. Every file is the same 205-line template; the candidates come from its
+  workload, failure-mode, observability and performance rows.
+- Already in the mega file or not universal (6): the default latency gate, the operations
+  runbook, the supply-chain gate in a threat model, the flaky-test policy, sizing a change by
+  one crate and a symbol count (the mega file sizes by contract crossings), and a fixed
+  10 ms hot-path threshold.
+- Added (3):
+  - Errors: a pre-release panic audit of production paths, with the clippy lints that list
+    them and an integration test for the failing input.
+  - Concurrency: shared state is measured under contention, with a timeout budget and the
+    cancellation path exercised.
+  - Review: evidence is kept small enough to review (command summary, changed files,
+    unresolved risks).
+- Checks: code fences balanced (756 fence lines), no source paths or evidence labels in the mega
+  file, which went from 9,973 to 9,976 lines. The clippy command in the new rule was run on a
+  scratch crate and reports all four lint kinds. `cargo test`, clippy and fmt do not apply to
+  the repository itself: no Rust project is involved.
+- Limit: duplicates were checked by keyword search, as in the earlier units.
+- Next step: none. The second pass is complete.
+- Blockers: none.
 
 ### Checkpoint 7: `critique-SD-01.md`
 - Phase: DONE.

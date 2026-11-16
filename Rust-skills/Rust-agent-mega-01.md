@@ -3737,6 +3737,7 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
 
 - Use `thiserror` for library error enums and `anyhow` at application composition boundaries.
 - No `unwrap` or `expect` in production paths unless an invariant is documented and justified.
+- Before a release, audit the production paths for panics: `unwrap`, `expect`, `panic!`, `unreachable!`, slice indexing and unchecked arithmetic on external input. Each one becomes a `Result` or gets a comment stating the invariant. `cargo clippy -- -W clippy::unwrap_used -W clippy::expect_used -W clippy::indexing_slicing -W clippy::panic` lists them. Compiling and passing unit tests does not show that a panic path is unreachable, so add one integration test that feeds the failing input and asserts the returned error.
 
 - Propagate errors with `?` and attach context at I/O and boundary operations.
 
@@ -4914,6 +4915,7 @@ Shutdown and cleanup:
 - **No async destructors.** Rust has none, so a design that needs awaited cleanup exposes an explicit async cleanup method. Do not rely on cancellation alone for soundness or business invariants. Cleanup required for protocol correctness belongs in the API contract and the test plan.
 - **Shutdown contract.** Define who initiates shutdown, how the signal fans out and how completion is awaited. Make shutdown idempotent or document repeated-call behavior. If teardown can block on I/O or task completion, that path is explicit in control flow and tested.
 - **Snapshots over contention.** Prefer immutable snapshots or owned work packets when lock contention would otherwise dominate the reasoning.
+- **Shared state is measured contended.** A lock, channel or shared map that sits on a request path gets a benchmark or stress run with many concurrent callers, not only a single-threaded one. The same run gives every wait a timeout budget and exercises the cancellation path, since contention shows up as tasks that never finish before it shows up as a wrong result.
 - **Concurrency evidence.** A single green CI run proves almost nothing about concurrency. High-risk interleavings get `loom` or equivalent model checking; lower-risk code still gets stress, timeout, teardown and cancellation tests.
 
 - **Retry only where state ownership is clean.** A retry loop around a future that is not cancel-safe re-enters half-consumed state on every attempt. Give retries a budget. Shutdown is where bounded channels, cancellation tokens and cancel-safe `select!` branches either compose or fail together, so test it: inject cancellation under load and assert no message is lost or processed twice. A bounded channel's fullness is a measurable saturation signal; an unbounded channel grows silently until memory pressure is the symptom. An unbounded channel on a provably low-volume control path is tolerable if the reason is written down.
@@ -9969,4 +9971,5 @@ Further checks:
 - **A threat model names actions, not adjectives.** List what an attacker does, how often each abuse case is expected, how authentication and sessions fail, the blast radius of each failure, the permission boundaries, and the supply-chain review gate for new dependencies.
 - **Crate health is tracked over time.** Watch build time, test-suite duration, dependency count, lint and type-check failures, and memory use. A change that grows any of them says so. Keep one cheap test tier that runs on every change.
 - **A verification record can be rerun.** Each shipped claim carries its requirement ID and the exact command that proves it. Evidence is stale once the code under it changes, so rerun before citing it.
+- **Evidence is kept small enough to review.** Hand over a summary of each command's output (the command, pass or fail, the failing lines), the list of changed files and the unresolved risks. A raw transcript dump hides the one line that matters.
 - **Refactoring deferred during the passing step is written down.** Shortcuts taken to make a test pass go into a list with the requirement they belong to, and the list is emptied in the refactor step.
