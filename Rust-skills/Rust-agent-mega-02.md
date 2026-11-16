@@ -6231,3 +6231,77 @@ for candidate in scored {
 - **When several ranking signals are fused,** keep each signal's contribution on the result so the ranking can be explained and tuned. Demote with a negative signal instead of excluding.
 - **A vector index compares like with like.** Inner product equals cosine similarity only for normalised vectors, so never mix normalised and unnormalised embeddings. Never hold the index lock across the call that computes an embedding.
 
+### Incremental and amortised work
+
+**Append cheaply, consolidate lazily.** For frequent signed updates where many increments
+and decrements cancel (reference counts, change logs, multiset deltas), push each update and
+consolidate only when a clean view is needed or the unsorted tail outgrows the clean prefix.
+
+```rust
+pub struct ChangeBatch<T> {
+    updates: Vec<(T, i64)>,
+    clean: usize, // updates[..clean] is sorted, merged and free of zeros
+}
+
+impl<T: Ord> ChangeBatch<T> {
+    pub fn update(&mut self, item: T, delta: i64) {
+        self.updates.push((item, delta));
+        if self.updates.len() > 2 * self.clean.max(MIN_BATCH) {
+            self.compact();
+        }
+    }
+
+    /// Compacts first, so it takes `&mut self`.
+    pub fn is_empty(&mut self) -> bool {
+        self.compact();
+        self.updates.is_empty()
+    }
+
+    fn compact(&mut self) {
+        self.updates.sort_by(|a, b| a.0.cmp(&b.0));
+        self.updates.dedup_by(|later, earlier| {
+            if later.0 == earlier.0 {
+                earlier.1 += later.1;
+                true
+            } else {
+                false
+            }
+        });
+        self.updates.retain(|(_, delta)| *delta != 0);
+        self.clean = self.updates.len();
+    }
+}
+```
+
+- Compacting when the tail doubles the clean part keeps the amortised cost per update logarithmic, the same argument as `Vec` growth.
+- **An observer that compacts takes `&mut self` and says so.** Hiding the mutation behind a `RefCell` to keep `&self` trades a compile-time rule for a run-time panic.
+- The same shape serves any "write-optimised log plus periodic merge": tombstones in an index, pending edits to a sorted array.
+
+**Incremental indexing by content hash.** Keep the set of content hashes per source file.
+After a change, new minus old is inserted and old minus new is deleted; nothing else is
+touched.
+
+```rust
+let to_insert: Vec<&Chunk> = new_chunks
+    .iter()
+    .filter(|chunk| !old_hashes.contains(&chunk.hash))
+    .collect();
+let to_remove: Vec<&Hash> = old_hashes
+    .iter()
+    .filter(|hash| !new_hashes.contains(*hash))
+    .collect();
+```
+
+- **The hash inputs decide what counts as a change.** Including line numbers makes a pure move look like a change and redoes the expensive work; leaving them out means stored positions must be updated separately. Choose from the invalidation behaviour you want.
+- Insert the new before deleting the old, or do both in one transaction, so a crash between them never leaves a file with no entries.
+- Changing how content is chunked changes every hash: bump the index version and rebuild.
+- Keep a full-rebuild command. It is the recovery path and the oracle for testing the incremental one: both must produce the same index.
+
+**Smaller rules.**
+
+- **Text enriched for retrieval is stripped before display.** If a chunk is indexed with a context preamble (file, language, defined symbols), one paired function removes it, so snippets and line numbers shown to people are those of the source.
+- **Scores from two retrieval systems are not comparable; ranks are.** Fuse through stable ids, each source adding `weight / (rank + k)`. The weights and `k` are configuration tuned by evaluation, not constants in code. With calibrated, comparable scores, use the scores.
+- **Cross-cutting behaviour lives in the framework, not in each plugin.** A linter owns traversal and suppression comments; rules only report. A rule that accumulates state is constructed per file or cleared in a finalisation hook, or findings leak from one file into the next.
+- **In a streaming operator ordered by logical time,** buffered work is released when input progress proves that nothing earlier can arrive, never by a wall-clock timer. A held capability or watermark blocks everything downstream; drop it as soon as its output is emitted.
+- **A parameter outside the supported range is a typed error before any work,** never an unbounded build. The bound is a product decision, since cost often grows steeply with it.
+
