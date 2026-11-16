@@ -2945,3 +2945,107 @@ pub trait Sink {
 - *Prefer an iterator* when the traversal is simple enough to be one. Iterators compose and the caller keeps control. A sink is for when borrowing rules or internal buffering make an iterator awkward or slow.
 - An enum for the return (`ControlFlow<()>`) reads better than a `bool` whose meaning has to be remembered.
 
+### Strategies, formats and bounds
+
+**One operation, several strategies, chosen in one place.** A public operation may have
+several implementations (memory map, whole buffer, incremental reader) selected from
+configuration, input shape and platform. The selection is one function.
+
+- Impossible configurations are rejected up front with a typed error, before any work starts.
+- **A fast path never removes the slow path,** and the two are tested against each other. The rarely taken path gets its own tests; configuration bugs live there.
+- Let a test force each strategy. If only the heuristic can choose, the fallback is never exercised.
+- *Not for* callers who need one exact algorithm; give them the named function.
+
+**Permissive on the way in, canonical inside.** A forgiving input form (unsorted, duplicates
+allowed) accepts messy data. The compute form has a documented invariant (sorted, unique)
+established once, at conversion.
+
+- The canonical type's constructor is the only way to make one, so every holder may rely on the invariant. Operations that receive raw parts check and return a typed error; they do not compute a wrong answer.
+- Canonicalising can change the element count (duplicates merge). Do not carry counts across the conversion.
+- Do not canonicalise silently on a hot path where a sort would surprise, or where duplicates mean something.
+
+**Bundle repeated bounds into one named trait.**
+
+```rust
+pub trait Scalar:
+    Copy + PartialEq + Add<Output = Self> + Sub<Output = Self> + Mul<Output = Self> + Default
+{
+}
+
+impl<T> Scalar for T where
+    T: Copy + PartialEq + Add<Output = T> + Sub<Output = T> + Mul<Output = T> + Default
+{
+}
+```
+
+- The blanket impl makes it an alias: every qualifying type gets it for free. Leave the blanket impl out only when implementers must opt in or supply methods.
+- Create it after the same bound list has appeared three times, not before. Its supertraits are exactly what the algorithms call; a bound nobody uses still shuts types out.
+- Long supertrait lists make compiler errors long. Split the trait if implementers must supply much more than each algorithm uses.
+
+**A scoped helper makes the safe lifetime the default.** If the caller must remember cleanup,
+offer `with_x(|resource| ...)` beside the raw constructor.
+
+```rust
+pub fn with_temp_dir<T>(f: impl FnOnce(&Path) -> io::Result<T>) -> io::Result<T> {
+    let dir = tempfile::tempdir()?;
+    let result = f(dir.path());
+    dir.close()?; // explicit, so a clean-up failure is reported
+    result
+}
+```
+
+- The borrow checker stops the resource escaping the closure, and clean-up runs on the error path too.
+- An RAII guard is the more flexible form and composes with `?` and early return. Use the closure when the resource must not outlive a scope under any circumstances, or when clean-up can fail and the caller should hear about it.
+- An async closure borrowing the resource is awkward to type; there a guard, or an owned handle with an explicit `close().await`, is usually simpler.
+- Where native handles are exposed to JavaScript (Tauri, WebAssembly), provide the scoped form on that side too, and test both the throwing and the resolving callback.
+
+**One `apply_update` for a streamed record.** A record built up progressively (a job status,
+a trace) changes only through `apply(&mut self, update: Update) -> Result<(), UpdateError>`
+over a typed update enum.
+
+- An impossible or out-of-order update is a typed error, never a panic, since updates may come from outside.
+- The full internal record and the form sent to clients are different types, and the conversion is where redaction and trimming happen. It runs before anything leaves the process.
+
+**A conversion that only reads its source takes a reference.** `impl From<&Dense> for Sparse`
+lets the caller keep the original; add `From<Dense>` only when consuming the source saves a
+copy. Have the impl delegate to a named function, which can be tested and benchmarked alone.
+
+### Core idioms
+
+- **Expressions over statements.** `if`, `match` and blocks are expressions; bind their value instead of declaring a `mut` and assigning in each branch. Use an iterator chain where it reads as a description of the result; use a loop where there are side effects, early exits or several accumulators.
+
+```rust
+let label = match status {
+    Status::Active => "active",
+    Status::Suspended { .. } => "suspended",
+    Status::Closed => "closed",
+};
+```
+
+- **`Cow<'_, str>` when the value is usually borrowed and sometimes changed:** normalisation, escaping, lossy decoding.
+
+```rust
+pub fn normalise(input: &str) -> Cow<'_, str> {
+    if input.contains('\t') {
+        Cow::Owned(input.replace('\t', "    "))
+    } else {
+        Cow::Borrowed(input)
+    }
+}
+```
+
+  *Skip it* when the value is always owned or always borrowed, and in struct fields unless profiling asks for it: the lifetime spreads to every holder. Calling `.into_owned()` on every result means it should have returned `String`.
+- **A `type` alias is not a new type.** `type UserId = u64;` documents and checks nothing. Use a newtype for distinction; use an alias to shorten a long generic type.
+- **`#[repr(transparent)]` on a newtype** is needed only when its layout is relied on: across FFI, or for a reference cast between the wrapper and its field. Elsewhere it is harmless and unnecessary.
+- **The orphan rule:** to implement a foreign trait for a foreign type, wrap the type in a local newtype.
+- **Do not return `Result` from something that cannot fail,** and do not return `Option` where an error would explain why.
+- **`impl Fn` for callbacks, `fn` pointers for tables.** `impl Fn(T) -> U` accepts closures and inlines. A plain `fn(T) -> U` pointer rejects capturing closures; use it in static dispatch tables, in `const` contexts and across FFI, where a nameable, `Copy` type is the point. `&dyn Fn` or `Box<dyn Fn>` when the callback is stored or code size matters more than the call.
+- **Keep generic bounds as simple as the use.** `fn f(s: &str)` beats `fn f<S: AsRef<str>>(s: S)` unless callers really pass several types; over-generic signatures hurt inference and error messages. When a generic wrapper is wanted, make it thin and delegate at once to a non-generic inner function, so the body is compiled once.
+
+```rust
+pub fn read_config(path: impl AsRef<Path>) -> Result<Config, ConfigError> {
+    fn inner(path: &Path) -> Result<Config, ConfigError> { /* the real body */ }
+    inner(path.as_ref())
+}
+```
+
