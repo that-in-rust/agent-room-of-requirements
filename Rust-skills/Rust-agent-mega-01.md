@@ -58,6 +58,8 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - **Checkpoint long work in a file.** After each milestone, write a short summary of decisions and progress, keep it in step with the code, and read it back before continuing. Early context is otherwise lost.
 - **Report plainly.** Give the measured result and its source, for example "query latency fell from 5 ms to 500 µs in the benchmark". Leave out superlatives and say what is uncertain.
 - **Finished means end to end.** The feature works in the release binary, all tests pass and not only the new ones, integration is tested, and docs and scripts are updated. No stub, placeholder or "will be implemented" note remains.
+- **Tools are allowed per task.** An agent harness takes the allowed tools for a task as data and denies the rest, with the reason recorded (for example, deny anything that can read the message store). Its tests include cases where the right outcome is to stop and ask because the information is missing.
+- **Summaries first, raw artefacts on request.** A long multi-step job returns a small structured summary and a handle to its full log. The model reads a multi-kilobyte artefact only by asking for it.
 
 ### Decision ladder for any Rust task
 
@@ -1753,6 +1755,40 @@ struct SyntaxFinding {
 - **Tokenise code from syntax-tree leaves.** Code tokens come from leaf spans, with a list of node kinds to leave out. A regex tokenizer is for free text such as doc comments only, compiled once in a `LazyLock`.
 - **Probe the corpus for feature use before dropping a feature.** A small script or test reports which checked-in queries and fixtures use a given language feature, and a probe that is only a text heuristic is labelled approximate.
 - **A generator fails or omits the record when an input is unreadable.** A read error is reported as a diagnostic; its message is never written into the artefact where the content belongs.
+- **A parse result keeps the tree with the bytes it was parsed from.** `struct ParsedFile { tree: Tree, source: Arc<[u8]>, language: Language, path: PathBuf }`. Node text is read only through this value, so a byte range can never be applied to a different buffer.
+- **Analysis lives in side tables, so it can be dropped without reparsing.** Keep derived facts (types, resolved names, diagnostics) in maps keyed by node id, outside the syntax tree. When a dependency changes, clear the affected entries and keep the tree.
+- **A parse deadline scales with input size, under a named ceiling.** Budget = a base plus an allowance per byte, clamped by a constant such as `PARSE_BUDGET_CEILING`. The progress callback returns `ControlFlow::Break` once the deadline passes. On timeout the function returns `None` and the caller takes the unoptimised but correct path (pass the file through unchanged); it never uses a partial tree. The module doc states the latency promise, the scaling rule, the ceiling and the fallback.
+- **A query file may contain only an inheritance line.** A dialect that adds nothing has a file whose whole body is `; inherits: base`. The loader resolves inheritance before compiling and accepts a file with no patterns of its own.
+- **Each language module exposes the same items, and re-exports the grammar crate's queries.** One small file per language with an identical item set, so adding a language is one file and one registry line. Prefer the query constants the grammar crate ships over vendored copies, so the queries stay in step with the grammar version.
+
+  ```rust
+  pub fn language() -> tree_sitter::Language {
+      tree_sitter_rust::LANGUAGE.into()
+  }
+
+  pub const HIGHLIGHT_QUERY: &str = tree_sitter_rust::HIGHLIGHTS_QUERY;
+  pub const INJECTION_QUERY: &str = tree_sitter_rust::INJECTIONS_QUERY;
+  ```
+- **A parser registry derives its listings and rejects duplicates.** `register` returns an error when two parsers claim one extension. `parser_for(&Path)` returns `Option<&dyn LanguageParser>`. The supported-language and supported-extension lists are computed from the registered parsers, never kept as a second list. An ambiguous extension (`.h` is C or C++) has a documented default and an override.
+- **A query file states what it does not produce.** If a language's queries cover definitions and imports but not call edges, the file header says so, and the tool reports that capability per language. An unsupported edge kind is reported as unsupported, never as "no callers".
+- **Keep the kind when a consumer needs it, and say which consumer.** Capture interfaces apart from classes when a lookup depends on the difference (finding implementations, resolving mocks), with a comment naming that lookup. Collapsing struct, enum and interface into one capture is acceptable only when no consumer distinguishes them.
+- **An item's span includes its attributes and doc comments.** Methods get qualified names (`Type::method`), nested functions are found by walking the whole tree, and a file's `use` lines form one module-context chunk. A language that ships its own parser (`syn` for Rust) is the better choice when exact fidelity matters; a generic grammar serves the many-language case. On a syntax error the caller falls back to fixed-size windows.
+- **Record containment as well as calls and imports.** Module-to-item and type-to-method edges let a consumer expand a neighbourhood or find over-connected hub nodes.
+- **Skip minified and generated files when indexing.** Detect them by a generated marker on the first line (`@generated`), a vendor or assets directory, or very long lines. A generator writes that marker at the top of every file it emits, and indexers, formatters and review tools honour it.
+- **Redact secrets before code leaves the machine.** Chunks sent to an embedding or model service pass through a secret redactor first, and the count and kinds of redactions are recorded. Each chunk carries a content hash so an unchanged chunk is not sent again.
+- **Structural-clone detection hashes normalised subtrees bottom-up.** Replace identifiers, strings, numbers and booleans with placeholders, then compute `hash(node) = h(kind, child hashes)` in a post-order walk. Group by hash, drop subtrees below a minimum node count, rank by frequency, and only then cut to the output budget. Normalise by parsing, not by regex. Walk deep trees iteratively with an explicit stack or a cursor, because recursion can overflow the stack.
+- **A code graph checks identifiers an agent proposes.** Before code that names a function or type is accepted, look the name up in the index; a name that does not exist is reported as such. Impact queries take a depth bound and return ranked callers with qualified name and `path:line`.
+- **Explore structure from cheap to expensive.** Ask for an overview (symbol list) first, then a specific definition, then relationships, and write a custom query last. Structural questions go to structural tools, not to raw text search, and an exploring sub-agent has a restricted tool list and a turn limit.
+- **Reduce a misparse to the smallest snippet and read the parser's trace.** Feed a one-line reproducer to the parser with debug output and find where the state machine fails before changing the grammar.
+- **Every declared grammar conflict has a reason.** A conflict list with a "can we fix these?" note is debt; each entry gets a comment naming the ambiguity and a test input that needs it.
+- **Combinator parsers turn conversion failures into parse errors.** Use `map_res` (or the library's equivalent) for number and enum conversions, so a bad value fails at its position and never panics. The grammar the module accepts sits in the `//!` doc.
+- **A hand-written lexer classifies bytes through a 256-entry table.** `const CLASS: [CharClass; 256]` is built by a `const fn` and indexed by `u8`, so no index can be out of bounds. Bytes above ASCII get an explicit class.
+- **A terminal escape-sequence parser returns one enum variant per kind.** Use `enum Parsed<'a> { Text(&'a str), Style(StyleChange), Cursor { action: CursorAction, count: u16 }, Clear(ClearScope) }`, not a tag plus unrelated optional fields. Unknown codes are ignored by an explicit arm. A reset assigns `Style::default()`. The parser keeps state between calls, because a sequence can be split across reads, and a test checks that any chunking gives the same output as one call.
+- **A framing decoder is resumable.** A decoder for `Content-Length: N` followed by N bytes keeps partial state between reads, so a header or body split across socket reads is handled, and the state is `Send` so the decoder can live in a spawned task. It works on `&[u8]`, parses the length from digits only with a checked conversion, and rejects a declared length above a named maximum before allocating.
+- **An inner selection excludes the delimiters.** The inner range of a bracketed container runs from its first to its last child. Decide what an empty container selects, and test it.
+- **A query AST is plain data with one field per clause.** Repeatable clauses are `Vec`, optional ones `Option`. A parameter name the engine reserves is a `pub const` with a prefix users cannot use (`__name`), and the parser rejects user names with that prefix.
+- **A query tool's documentation is a cookbook of executed queries.** It shows set-up, the entity key format, and queries that were actually run with their output. Example queries live as files that a test loads and runs, so the documentation cannot rot.
+- **Do not split a long file into numbered parts glued by glob imports.** Files named `g1.rs`, `g2.rs` that each open with `use super::*;` hide where names come from; a comment listing what a glob brings in means the import should be explicit. Split by responsibility into named modules. Keep the good half of that shape: node-kind strings are named constants, one dispatch function matches on them, and a `&mut Ctx` plus the enclosing scope are passed down explicitly.
 
 ## 5. Verification and test-first delivery
 
@@ -2336,6 +2372,10 @@ fn read_fixture(path: &Path) -> String {
 - **A domain assertion helper checks the representation before the value.** It first asserts that both operands have the expected representation (sparse, borrowed, compressed) and only then compares their canonical forms, so a test cannot pass because a value silently fell back to another representation.
 - **One authoritative path per event kind.** When a provider's response exposes the same datum in two places, the decoder reads each event kind from exactly one of them; reading both emits duplicates. For each kind, one test shows the authoritative path produces the event and another shows the same data on the other path produces none. The tests use plain stand-in values, no network.
 - **Every listed language loads.** The language enum exposes a complete list (`Language::ALL` or a derived iterator); a test loads each grammar and parses a trivial snippet. Language-name normalisation lives in one function.
+- **A streaming parser is tested for chunking equivalence.** Feeding the whole input in one call and feeding it one byte or character at a time must produce the same events. A property test checks it, and a fuzz target checks it again under coverage guidance. The fuzz crate reaches the parser through a dedicated `fuzz_exports` module, not by making internals public.
+- **Start an out-parameter at the wrong value.** When a function writes through `&mut`, the test initialises the target to something other than the expected result (`false` before parsing `"true"`), so a function that never writes cannot pass. Write one test per accepted literal and one per rejected spelling.
+- **Prove a pre-built artefact was used.** A test that an asset is baked into an image or binary asserts that the artefact is present and that no fetch happened at run time: an offline run, a fetch counter of zero, or the absence of the download log line on both stdout and stderr. A correct result alone does not prove it.
+- **An embeddable service has a test constructor.** The builder's `build()` returns a router the host mounts; `build_for_testing()` owns its temporary storage, so tests do not repeat the set-up. Secrets passed to the builder are wrapped in a secret type.
 
 ## 6. Types and API design
 
@@ -3345,6 +3385,32 @@ macro_rules! for_all_classified_sources {
 
 **Dump and parse back generated code.** Write the expansion as a plain function from `proc_macro2::TokenStream` to `TokenStream`, with the `#[proc_macro]` entry point as a thin wrapper. When a development environment variable is set, the wrapper parses the expansion as a `syn::File` and prints it with `prettyplease` to stderr. Tests call the inner function, parse the result with `syn::parse2::<syn::File>` and assert on the items. Text assertions on the pretty-printed output are smoke checks; compile-fail and runtime tests still carry the semantics.
 
+**Parse a macro's mini-syntax into a typed input.** A function-like macro with its own syntax implements `Parse` for a `MacroInput` struct in a `parse.rs` module, apart from code generation. Declare custom keywords with `syn::custom_keyword!` inside a private `mod kw`, with the naming-lint allowance scoped to that module, and match them with `input.parse::<kw::name>()` or `lookahead.peek(kw::name)`, not by comparing identifier strings. Use `braced!` and `Punctuated` for delimited lists, and report errors at the offending token's span.
+
+```rust
+mod kw {
+    syn::custom_keyword!(gen_accessors);
+}
+
+pub struct MacroInput {
+    pub accessors: Ident,
+    pub fields: Punctuated<Field, Token![,]>,
+}
+
+impl Parse for MacroInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        input.parse::<kw::gen_accessors>()?;
+        input.parse::<Token![=]>()?;
+        let accessors: Ident = input.parse()?;
+        input.parse::<Token![,]>()?;
+        let body;
+        braced!(body in input);
+        let fields = body.parse_terminated(Field::parse_named, Token![,])?;
+        Ok(MacroInput { accessors, fields })
+    }
+}
+```
+
 ### Closed sets and normalised inputs: further rules
 
 - **Finite CLI choices are a `ValueEnum`, and paths are `PathBuf`.** The argument parser then validates and documents the choices, and a path is never a `String`.
@@ -3375,6 +3441,38 @@ fn store<R: Record>(db: &Db, rows: &[R], embeddings: &[Vec<f32>], dim: usize) ->
 
 - **A published tree format is modelled as the specification writes it.** Node kinds are an enum with the specification's type tag as the serialised discriminant (`#[serde(tag = "type")]`), a parent's children are an enum of only the variants the specification allows there, and the type's documentation links the specification.
 - **A hand-rolled entry point has one usage constant.** Where an argument parser is not available (a host-function binding, an FFI command), every arity and type error prints the same `USAGE` constant, and the file header lists the accepted call forms.
+- **Several accepted input shapes become one type at the edge.** When an option may be one string, a list, or a map, deserialise with an untagged enum and convert once; the doc comment lists the shapes and what each means, and names are validated at that point.
+
+  ```rust
+  #[derive(Deserialize)]
+  #[serde(untagged)]
+  enum SpecInput {
+      One(String),
+      Many(Vec<String>),
+      WithMetric(BTreeMap<String, String>),
+  }
+
+  impl SpecInput {
+      fn into_specs(self) -> Vec<Spec> {
+          match self {
+              SpecInput::One(name) => vec![Spec { name, metric: None }],
+              SpecInput::Many(names) => names
+                  .into_iter()
+                  .map(|name| Spec { name, metric: None })
+                  .collect(),
+              SpecInput::WithMetric(map) => map
+                  .into_iter()
+                  .map(|(name, metric)| Spec { name, metric: Some(metric) })
+                  .collect(),
+          }
+      }
+  }
+  ```
+- **Back-end options are typed per back end.** Use `enum Backend { Embedded(EmbeddedOptions), Remote(RemoteOptions) }`, decoded once. Do not pass a `HashMap<String, Value>` option bag that the back end reads by string key. The same holds for a discriminator: a `type` field is an enum, not `Option<String>`.
+- **Type inference from untyped input has a documented, tested order.** If a loader tries a string as a date before keeping it as text, a string that merely looks like a date changes type silently. State the order of attempts, test the ambiguous cases, and let an explicit type tag or schema override inference. The same goes for parsing a value with several formats: try them in a stated order, and make the error name the value and the formats tried.
+- **Numbers and times that arrive as strings are parsed at the boundary.** Where a wire format carries counts as strings, deserialise them into numeric types (`#[serde(deserialize_with = ...)]` or `serde_with::DisplayFromStr`), timestamps into `DateTime<Utc>` with the documented format, and ids into a newtype, so later code never parses again.
+- **A workload operation declares its result type and its id.** `trait Operation { type Output; const TYPE: u16; }`, with `Output = ()` for writes. A test checks that the `TYPE` ids are unique.
+- **A line-delimited command protocol is a tagged enum, and errors carry the line number.** `#[serde(tag = "command", rename_all = "snake_case")] enum Command { ... }` with `fn parse_command(line: &str, line_no: usize) -> Result<Command, CommandError>`. Every response echoes the request id. Tests cover each variant, each optional field and each invalid form.
 
 ## 7. Ownership, borrowing and data handling
 
@@ -3988,6 +4086,10 @@ fn load_rules(path: &Path) -> io::Result<Rules> {
 
 - **A missing optional dependency is a typed state, not a null and a printed warning.** Do not catch a load failure at initialisation, print, and leave a `None` that every later use must check. Gate the capability with a Cargo feature, or return an explicit unsupported or failed-to-load error at start-up. A library never configures global logging; only the binary installs a logger or subscriber.
 - **A status that is assigned along the way starts as failure.** An exit code or a foreign status variable is initialised to a non-success value, so an early return cannot report success. A kernel-style function documents which input states it accepts (sorted or unsorted, for example) and which of them the output inherits.
+- **A corrupt store is not an empty store.** A reader that returns an empty value both when the file is absent and when it fails to parse lets the next write destroy the data. Absent means empty; unparsable is a typed error, or the file is moved aside before anything is written.
+- **An algorithm's failure says how far it got.** `CycleDetected { processed_count }` tells the caller more than a bare variant.
+- **An error message takes its limit from the constant.** Format `MAX_SIZE` into the message; a literal "4GB" beside a constant drifts when the constant changes.
+- **An error sent to a front end has a short message and a separate detail.** The UI shows the message as the title and the cause chain as the description, so do not flatten both into one string.
 
 ## 9. Async and concurrency
 
@@ -4733,6 +4835,10 @@ let histogram = items
 
 **Execution-policy facade.** Write the algorithm against a small execution policy with a sequential adapter and a parallel adapter over the same body, so tests run the sequential one and separate algorithm correctness from scheduling. Add the sequential adapter before any parallel back end. Abstract the execution policy, never the data model.
 
+**State through a callback that cannot carry it.** When a framework's callback signature gives no way to pass your own state (a compiler driver calling into a code generator, for example), carry it in a `thread_local!` `RefCell` that is set before the call and read inside it. Say on the type that it is reached only through thread-local storage. Keep borrows short and never hold a `borrow_mut` across a call that may re-enter. Use `OnceCell` for values computed once per session. This is valid only while the whole pipeline runs on one thread.
+
+**Parallel workers, one writer.** Workers send whole results through a channel to a single thread that owns one `BufWriter` over stdout, so output lines never interleave.
+
 ### Cancellation, backpressure and primitive choice
 
 Primitive choice:
@@ -4901,6 +5007,8 @@ for (index, item) in items.iter().enumerate() {
 
 - Tests cover one, all, empty, a delayed producer and close before drain.
 - When backpressure, cancellation or several subscribers are needed, expose a real `Stream`.
+
+**A debounced async call lets the latest request win.** A newer call cancels or supersedes the pending one, and a result that arrives late for an older request is discarded: compare a generation counter before applying it. A stale result never overwrites a newer one.
 
 ## 10. Unsafe and FFI
 
@@ -6358,6 +6466,13 @@ panic = "abort"
 - **Projected numbers are labelled as projections.** A design document that states a speed-up or a memory reduction before anything was measured says so beside the number and names the measurement that would confirm it.
 - **Benchmarks reuse the test fixtures.** A `fixture_path(language, file)` helper built on `CARGO_MANIFEST_DIR` points benches at the same per-language fixture projects the tests use. One `benchmark_group` is parameterised by language with `BenchmarkId` instead of one copied benchmark per language.
 - **A context-reduction claim reports quality beside size.** State the corpus date, file and token counts, index size and build time, the full-file baseline, the tokens left after each stage and combined, and precision and recall at a fixed cut-off. A saving without retrieval quality is not a result.
+- **State the gate before measuring, and report a miss plainly.** Write the thresholds (for example precision at least 0.60 and recall at least 0.40, over at least three public datasets) before the run. If they are missed, the headline is "NOT MET". One or two datasets do not support a general claim. When a broader run contradicts an earlier result, mark the earlier document superseded and keep it. A predictor that fails its gate ships off by default, or as advice only.
+- **A backtest runs at historical commits and excludes signals that leak the answer.** Evaluate each case with only what was known at that commit.
+- **The allocator belongs to the binary.** A library never sets `#[global_allocator]`. A bump allocator that never frees suits only a short-lived process with bounded input; measure peak memory before choosing it.
+- **Benchmark knobs are documented environment variables, parsed once.** A language filter, a case filter and a repetition count have stated defaults. A malformed value produces an error naming the variable and the value, not an `unwrap` panic inside a lazy static. Share helpers between tests and benchmarks through a module, not `include!`.
+- **One named benchmark case per input shape.** A parser benchmark has a case for each shape the parser treats differently (plain text, a glob, text with a glob), with the parser built once outside `iter`.
+- **Synthetic dataset parameters are named constants shared by generator and benchmark.** The benchmark then states exactly which shape it measured.
+- **An analysis report opens with the tool version, the input and the totals.** Give files processed, entities and edges before any finding, so the numbers can be reproduced and compared between runs.
 
 ## 12. Naming, modules and documentation
 
@@ -6409,6 +6524,11 @@ bad:  detect_cycles_in_dependency_graph()  (5 words)
 - **Name what the crate root exports.** A small crate may glob re-export a facade module. As a crate grows, write named re-exports (`pub use counter::{LineStats, count_file};`) so the public API is readable in one place and an internal addition cannot leak.
 - **Library roots warn on missing docs and keep binary orchestration private.** Put `#![warn(missing_docs)]` and a `//!` summary in `lib.rs`. Modules that only drive the command-line program (argument handling, the main process flow) belong to the binary or stay private; they are not public library API.
 - **One module per subcommand.** A CLI keeps each subcommand in its own file under `commands/`, and `mod.rs` only declares them.
+- **A decision record has a status.** Draft, accepted or superseded. Once a second parser or a second service exists, write the shared conventions down as a record with status, context and decision.
+- **Module docs do not name a crate the module does not use.** A doc that says "using `thiserror`" above a hand-written `Display` impl is drift; fix the doc in the same change as the code. A module doc may also say which heavy dependency the module deliberately avoids, and in which contexts it must work.
+- **Field comments state meaning, unit and format.** An analogy in place of a definition tells the reader nothing about what the value may contain.
+- **A workaround bound cites the upstream issue.** A trait bound or attribute that exists only because of a compiler limitation carries a comment with the issue reference, so it can be removed later.
+- **Crate docs open with build, open and query in one example.** Mark it `no_run` when it needs a real repository or service, and hide a `# fn main() -> anyhow::Result<()> {` wrapper so `?` works. Building an index (the write path) and opening it (the read-only path) are separate constructors.
 
 ## 13. Anti-patterns
 
@@ -9668,6 +9788,9 @@ Rule to test to gate:
 
 - **A binding crate inside a polyglot repository publishes by allowlist.** Point `build` and `[lib] path` at the binding directory, list exactly what ships in `include` (the binding, the generated source, the query files) and set `autoexamples = false` when the repository's examples directory is not Rust examples.
 - **A scheduled readiness check for dependency and vendored drift.** A standard-library-only script checks whether plugin or grammar releases accept a new core version and whether vendored upstream files have changed, prints a Markdown report, exits non-zero while blockers remain and updates one tracking issue from CI. It has an offline mode and an assert-current mode for local runs and tests.
+- **Subcommands share output flags and one emitter.** Global format flags are one struct flattened into every subcommand. Commands emit typed messages through one emitter trait with a human implementation and a JSON-lines implementation; command code does not call `println!`.
+- **The second occurrence of an architectural violation becomes a machine-checked rule.** Encode it as a structural-search rule, a `disallowed_methods` or `disallowed_types` entry, or a custom lint, and run it in CI. Add one when the ordinary linter cannot express the pattern or the pattern has caused a bug or a slowdown. The rule's message says what to do instead, with a good and a bad example.
+- **A release review is split into named areas, each with its own verdict.** For example: architecture and security, protocol compliance, correctness, cross-language behaviour, and documentation. One failing area blocks the release. A headline claim, such as a stated saving, gets its own validation pass.
 
 ## 17. Review checklist
 

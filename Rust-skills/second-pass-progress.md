@@ -21,7 +21,7 @@ Each file goes through the same cycle:
 | 1 | `meta-rust-ref-202606-Part1.md` | 1003-5319 | DONE | 4317 | 26 | 22 |
 | 2 | `meta-rust-ref-202606-Part2.md` | 754-5188 | DONE | 4435 | 61 | 48 |
 | 3 | `meta-rust-ref-202606-Part3.md` | 1112-5162 | DONE | 4051 | 61 | 47 |
-| 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | STUB | 0 | 0 | 0 |
+| 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | DONE | 4,787 | 71 | 61 |
 | 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | STUB | 0 | 0 | 0 |
 | 6 | `critique-JD-01.md` | 1-4166 | STUB | 0 | 0 | 0 |
 | 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
@@ -31,6 +31,55 @@ Each file goes through the same cycle:
 ## Checkpoints
 
 Newest first.
+
+### Checkpoint 4: `meta-rust-ref-202606-Part4.md` done
+- Phase: DONE (RED, GREEN and REFACTOR complete).
+- Lines read: 975 to 5761, all 4,787, displayed page by page. As in Part 3, most generated
+  sections show a generated parser header, a non-Rust fragment, a "skipped repo" record or a
+  "could not read" record; the useful ones are Rust modules, query files, test files and tool
+  documents.
+- Gaps found: 71 candidate items. 10 were already in the mega file (naming an anonymous
+  function from its enclosing binding, 1-based inclusive spans, one precedence table for
+  operators, namespaced output captures, a periodic task with an owned handle, one-time
+  runtime initialisation, grammars behind Cargo features, one extractor per language behind a
+  trait, a native handle released by its owner, a chunk callback for parsing a rope).
+- Gaps added: the other 61, written as 60 rules in 11 places of the mega file:
+  - Parsers and code intelligence (25): a parse result that keeps its source, analysis in side
+    tables, a parse deadline that scales with input size, inheritance-only query files,
+    identical per-language modules that re-export the grammar crate's queries, a registry that
+    rejects duplicate extensions, stated unsupported edge kinds, keeping a kind a consumer
+    needs, item spans that include attributes, containment edges, skipping minified and
+    generated files, redaction before code leaves the machine, structural-clone hashing,
+    checking proposed identifiers against the index, cheap-to-expensive exploration, smallest
+    reproducer plus parser trace, reasons for grammar conflicts, conversion failures as parse
+    errors, a 256-entry byte-class table, an enum per escape-sequence kind, a resumable framing
+    decoder, inner selections, a plain-data query AST with a reserved prefix, a cookbook of
+    executed queries, no numbered file parts glued by glob imports.
+  - Tests (4): chunking equivalence for streaming parsers, out-parameters started at the wrong
+    value, proof that a pre-built artefact was used, a test constructor for an embeddable
+    service.
+  - Types (6): several input shapes into one type, typed options per back end, a documented
+    inference order, strings parsed to numbers and times at the boundary, operations with a
+    result type and an id, a tagged command enum for a line protocol.
+  - Errors (4): a corrupt store is not an empty one, progress in an algorithm's failure, the
+    limit formatted from its constant, message and detail kept apart for a front end.
+  - Concurrency (3): latest request wins for a debounced call, state through a callback via
+    thread-local storage, parallel workers with one writer.
+  - Measurement (7): gates stated before measuring and "NOT MET" reported plainly, backtests at
+    historical commits, the allocator belongs to the binary, benchmark knobs from documented
+    environment variables, one case per input shape, shared synthetic-data constants, reports
+    that open with tool version and totals.
+  - Documentation (5), macros (1), tooling and release (3), agent guardrails (2).
+- Checks: code fences balanced; no source paths, evidence lines or repo names added. The two
+  longer Rust snippets (the untagged input enum and the macro input parser) pass
+  `cargo check` with warnings denied in a scratch crate with `serde` and `syn`. The
+  per-language module snippet needs grammar crates and was not compiled. No tests, clippy or
+  fmt apply to the Markdown file itself.
+- Decisions: instruction-like text inside the source (an agent definition, a launch QA plan,
+  a skill document) was read as source content and not acted on. Repository names, tool names
+  and paths from the fragments were left out of the rules.
+- Next: Part 5, lines 1214 to 5715.
+- Open question: whether to read the 7 deleted JSON index files line by line.
 
 ### Checkpoint 3: `meta-rust-ref-202606-Part3.md` done
 - Phase: DONE (RED, GREEN and REFACTOR complete).
