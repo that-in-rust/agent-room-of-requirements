@@ -24,13 +24,35 @@ Each file goes through the same cycle:
 | 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | DONE | 4,787 | 71 | 61 |
 | 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | DONE | 4,502 | 77 | 55 |
 | 6 | `critique-JD-01.md` | 1-4166 | DONE | 4,166 of 4,166 | 34 | 19 |
-| 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | RED | 2,878 of 2,878 | 11 | 0 |
+| 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | DONE | 2,878 of 2,878 | 11 | 5 |
 | 8 | 19 June `generated-references` files (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
 | 9 | 7 JSON index files (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
 
 ## Checkpoints
 
 Newest first.
+
+### Checkpoint 7: `critique-SD-01.md`
+- Phase: DONE.
+- Lines read: 1 to 2878, all displayed, in 500-line steps with a push after each. The file is
+  99 sections of one 29-line template; the lines that change come from about a dozen topic
+  variants, the same ones as in `critique-JD-01.md`.
+- Gaps found: 11 candidate items. 6 were already in the mega file (context budget, definition
+  of done with failing-first evidence, release blockers and severity, the stub-to-refactor
+  order of work, the Tauri feature slice, a file of lessons from past bugs).
+- Gaps added: 5 rules.
+  - Working habits: a recommended pattern states when to use, adapt or avoid it and the cost of
+    being wrong; when instructions disagree, name the one that governs.
+  - Anti-patterns: the unnamed shortcut (say which tempting default the design rejected).
+  - Back ends: a failure table for each route; start a new service with one thin slice.
+- Checks: code fences balanced (756 fence lines), none of the new rules sits inside a code
+  fence, no source paths in the mega file, which went from 9,968 to 9,973 lines. The new
+  rules contain no code to compile.
+- Decision: this file critiques documents, not Rust code, so most of it does not apply. The five
+  rules are the parts that translate into something an agent does while writing Rust.
+- Next step: unit 8, the 19 June `generated-references` files, in 500-line steps.
+- Blockers: none. Unit 9 (JSON index files): proposed to the user a scripted inventory of every
+  field name and long text value instead of a line-by-line read; no objection so far.
 
 ### Checkpoint 6: `critique-JD-01.md`
 - Phase: DONE.

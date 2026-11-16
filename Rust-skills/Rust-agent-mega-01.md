@@ -65,6 +65,8 @@ The aim is a decision-complete work packet or implementation that stays correct 
 - **Tools are allowed per task.** An agent harness takes the allowed tools for a task as data and denies the rest, with the reason recorded (for example, deny anything that can read the message store). Its tests include cases where the right outcome is to stop and ask because the information is missing.
 - **Summaries first, raw artefacts on request.** A long multi-step job returns a small structured summary and a handle to its full log. The model reads a multi-kilobyte artefact only by asking for it.
 - **An automated review comment records what it reviewed.** Include the head commit, the trigger, and whether the review was partial, so a stale or truncated review is recognisable. Parse the tool's log and render the comment in separate functions (`parse_log(&str) -> Result<Review>`, `render(&Review, &Meta) -> String`) so each is testable, and make the conclusion an enum.
+- **A recommended pattern states its limits.** With each pattern you propose, say when to use it as is, when to adapt it, when to avoid it, and what it costs if the choice turns out wrong. Where the line is hard to see, show one good use, one bad use and one borderline use, with the question that separates them.
+- **When instructions disagree, name the one that governs.** Two documents, comments or conventions that conflict are not averaged. State which one is authoritative and why, follow it, and flag the other as stale so it is corrected or removed.
 
 ### Decision ladder for any Rust task
 
@@ -6678,6 +6680,7 @@ Each card gives the smell and the preferred alternative.
 - **Hazards a signature does not show.** Lock guards kept alive inside iterators, `Arc` reference cycles, and a new trait changing object safety or SemVer.
 
 - **Fixing the symptom.** Similar symptoms can need opposite fixes, so find the cause before adding a trait, clone, retry or lock. Reproduce the failure in the smallest fixture, confirm the mechanism, then change the code. The costly failures are hidden contract transfers: convenience in one function moves a panic, an ownership rule, a queue or a compatibility cost onto callers and operators. Also watch for panic hooks that hide abort behavior and locks nested through helper calls.
+- **The unnamed shortcut.** A design that avoids a tempting default (a clone at every call, `Arc<Mutex<_>>` around all shared state, `Box<dyn Error>` in a library's public API) without saying so invites the next change to put it back. Name the rejected shortcut and the reason beside the design, in the decision record or in a comment at the boundary.
 
 ## 14. Rust web backends
 
@@ -6838,6 +6841,8 @@ let sparse = match sparse_res {
 ```
 
   Count each path in metrics, or the fallback hides an outage. No silent degradation where audit or exact-match guarantees need every back end.
+- **A failure table for each route.** For every dependency a handler calls (database, cache, queue, remote API), write one row: the failure (timeout, refused connection, malformed reply), the status and error body the client receives, what is logged or counted, and whether the call is retried. A dependency with no row has undecided behaviour. Each row has a test that injects that failure.
+- **Start a new service with one thin slice.** Take a single request through every layer before adding a second endpoint: typed input validation, one domain function, the persistence boundary, the error-to-response mapping, a spawned-app test of the success path and of one failure path, and the release gates. The slice settles the layer boundaries and the test harness while they are still cheap to change.
 - **Per-tenant services.** Share the expensive resources and cache one service facade per tenant in a registry with single creation under concurrency. Handlers obtain the service from the registry, tenant identity travels in request-scoped state, tenant existence is validated before creation, and services of removed tenants are dropped. Not when tenants need process isolation or their own credentials.
 - **Pipelined protocols.** Every send enqueues the handler for its expected reply in the same order and every received message pops one. A reply with no handler waiting is a protocol error. Add "append message" and "enqueue handler" together. When replies can arrive out of order, use correlation ids instead.
 
