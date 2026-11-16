@@ -8124,3 +8124,145 @@ count.
 thread, path behaviour that differs by platform, a failed or half-applied update, and a
 serialisation mismatch across IPC.
 
+### Tauri rules
+
+These target Tauri 2 application code. They do not cover plugin internals or mobile-only
+APIs. If unsure what to prioritise, work down the list.
+
+1. **Front-end-to-command contracts are explicit and typed** on both sides.
+2. **Every fallible command returns `Result<T, AppError>` with a serialisable error.** No `unwrap()`, `expect()` or panic in a path a user can reach.
+3. **Shared mutable state lives in Tauri-managed state,** behind the narrowest lock that fits. No ad hoc globals.
+4. **Capabilities are least-privilege and scoped by window label.** Filesystem, shell, plugin and updater permissions name exact paths and commands.
+5. **Large, long-running or high-volume IPC uses a channel or a binary response,** not a stream of events and not a giant JSON string.
+6. **Every sidecar has a supervisor:** a start-up check, a bounded wait, a restart rule, a log cap, and a declared binary per target.
+7. **Updater, tray, deep links, single instance, window state and setup are correctness concerns,** tested on each platform.
+8. **Command names, event names and window labels are public API.** Keep them stable, and keep registration in one place.
+
+### Commands and state
+
+```rust
+#[derive(Debug, thiserror::Error, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum AppError {
+    #[error("invalid request: {field}")]
+    InvalidRequest { field: String },
+    #[error("not found")]
+    NotFound,
+    #[error("io: {message}")]
+    Io { message: String },
+}
+
+impl From<std::io::Error> for AppError {
+    fn from(error: std::io::Error) -> Self {
+        AppError::Io { message: error.to_string() }
+    }
+}
+
+#[derive(Default)]
+pub struct Session {
+    open_workspace: Option<PathBuf>,
+}
+
+#[tauri::command]
+async fn open_workspace(
+    path: String,
+    session: State<'_, Mutex<Session>>,
+) -> Result<WorkspaceSummary, AppError> {
+    let request = OpenRequest::parse(&path)?;              // validate at the boundary
+    let summary = workspace::open(&request).await?;        // the core does the work
+    session.lock().unwrap_or_else(PoisonError::into_inner).open_workspace = Some(request.into_path());
+    Ok(summary)
+}
+
+tauri::Builder::default()
+    .manage(Mutex::new(Session::default()))
+    .invoke_handler(tauri::generate_handler![open_workspace])
+```
+
+- **Anything touching disk, network or a child process is an `async` command.** A synchronous command runs on the main thread and freezes the window. Never `std::thread::sleep` in a command.
+- **Async commands take owned arguments** (`String`, not `&str`). `State<'_, T>` is allowed when the command returns `Result`.
+- **Do not wrap state in `Arc` before `.manage(...)`;** Tauri already shares it.
+- **`std::sync::Mutex` for short synchronous access, released before any await,** as above. `tokio::sync::Mutex` only when the lock must be held across an await.
+- A `State<T>` whose type was never managed fails at run time, when the command is invoked. Register state and handlers together, and cover each command with one invocation test.
+- **The error is a tagged enum,** so the front end branches on `kind` and not on message text. Sources that are not serialisable are converted to a message at this boundary; log the full source in Rust.
+- Everything arriving from the webview is untrusted input, even from your own front end. Validate it in the command.
+
+**On the front end, wrap `invoke` once per command** in a typed function, and normalise
+results and errors there. No string-named `invoke` calls scattered through components.
+
+```ts
+export async function openWorkspace(path: string): Promise<Result<WorkspaceSummary, AppError>> {
+  try {
+    return { ok: true, value: await invoke<WorkspaceSummary>("open_workspace", { path }) };
+  } catch (error) {
+    return { ok: false, error: toAppError(error) };
+  }
+}
+```
+
+- Argument names are camelCase on the JavaScript side by default and snake_case in Rust. A mismatch is a run-time "missing argument" error.
+
+### Tauri security
+
+**Capabilities are the security boundary.** Each capability names the windows it applies to
+and the exact permissions granted.
+
+```json
+{
+  "identifier": "main-window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    { "identifier": "fs:allow-read-text-file", "allow": [{ "path": "$APPDATA/notes/**" }] }
+  ]
+}
+```
+
+- **Window labels, not titles, are what a capability matches.** A second window gets its own, smaller capability. A window that loads remote content gets none of the privileged ones.
+- **Broad filesystem or shell access is a security decision,** written down with its reason. `$HOME/**` and unrestricted shell execution are almost never needed.
+- **Resolve paths through the path APIs and the scope,** and re-validate in the command. The front end choosing a path does not make it allowed.
+- **Prefer an official plugin with a narrow permission** over custom OS bridging. The permission scope is the safety argument; the plugin choice is not.
+- **Keep the content security policy explicit.** Do not add `unsafe-inline`, `unsafe-eval` or a wildcard source to unblock a library. Do not load remote scripts into a window that has IPC access.
+- **Updater:** artefacts are signed, the private key lives outside the repository and CI logs, the endpoint is HTTPS, and a failed update leaves the old version runnable.
+- Custom commands are callable from any window that can reach IPC unless restricted. Check sensitive ones against the calling window's label.
+- Capability and permission formats change between major versions. Check the schema of the version in `Cargo.lock` before editing.
+
+### IPC shape
+
+| Need | Use | Avoid |
+|---|---|---|
+| One request, one small result | A command returning JSON | |
+| Progress or a sustained stream for one call | `tauri::ipc::Channel<T>` passed as a command argument | Global events at high frequency |
+| Sparse notifications to any listener | Events | Events as a data stream |
+| Bytes (images, files) | `tauri::ipc::Response`, or a custom protocol | Base64 or number arrays inside JSON |
+
+```rust
+#[derive(Clone, Serialize)]
+#[serde(tag = "event", rename_all = "snake_case")]
+enum SyncEvent {
+    Progress { done: u64, total: u64 },
+    Finished,
+}
+
+#[tauri::command]
+async fn sync_workspace(on_event: Channel<SyncEvent>) -> Result<(), AppError> {
+    for (done, total) in sync::run().await? {
+        let _ = on_event.send(SyncEvent::Progress { done, total }); // the window may be gone
+    }
+    let _ = on_event.send(SyncEvent::Finished);
+    Ok(())
+}
+```
+
+- **Throttle progress.** A message per item floods the webview; send at a fixed interval or on a percentage change.
+- **A long-running command needs a way to stop:** a cancel command with a token, and cancellation when the window closes.
+- Listeners registered on the front end are removed on unmount, or they accumulate across navigations.
+
+### Persistence and sidecars
+
+- **The store plugin holds small structured settings.** Large or binary data goes in files under the application data directory, with metadata in the store or a database.
+- **Write files atomically** (temporary file, then rename), since a desktop application can be killed at any time.
+- **A sidecar has a named owner** that starts it, checks it is healthy within a bounded wait, restarts it under an explicit rule with a limit, caps its logs, and stops it on exit.
+- **Its permission names the executable and its expected arguments.** No generic shell escape.
+- **External binaries are declared exactly:** name, one file per target triple, and who builds them.
+
