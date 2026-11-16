@@ -22,7 +22,7 @@ Each file goes through the same cycle:
 | 2 | `meta-rust-ref-202606-Part2.md` | 754-5188 | DONE | 4435 | 61 | 48 |
 | 3 | `meta-rust-ref-202606-Part3.md` | 1112-5162 | DONE | 4051 | 61 | 47 |
 | 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | DONE | 4,787 | 71 | 61 |
-| 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | STUB | 0 | 0 | 0 |
+| 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | DONE | 4,502 | 77 | 55 |
 | 6 | `critique-JD-01.md` | 1-4166 | STUB | 0 | 0 | 0 |
 | 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
 | 8 | 19 June `generated-references` files (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
@@ -31,6 +31,60 @@ Each file goes through the same cycle:
 ## Checkpoints
 
 Newest first.
+
+### Checkpoint 5: `meta-rust-ref-202606-Part5.md` done
+- Phase: DONE (RED, GREEN and REFACTOR complete).
+- Lines read: 1214 to 5715, all 4,502, displayed page by page. About a third of the generated
+  sections are identical generated parser headers or "skipped repo" records; the useful ones
+  are Rust modules, query and grammar files, benchmarks, test files and tool documents.
+- Gaps found: 77 candidate items. 22 were already in the mega file or not universal (a parser
+  per worker thread, speed reported beside quality, benchmark set-up outside the measured
+  closure, caller location in fail-fast helpers, minimum-version checks in CI, symbol-level
+  context, scope queries, a small parser interface, an enclosing-declaration lookup, ordered
+  type inference, glue code without language branches, a parse cache keyed by content hash,
+  a search facade, a sink trait for lexer output, extension tie-breaks, folding queries, typed
+  request models, kinds as enums, fixtures shared with benchmarks, public-API snapshots, and
+  two product documents with nothing for Rust).
+- Gaps added: the other 55, written as 52 rules in 11 places of the mega file:
+  - Parsers and code intelligence (15): listener defaults with an error-node hook, two parsers
+    behind one switch with a differential test, text edits applied from the highest offset,
+    one macro line per bundled language, chunking through a strategy table with a fallback,
+    a line-start index built once, incremental indexing that states what it can miss, named
+    chunk limits, spans on every node, one thin binary per language, prose-bearing nodes only,
+    linting query files with a query, dialect grammars that extend a base, lending query
+    cursors, peeling wrapper nodes in one loop.
+  - Types and inputs (12): sign against zero extension, named values at nullable C arguments,
+    prompting only at a terminal, a child handle that borrows its parent, a parameters struct
+    per algorithm, an empty trait with a blanket impl for a bound set, aliases for supported
+    generic instantiations, constants without defaults and `Default` that cannot panic, derived
+    views that borrow, arguments validated before expensive work, unsupported against empty,
+    structs instead of documented tuple aliases.
+  - Packaging and upkeep (6): an `include` allowlist checked with `cargo package --list`,
+    workspace discovery through `cargo metadata`, pinned vendored sources with a drift check,
+    narrow deprecation suppressions, the version as a compile-time constant, dependency
+    reports with denominators and a cycle gate.
+  - Fixtures and tests (4): one snapshot per case of a standard suite, a conservation invariant
+    for binning, a grammar contract test, generated tests cut down after review.
+  - Benchmarks and performance (4): token counts that name their tokenizer, cheap predicates
+    first, one benchmark case per syntactic feature, the sparse set.
+  - Foreign interfaces (3): binding-generator fixtures per macro form, one binding test per API
+    member on every target, a binding crate as a thin shim.
+  - Documentation (3): a page per stable error code, complete example programs, a legend and
+    provenance line in shared data files.
+  - Errors (2): a cause printed in one place only, the last good configuration kept on a failed
+    reload.
+  - Concurrency (1), web back ends (1), agent guardrails (1): an accept error that does not end
+    the server, an allowlist for caller-supplied service URLs, review comments that record the
+    commit they reviewed.
+- Checks: code fences are balanced (756 markers) and no source path, evidence line or scan
+  count is in the mega file. The Rust in 12 of the new rules (casts, the listener assertion,
+  the blanket impl, the alias, borrowed views and handles, the sparse set, the terminal check,
+  the version constant) compiles and runs in a scratch crate against stand-in types. The
+  query-cursor loop, the `cargo metadata` rule and the manifest keys were not run.
+- Limits: duplicates were checked by keyword search, so a rule worded differently may repeat
+  an existing one. Most rules are inferred from 15-line fragments, many of them not Rust.
+- Mega file: 9,896 to 9949 lines.
+- Next: file 6, `critique-JD-01.md`, lines 1 to 4166.
 
 ### Checkpoint 4: `meta-rust-ref-202606-Part4.md` done
 - Phase: DONE (RED, GREEN and REFACTOR complete).
