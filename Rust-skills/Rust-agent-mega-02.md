@@ -4337,3 +4337,110 @@ fn is_transient(error: &anyhow::Error) -> bool {
 - **`no_std` errors:** implement `core::fmt::Display` by hand and `core::error::Error` directly (stable since Rust 1.81), or put `std::error::Error` behind a `std` feature on older toolchains.
 - **Tests assert the variant or code, not message text,** so wording can improve. Retry tests assert behaviour (a permanent error is attempted once; the deadline stops the loop), not exact jittered delays.
 
+### Errors at external edges
+
+**Only "not found" selects the defaults.** A loader for an optional file opens it and matches
+on the error kind. Do not test `exists()` first: the file can change between the check and
+the read, and a permission error would be treated as absence.
+
+```rust
+fn load_rules(path: &Path) -> Result<Rules, LoadError> {
+    match fs::read_to_string(path) {
+        Ok(text) => Rules::parse(&text).map_err(LoadError::Parse),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Rules::default()),
+        Err(error) => Err(LoadError::Read(error)),
+    }
+}
+```
+
+- **A corrupt store is not an empty store.** A reader that returns "empty" for both a missing file and one that fails to parse lets the next write destroy the data. Absent means empty; unparsable is an error, or the file is moved aside before anything is written.
+- **A reloaded configuration that fails to parse leaves the last good one in force.** Parse and validate fully, then swap; on failure, log and keep serving.
+- Reading and parsing are two functions, so the parser is tested without a file system.
+
+**Smaller rules.**
+
+- **HTTP client: status first, then a typed decode, then a bounded snippet.** Check the status before treating the body as data. If decoding fails, the error carries the status and a length-capped piece of the body, never the whole payload and never an untyped value.
+- **Read the OS error immediately.** After a failing libc or FFI call, `io::Error::last_os_error()` goes on the very next line, before any other call can overwrite `errno`.
+- **A status variable assigned along the way starts as failure,** so an early return cannot report success.
+- **A missing optional capability is a typed state.** Do not catch a load failure at start-up, print a warning and leave a `None` that every later use must check. Gate it with a Cargo feature, or return an explicit "unsupported" error when it is used.
+- **A failure says how far it got** when that helps the caller: `CycleDetected { processed }`, `Truncated { read, expected }`.
+- **A message takes its limit from the constant.** Format `MAX_SIZE` into the text; a literal "4 GB" beside the constant goes stale.
+- **A structured variant, not a static string.** `InvalidInput { field, reason }` can name the offending value; `Invalid(&'static str)` cannot. A catch-all `Other(String)` belongs at an application edge, not in a library's public enum.
+- **An error sent to a user interface has a short message and a separate detail,** so the UI can show a title and an expandable cause.
+- **Distinct misses get distinct codes.** In a routed or distributed service, "no such resource", "not the leader" and "lease expired" lead a client to different actions (fail, re-route, retry), so they are different codes.
+- **A drop-in replacement keeps the original's error contract:** the codes, the structured fields and any wording that callers are known to match on.
+- **Three-valued logic is `Option` and `?`.** Write the inner computation to return `Option<T>` so a null operand short-circuits, and convert to the public error type in an outer function.
+
+## 9. Async and concurrency
+
+**Defaults.**
+
+- **Never block the executor.** No blocking I/O, `std::thread::sleep`, long CPU work or blocking lock inside an async function. Blocking work goes to `spawn_blocking`; CPU-heavy work to a thread pool such as `rayon`.
+- **Never hold a lock guard across `.await`.**
+- **Everything is bounded:** channels, concurrency, retries, timeouts, buffers.
+- **Every task has an owner** that can cancel it and learns how it ended.
+- **Every long-running operation can be cancelled** and has a deadline.
+- First ask whether you need async at all. A CLI, a build tool or a CPU-bound pipeline is usually simpler and as fast with threads. Async earns its place with many concurrent I/O waits.
+
+### Blocking and locks
+
+**How long is too long without an `.await`?** As a rule of thumb, more than about 100
+microseconds of work between yield points starts to hurt other tasks' latency.
+
+| Work | Where it runs |
+|---|---|
+| Short CPU work, non-blocking calls | inline in the task |
+| Blocking I/O, a synchronous client, file-system calls | `tokio::task::spawn_blocking` |
+| Heavy CPU work, parallel across cores | `rayon`, with the result sent back over a `oneshot` |
+| A long-lived blocking loop | a dedicated `std::thread` |
+
+- `spawn_blocking` tasks cannot be cancelled once started, and the pool is large but finite. Do not park an endless loop there.
+- `tokio::fs` uses the blocking pool underneath. For many small file operations, one `spawn_blocking` around the whole batch is faster.
+
+**Locks.**
+
+```rust
+// Wrong: the guard lives across the await.
+let mut state = shared.lock().unwrap();
+state.total += fetch_amount().await?;
+
+// Right: await first, then lock briefly.
+let amount = fetch_amount().await?;
+shared.lock().unwrap().total += amount;
+```
+
+- **Use `std::sync::Mutex` (or `parking_lot`) for short critical sections, even in async code.** It is faster than an async mutex, and its guard is not `Send`, so the compiler rejects holding it across an `.await` in a spawned task.
+- **Use `tokio::sync::Mutex` only when the guard must be held across an `.await`,** such as serialising access to a connection. Then ask whether a single owning task with a channel would be clearer.
+- A guard in a temporary lives to the end of the statement, and in `if let` or `match` on editions before 2024 to the end of the block. When in doubt, bind the value you need and `drop(guard)` explicitly.
+- The same rule holds for a `RefCell` borrow and for anything else that must be released: a pooled connection, a permit, a transaction.
+- **Lock order:** when two locks are ever held together, one documented order, everywhere. Better, restructure so that no code holds two.
+
+### Cancellation
+
+**In async Rust, any `.await` is a point where the future may be dropped and never resumed.**
+That happens on `select!`, on a timeout, when a `JoinHandle` is aborted, and when a client
+disconnects.
+
+- **A future is cancel-safe if dropping it between polls loses nothing.** `recv()` on a Tokio channel is. Reading "exactly n bytes" into a local buffer is not: the bytes already read vanish with the future.
+- **In `select!`, keep state outside the branch futures.** A half-filled buffer or a half-advanced parser lives in a variable that survives the loop iteration; the branch only awaits the next piece.
+
+```rust
+let mut buffer = BytesMut::new(); // outlives each select! iteration
+loop {
+    tokio::select! {
+        _ = shutdown.cancelled() => break,
+        read = socket.read_buf(&mut buffer) => {
+            if read? == 0 { break; }
+            while let Some(frame) = try_parse(&mut buffer)? {
+                handle(frame).await?;
+            }
+        }
+    }
+}
+```
+
+- **A multi-step change that must not be half-done** is either made atomic (one transaction, one message to an owning task) or run in a spawned task the caller waits on, so that dropping the caller does not stop it midway.
+- **Clean-up after cancellation runs in `Drop`, which cannot `.await`.** Hand async clean-up to an owner task, or offer an explicit async `shutdown()` and treat `Drop` as the fallback.
+- **Use a `CancellationToken` for cooperative shutdown.** Pass it down, check it in loops and `select!`, and give children `child_token()` so a subtree can be cancelled alone.
+- Document, for every public async function, whether it is cancel-safe.
+
