@@ -8534,3 +8534,85 @@ What to decide beyond it:
 - Where the child must die even if the parent is killed, use an operating-system mechanism: a job object on Windows, a parent-death signal on Linux, or have the child watch its stdin close.
 - If stdio is enough, prefer it to HTTP: there is no port, and nothing else can connect.
 
+### Persisted state, updates and command modules in practice
+
+**Persisted keys have byte budgets.** A settings store is read and written whole, so one
+growing key (history, a terminal buffer, a draft with a pasted image) slows every start and
+every save.
+
+```typescript
+type PersistPolicy = {
+  warnBytes: number;
+  maxBytes: number;
+  onOversize: "drop" | "truncate" | "blobRef";
+};
+
+const policies: Record<string, PersistPolicy> = {
+  promptHistory: { warnBytes: 128 * 1024, maxBytes: 256 * 1024, onOversize: "blobRef" },
+  terminal: { warnBytes: 64 * 1024, maxBytes: 128 * 1024, onOversize: "truncate" },
+};
+
+const persistedBytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).length;
+```
+
+- **Each hot key gets a hard cap and a stated action when over it:** drop, truncate, or move the bytes out and keep a reference.
+- **When introducing a cap on existing data, log oversize writes for a release before enforcing,** so real sizes are known.
+- **Large bytes live in files under the application data directory; state holds a `blob_id`, never base64.** Load a blob only when it is displayed.
+- **Blobs need garbage collection:** by age, or by scanning for references. Write the blob before the reference and delete the reference before the blob, so a crash leaves an orphan file, not a dangling reference.
+- This matters most for applications that accumulate screenshots, attachments or terminal snapshots.
+- Debounce saves. Writing the store on every keystroke is the usual cause of input lag.
+
+**Updater:**
+
+```json
+{
+  "plugins": {
+    "updater": {
+      "pubkey": "<public key>",
+      "endpoints": ["https://releases.example.com/{{target}}/{{arch}}/{{current_version}}"]
+    }
+  }
+}
+```
+
+- **Updates are signed; only the public key is in the repository.** The private key and its password live in the CI secret store and are never echoed. Losing the key means shipped installations cannot update; leaking it means anyone can update them.
+- **Endpoints are HTTPS.** The signature protects the artefact; transport security protects the metadata and the user's privacy.
+- **Check for updates off the start-up path,** and treat a failed check as a non-event for the user.
+- **Show download progress, and ask before restarting.** On Windows the installer quits the application; save state first.
+- **Test the update from the previous released version,** not only a fresh install. The updater that runs is the old one.
+- Decide whether a downgrade is allowed, and whether a bad release can be withdrawn by the endpoint.
+- Migrations of local data run on first launch after an update and must tolerate being interrupted.
+
+**Command modules:**
+
+```rust
+// src-tauri/src/commands/settings.rs
+#[tauri::command]
+pub async fn read_settings(app: AppHandle) -> Result<Settings, AppError> {
+    let path = app.path().app_config_dir()?.join("settings.json");
+    settings::load(&path).await
+}
+
+// src-tauri/src/lib.rs
+mod commands;
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            commands::settings::read_settings,
+            commands::windows::show_main_window,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+- **Call `invoke_handler` once, with one `generate_handler!` list.** A second call replaces the first, and the commands in it silently vanish.
+- **Command names are global, not module-scoped.** Two modules cannot both export `save`.
+- Commands in their own modules are `pub`; commands defined in `lib.rs` itself must not be.
+- **Resolve paths from the application's directories, never relative to the working directory.** A packaged application's working directory is wherever it was launched from.
+- **No blocking `std::fs` call in an async command.** Use async I/O or `spawn_blocking`; see section 9.
+- The `expect` on `run` is the accepted exception to the no-panic rule: there is no application to report to yet.
+- A command that takes a `WebviewWindow` or `AppHandle` gets the calling window or the application injected; the front end does not pass them.
+
