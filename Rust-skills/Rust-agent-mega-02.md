@@ -281,3 +281,96 @@ fewest clones or the deepest abstraction.
 - **Check that source is really source.** Before concluding anything from a repository, list its manifests and source files. An empty `src`, an empty manifest or Git LFS pointer stubs (files starting `version https://git-lfs.github.com/spec/v1`) are not code. A file name or a keyword hit is a lead, not a finding.
 - **A stale or broken index is not evidence.** Use a code index for navigation and confirm each claim in the source files.
 
+## 2. Work modes and output contract
+
+Pick the mode before planning. A task usually needs two.
+
+| Mode | Use when | Produces |
+|---|---|---|
+| Spec | The request is vague, acceptance criteria are missing, or success is not yet measurable | Requirement contracts, acceptance criteria, a requirement-to-test table |
+| Delivery | The work needs structure: layers, seams, an order of steps | The design, the test-first sequence, the slices |
+| Reliability | The risk is correctness under stress or change: public API, errors, async and cancellation, concurrency, unsafe, FFI, release | Failure behaviour made explicit, and the checks that prove it |
+| Review | The task is a code or design review or a hardening pass | Findings by severity, each with evidence and a fix |
+
+Default pairs:
+
+- vague feature request: Spec + Delivery
+- public API or reusable crate: Spec + Reliability
+- async or concurrent system: Delivery + Reliability
+- parser, decoder or protocol: Spec + Reliability
+- review or hardening: Review + Reliability
+
+When modes pull in different directions, Spec decides what must be proven, the design decides
+where invariants and dependencies live, Reliability decides which failures must be explicit,
+Delivery decides the order, and Review decides what to challenge hardest. Between two valid
+options, take the one that surprises callers least.
+
+### Output contract
+
+For a work packet (a feature, a design, a hardening pass), report in this order:
+
+1. Work mode
+2. Executable requirements
+3. Design (layers and trait seams)
+4. Verification matrix
+5. Implementation plan
+6. Quality gate results
+7. Open questions
+
+with every requirement traced to a test:
+
+| req_id | test_id | test_type | assertion | metric |
+|---|---|---|---|---|
+
+- **Keep the order, and say so when a section owes nothing** ("no performance requirement was stated, so no thresholds"). A fixed order lets a reviewer see what is missing before reading what is there.
+- **Gate results are what you ran, with the outcome.** "Should pass" is not a result. A gate you could not run is listed as not run, with the reason.
+- **Open questions is the section most often skipped and the most useful.** An empty list on an under-specified task reads as overconfidence. List what you assumed.
+- **Review output leads with findings,** most severe first, not with reassurance.
+- **Every completion claim rests on a check run after the last change.** Evidence outranks confidence, an earlier run and plausibility.
+
+*Skip the seven sections for a small change.* A bug fix or a contained edit reports three
+things: what changed and why, what was run and its result, and what is uncertain or left open.
+Wrapping a three-line fix in seven headings hides the fix.
+
+## 3. Executable specifications
+
+A requirement is executable when a test can fail for it. The form:
+
+- An identifier, `REQ-<AREA>-<NNN>.<REV>`, for example `REQ-RUST-014.1`. If the repository already has a scheme, use that one. Prefix by component once two work packets share a program, bump the revision when the meaning changes, and never reuse a retired number.
+- Behaviour written as `WHEN ... THEN ... SHALL`.
+- A threshold with a unit, or an effect a test can observe. Without one it is a wish; send it back.
+
+```markdown
+### REQ-RUST-001.0: <short title>
+
+**WHEN** <trigger or input condition>
+**THEN** the system SHALL <primary behaviour>
+**AND** SHALL <second measurable behaviour>
+**SHALL** <edge-case or default behaviour>
+```
+
+| Wish | Requirement |
+|---|---|
+| "Handle bad input gracefully." | WHEN the body is not valid UTF-8 THEN the parser SHALL return `ParseError::InvalidUtf8 { offset }` AND SHALL NOT panic. |
+| "Make lookups fast." | WHEN the index holds 10,000 entries THEN `lookup` SHALL complete in under 1 ms at p99 on the reference benchmark. |
+| "Retry on failure." | WHEN the upstream returns 503 THEN the client SHALL retry at most 3 times with exponential backoff from 100 ms, AND SHALL return `UpstreamUnavailable` after the third failure. |
+| "Be thread-safe." | WHEN 64 tasks increment the counter 1,000 times each THEN the final value SHALL be 64,000. |
+
+Rules:
+
+- **One `SHALL`, one test.** Split a clause that stacks two behaviours. Keep functional and non-functional requirements apart when they blur.
+- **Units everywhere:** `us`, `ms`, `MB`, `ops/s`, a retry count, a concurrency limit.
+- **Failure behaviour is specified, not left to the implementation.** For each input boundary write the rejected case too: what is returned, and what state is left behind.
+- **Retry is a requirement,** not a loop added in review: the count, the backoff shape and the concurrency ceiling, each linked to a test. State what it assumes about retries in the layers below, since three retries on top of a client that retries three times is nine calls.
+- **Silence on performance is a choice.** A regression on a path with no threshold violates nothing. Ask whether the path really has no budget or whether nobody wrote it down, and add the clause if it has one.
+- **Requirements describe behaviour, not implementation.** "SHALL use a `HashMap`" is a design decision; "SHALL return the entry in constant expected time" is a requirement.
+
+*Use when* behaviour is new or changing and someone other than you must agree it is right.
+*Skip for* a pure refactor (the existing tests are the specification; state that behaviour is
+unchanged and show the suite passing before and after) and for exploratory spikes.
+
+**Anti-patterns.** A requirement that restates the code ("SHALL call `validate()`"). An
+unmeasurable adjective ("robust", "scalable", "user-friendly"). One requirement with five
+`AND` clauses and one test. A requirements list written after the code to match what it does.
+A threshold copied from another project with no benchmark behind it.
+
