@@ -6482,3 +6482,105 @@ components.push(Component {
 - **Export files follow the importer's boundaries** (one file per table or relation). Write a header only when creating the file, put the path in every I/O error, and remove partial files after a failed write.
 - **Oversized inputs are skipped before expensive work,** by a stated size cap, and the skip is reported.
 
+### Streams, formats and protocols
+
+**Streamed text becomes lines first.** Before any diff, patch or parse logic, turn chunks
+into complete lines: append each chunk to a buffer, emit every complete line, keep the
+trailing partial line, and flush the remainder when the stream ends.
+
+```rust
+pub struct LineBuffer {
+    pending: Vec<u8>,
+}
+
+impl LineBuffer {
+    pub fn push(&mut self, chunk: &[u8]) -> Vec<String> {
+        self.pending.extend_from_slice(chunk);
+        let mut lines = Vec::new();
+        while let Some(end) = self.pending.iter().position(|byte| *byte == b'\n') {
+            let line: Vec<u8> = self.pending.drain(..=end).collect();
+            lines.push(String::from_utf8_lossy(&line).into_owned());
+        }
+        lines
+    }
+
+    pub fn finish(self) -> Option<String> {
+        (!self.pending.is_empty())
+            .then(|| String::from_utf8_lossy(&self.pending).into_owned())
+    }
+}
+```
+
+- **Buffer bytes, not `String`s.** A chunk boundary can fall inside a multi-byte character; decoding each chunk separately corrupts it. A complete line is safe to decode because `\n` never occurs inside a UTF-8 sequence.
+- Tests feed chunks that split mid-line, mid-character, and a stream with no final newline.
+- Bound the pending buffer if the peer is untrusted: a stream with no newline grows it without limit.
+- Fuzzy matching of edit anchors (accepting lines equal after trimming) suits prose and code edits. It is wrong for data formats where one character matters, and it never matches on blank lines.
+
+**A line-oriented format with a few exclusive regions is a state enum and one `match` per
+line.** Write the enum first.
+
+```rust
+#[derive(Debug, Clone, Copy)]
+enum Region { Outside, Left, Base, Right }
+
+let mut state = Region::Outside;
+let mut opened_at = None;
+for (index, line) in input.split_inclusive('\n').enumerate() {
+    if line.starts_with(LEFT_MARKER) {
+        state = Region::Left;
+        opened_at = Some(index);
+        continue;
+    }
+    // The base, right and end markers change `state` the same way.
+    match state {
+        Region::Outside => { left.push_str(line); right.push_str(line); }
+        Region::Left => left.push_str(line),
+        Region::Right => right.push_str(line),
+        Region::Base => {}
+    }
+}
+if let (Region::Left | Region::Base | Region::Right, Some(line)) = (state, opened_at) {
+    return Err(ParseError::Unterminated { opened_at: line });
+}
+```
+
+- `split_inclusive('\n')` keeps line endings, so content is rebuilt byte for byte, including `\r\n`. `lines()` discards them.
+- **Record where the open region began,** so an unterminated region at the end of input is an error with a location, not silently accepted.
+- A marker in the wrong state (an end with no start) is an error too. Nested or escaped markers need a stack or a real parser.
+
+**Cross-language contracts.**
+
+- **Integers beyond 2^53 − 1 do not survive JavaScript.** A Rust service exposing `u64` or `i64` identifiers to a JavaScript client sends them as strings.
+
+```rust
+#[derive(Serialize, Deserialize)]
+pub struct Event {
+    #[serde(with = "u64_as_string")]
+    pub id: u64,
+}
+```
+
+- **Parity tests compare canonical structure,** ignoring object key order. Compare bytes only when the exact bytes are the contract (signatures, hashes).
+- Shared fixtures include large integers, dates and time zones, binary data, empty and nested arrays, `null` versus absent, and non-ASCII text.
+- **Variants are a tagged enum** (`#[serde(tag = "type")]`) whose variants carry only the fields valid for that kind. A flat struct of optional fields lets illegal mixtures through.
+- Add the discriminant and its validation before adding consumers.
+
+**Incremental update protocols define their conflicts.** A patch stream (live graph, index
+deltas, UI state) says what happens when one patch both removes and upserts the same id,
+and reconciles before publishing.
+
+- With upsert-wins, the removal is netted away, so a client applying removals and upserts in either order reaches the same state.
+- Replication and audit logs want delete-wins with tombstones instead. Choose deliberately.
+- Test removing and recreating one id in a single patch.
+- Patches carry a sequence number, so a client can detect a gap and ask for a full snapshot.
+
+**Smaller rules.**
+
+- **An optional enhancement sits behind a capability check with the plain path as fallback.** Initialise it once and remember failure (`OnceLock<Option<T>>`), so it is not retried per item. **A silent fallback makes deployments behave differently:** log the capability state at start-up and record it with any output that depends on it.
+- **Resources that survive reconnects get identifiers from a stable property** (a fixed name, a hash of the canonical path), never a process-local counter. A short hash prefix is fine as a local key and wrong as a global identity. Do not leak a sensitive path through a public id.
+- **A list that is capped says so.** Return a `truncated` flag or the total beside it, and sort before capping by a documented, deterministic order.
+- **Dangling references found while projecting data are skipped and counted,** as a signal of index integrity, not ignored.
+- **A fixed-point loop converges on a canonical form.** If equal states can be represented differently (unsorted, with cancelling entries), the loop never sees "no change". Normalise each round, and cap the iterations with an error that says the cap was hit.
+- **An append-only segment writer** uses positioned writes at its tracked offset, takes `fsync` as an explicit policy so the caller sees the cost, and publishes the new size only after the write succeeds. Concurrent writers reserve their range first or are serialised. After recovery, the counter equals the file length.
+- **A null-aware column builder appends a value for every row,** a default for null rows, and tracks validity separately, so the values buffer and logical length always agree. The validity bitmap is created at the first null and back-filled.
+
