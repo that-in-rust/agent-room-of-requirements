@@ -2244,3 +2244,133 @@ fn read_fixture(rel: &str) -> String {
 - **An embeddable component has a test constructor** (`build_for_testing()`) that owns its temporary storage, so tests do not repeat the set-up.
 - **Expose internals to a fuzz crate through one dedicated module,** not by making them public.
 
+- **A contract test pins what you rely on in a dependency.** If the code depends on names, shapes or behaviour another component may change (node kinds of a grammar, fields of an API response), one test asserts exactly those, so an upgrade fails there instead of silently changing output.
+- **A bucketing function is tested by conservation:** the bucket counts sum to the number of in-range inputs, for one bucket and for many, with a value on each edge and one outside. The doc states whether the upper edge is inclusive.
+- **Generated tests are reviewed and cut like hand-written ones.** One behaviour per test, named in the test name. Delete tests that only mirror the implementation's steps; they fail on every refactor and catch nothing.
+
+## 6. Types and API design
+
+The aim: a caller who has not read the implementation uses the API correctly, and the wrong
+use does not compile or returns an error that says what to do.
+
+### Core patterns
+
+Each with when it pays and when it does not.
+
+- **Accept borrowed inputs.** `&str`, `&[T]` and `&Path`, not `&String`, `&Vec<T>` and `&PathBuf`. The API then commits to meaning, not to a container. *When the function stores the value,* take it owned (`String`, or `impl Into<String>`) so the caller who already owns one does not pay for a clone. `impl AsRef<Path>` is right for path arguments; `impl AsRef<str>` everywhere is noise and bloats code through monomorphisation.
+- **Newtypes, and parse instead of validating.** Turn raw data plus repeated checks into a type that can only hold a valid value. IDs, units, offsets, validated strings and handles stop being interchangeable primitives. *Skip when* the wrapper carries no invariant and no distinction anyone could confuse; a newtype around every `String` is ceremony.
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Email(String);
+
+impl Email {
+    pub fn parse(raw: &str) -> Result<Self, EmailError> {
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+            return Err(EmailError::Empty);
+        }
+        if !trimmed.contains('@') {
+            return Err(EmailError::MissingAt);
+        }
+        Ok(Self(trimmed.to_owned()))
+    }
+    pub fn as_str(&self) -> &str { &self.0 }
+}
+```
+
+  Keep the field private and offer no constructor that skips the check, or the guarantee is gone. That includes `Deserialize`: derive it through `#[serde(try_from = "String")]`, not on the raw field. Do not implement `DerefMut` or hand out `&mut` to the inner value.
+- **`From` for conversions that cannot fail, `TryFrom` for those that can.** *Use a named constructor instead* when the operation does real work, loses information or has more than one sensible meaning. `From` must be cheap and unsurprising, because `?` and `.into()` call it invisibly.
+- **Combinators for straight-line flows, `match` for branching.** `map`, `and_then`, `ok_or_else` and `transpose` keep a linear transformation linear. When there are several arms with different work, or a chain of four closures, a `match` or `let ... else` reads better.
+- **Generics or `dyn`, chosen on purpose.** Generics for hot paths and when the caller knows the type. `dyn Trait` for heterogeneous collections, plugin points, and to keep compile time and code size down. For a call that does I/O, the virtual call is immeasurable; do not make a service generic over five type parameters to avoid it.
+- **Return `impl Iterator` to stay lazy** and hide adapter types. Use `Box<dyn Iterator>` when branches return different iterator types or the type must be stored in a struct field without a generic parameter. Return a `Vec` when the caller always needs all of it and the size is bounded.
+- **A named enum over a boolean or a sentinel.** A `bool` says something happened; an enum says what the caller must do next. `enum Inserted { New, Replaced(Old) }` beats `true`; `Option<usize>` beats `-1`. *A `bool` is fine* for a real yes-or-no question (`is_empty`).
+- **A flat public facade with `pub use`.** Internal file layout and public paths are separate decisions; re-exports let internals move without breaking callers. Re-export deliberately, item by item. Do not re-export a dependency's types unless they are part of your contract, because then its version is too.
+- **Blanket impls for `&T`, `&mut T` and `Box<T>`** make a trait usable through references and boxes without wrappers. Add them when the trait is naturally delegating and its methods take `&self`.
+- **Omitted is not the same as explicitly empty.** For a partial update, "not provided" and "set to nothing" are different inputs:
+
+```rust
+pub enum Patch<T> {
+    Keep,
+    Clear,
+    Set(T),
+}
+```
+
+  `Option<Option<T>>` works with serde but is hard to read; the enum is clearer in domain code. Never use a magic value from the domain (an empty string, zero) to mean either.
+- **Name the unit of an offset.** Bytes, `char`s and UTF-16 code units are different numbers for the same position. Put the unit in the type (`ByteOffset`, `Utf16Offset`) wherever offsets cross a boundary, and test on multi-byte text.
+- **Strategies are named for the guarantee they give.** An operational choice is a named type behind a small trait, not a hidden boolean, and its documentation says what it does *not* preserve:
+
+```rust
+pub trait Sharding: Send + Sync {
+    fn pick_shard(&self, shard_count: usize, key: &Key) -> usize;
+}
+pub struct Balanced { next: AtomicUsize } // spreads load; does not keep per-key order
+pub struct Ordered;                       // keeps per-key order; load may skew
+```
+
+  Offer no alternatives where correctness needs one behaviour.
+
+### Type-level techniques
+
+Stronger tools. Each costs readability and compile-error quality, so each needs a reason.
+
+**Typestate, for a protocol that is wrong when used out of order.**
+
+```rust
+pub struct Request<State> {
+    parts: Parts,
+    _state: PhantomData<State>,
+}
+pub struct NoBody;
+pub struct HasBody;
+
+impl Request<NoBody> {
+    pub fn body(self, bytes: Vec<u8>) -> Request<HasBody> { /* ... */ }
+}
+impl Request<HasBody> {
+    pub fn send(self) -> Result<Response, SendError> { /* ... */ }
+}
+```
+
+- `send` does not exist on `Request<NoBody>`, so the mistake is a compile error, and consuming `self` stops the old state being reused.
+- *Use for* builders with required steps, connections (connected, authenticated), transactions, and resources that must be finalised.
+- *Skip when* the state is chosen at run time (then it is an enum and a `match`), when there are more than a handful of states (the types multiply), or when the object must be stored in a collection with others in different states.
+- **A must-complete object can carry a drop bomb:** `Drop` does `debug_assert!` that it was finished or explicitly abandoned. Keep it to debug builds, and never panic in `Drop` while already unwinding (check `std::thread::panicking()`), or the process aborts.
+
+**Phantom-typed handles bind a name to its types.**
+
+```rust
+pub struct Table<K, V> {
+    name: &'static str,
+    _types: PhantomData<fn() -> (K, V)>,
+}
+
+impl<K, V> Table<K, V> {
+    pub const fn new(name: &'static str) -> Self {
+        assert!(!name.is_empty());
+        Self { name, _types: PhantomData }
+    }
+}
+
+pub const USERS: Table<u64, String> = Table::new("users");
+```
+
+- Code passes `USERS`, never the string `"users"`, so the key and value types cannot be mismatched at a call site.
+- `PhantomData<fn() -> T>` says "produces `T`, owns none": the handle stays `Send`, `Sync` and `Copy` regardless of `T`, and drop-check is not affected. `PhantomData<T>` claims ownership of a `T`, which is rarely what a handle means. For a handle whose parameter must not be coerced at all (invariance), use `PhantomData<fn(T) -> T>`.
+- *Not for* schemas defined by users at run time; those need validation, not types.
+
+**Queries as a typed tree, not a string.**
+
+```rust
+pub enum Query {
+    AllVertices,
+    Edges(EdgeQuery),
+    Pipe(Box<Query>, Direction),
+    Count(Box<Query>),
+}
+```
+
+- Callers compose values; an invalid composition fails at construction; execution is one interpreter with an exhaustive `match`. There is no injection, because there is no string.
+- *Not when* users need an open textual language. Then parse the text into this tree and keep the rest.
+
