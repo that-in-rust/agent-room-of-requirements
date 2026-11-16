@@ -9120,3 +9120,95 @@ the call when you skip them:
 
 - **A coverage floor is a tripwire for untested additions, not a quality measure.** Pick the floor from the project's current number, not from a round figure, and never write tests whose only purpose is to raise it.
 
+### Gates that commands cannot run
+
+**Traceability.** Every stated requirement has a stable identifier and at least one test
+that names it. A requirement with no verification fails review. For a small change with no
+formal requirements, the equivalent is: every behaviour the change claims has a test that
+would fail without it.
+
+**Structure.**
+
+- Modules are single-purpose, and a reader can say what each is for.
+- Public interfaces that others depend on are preserved, or the break is deliberate, versioned and stated.
+- Names follow the repository's convention. Where it uses four-word names, new symbols do too; do not impose that on a codebase that does not, or on a stable public name.
+
+**Runtime and safety.**
+
+- No blocking I/O or CPU-bound work runs directly on an async executor.
+- No lock guard or `RefCell` borrow is held across `.await`, unless an async mutex was chosen for that purpose.
+- Cancellation, timeout and shutdown are handled wherever async work can outlive its caller.
+- Every new `unsafe` block has a safety comment stating the invariant and who upholds it.
+- No secret is logged, and no secret appears in an error message or a `Debug` output.
+
+**Release readiness.**
+
+- [ ] Requirements are checkable, and each is linked to a test.
+- [ ] Tests cover the success path, the error paths and the edges, not only the example given.
+- [ ] Every performance claim has a threshold, a fixture and a method.
+- [ ] Concurrency claims were exercised under contention, not only single-threaded.
+- [ ] Documentation and examples match current behaviour.
+- [ ] No placeholder stands in for required behaviour: no `todo!()`, `unimplemented!()` or stub on a reachable path.
+
+A `TODO` comment for work that is out of scope is acceptable when it says what and links
+to where it is tracked. A `TODO` marking something this change was supposed to do is not.
+
+### Project tooling
+
+- **Clippy with warnings denied is a correctness gate.** A real share of its lints catch bugs, needless allocation and interface hazards. Warnings left optional become background noise. Suppress one lint at one site with a reason (`#[expect(lint, reason = "...")]` on recent toolchains); do not switch off a whole class without understanding why it fires.
+- **`rustfmt` is not negotiable.** It removes style from review and keeps diffs and blame readable. Do not hand-format against it. Commit the configuration:
+
+```toml
+# rustfmt.toml
+edition = "2024"
+max_width = 100
+```
+
+- **Many attractive `rustfmt` options, including `group_imports` and `imports_granularity`, are unstable** and take effect only on a nightly toolchain. Putting them in a project formatted with stable makes contributors disagree with CI. Use them only if formatting is pinned to nightly everywhere.
+
+- **State the minimum supported Rust version, and test on it:**
+
+```toml
+[package]
+rust-version = "1.76"
+```
+
+  A declared version that CI never builds with is a guess. Raising it is a compatibility change for a library; document it. Libraries do not depend on nightly-only features.
+
+- **Pin the toolchain for an application or a workspace:**
+
+```toml
+# rust-toolchain.toml
+[toolchain]
+channel = "1.80.1"
+components = ["rustfmt", "clippy"]
+```
+
+  A pin makes builds and lint results reproducible, and must be raised on a schedule or it becomes a blocker for dependencies. A published library is different: it tests on its minimum version *and* on current stable, since its users choose the compiler.
+
+- **Supply chain is policy, not a lock file.** `Cargo.lock` fixes versions; it does not tell you one of them has an advisory, an unacceptable licence or was yanked.
+
+```toml
+# deny.toml
+[licenses]
+allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "Unicode-3.0"]
+
+[bans]
+multiple-versions = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+```
+
+  - Run the licence, ban and source checks on every change. **Run the advisory check on a schedule as well,** since a new advisory appears without any commit. If it only runs on changes, an unrelated change gets blocked by it and someone disables it.
+  - `cargo audit` covers advisories alone; `cargo deny` adds licences, bans and sources; `cargo vet` records who reviewed what. Choose by the risk carried.
+  - An ignored advisory has a reason and a review date.
+
+- **Workspaces:** one `Cargo.lock` and one `target`; profiles only at the root; shared versions in `[workspace.dependencies]`; shared lint levels in `[workspace.lints]`. **Features are additive:** enabling one must never remove an item or change behaviour for another crate, since Cargo unifies features across the workspace.
+- Aliases belong in a committed `.cargo/config.toml`. **`[net] offline = true` belongs there only with vendored dependencies;** otherwise a fresh clone cannot build.
+- **Coverage in CI:** exclude generated code with `--ignore-filename-regex`, emit a machine-readable report, and prefer a floor on the critical modules to a global one. Branch coverage helps where line coverage flatters.
+- **A typical CI set:** format check, clippy with warnings denied, tests (`cargo nextest` is faster, and does not run doc tests, so add `cargo test --doc`), documentation build, dependency policy, and a semver check for published libraries. With SQLx, add `cargo sqlx prepare --check` so offline query data cannot go stale.
+- **Wrap secrets in a type that resists display** (`secrecy::SecretString`), expose them only at the point of use, and never pass them as plain `String` "because the code is internal".
+- **Use `tracing` with spans, fields and correlation identifiers,** so a concurrent failure can be reconstructed. Record identifiers and sizes, not whole payloads.
+
