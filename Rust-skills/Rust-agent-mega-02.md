@@ -9511,3 +9511,122 @@ guarded in production.
 - **Dense per-character metadata over a large text is stored as runs,** not one object per character.
 - **An excerpt shown to a reader or a model is cut on structure:** whole lines, with the enclosing signature, overlapping ranges merged, in a deterministic order.
 
+### Traversal, batches and shared files
+
+**Commit the public interface of a published library as a golden file.** CI regenerates it
+(`cargo public-api`), fails with a diff, and one explicit command overwrites it. The diff is
+reviewed, never edited by hand. This makes every interface change visible in review,
+including accidental ones such as a newly public helper or a changed auto trait. Not worth
+it for an application crate nobody links against.
+
+**Build-time registries.** When the source tree already holds the truth (one module per
+command, one file per migration), generate the registry in a build script or a derive, and
+sort the output so diffs are reviewable. Plugins loaded at run time keep a run-time
+registry.
+
+**A build step that produces named artefacts emits metadata for them** (name, source
+location, attributes), so later phases select, run and report without re-parsing source or
+scraping command output. Selecting by substring surprises when names overlap: keep an exact
+mode, and make it the only mode where selection has security consequences.
+
+**Recursive traversal that follows links needs cycle detection.**
+
+- Track the canonical identity of each directory **on the current ancestor path**, and skip one that is already there. Remove it when the directory is finished, so a sibling can still reach a shared target.
+- A broken link is skipped with a warning, not an error that ends the walk.
+- `walkdir` with `follow_links(true)` detects loops itself; the `ignore` crate builds on it. Prefer them to a hand-written walk.
+- **Not following links is the safer default.** Follow them only when the tool's purpose requires it, and then re-check that each resolved path is still inside the allowed root.
+
+**Walk a deep tree with a cursor, not recursion,** when depth is controlled by input.
+Recursion over a parse tree of generated or hostile source overflows the stack.
+
+```rust
+let mut cursor = root.walk();
+'walk: loop {
+    visit(cursor.node());
+    if cursor.goto_first_child() {
+        continue;
+    }
+    loop {
+        if cursor.goto_next_sibling() {
+            break;
+        }
+        if !cursor.goto_parent() {
+            break 'walk;                  // back at the node the cursor started from
+        }
+    }
+}
+```
+
+- **Node offsets are bytes.** Take text with `&source[node.byte_range()]`, never by skipping that many `chars()`.
+- The same applies to your own recursive types: a deeply nested value can overflow the stack in a derived `Drop`, `Debug` or `Clone` as well as in your visitor. Bound the depth at the parser, or use an explicit stack.
+
+**An ordered list of recognisers** ending in a catch-all is a reasonable design for a small
+markup or token pipeline. The order is behaviour: a new recogniser goes beside its most
+specific competitor, with tests that nothing earlier or later is shadowed. It does not fit
+a grammar that needs context or backtracking; use a real parser.
+
+**Fail-fast in a parallel batch carries a typed payload.**
+
+```rust
+let outcome = pool.install(|| {
+    sorted_units
+        .par_iter()
+        .enumerate()
+        .map(|(index, unit)| {
+            let result = check(unit)?;
+            if fail_fast && result.failed() {
+                Err(BatchStop::FailFast { index, result })
+            } else {
+                Ok(UnitResult { unit, result })
+            }
+        })
+        .collect::<Result<Vec<_>, BatchStop>>()      // short-circuits
+});
+```
+
+- **Use a private enum for the early stop,** and convert it to the ordinary result at the orchestrator. That is clearer than hiding the payload in `anyhow` and downcasting, and the stop type never crosses the public interface.
+- **Short-circuiting in Rayon is cooperative:** units already running finish, and which failure is reported first is not deterministic. Sort inputs so the *successful* output order is stable, and do not assert on which unit failed first when several can.
+- Do not use fail-fast when every failure must be reported, or when units have side effects that must not be half-done.
+
+**Running several actions concurrently.**
+
+- **Run a batch concurrently only when a policy function shows every action in it is read-only.** Otherwise run them serially, in order. An action declares this when registered, and an unknown one is treated as a write.
+- **A loop with several ceilings (tokens, turns, time) checks all of them through one gate** at the top of each iteration, before the next expensive call. Stop reasons are distinct variants, so the caller knows whether to retry, resume or ask.
+- **A reply from a worker, subprocess or sandbox is an untrusted frame.** Give each request a fresh random token, set it after copying payload fields so the payload cannot overwrite it, and reject a reply whose token is missing or different. The token proves correlation, not correctness: still validate the fields and enforce a timeout.
+
+**Command approval by prefix lists is a convenience, not a security boundary.**
+
+- Reject first any syntax that changes what a command means: command and process substitution, backticks, chaining, redirection, pipes.
+- Then resolve by specificity: the longest matching prefix wins; with equal specificity, deny wins; a wildcard allow loses to any deny.
+- Test each of those cases. **Prefix matching cannot reason about what an allowed program does with its arguments** (`git -c core.pager=...`, `find -exec`, an interpreter given a script). Real containment comes from running without a shell and inside a sandbox with limited filesystem and network access.
+
+**Updating a small state file shared between processes** is a read-modify-write cycle, so
+it needs a lock as well as an atomic write.
+
+1. Take an advisory lock on a separate lock file (`File::lock` on recent toolchains, or the `fs4` / `fd-lock` crates), with bounded retries.
+2. Read the current content **after** taking the lock.
+3. Write the new content to a uniquely named temporary file in the same directory, and sync it.
+4. Rename it over the target. Release the lock.
+
+- **Rename directly over the target.** Moving the old file aside first leaves a moment with no file at all, which a concurrent reader sees as "no state".
+- The temporary file is in the same directory because a rename across filesystems is a copy, not an atomic replace.
+- **Readers need no lock:** they see the old file or the new one, never a mixture.
+- Prefer a lock the operating system releases when the process dies. A lock implemented as "the file exists" needs a stale timeout, and the timeout can steal a lock from a slow but live holder.
+- Advisory locks are unreliable on some network filesystems. If several processes update state often, that is the sign to use SQLite.
+
+**Caching results of external calls.**
+
+- **Cache only successful, idempotent, non-personalised responses.** Never cache errors, rate-limit pages or empty results without an explicit, short negative-caching rule.
+- The key hashes the endpoint, the operation and the parameters serialised canonically with sorted keys. Decide freshness per operation before caching anything.
+- SQLite shared by several processes runs in WAL mode with a busy timeout, and each thread or process has its own connection.
+
+**Many external sessions belong to one owning scope.** Connect on entry, close all on exit
+even after a failure, through an explicit async `close()` on every path, with `Drop` only as
+a backstop since it cannot await. A clean-up error is logged and never replaces the task's
+own error. In a long-running host, surface clean-up errors: swallowed ones hide leaks.
+
+**Staged selection pipelines account for every item.** When candidates pass through
+filter, score, deduplicate and pack stages, each stage returns what survived and what it
+dropped, with a reason. Test that `included + dropped == total`. Stage order is semantic: a
+sensitivity filter that runs after packing has already leaked.
+
