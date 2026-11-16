@@ -9212,3 +9212,84 @@ unknown-git = "deny"
 - **Wrap secrets in a type that resists display** (`secrecy::SecretString`), expose them only at the point of use, and never pass them as plain `String` "because the code is internal".
 - **Use `tracing` with spans, fields and correlation identifiers,** so a concurrent failure can be reconstructed. Record identifiers and sizes, not whole payloads.
 
+### Tooling and operations patterns
+
+**Observability and secrets.**
+
+```rust
+#[tracing::instrument(skip(request, state), fields(method = %request.method(), path = %request.uri().path()))]
+pub async fn handle(state: AppState, request: Request) -> Result<Response, Error> {
+    // ...
+}
+
+let api_key = SecretString::from(load_key()?);
+tracing::info!(has_key = !api_key.expose_secret().is_empty());   // never the key itself
+```
+
+- **`#[instrument]` records every argument with `Debug` unless told otherwise.** Skip bodies, credentials and large values, and name the fields you want. An un-skipped request or config struct is the usual way a secret reaches a log.
+- Propagate a trace identifier across service boundaries. A user identifier is personal data: record it only where policy allows.
+- **Libraries emit through `tracing` or `log` and never `println!`.** The application chooses where output goes.
+- **Do not spread a secret:** no wide cloning, expose it only at the call that needs it, and keep it out of `Debug`, `Display`, errors and panics.
+
+**Processes and protocols.**
+
+- **Protocol on stdout, logs on stderr.** A binary that speaks JSON lines, LSP or a stdio tool protocol never prints diagnostics to stdout, including from dependencies. One stray line corrupts the stream.
+- **A detached helper daemon** gets a health check before another is spawned, and stale instances are cleaned up.
+- **Every spawned child process and background task is registered in one place,** so shutdown can stop all of them. Handles unregister themselves idempotently (a flag, or `Drop`), and every exit path does it: success, error, cancellation, timeout. Test the cancellation and error exits.
+- **A transparent proxy around a subprocess protocol** can add a transcript, timing and policy checks without changing either side, provided it frames messages correctly. A newline or bracket-counting delimiter works only for simple text protocols; it breaks when the delimiter can appear inside a string.
+- **A command protocol with many request types:** each request owns its encoding, command code and response type through a trait with an associated `Response`; handling is a separate executor with one method per request, or an exhaustive match. No downcast chains.
+- **Fallback ladders have a fixed order and are logged.** When a dependency can come from several places (installed, then vendored, then built), log each step taken and report an unavailable one clearly. An automatic download needs a pinned checksum and a retry limit, and is off in offline and reproducible builds.
+
+**Validation and schemas.**
+
+- **Accumulate issues where a complete list helps:** configuration intake, registries, admin and import tools. Collect field, message and severity, report together, and treat the input as invalid only if an error-severity issue exists. Keep hot paths and security checks fail-fast.
+- **One source for the type, the validation and the advertised schema** (for example `serde` with `schemars`), so they cannot drift. Checks the schema cannot express still live in one constructor.
+- **A diagnostic log for a local application** is append-only JSON lines with typed entries: timestamp, level, event, error code. Redact on write and again on export, with a test per credential shape. Redaction is a second line of defence, not permission to log secrets.
+
+**Registries, flags and policy.**
+
+- **A command registry rejects a duplicate name or alias at registration,** and is the only place that dispatches on strings. In a first-match table, order is priority: an earlier broad matcher shadows later ones, so test each new matcher with varied case and whitespace. Use this only when the argument parser does not already give you the tree.
+- **Audit registered surfaces statically, and fail on duplicates before deduplicating.** Collecting commands, routes or migrations straight into a `HashSet` hides a double registration. Static readers miss run-time registration, which needs its own check.
+- **Self-registering plugin lists** (`inventory`, `linkme`, `ctor`) depend on linking and can be dropped by the linker or registered twice. Prefer an explicit list; if you use them, test that every expected plugin is present.
+- **Feature flags are read through one helper with a declared default per flag.** A missing key never silently reads as `false`. Each flag has an owner and a removal plan.
+- **Several flags combine in one pure function that returns a mode enum.** Call sites match on the mode and never test flags themselves. One flag never silently enables another. Test the combinations.
+
+```rust
+fn exec_mode(features: &Features) -> ExecMode {
+    match (features.enabled(Feature::Exec), features.enabled(Feature::DirectExec)) {
+        (false, _) => ExecMode::Disabled,
+        (true, false) => ExecMode::Fork,
+        (true, true) => ExecMode::Direct,
+    }
+}
+```
+
+- **Policy that depends on the caller matches exhaustively on a source enum, with no wildcard arm.** A new kind of caller then forces a decision about what it inherits.
+
+```rust
+fn hint_for_source<'a>(config: &'a Config, source: &SessionSource) -> Option<&'a str> {
+    match source {
+        SessionSource::SubAgent(SubAgentSource::ThreadSpawn { .. }) => config.subagent_hint.as_deref(),
+        SessionSource::Cli | SessionSource::VSCode | SessionSource::Exec => config.root_hint.as_deref(),
+        SessionSource::Internal(_) | SessionSource::SubAgent(_) => None,
+    }
+}
+```
+
+- **Optional telemetry providers are isolated.** Build a list from configuration, log and skip one that fails to construct, fall back to a no-op, and never let one provider's failure break the product or the other providers. High-cardinality values such as query text are opt-in.
+
+**Tools that serve agents or scripts.**
+
+- **A tool that needs a prerequisite (a built index, a login, a migration) fails at once with a structured error naming the next command to run,** instead of hanging or returning empty output. Gate every tool by default and exempt a short, tested allow-list.
+- **A loop driven by a model or a search has explicit budgets** (depth, calls, tokens, time) and ends in a typed outcome, including an explicit give-up. It never ends by parsing free text, and an invalid finish is an error, not a success.
+- **When a query is rewritten or expanded, keep the original as the baseline** and merge results, so a bad rewrite cannot make results worse than no rewrite.
+- **Maintenance scripts discover valid targets from what exists on disk** plus a small alias table, and validate a user-supplied name against that set before touching files or git. That also rejects typos and path traversal.
+
+**Workspace hygiene.**
+
+- Declare dependency versions once at the workspace root; local crates depend on each other by path.
+- Keep optional dependencies behind features, and re-export the public interface deliberately from `lib.rs`.
+- A shared-types crate is useful when it holds a small, stable vocabulary. One that every crate depends on and everyone edits rebuilds the whole workspace on each change.
+- `cargo clean` is a last resort for build errors that make no sense, usually after a toolchain or workspace-configuration change. If it is needed routinely, a build script or cache key is wrong; find it.
+- Fuzz targets live in the repository (`cargo fuzz init`, `cargo fuzz add parse`), with a committed seed corpus and every minimised crash kept as a regression test. CI runs each target briefly; long runs are scheduled.
+
