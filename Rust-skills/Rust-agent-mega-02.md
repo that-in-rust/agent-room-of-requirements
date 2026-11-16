@@ -1603,3 +1603,49 @@ more than the logic; a task where the time is spent outside the process (a slow 
 remote API), so a faster language changes nothing. If the repository is Rust and the task is
 small, write Rust anyway; a second language in a repository has its own cost.
 
+### Tooling and pipeline rules
+
+- **Read back what an external tool actually did.** After starting a tool or service, read the port, path and URL it recorded and check health before using it; do not assume the values you asked for took effect. Give each run its own directory and pin the tool's version.
+- **Bound the time of work you do not control.** Parsing an arbitrary file, calling a plugin or running a subprocess gets a deadline, and a timeout is a per-item result, not a crash. A deadline may scale with input size under a named ceiling. On timeout take the unoptimised but correct path; never use a partial result.
+- **Bootstrap is idempotent.** Schema and index creation can run on every start, and writes that may repeat are explicit upserts.
+- **A downloader streams.** Decompress as bytes arrive, keep URLs and references as typed values, report progress through a channel, verify the checksum, and set the executable bit only after the file is complete.
+- **A generator fails or omits the record when an input is unreadable.** The error is a diagnostic; its text is never written into the artefact where content belongs. Every generated file starts with a `@generated` marker, and indexers, formatters and reviewers skip marked, vendored and minified files.
+- **A code generator returns its fragments and its shared definitions separately,** and the caller emits each shared definition once.
+- **Extra context gets a named entry point over one private worker.** `parse_file(source, lang)` and `parse_path(source, lang, path)` both call a private function taking `Option<&Path>`. Callers never write `None`.
+- **A table with two enum keys is one exhaustive `match` on the pair,** with no wildcard arm. Nested string-keyed maps hide a missing combination; the `match` refuses to compile.
+
+```rust
+fn query_for(language: Language, kind: QueryKind) -> Option<&'static str> {
+    match (language, kind) {
+        (Language::Rust, QueryKind::Definitions) => Some(include_str!("queries/rust/definitions.scm")),
+        (Language::Tsx, QueryKind::Definitions) => query_for(Language::TypeScript, kind),
+        (Language::Rust, QueryKind::Folds) => None,
+        // every remaining pair is listed
+    }
+}
+```
+
+- **A partial implementation rejects what it does not support before it starts.** A preflight pass returns a typed error naming the construct, so unsupported input is never half-understood.
+- **Resolve an artefact in a fixed order and report which source was used.** A silent fallback location turns "works on my machine" into a mystery.
+- **A process-wide cache has a reset,** for tests and for long-running hosts.
+- **A finding carries the whole range and a context line.** A start position alone cannot be underlined or deduplicated.
+- **A parse result keeps the tree with the bytes it came from** (`struct ParsedFile { tree, source: Arc<[u8]>, .. }`), so a byte range is never applied to a different buffer. Derived facts live in side tables keyed by node ID, so they can be dropped without re-parsing.
+- **Extract one direction, derive the other.** Record outgoing references; build the incoming index from them. Two independently extracted directions will disagree.
+- **Listings are computed from the registry.** Supported languages and extensions are derived from what is registered, and an ambiguous key (`.h` is C or C++) has a documented default and an override.
+- **Say what is not produced.** If a language's support covers definitions but not call edges, the tool reports that per language. "Not supported" must never read as "no callers".
+- **A dump is bounded.** Serialising a tree takes options (depth, include text) with no unbounded default.
+- **Redact secrets before code leaves the machine,** record what was redacted, and send a chunk again only when its content hash changed.
+- **Check proposed identifiers against the index.** Before accepting generated code that names a function or type, look the name up; an unknown name is reported, not assumed.
+- **A relaxed format is normalised by a tested pure helper before a strict parse** (strip comments and trailing commas outside strings, then parse JSON).
+- **Conversion failures inside a parser are parse errors at their position** (`map_res` in combinator libraries), never panics.
+- **A byte classifier is a 256-entry table** built by a `const fn` and indexed by `u8`, so no index can be out of range.
+- **One enum variant per kind of parsed thing,** not a tag plus unrelated optional fields. Unknown input is handled by an explicit arm.
+- **A streaming decoder is resumable.** It keeps partial state between reads, and a test checks that any chunking of the input gives the same output as one call.
+- **Reserved names have a prefix users cannot use** (`__name`), declared as a `pub const` and rejected in user input.
+- **Documentation examples are files a test runs,** so a cookbook cannot rot.
+- **Do not split a long file into numbered parts joined by `use super::*`.** Split by responsibility into named modules with explicit imports.
+- **Two implementations of one thing share a trait, a documented default and a differential test** that compares them over a corpus, with the reference implementation as the oracle.
+- **Parallel work items declare the files they modify,** and run concurrently only when those sets are disjoint.
+- **An orchestrator's module doc lists its responsibilities,** and gives the reason when work is deliberately sequential, so nobody parallelises it without measuring.
+- **Reduce a misparse to the smallest input and read the parser's trace** before changing the grammar. Every declared grammar conflict has a comment and a test input that needs it.
+
