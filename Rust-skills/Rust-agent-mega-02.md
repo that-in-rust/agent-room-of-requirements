@@ -2504,3 +2504,88 @@ impl ServerBuilder {
 - **A deep deserialisation error reads as a path** from root to leaf (`serde_path_to_error`). Bound the size of any input fragment quoted in a message.
 - **A small language is a long-term promise** about syntax and error text. Prefer existing structured selectors; if a DSL is needed, the parser, the printer and a `parse(print(x)) == x` test change together.
 
+### Traits as seams
+
+**Absent behaviour is an implementation, not an `Option`.** "No hook installed" is a no-op
+implementation, so call sites do not branch.
+
+```rust
+pub trait RegistryHooks: Send + Sync {
+    fn on_manifest_uploaded(&self, _reference: &ManifestRef) {}
+    fn on_blob_deleted(&self, _digest: &Digest) {}
+}
+
+impl RegistryHooks for () {}
+
+let hooks: Box<dyn RegistryHooks> = builder.hooks.take().unwrap_or_else(|| Box::new(()));
+```
+
+- Default method bodies mean a new hook does not break existing implementers.
+- Document where each hook is called, in what order, and whether its failure is ignored or aborts the operation.
+- **A silent no-op hides missing wiring,** so the wiring itself has a test: install a recording hook and assert it was called.
+- *Not for* a step that must be confirmed, retried or rolled back with the core operation. That is part of the operation, not a hook.
+- With many optional callbacks and one author composing a few, a builder holding one boxed closure per hook is lighter than a trait. With one required callback, a trait is clearer.
+
+**A family of related types goes through associated types tied back to `Self`,** so the
+handles and events of one back end cannot be mixed with another's.
+
+```rust
+pub trait Runtime: Sized + 'static {
+    type Handle: RuntimeHandle<Runtime = Self>;
+    type Window: WindowDispatch<Runtime = Self>;
+
+    fn new(args: InitArgs) -> Result<Self, RuntimeError>;
+    fn handle(&self) -> Self::Handle;
+}
+```
+
+- Extending the trait changes the trait, the mock back end and every real back end in the same commit.
+- An API heavy in associated types needs a worked example of the common path; the signatures alone are hard to read.
+- **One back end does not need the trait.** Add it with the second implementation, or with the mock if tests need one.
+
+**A behavioural trait needs semantic tests.** Implementing the methods does not prove they
+agree with each other. Test the laws that relate them: `a == b` implies equal hashes; `len`
+equals the number of items iterated; `Ord` is consistent with `Eq`; `decode(encode(x)) == x`.
+Write these once as a generic function and run it for every implementer.
+
+**Smaller rules.**
+
+- **A checked constructor's error quotes both sides of the mismatch:** "expected 4 columns, row has 3", not "column count mismatch".
+- **A scalar-or-collection argument** is a small trait that reports which it is, not a second copy of every entry point. Keep separate functions when the two differ in meaning, and test collection-collection, collection-scalar and scalar-scalar.
+- **Extract and repack.** An API that processes some leaves of a nested container returns the caller's own shape, by splitting the walk into an extract phase and a repack phase.
+
+### Text, positions and source
+
+**A node travels with its source.** When every operation on a syntax node needs the original
+text, pass a wrapper holding both; children are derived with the same source, so a node and
+its text cannot drift apart.
+
+```rust
+#[derive(Clone, Copy)]
+pub struct NodeWithSource<'a> {
+    pub node: Node<'a>,
+    pub source: &'a str,
+}
+
+impl<'a> NodeWithSource<'a> {
+    pub fn child(&self, field: u16) -> Option<Self> {
+        self.node.child_by_field_id(field).map(|node| Self { node, source: self.source })
+    }
+    pub fn text(&self) -> Result<&'a str, Utf8Error> {
+        self.node.utf8_text(self.source.as_bytes())
+    }
+}
+```
+
+- The general rule: when two values are only meaningful together (an index and its collection, an offset and its text, a handle and its arena), give them one type.
+- *Unnecessary when* the tree owns its text.
+
+**Coordinates exist in several units; convert in one place.** Parsers count bytes, editors and
+LSP count UTF-16 code units by default, people count lines and columns, and a "character" on
+screen may be several `char`s.
+
+- One type per coordinate system. A conversion is an explicit function that takes the text; nobody does range arithmetic across units by hand.
+- Compute all units in one pass over a line so they cannot drift, and keep a table of line-start offsets when conversion is frequent.
+- Test with ASCII, a two-byte character, an emoji outside the basic plane (two UTF-16 units, four UTF-8 bytes), a combining mark, a tab, and CRLF line endings.
+- A column shown to a person is one-based and, for alignment, depends on display width (`unicode-width`), which is a fourth number.
+
