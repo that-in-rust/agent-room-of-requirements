@@ -2050,3 +2050,101 @@ pub fn parse_port(text: &str) -> Result<Port, PortError> { /* ... */ }
 - Use `no_run` for examples that need a network or a device (still compiled), and avoid `ignore`, which checks nothing.
 - In compile-fail tests, do not depend on exact compiler wording more than the tool forces you to; the message changes between releases.
 
+### Test design patterns
+
+**One conformance suite for many implementations.** Separate "run this back end" from "check
+this behaviour". The suite is generic; each implementation is one line.
+
+```rust
+pub trait RankBackend {
+    fn run(&self, graph: &Graph, params: &Params) -> Output;
+}
+
+pub fn conformance_suite<B: RankBackend>(backend: &B) {
+    for case in fixtures() {
+        let got = backend.run(&case.graph, &case.params);
+        assert_close(&got, &case.expected, case.tolerance, &case.name);
+    }
+}
+```
+
+- The expected output is captured independently of every implementation (by hand, or from a trusted reference), or the suite only checks that the code agrees with itself.
+- Floating-point comparison needs a stated tolerance: absolute near zero, relative elsewhere. A purely relative tolerance fails against an expected zero.
+- Write the suite and its fixtures before the second implementation.
+- A fixture loader reports the line number and the offending token on bad input.
+
+**Assert what makes an answer valid, not one valid answer.** When several outputs are correct
+(a topological order, a set returned in any order), a golden value makes the test fail on a
+harmless change.
+
+```rust
+let order = graph.topological_order().unwrap();
+let position = |node| order.iter().position(|&n| n == node).unwrap();
+for (dependency, dependant) in graph.edges() {
+    assert!(position(dependency) < position(dependant));
+}
+assert_eq!(order.len(), graph.node_count());
+assert!(matches!(cyclic.topological_order(), Err(SortError::Cycle { .. })));
+```
+
+- Keep cases for empty, single, disconnected, cyclic and several-valid-answers inputs. Generate graph families with `proptest`; fixed fixtures miss classes of input.
+- If the output must be deterministic (it is shown to users, or diffed), say so and test the exact order. That is a different requirement.
+
+**Optimised and unoptimised paths agree.** Every optimisation, cache or fast path has a test
+that runs the same input with it on and off and compares results. This is the cheapest oracle
+there is, and it needs the switch to exist.
+
+**Record at the transport, replay in the production shape.** A recorded exchange is replayed
+as the same async type the code consumes, so streaming clients are tested without a network.
+
+```rust
+#[derive(Serialize, Deserialize)]
+pub struct RecordedResponse {
+    pub status: u16,
+    pub headers: Vec<(String, String)>,
+    pub body_chunks: Vec<String>,
+}
+
+impl RecordedResponse {
+    pub fn into_byte_stream(self) -> BoxStream<'static, io::Result<Bytes>> {
+        stream::iter(self.body_chunks.into_iter().map(|c| Ok(Bytes::from(c)))).boxed()
+    }
+}
+```
+
+- Keep the chunk boundaries. A parser that works on whole bodies and fails when an event is split across two chunks is the bug this finds; add a case that splits at an awkward place on purpose.
+- Playback is the default; recording needs an explicit mode.
+- **Recordings leak secrets.** Redact tokens and cookies when recording, and check the redaction before the file is committed.
+- A recording goes stale when the remote API changes. Note when it was taken, and re-record on a schedule or when the client changes.
+- For a small non-streaming response, a plain JSON fixture is enough.
+
+**One default test configuration, small overrides.** Build one production-like default, and
+let each test change only what it is about.
+
+```rust
+let config = TestConfig { replicas: 3, ..TestConfig::default() };
+let table = test_table(|config| config.replicas = 3);
+```
+
+- The override is the documentation: a reader sees which setting the test depends on. Copying the whole builder chain into each test hides that.
+- Fixture builders return new values (`with_x(self) -> Self`), so one case cannot contaminate the next.
+
+**Registration is tested, because compiling does not prove coverage.** When handlers are wired
+to an enum of operations at run time, a test iterates the enum (`strum::IntoEnumIterator`, or
+an `ALL` constant) and asserts that each has a handler. Prefer an exhaustive `match` where it
+is possible; then the compiler does this.
+
+**Smaller rules.**
+
+- **Fixtures keep input and expected output together,** as files a person can diff. For a behaviour change, add the smallest new fixture first, then change the code until the new output is what you intend.
+- **Real infrastructure in tests is disposable and configured the production way.** A container's connection details go through the same configuration path the application uses, so the test exercises that path too.
+- **A suppressed failure still fails the run.** A harness that records failures and continues must assert overall success at the end. Do not continue where the first failure invalidates the rest.
+- **A benchmarked kernel has a verifier,** called outside the timed region. A fast wrong answer is the usual result of optimising without one.
+- **Deterministic checks come before model-based ones.** For generated or AI-assisted output, check what needs no judgement first (required keys, forbidden combinations, it parses, it compiles), then the semantic check, and report both.
+- **A scoped override of global state restores in reverse order,** through a guard. It protects the mutation, not concurrent readers, so tests that touch process-global state (environment variables, the current directory) must not run in parallel with each other. Better: inject the value and have no global.
+- **A conformance scenario has four parts:** initial state, input, expected result or error class, and expected side effects, including "none". A change in semantics updates the specification and the scenarios together.
+- **A test DSL keeps the line number** on every parsed line, and every error points at it.
+- **Query text in template files** is three layers: the text, extraction of values, and one converter that owns quoting. User-controlled values always go through bound parameters, never substitution. A test prepares every template and fails on an unreplaced placeholder.
+- **A lifetime contract gets a compile-fail test:** if a wrapper must not outlive its parent, a case that tries must fail to compile.
+- **A regression test for a UI bug** uses the smallest fixture that reproduces the state change, and selects elements by stable test IDs, not by styling.
+
