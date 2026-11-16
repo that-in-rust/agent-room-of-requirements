@@ -777,3 +777,39 @@ MEMORY {
 - **Pin dependency versions.** `"*"` as a version requirement makes a firmware build unreproducible.
 - **Verification an agent can do without hardware:** `cargo build --release --target <target>`, `cargo clippy --target <target>`, host-side unit tests of the logic crate, and a check of the binary size against flash (`cargo size`). Say plainly that the code was not run on a device.
 
+- **Flashing names the chip explicitly** (`probe-rs run --chip <CHIP> <elf>`); never rely on auto-detection in a script.
+- `#![cfg_attr(not(test), no_std)]` keeps `std` for host tests only. A `no_std` error enum that is `Copy + PartialEq + Eq` and implements `core::error::Error` can be compared directly in tests.
+- **Fixed-capacity structures are property-tested for their laws** (idempotence, symmetry, transitivity, no-op operations), and recursion is replaced by a loop where stack depth is constrained.
+
+### Architectural pattern cards
+
+- **Sync core, async shell.** Fetch and parse outside, decide and transform in synchronous pure code, persist and emit outside. The core gets fast unit tests with no runtime; the shell gets integration tests. *Skip for* a small library whose whole job is async I/O.
+- **Transport, domain, persistence are three shapes.** Request types, domain values and commands, rows and queries; convert at each edge. It costs conversion code and buys invariants and a clear place for each failure. *Skip when* the service is a thin pass-through with no rules of its own.
+- **Split a workspace by change boundary and dependency direction:** core crates, adapter crates, binaries, proc-macro or tooling crates. Not by file count or by when the code was written. Check with `cargo tree` that no core crate pulls in an adapter.
+- **A narrow stable API over interchangeable internals.** Callers see one contract; engines and strategies behind it can be swapped. Fits parsers, search and index code, storage and planners, where it buys freedom to optimise without SemVer pressure.
+- **A platform workaround lives in one named module** as a pair of pure functions (apply, revert) with a round-trip test, and rewrites an exact value, not a pattern. A workaround that changes security behaviour is a redesign, not a shim.
+- **A platform-specific error variant sits under the same `cfg` as the code that produces it,** and every target is built in CI or the gated code rots. *Avoid* gated variants when consumers match exhaustively.
+- **Vendored upstream code** is a last resort for when the needed item is not exposed. The module doc records the crate, version, reason and local changes; the licence is kept; inherited lints are allowed, not reformatted, so the diff against upstream stays small. Never for large or security-sensitive code.
+- **One state machine over two representations** (string records and byte records, two encodings): put the representation-specific access behind a small private trait, write the logic once over a wrapper, and expose type aliases. If the variants are short, plain duplication is clearer.
+
+```rust
+trait Record<'r> {
+    fn next_field(&mut self) -> Result<&'r str, DeserializeError>;
+    fn next_field_bytes(&mut self) -> Result<&'r [u8], DeserializeError>;
+}
+pub struct RecordWrap<T>(T);
+pub type StringRecordDeserializer<'r> = RecordWrap<StringRecord<'r>>;
+pub type ByteRecordDeserializer<'r> = RecordWrap<ByteRecord<'r>>;
+```
+
+- **A finite vocabulary is an enum with one spelling function.** Kinds, properties and protocol keywords are typed enums with a single `fn spelling(self) -> &'static str`; no string literals at call sites. A new member updates the enum, the spelling and the schema test together.
+- **A registry per family, not scattered checks.** One table holds each member's identity, constructor, file extensions, aliases and resources. Duplicate registrations are detected and an unknown member is reported. Callers never write their own extension check.
+- **Detection is an ordered cascade,** cheapest first (file name, extension, a small prefix read, then the fallback), each stage tested on its own. Do not read a whole file to classify it. The same shape fits any "try the common case, then known special cases" extraction: one step per known shape, a comment naming the shape, and an empty result never accepted silently.
+- **A fast source composed with a slower, better one.** The trade-off is configuration with named presets (`accuracy()`, `performance()`), not hidden branches. The slow source has a timeout and a fallback, merged results need a stable identity or duplicates leak, and both presets are tested.
+- **Optional enrichment sits behind a trait that returns `Result<Option<T>>`:** `Ok(None)` means no data, `Err` a real failure, plus an availability probe. The baseline works without it, tests cover the enriched and the unavailable path, and degraded mode emits a warning or a metric. *Not when* missing data makes the result wrong instead of less rich.
+- **Support is not a boolean.** An adapter with known gaps returns `enum SupportLevel { Compatible, Incompatible(Reason), Unsupported(Reason) }` beside the conversion, so a fallback is always explained.
+- **Supporting several versions of a host:** common code calls one narrow shim, with one implementation per version chosen by a cargo feature, and cross-version tests where equal behaviour is promised. When versions barely differ, a `cfg` branch is clearer than a shim layer.
+- **A heavy runtime (ML runtime, database engine, SDK) hides behind a private state struct.** Construction probes optional accelerators, falls back with a warning, and returns `Result`; there is no "valid" flag for callers to forget. Tests cover the fallback and each missing resource.
+- **Parsers:** keep syntax in the grammar or combinators and hand-write only context-sensitive lexing. Recovery that rewrites the input is accepted only when the reparse is clean and every node maps back to original byte offsets; on any doubt keep the original result.
+- **Searching many shards with one query:** compute the expensive query representation once, search each shard, merge, sort globally, then apply the limit. Scores compare only when every shard uses the same model and normalisation. Normalise vectors once, and reject near-zero vectors instead of dividing by their length.
+
