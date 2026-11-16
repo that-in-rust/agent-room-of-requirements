@@ -2815,3 +2815,133 @@ invalid after detach. *A fixed set of attributes is plain struct fields.*
 - **Messy input forms are normalised once** into a small typed value; the accepted forms and their error messages are public API with a test each.
 - **One gate owns timing policy.** A scheduler or load driver asks one place "may this run now", backed by an injectable clock. Tests use a fake clock; callers never repeat schedule checks.
 
+### State, transitions and atomic change
+
+**A multi-step change that must not be half-done is a typestate transaction.** For a
+multi-file edit, a migration or a generated patch, where a wrong call order corrupts user
+data, each irreversible phase is a type and each transition consumes `self`.
+
+```rust
+pub struct Pending;
+pub struct Staged;
+pub struct Applied;
+
+pub struct Transaction<State = Pending> {
+    root: PathBuf,
+    edits: Vec<ValidatedEdit>,
+    backups: Option<BackupSet>,
+    _state: PhantomData<State>,
+}
+
+impl Transaction<Pending> {
+    pub fn stage(self) -> Result<Transaction<Staged>, BatchError> { /* ... */ }
+}
+impl Transaction<Staged> {
+    pub fn apply(self) -> Result<Transaction<Applied>, BatchError> { /* ... */ }
+}
+impl Transaction<Applied> {
+    pub fn commit(self) -> Result<Report, BatchError> { /* ... */ }
+    pub fn rollback(self) -> Result<(), BatchError> { /* ... */ }
+}
+```
+
+- Committing before applying does not compile. Inputs are already validated types.
+- Decide what happens when an `Applied` transaction is dropped without commit or rollback: roll back in `Drop` on a best-effort basis and log, since `Drop` cannot return the error.
+- For a single file, write a temporary file in the same directory and rename it over the target. That is atomic and needs no machinery.
+
+**Apply a group of options atomically.** An update of several settings never leaves the
+object half-changed. Build the next value and swap:
+
+```rust
+let mut next = self.clone();
+next.apply(&options)?;
+*self = next;
+```
+
+- If cloning is too expensive, validate everything first and mutate only after nothing can fail.
+- Options with irreversible side effects (opening a port, deleting a file) are validated with the rest and performed last.
+
+**Every status write goes through one setter that consults the transition table.**
+
+```rust
+impl Job {
+    pub fn transition(&mut self, next: Status) -> Result<(), IllegalTransition> {
+        if !self.status.can_become(next) {
+            return Err(IllegalTransition { from: self.status, to: next });
+        }
+        self.status = next;
+        Ok(())
+    }
+}
+```
+
+- The field is private; nothing assigns it directly. The table is one `match` on `(from, to)`.
+- Adding a status changes the table first, then every handler that enters or leaves it.
+- Do not add a second stored status when the state can be derived from data already held; two sources will disagree.
+
+**Publish an immutable result from a mutable builder.** Analysis that needs mutable working
+state keeps it inside the builder and publishes through `finish(self) -> Catalog`. Consuming
+the builder means nothing can change after publication, and the result can be shared in an
+`Arc` without locks. Callers that need live updates get an explicit session type instead.
+
+**Protocol state that is not concurrent says so in its type.** A cursor, session, transaction
+or result stream with hidden protocol state has `&mut self` methods and is neither `Clone` nor
+`Sync`, so interleaved use does not compile. Where sharing is forced on you (a foreign handle),
+a guard fails loudly on a second concurrent entry (`try_lock`, then an error) instead of
+interleaving silently.
+
+**Read and write entry points can be separate types.** A marker parameter such as
+`Batch<Read>` and `Batch<Write>` makes a write inside a read batch a compile error. Worth it
+when the distinction has consequences (a read replica, a read-only transaction); otherwise a
+run-time check is simpler.
+
+**Preflight checks cannot be skipped when the context is only reachable through them.** When
+one operation is shared by several entry points with different checks, the shared helper does
+not take the raw context. It takes a provider that hands the context out only after running
+that entry point's checks.
+
+```rust
+pub trait CheckedAccess {
+    async fn checked(&self, request: &Request, auth: &Auth) -> Result<&Store, AccessError>;
+}
+```
+
+- The provider is chosen at the API boundary, never inside the helper.
+- The bypass implementation has an alarming name (`UncheckedAccess`) and does not appear in a public handler. A search for the name is then an audit.
+- If the check changes what the operation means, it is two operations.
+
+**Smaller rules.**
+
+- **A heuristic score explains itself:** the number, its named factor contributions and the inputs that were missing. A missing signal is reported as missing, never replaced with a default that looks like data. Weights are a struct with `Default`. Do not let such a score trigger an irreversible action unattended.
+- **A writer finalised in `Drop` flushes when the temporary dies,** which is the end of the statement unless it is bound to a name. Errors in `Drop` are lost, so offer an explicit `finish()` for callers who need them.
+- **A replayable view is a list of immutable snapshots and an index.** One pure function computes the steps; previous, next and reset only move the index. For long runs, keep a window or compute lazily.
+- **Configuration round-trips.** A type rebuilt from its configuration stores the declared values verbatim and derives the rest in a build step. A test rebuilds, reads the configuration back and compares.
+
+### Callbacks and sinks
+
+**Push events to a caller-defined sink when the traversal is complex.** The traversal strategy
+(search, scan, parse) stays internal; the caller supplies what to do with each event.
+
+```rust
+pub trait Sink {
+    type Error;
+
+    /// Return `Ok(false)` to stop early.
+    fn matched(&mut self, mat: &Match<'_>) -> Result<bool, Self::Error>;
+
+    fn context(&mut self, _line: &Context<'_>) -> Result<bool, Self::Error> {
+        Ok(true)
+    }
+
+    fn finish(&mut self, _summary: &Summary) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+```
+
+- One required method; the rest default, so a simple sink is a few lines.
+- The sink borrows event data for the call (`Match<'_>`), so the traversal can reuse its buffers and nothing is allocated per event. A sink that needs to keep data copies it.
+- State the contract: `finish` is called exactly once, including after an early stop, and not after an error.
+- *Prefer an iterator* when the traversal is simple enough to be one. Iterators compose and the caller keeps control. A sink is for when borrowing rules or internal buffering make an iterator awkward or slow.
+- An enum for the return (`ControlFlow<()>`) reads better than a `bool` whose meaning has to be remembered.
+
