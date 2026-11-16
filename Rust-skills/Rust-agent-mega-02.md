@@ -3529,3 +3529,173 @@ fn store<R: Record>(db: &Db, rows: &[R], embeddings: &[Vec<f32>]) -> Result<(), 
 - **Parallel slices are checked for equal length at entry,** with both lengths in the error. Better still, take one slice of pairs so the mismatch cannot be written.
 - Where operations carry a numeric type code (`const TYPE: u16`), a test asserts the codes are unique. Duplicates otherwise dispatch to the wrong handler without any error.
 
+**Smaller rules.**
+
+- **A width-changing cast says whether it sign-extends.** `-1i8 as u64` is `u64::MAX`; `-1i8 as u8 as u64` is `255`. Write the intent in named steps (`u64::from(x as u8)`), use `From` for lossless widening and `try_from` for narrowing, reinterpret same-width bits with `to_ne_bytes` or `to_bits` and never `transmute`. Test with `-1` and the extremes. `clippy::cast_possible_truncation`, `cast_sign_loss` and `cast_possible_wrap` find the rest.
+- **"Unsupported" differs from "supported and empty".** A field populated only for some inputs is `Option<Vec<_>>`, with `None` meaning unsupported and the schema saying when. An empty list that might mean either is a wrong answer waiting to be trusted.
+- **A handler validates its arguments before any expensive or state-dependent work.** Decode raw input into a typed struct; an unknown enum-like value is an error listing the accepted ones, never a silent default. Otherwise an argument mistake is hidden behind an unrelated later failure.
+- **A required per-implementation constant has no default.** `const EXTENSIONS: &'static [&'static str];` without a default makes forgetting it a compile error; an empty default silently supports nothing.
+- **`Default` and `new` never fail or panic, and are cheap.** A constructor that looks something up is `try_new() -> Result<Self, _>`. Expensive construction has a verb name (`Index::build(&source)`). When both `new()` and `Default` exist, one calls the other.
+- **A derived view borrows its source** (`struct Graph<'a> { parse: &'a ParseResult, .. }`), so it cannot outlive or drift from what it was built from.
+- **A child handle may borrow its parent** (`Connection<'db>` holding `&'db Database`), and the compiler then enforces drop order for free. *The cost:* the lifetime makes the handle awkward to store in a struct or move into a spawned task. For handles that travel, share the parent through an `Arc` instead.
+- **An algorithm takes its own small parameter struct** of validated values (`NonZeroUsize`, a ratio newtype), built from user configuration in one conversion. The algorithm crate does not depend on the configuration or CLI crate.
+- **A command prompts only when attached to a terminal.** If `std::io::stdin().is_terminal()` is false, a missing argument is an error naming the flag. A prompt in CI is a hang.
+- **A line-oriented protocol is a tagged enum, and its parse errors carry the line number.** Responses echo the request ID.
+- **A tuple that needs a comment to explain its positions is a struct.** `(usize, usize, bool)` becomes named fields and an enum for the flag.
+
+## 7. Ownership, borrowing and data handling
+
+**Defaults.**
+
+- Borrow to read, take ownership to keep, `&mut` to change in place. The signature tells the caller which.
+- Clone when the design calls for a second owner, not to make an error go away. A clone of a small value on a cold path is fine and often the clearest code; a clone in a loop over large data is worth a second look.
+- `Arc` for shared ownership across threads, `Rc` within one. Neither is a substitute for deciding who owns the data.
+- Hold locks and `RefCell` borrows for the shortest scope that is correct, and never across an `.await`.
+
+### Working with the borrow checker
+
+**The error usually describes a real overlap.** Find which borrow is still alive and why,
+then shorten it, instead of reaching for `clone` or `Rc<RefCell<_>>`.
+
+```rust
+// Rejected: first borrows items while push needs it mutably.
+let first = &items[0];
+items.push(first.clone());
+
+// End the shared borrow before the mutation.
+let first = items[0].clone();
+items.push(first);
+```
+
+- **A method borrows all of `self`.** Calling `self.helper()` while a field is borrowed fails even if the helper touches other fields. Borrow the fields separately, which the compiler tracks, or make the helper take the fields it needs.
+
+```rust
+let Self { index, scratch, .. } = self;
+for id in index.keys() {
+    scratch.push(*id); // index is borrowed shared, scratch mutably: disjoint fields
+}
+```
+
+- **Collect, then mutate.** Gather the keys or indices to change in one pass and apply them in a second. Often clearer as well as accepted.
+- **Use indices or IDs instead of long-lived references** into a collection that also needs mutation. This is the normal shape for graphs and trees with parent links.
+- **Move out through `&mut` with `std::mem::take`, `replace` or `Option::take`,** instead of cloning a field in order to consume it.
+- **The `entry` API** does "look up, then insert or update" with one borrow and one hash.
+
+```rust
+*counts.entry(word).or_insert(0) += 1;
+```
+
+- **Separate the read phase from the write phase in an API.** A method that returns a reference into `self` keeps `self` borrowed for as long as the caller holds it; returning a small owned value or an ID frees the caller.
+- `vec.push(vec.len())` compiles through two-phase borrows. Do not design an API that only works because of that rule; write the temporary.
+- **Stop and reconsider the design** when a structure wants references to itself, or when lifetimes spread through many signatures. Owned data plus indices, or an arena, is nearly always the answer; `unsafe` is not.
+
+### Interior mutability
+
+| Need | Use | Watch for |
+|---|---|---|
+| A `Copy` value, one thread | `Cell<T>` | nothing; it cannot fail |
+| Any value, one thread | `RefCell<T>` | a second overlapping `borrow_mut` panics at run time |
+| Shared across threads | `Mutex<T>` | poisoning, lock order, holding it across `.await` |
+| Read-mostly across threads | `RwLock<T>` | writer starvation; often no faster than `Mutex`, so measure |
+| A counter or flag | `AtomicUsize`, `AtomicBool` | choosing an ordering; `SeqCst` unless you can argue for less |
+| Set once, read often | `OnceLock<T>`, `LazyLock<T>` | initialisation that can fail |
+
+- `RefCell` moves a compile-time rule to run time. Keep each borrow to one statement where possible, and prefer `try_borrow_mut` where re-entrancy is conceivable (callbacks, observers).
+- Do not use a `Mutex` in single-threaded code to quiet the borrow checker, and do not make a type `Sync` by wrapping it in one without deciding what the lock protects.
+- Interior mutability behind `&self` is part of the API's contract. Say so in the docs when a `&self` method changes observable state.
+
+### Iterators and collections
+
+- **A fallible pipeline short-circuits.** An iterator of `Result<T, E>` collects into `Result<Vec<T>, E>` and stops at the first error. `try_for_each` and `try_fold` do the same without collecting. Never `unwrap` inside a chain.
+
+```rust
+let ports: Vec<u16> = fields
+    .iter()
+    .map(|field| field.parse::<u16>())
+    .collect::<Result<_, _>>()?;
+```
+
+- **Iterator promises are contracts.** `size_hint` must bracket the true length; implement `ExactSizeIterator` only when the length is exact. Unsafe code must not rely on either for memory safety, since safe code can implement them wrongly.
+- Offer `iter()`, `iter_mut()` and `IntoIterator` for `&T`, `&mut T` and `T` on a collection type, so `for x in &collection` works.
+- Iterators are lazy. A `map` with side effects that is never consumed does nothing; use `for` when the point is the effect.
+
+| Need | Collection |
+|---|---|
+| A sequence; the default | `Vec` |
+| Push and pop at both ends | `VecDeque` |
+| Lookup by key, order irrelevant | `HashMap`, `HashSet` |
+| Sorted order, range queries, deterministic iteration | `BTreeMap`, `BTreeSet` |
+| Insertion order with lookup | `IndexMap` |
+| Repeatedly take the largest | `BinaryHeap` (wrap in `Reverse` for the smallest) |
+| A handful of items | a `Vec` and a linear scan, or `SmallVec` if measured |
+
+- **`HashMap` iteration order is arbitrary and differs between runs.** Anything that reaches output, a hash, a snapshot or a test goes through a sort or an ordered map.
+- `LinkedList` is almost never right: a `Vec` or `VecDeque` is faster for nearly every workload.
+- The default hasher resists collision attacks and is slower for it. A faster hasher (`FxHashMap`, `ahash`) is for keys an attacker does not control, after a profile says hashing matters.
+- `Vec::with_capacity` when the size is known; it is free and removes reallocations.
+
+### Sharing and deduplication
+
+**Intern immutable values that repeat heavily.** One canonical `Arc<str>` per distinct value
+saves memory and makes clones cheap.
+
+```rust
+#[derive(Default)]
+pub struct Interner {
+    seen: Mutex<HashSet<Arc<str>>>,
+}
+
+impl Interner {
+    pub fn intern(&self, text: &str) -> Arc<str> {
+        let mut seen = self.seen.lock().unwrap_or_else(PoisonError::into_inner);
+        if let Some(existing) = seen.get(text) {
+            return Arc::clone(existing);
+        }
+        let value: Arc<str> = Arc::from(text);
+        seen.insert(Arc::clone(&value));
+        value
+    }
+}
+```
+
+- **Pointer equality (`Arc::ptr_eq`) is valid only if every value of the type comes from the interner.** Enforce that with a newtype whose only constructor is `intern`; otherwise compare contents.
+- **An index handle** (`Symbol(u32)` into a table) is `Copy`, four bytes and trivially hashable. It is meaningful only with its table; never compare or serialise symbols from different tables.
+- **Never hand out `&'static T` into a `Vec<T>` that can grow.** Growth moves the items. Store `Box` or `Arc` per item, use an arena with stable addresses, or return a clone.
+- **The table only grows.** Do not intern unbounded or attacker-controlled input without a cap or scoped lifetime. Evicting by reference count is racy unless done under the table's lock.
+- *Skip interning* for values that rarely repeat or are short-lived: it adds a lock and a hash to every construction.
+
+**Deduplicate live resources by canonical identity, holding `Weak`.** A registry of open files
+or connections is keyed by the canonical form (absolute path, case-folded where the platform
+is case-insensitive) and stores `Weak` references, so it does not keep anything alive. A
+failed `upgrade()` removes the entry. A second open with conflicting options is an error, not
+a silent share.
+
+**Borrowed or owned, without a `Clone` bound.** `Cow` needs `ToOwned`. For a value that is
+sometimes borrowed from a larger structure and sometimes built on demand, and is not
+cloneable, a two-variant enum with `Deref` gives one API instead of two.
+
+```rust
+pub enum MaybeOwned<'a, T> {
+    Owned(T),
+    Borrowed(&'a T),
+}
+
+impl<T> Deref for MaybeOwned<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        match self {
+            Self::Owned(value) => value,
+            Self::Borrowed(value) => value,
+        }
+    }
+}
+```
+
+**Smaller rules.**
+
+- **An RAII guard acquires in its constructor and releases in `Drop`.** Bind it to a name (`let _guard = ...`); `let _ = ...` drops it at once.
+- **A handle with several ownership states** (cached, owned, borrowed, transferred) is one type with a state enum and a single release path in `Drop`.
+- **A resumable handle checks that it is still valid in every method that advances it,** not only at construction; a stale handle returns a clear error.
+- **A point-in-time snapshot is handed out as an iterator or guard that releases on drop,** so callers never manage the underlying commit handle. An empty store yields an empty iterator, not an error.
+
