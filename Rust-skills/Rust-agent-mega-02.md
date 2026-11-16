@@ -4666,3 +4666,73 @@ pub trait State: Send {
 - **Never read mutable UI or editor state across an `.await`.** Take an immutable snapshot, work on it off the main thread, and apply the result in one update after checking it is not stale.
 - **A library accepts a runtime handle** instead of creating its own runtime.
 
+### An owning task (the actor pattern)
+
+One task owns the state; everyone else holds a cheap handle and sends typed messages. There is
+no lock, the state's lifecycle is the task's, and every operation is one message, so multi-step
+updates cannot interleave.
+
+```rust
+enum Command {
+    Get {
+        key: Key,
+        reply: oneshot::Sender<Option<Value>>,
+    },
+    Put {
+        key: Key,
+        value: Value,
+        reply: oneshot::Sender<Result<(), StoreError>>,
+    },
+}
+
+#[derive(Clone)]
+pub struct StoreHandle {
+    commands: mpsc::Sender<Command>,
+}
+
+impl StoreHandle {
+    pub fn spawn(capacity: usize) -> (Self, JoinHandle<()>) {
+        let (commands, inbox) = mpsc::channel(capacity);
+        let task = tokio::spawn(run(Store::default(), inbox));
+        (Self { commands }, task)
+    }
+
+    pub async fn get(&self, key: Key) -> Result<Option<Value>, StoreError> {
+        let (reply, response) = oneshot::channel();
+        self.commands
+            .send(Command::Get { key, reply })
+            .await
+            .map_err(|_| StoreError::Stopped)?;
+        response.await.map_err(|_| StoreError::Stopped)
+    }
+}
+
+async fn run(mut store: Store, mut inbox: mpsc::Receiver<Command>) {
+    while let Some(command) = inbox.recv().await {
+        match command {
+            Command::Get { key, reply } => {
+                let _ = reply.send(store.get(&key)); // the caller may have given up
+            }
+            Command::Put { key, value, reply } => {
+                let _ = reply.send(store.put(key, value));
+            }
+        }
+    }
+    // Every handle is gone: flush and release here.
+}
+```
+
+- **Messages are a typed enum, one variant per operation.** A generic "run this closure on the state" message gives back the unstructured access the pattern was meant to remove.
+- **The mailbox is bounded,** so a slow actor slows its callers instead of growing memory.
+- **The loop ends when every handle is dropped;** that is the shutdown path, and the place for final clean-up. Keep the `JoinHandle` so something can wait for it.
+- **Both the send and the reply can fail** (the actor stopped or panicked). The handle maps both to an error; it never `unwrap`s.
+- **Do not do slow work in the loop.** While the actor awaits an HTTP call, every other message waits. Spawn the slow part and have it send its result back as a message.
+- **Two actors that await each other's replies can deadlock** exactly like two locks. Keep the call graph between actors acyclic, or use one-way messages.
+- *Use a `Mutex` instead* for a small piece of state with short, independent updates. An actor is worth its ceremony when the state has a lifecycle, owns I/O, or needs operations to be serialised.
+
+**`select!` details.**
+
+- Branches are polled in random order by default, which is fair. `biased;` polls them top to bottom: put shutdown first so it is noticed promptly, and be aware that a branch that is always ready then starves those below it.
+- A branch whose future is created inside the loop is created afresh each iteration. A timer that should span iterations (`sleep`, `interval`) is created outside and pinned.
+- Use a `CancellationToken`, not a shared boolean: a flag cannot wake a task that is waiting on something else.
+
