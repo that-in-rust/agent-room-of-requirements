@@ -4769,3 +4769,47 @@ a measured need. Do not mix runtimes in one process without a clear boundary: a 
 on one runtime's I/O types generally fails on another. A library should depend on `futures`
 traits and take the runtime's pieces from its caller where it can.
 
+### Atomics and lock-free code
+
+**A read followed by a write is not atomic, whatever the orderings.**
+
+```rust
+// Lost update: two threads can both read 5 and both store 6.
+let current = counter.load(Ordering::Acquire);
+counter.store(current + 1, Ordering::Release);
+
+// One atomic operation.
+counter.fetch_add(1, Ordering::Relaxed);
+
+// A conditional update: retry until no one else changed it in between.
+let mut current = high_water.load(Ordering::Relaxed);
+while candidate > current {
+    match high_water.compare_exchange_weak(
+        current,
+        candidate,
+        Ordering::Relaxed,
+        Ordering::Relaxed,
+    ) {
+        Ok(_) => break,
+        Err(actual) => current = actual,
+    }
+}
+```
+
+- Use the single-operation forms: `fetch_add`, `fetch_max`, `fetch_update`, `swap`, `compare_exchange`. Orderings govern what other memory becomes visible; they do not join two operations into one.
+- `compare_exchange_weak` may fail spuriously and belongs in a loop; the strong form is for a single attempt.
+- **A fence or an atomic store does not make plain data shareable.** Non-atomic mutable state reached from two threads needs a lock or an atomic of its own, or it is a data race and undefined behaviour.
+- **Do not hand-roll a spin lock, a lock-free queue or memory reclamation.** Use `Mutex`, `crossbeam`'s queues and deques, `crossbeam-epoch` for deferred reclamation, and `AtomicCell` for a small `Copy` slot. Freeing a node another thread may still be reading is the classic lock-free bug, and it passes most tests.
+- **Lock-free is not automatically faster.** An uncontended mutex costs a few nanoseconds. Go lock-free only when a profile shows contention on that lock, and after trying to shrink the critical section, shard the data, or give each thread its own copy.
+- A `loom` test joins its threads and asserts the invariant; without the assertion it checks nothing. No timers, randomness or I/O inside the model.
+- `std::sync::OnceLock` and `LazyLock` replace `lazy_static!` and most of `once_cell`; reach for the crates only to support an older toolchain.
+
+### Locks and scheduling at scale
+
+- **Several keyed locks are taken in one global order.** Sort the keys, lock in that order, keep the guards together and release them together. No call site picks its own order. Striped locks cap the number of locks at the price of unrelated keys sharing a stripe.
+- **`rayon` for CPU-bound loops over large collections.** Items must be independent, with no locks and no I/O inside. Do not parallelise tiny tasks: below roughly a microsecond of work per item, the scheduling overhead wins. Measure the speed-up; memory-bound loops often do not scale.
+- **A hand-built work-stealing pool** (a global injector plus a deque per worker, from `crossbeam-deque`) is for building a scheduler. Application code should use `rayon` or the async runtime, which already are one.
+- **Double-buffered work sets.** An iterative scheduler keeps a current and a next set and swaps them at the start of each round (`mem::swap(&mut current, &mut next); next.clear();`), so work scheduled during a round cannot change the set being consumed, and both allocations are reused.
+- **The scheduler owns the cross-cutting concerns:** dependency order, timeouts, error propagation and removal of failed work. A task exposes `run` and its dependencies; it does not start its dependents itself.
+- **An engine with user callbacks** owns loading, scheduling and iteration; user code implements a trait with one required method and a few defaulted hooks. Add a hook only when an algorithm needs it: an empty default can hide a step that an implementer should have handled.
+
