@@ -3404,3 +3404,128 @@ fn save_atomically(content: &str, target: &Path) -> io::Result<()> {
 - Generation is idempotent: the same spec gives the same bytes, and unchanged output is not rewritten, so timestamps do not trigger rebuilds.
 - Validate each spec at generation time. A wrong signature that is only discovered at the foreign call is a run-time crash.
 
+### Procedural macros in practice
+
+**Parse a macro's own syntax into a typed input, apart from code generation.**
+
+```rust
+mod kw {
+    syn::custom_keyword!(accessors);
+}
+
+pub struct MacroInput {
+    pub name: Ident,
+    pub fields: Punctuated<Field, Token![,]>,
+}
+
+impl Parse for MacroInput {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        input.parse::<kw::accessors>()?;
+        input.parse::<Token![=]>()?;
+        let name: Ident = input.parse()?;
+        input.parse::<Token![,]>()?;
+
+        let body;
+        braced!(body in input);
+        let fields = body.parse_terminated(Field::parse_named, Token![,])?;
+        Ok(Self { name, fields })
+    }
+}
+```
+
+- Keywords are `custom_keyword!` types matched with `parse` or `lookahead.peek`, never identifier strings compared by hand. A `Lookahead1` error lists what was expected for free.
+- The pipeline is parse, then validate into a model, then generate. Generation never sees raw tokens, and each stage is tested alone.
+
+**The expansion is an ordinary function.** `fn expand(input: TokenStream2) -> syn::Result<TokenStream2>`
+holds the logic; the `#[proc_macro]` entry point only converts types and turns an error into
+`to_compile_error()`.
+
+- Tests call `expand`, parse the result with `syn::parse2::<syn::File>` and assert on the items. That proves the output is at least syntactically Rust.
+- For reading, print it with `prettyplease`, or run `cargo expand`. Text comparisons of pretty-printed output are smoke checks; the meaning is carried by tests that compile and run the generated code, and by compile-fail tests for misuse.
+
+**A derive states what it accepts and rejects the rest.** One that maps a struct onto a
+storage schema takes structs with named fields only, emits per-field code in declaration
+order (so column order equals source order), and gives every other input a `compile_error!`
+at its span. Compile-fail tests cover enums, tuple structs and unions; a round-trip test
+asserts the order. Reordering fields is then a schema change, which the docs must say.
+
+### Closed sets and normalised inputs
+
+**A closed set is an enum, decoded at the edge.**
+
+- **Finite command-line choices derive `clap::ValueEnum`; paths are `PathBuf`.** The parser then validates, lists the choices in `--help` and reports a typo with the alternatives.
+- **A kind is never a `String` explained in a comment.** Parse it once (file extensions case-insensitively, with `eq_ignore_ascii_case`), returning `None` or a typed error for anything unknown.
+- **A `type` discriminator in data is an enum** with `#[serde(tag = "type")]`, not an `Option<String>` beside a bag of optional fields. Model a published format the way its specification writes it, and link the specification from the type's docs.
+- **Options are typed per back end:** `enum Backend { Embedded(EmbeddedOptions), Remote(RemoteOptions) }`, decoded once. A `HashMap<String, Value>` read by string key defers every typo to run time.
+- **A fixed set of roles is a struct with a field per role,** not a map from name to value. A missing role is then a compile error instead of a silent default.
+- **Allowed combinations are one table:** a `match (from, to)` or a `const` slice of pairs. Evaluation consults it first; anything absent is an error. Scattered `if` checks will disagree.
+- *An open set stays open.* If users or plugins may add kinds, an enum with `Other(String)` or a validated newtype is the honest model; an enum that must be edited for each new customer is a bottleneck.
+
+**Several input shapes become one type at the edge.**
+
+```rust
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum SpecInput {
+    One(String),
+    Many(Vec<String>),
+    WithMetric(BTreeMap<String, String>),
+}
+
+impl SpecInput {
+    fn into_specs(self) -> Vec<Spec> {
+        match self {
+            Self::One(name) => vec![Spec { name, metric: None }],
+            Self::Many(names) => names
+                .into_iter()
+                .map(|name| Spec { name, metric: None })
+                .collect(),
+            Self::WithMetric(map) => map
+                .into_iter()
+                .map(|(name, metric)| Spec { name, metric: Some(metric) })
+                .collect(),
+        }
+    }
+}
+```
+
+- Document the accepted shapes; they are public API, each with a test.
+- **`untagged` tries variants in order and takes the first that fits.** Put the most specific first, and check that no input fits two. Its error on failure is "data did not match any variant", which tells the user nothing: for user-edited configuration, a hand-written `Deserialize` or a custom error naming the accepted shapes is worth the code.
+
+**Normalise once, at the boundary.**
+
+- **Empty, null and absent** that mean the same thing decode into one representation (`Option<NonEmptyString>`); code past the boundary never calls `is_empty()` again. *Where they differ* (a partial update: absent keeps, null clears), keep the distinction in a type such as `Patch<T>` and do not collapse it.
+- **Whitespace-only is missing** for a required human-entered field: check `trim().is_empty()` and report one variant carrying the field name. *Do not trim* secrets, passwords or anything where whitespace is data.
+- **Numbers, times and IDs that arrive as strings are parsed at the boundary** (`serde_with::DisplayFromStr`, a `deserialize_with` function, a newtype), so later code never parses again.
+- **Units live in the type or the field name:** a `Duration` with an explicit serde adapter (`humantime_serde`), or `timeout_ms`. A unit that exists only in a comment will be misread.
+- **Inferring types from untyped text has a stated, tested order.** If a loader tries "date" before "text", a string that merely looks like a date changes type silently. Document the order, test the ambiguous cases (`"1e5"`, `"NaN"`, `"2024-01-01"`, leading zeros), and let an explicit schema override inference. When several formats are tried, the error names the value and the formats tried.
+- **Keep the decoding error as the source,** not flattened into a string, so line and column survive.
+- **A parse is a function from input to a finished value.** No parser object whose fields fill in step by step and can be read half-done.
+- **Normalise a symmetric operation by ordering its arguments once** (`let (lo, hi) = if a <= b { (a, b) } else { (b, a) };`) instead of writing both branches.
+- **A hand-rolled entry point has one usage constant.** Where no argument parser is available (a host function, an FFI command), every arity or type error prints the same `USAGE` text.
+
+**Per-type facts live on a trait; one generic function does the work.**
+
+```rust
+pub trait Record: Send + Sync + 'static {
+    const TABLE: &'static str;
+
+    fn to_batch(rows: &[Self], embeddings: &[Vec<f32>]) -> Result<Batch, StoreError>
+    where
+        Self: Sized;
+}
+
+fn store<R: Record>(db: &Db, rows: &[R], embeddings: &[Vec<f32>]) -> Result<(), StoreError> {
+    if rows.len() != embeddings.len() {
+        return Err(StoreError::LengthMismatch {
+            rows: rows.len(),
+            embeddings: embeddings.len(),
+        });
+    }
+    db.append(R::TABLE, R::to_batch(rows, embeddings)?)
+}
+```
+
+- **Parallel slices are checked for equal length at entry,** with both lengths in the error. Better still, take one slice of pairs so the mismatch cannot be written.
+- Where operations carry a numeric type code (`const TYPE: u16`), a test asserts the codes are unique. Duplicates otherwise dispatch to the wrong handler without any error.
+
