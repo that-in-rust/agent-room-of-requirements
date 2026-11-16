@@ -1112,3 +1112,89 @@ call sits in a hot loop where a boxed reader per item costs too much.
 stored `supported: bool` can disagree with them. Store a derived value only as a measured
 cache, with one function that updates both.
 
+### Middleware, capabilities and shared vocabulary
+
+**Layered middleware: static when the stack is fixed, dynamic when it is configured.** When the
+concerns around one back-end trait (retry, logging, metrics, timeout) are known at build time,
+compose them as types. A layer wraps an inner implementation, and a forwarding trait with a
+blanket impl supplies every operation, so a layer overrides only what it changes.
+
+```rust
+pub trait Layer<A: Access> {
+    type Layered: Access;
+    fn layer(&self, inner: A) -> Self::Layered;
+}
+
+pub trait LayeredAccess: Send + Sync + 'static {
+    type Inner: Access;
+    fn inner(&self) -> &Self::Inner;
+    // every operation has a default body that forwards to self.inner()
+}
+
+impl<L: LayeredAccess> Access for L { /* forwards every operation */ }
+```
+
+- It buys a hot path with no dynamic dispatch. It costs long type names, slow compiles and hard error messages.
+- **Order is behaviour.** A retry layer outside a timeout layer retries timeouts; inside it, all the retries share one timeout. Metrics outside retry count one call; inside, they count every attempt. Write the intended order down and test it.
+- *Use trait objects* when layers are chosen at run time, or when the call is I/O-bound and one virtual call is noise. For HTTP services use the ecosystem's `tower` layers; do not invent a parallel system.
+
+**One capability gate for optional arguments.** A unified API over providers that differ keeps
+a capability record per back end and checks optional arguments in one layer, before the request
+reaches the back end.
+
+```rust
+async fn write(&self, path: &str, args: OpWrite) -> Result<Writer> {
+    let capability = self.info.capability();
+    if args.content_type().is_some() && !capability.write_with_content_type {
+        return Err(unsupported(&self.info, Operation::Write, "content_type"));
+    }
+    self.inner.write(path, args).await
+}
+```
+
+- The error names the operation, the argument and the back end. Callers never scatter capability checks, and a back end never silently ignores an argument it cannot honour.
+- A new optional argument adds the capability bit, the check and a test against a back end that lacks it.
+
+**Middleware states which form of the body it sees.** Interceptors that read or change the
+request's meaning run before serialisation; signing and authentication that need the final
+bytes run after it. Model it with `enum Body { Message(Request), Bytes(Bytes) }` or two typed
+stages, and test the common chain: mutate, serialise, sign. Mutating after signing is the bug
+this prevents.
+
+**A shared vocabulary lives in one crate.** Names that several crates read and write in one
+persisted schema (table names, relationship kinds, event types) are closed enums with `ALL`,
+`as_str` and `FromStr`:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum EdgeKind { Calls, Imports, Implements }
+
+impl EdgeKind {
+    pub const ALL: &[EdgeKind] = &[EdgeKind::Calls, EdgeKind::Imports, EdgeKind::Implements];
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            EdgeKind::Calls => "calls",
+            EdgeKind::Imports => "imports",
+            EdgeKind::Implements => "implements",
+        }
+    }
+}
+```
+
+- A new kind then fails to compile in every exhaustive `match` downstream, which is the point. A test round-trips every member of `ALL` through `as_str` and `FromStr`.
+- The spelling is a persisted format. Renaming a variant is free; changing its string is a data migration. An alias kept for old data is recorded as compatibility debt.
+
+**Smaller rules.**
+
+- **One gate owns transaction mode.** Where explicit and implicit (per-statement) transactions coexist, one context object holds the lifecycle and every statement path goes through it. Starting a transaction while one is active is an error, as is a write inside a read-only one. Nesting needs savepoints.
+- **Loading a stateful extension is idempotent by a unique name:** already loaded means return. Initialise before recording it as loaded, persist the fact, and replay loads at startup. Never load a dynamic library and lose track of it.
+- **Selecting among discovered implementations is a policy function:** highest explicit priority, a stable tie-breaker (the name), and a loud failure when there is none. Test that the intended one wins.
+- **One source of truth per builder field.** If a field accepts a typed value or a pre-serialised escape hatch, `enum Bindings { Typed(Map), Raw(String) }` makes mixing them unrepresentable. Otherwise `build()` returns an error; a library does not panic for this. Irreversible conversion waits until `build()`.
+- **Registry keys are structs, not joined strings.** Canonicalise first (trim, case-fold, fill defaults), then use a struct deriving `Hash` and `Eq`. A delimiter-joined string breaks the day a part contains the delimiter.
+- **Compile user-authored rules once.** Validate, resolve cross-references and build lookup tables at load time; resolution at run time is then cheap. Conflict order is an explicit field with a documented direction, two rules with the same key and order are a load error naming both, and nothing depends on map iteration order.
+- **Reload by build, swap, bump.** Build the new plugin or rule set off to the side, swap it in atomically (`ArcSwap`), and bump a version so caches holding decisions from the old set invalidate them. An allow-listed host API is not a sandbox and does not make untrusted plugin code safe.
+- **Data-access ladder.** Use the narrowest layer that expresses the query: the built-in typed operation, then a typed query, then a hand-written query, then raw SQL. Raw SQL always uses bound parameters, never string formatting.
+- **Tree nodes share one identity contract:** structural equality, a hash consistent with it, deep clone, a debug dump and conversion back to source. An enum deriving `PartialEq`, `Eq`, `Hash` and `Clone` gives this with no variant able to forget a field. With trait-object nodes, test `clone(x) == x`, equal hashes and the source round trip.
+- **A local rewrite does five things in order:** check its own switch, prove the node's shape (arity, types), prove the result type and nullability are preserved, rewrite, then re-resolve the new node through the normal resolution path instead of filling in its type by hand. A rewrite that needs whole-plan reasoning is not a local visitor.
+- **Limits that differ by value kind** share one entry point that checks compatibility, and each kind owns only its own rule: `enum Limit { Bool(bool), Int(i64), Float(f64) }` with one `is_violated(&Value) -> Result<bool, TypeMismatch>`.
+
