@@ -7795,3 +7795,108 @@ before mutating, and afterwards advances the remote hash only if the two were eq
 they differed, it warns and leaves the hash alone, so drift stays visible and a sync must
 reconcile.
 
+### Protocols and configuration discovery
+
+**Length-prefixed messages over a byte stream.** One read is never one message. The reader
+is a state machine looping over a pending buffer.
+
+```rust
+enum ReaderState {
+    Header,
+    Body { content_length: usize },
+}
+
+fn next_message(state: &mut ReaderState, pending: &mut BytesMut) -> Result<Option<Bytes>, FrameError> {
+    loop {
+        match *state {
+            ReaderState::Header => {
+                let Some(end) = find_header_end(pending) else {
+                    if pending.len() > MAX_HEADER_BYTES {
+                        return Err(FrameError::HeaderTooLong);
+                    }
+                    return Ok(None); // need more bytes
+                };
+                let content_length = parse_content_length(&pending[..end])?;
+                if content_length > MAX_BODY_BYTES {
+                    return Err(FrameError::BodyTooLarge { content_length });
+                }
+                pending.advance(end);
+                *state = ReaderState::Body { content_length };
+            }
+            ReaderState::Body { content_length } => {
+                if pending.len() < content_length {
+                    return Ok(None);
+                }
+                *state = ReaderState::Header;
+                return Ok(Some(pending.split_to(content_length).freeze()));
+            }
+        }
+    }
+}
+```
+
+- **Bound the header and the declared length before buffering.** Otherwise a peer grows your memory with one number.
+- Tests: a split header, a split body, several messages in one chunk, an invalid length.
+- **Prefer a maintained codec** (`tokio_util::codec::LengthDelimitedCodec`, `Framed`) when the format fits one.
+
+**One map owns in-flight requests.** At the transport boundary, an id from a monotonic
+counter maps to a `oneshot` sender.
+
+- Success, error response, timeout and connection close each remove the entry.
+- Connection close fails every waiter. A waiter left pending forever is the usual bug.
+- Test all four paths, and replies arriving out of order.
+
+**A wire encoder writes into the caller's buffer;** the allocating form is layered on top.
+
+```rust
+pub trait WireEncode {
+    fn encode(&self, buf: &mut BytesMut);
+    fn encoded_size(&self) -> usize;
+
+    fn to_bytes(&self) -> Bytes {
+        let mut buf = BytesMut::with_capacity(self.encoded_size());
+        self.encode(&mut buf);
+        buf.freeze()
+    }
+}
+```
+
+- `encoded_size()` and `encode()` must agree. Every wire type gets a round-trip test and `assert_eq!(x.encoded_size(), x.to_bytes().len())`.
+- Not for a streaming format whose size is unknown without doing the work twice.
+
+**Configuration discovery is one function returning an ordered list,** project-local before
+the user directory.
+
+```rust
+pub fn discover() -> Result<Option<Self>, ConfigError> {
+    for path in config_search_paths() {
+        match fs::read_to_string(&path) {
+            Ok(text) => {
+                return Self::parse(&text)
+                    .map(Some)
+                    .map_err(|source| ConfigError::Parse { path, source });
+            }
+            Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+            Err(source) => return Err(ConfigError::Read { path, source }),
+        }
+    }
+    Ok(None)
+}
+```
+
+- **The first file found wins, and a broken one is an error naming its path.** It never falls through to the next file or to defaults: the user would run with settings they did not write.
+- Read and match on `NotFound`, as above. An `exists()` check followed by a read is a race, and it treats "permission denied" as "absent".
+- `Ok(None)` means no configuration. Using defaults is then the caller's deliberate choice.
+- A search up parent directories has a depth limit.
+- *Skip discovery entirely* where security or reproducibility matters: take an explicit path.
+
+**Option declarations.**
+
+- **An option declares when it may change:** fixed after initialisation, changeable only offline, changeable live, overridable locally. A change outside its scope is a typed error at set time, not a failure later.
+- **A field that may hold a secret reference is its own type:** validated on assignment, resolved through a provider at use, redacted in `Debug` and serialisation. A field accepting either a template or a concrete value is an enum of the two.
+- **A registry of settings looked up by name erases types only at the registry boundary.** Each definition keeps its parser and constraint as function pointers captured where the concrete type is known. Test every definition, since a wrong downcast is a run-time failure. With no lookup by name, a plain typed struct is better.
+
+**A database-backed store owns its connection, schema setup and statement cache behind one
+handle.** Use the driver's statement cache (`prepare_cached` in `rusqlite`), and do not
+share one connection across threads without a pool or a documented lock.
+
