@@ -3866,3 +3866,155 @@ impl Csr {
 value buffer by one slot, so both buffers always have the same length and position `i` means
 the same row in each. For anything small, `Vec<Option<T>>` is simpler and right.
 
+- **NaN in a priority is usually a bug upstream.** `total_cmp` gives it a place in the order, which keeps the heap consistent but can hide a bad cost calculation. Where NaN should not occur, reject it when the value is created.
+
+### Choosing a pointer
+
+| Need | One thread | Across threads |
+|---|---|---|
+| One owner on the heap (recursive type, large value, trait object) | `Box<T>` | `Box<T>` |
+| Several owners, read-only | `Rc<T>` | `Arc<T>` |
+| Several owners, mutation | `Rc<RefCell<T>>` | `Arc<Mutex<T>>` or `Arc<RwLock<T>>` |
+| A reference back to an owner | `rc::Weak<T>` | `sync::Weak<T>` |
+
+- **Shared and immutable is the cheap case.** Prefer `Arc<T>` of immutable data, replaced whole, over `Arc<Mutex<T>>` mutated in place. `Arc::make_mut` gives copy-on-write when a private change is needed.
+- **`Rc<RefCell<T>>` throughout a design is a sign** that ownership was never decided. It suits a few shared nodes (a GUI tree, an observer list), not a whole data model. Indices into an owning `Vec` are usually simpler and faster.
+- **Parent-to-child strong, child-to-parent `Weak`,** or the cycle never frees.
+- `Arc::clone(&x)` rather than `x.clone()` makes it visible that only the count is bumped.
+- Before `Arc<Mutex<T>>` across tasks, ask whether one task could own the state and receive messages on a channel.
+
+## 8. Errors and recovery
+
+**Defaults.**
+
+- A function that can fail returns `Result`; `?` propagates. Panics are for bugs: a broken invariant that no caller could handle.
+- **Libraries return typed errors** (an enum or struct, usually via `thiserror`) that callers can match on. **Applications use `anyhow` or `eyre`** at the top, where errors are reported, not matched. Never export `anyhow::Error` from a library: it tells callers nothing and takes away their ability to react.
+- No `unwrap` or `expect` on a path that input, I/O or another system can make fail. Where an invariant truly guarantees success, `expect("why this cannot fail")` states it.
+- Never swallow an error. Handle it, return it, or log it with a reason for going on.
+
+### Designing an error type
+
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum StoreError {
+    #[error("record {id} not found")]
+    NotFound { id: RecordId },
+
+    #[error("query timed out after {elapsed:?} (limit {limit:?})")]
+    Timeout { elapsed: Duration, limit: Duration },
+
+    #[error("reading {}", .path.display())]
+    Read {
+        path: PathBuf,
+        #[source]
+        source: io::Error,
+    },
+
+    #[error(transparent)]
+    Database(#[from] DatabaseError),
+}
+```
+
+- **One variant per thing a caller might do differently** (retry, report to the user, treat as absent), not one per call site and not one per underlying library.
+- **A variant carries the data needed to act or to explain:** the ID, the path, the limit. A variant holding only a `String` is a message, not a type.
+- **Keep the cause as `#[source]`, and do not repeat its text in your message.** Reporters print the chain; a message that embeds the source prints it twice. `cause: String` throws the chain away.
+- Messages are lower case, without a trailing full stop, and say what was being attempted.
+- **`#[from]` only where the conversion needs no context.** A blanket `From<io::Error>` makes every `?` on a file operation produce an error that does not say which file.
+- Errors are `Send + Sync + 'static` so they can cross threads and be boxed. Keep them small; box a large payload, since the size of `E` is paid by every `Result<T, E>`.
+- **`#[non_exhaustive]` on a public error enum that will grow,** so adding a variant is not a breaking change.
+
+**An opaque error with a kind, when the error space will evolve.** A public enum freezes its
+variants and their fields. A struct with a private representation and a public `kind()` keeps
+room to change.
+
+```rust
+#[derive(Debug)]
+pub struct Error {
+    kind: ErrorKind,
+    source: Option<Box<dyn std::error::Error + Send + Sync>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ErrorKind {
+    NotFound,
+    Timeout,
+    InvalidInput,
+}
+
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        self.kind
+    }
+
+    pub fn is_retryable(&self) -> bool {
+        matches!(self.kind, ErrorKind::Timeout)
+    }
+}
+```
+
+- Callers cannot construct it, so only your crate decides which states exist. Predicates such as `is_retryable()` answer the question callers actually have.
+- *Use a plain enum* when the set is small, stable and callers benefit from matching on fields. Most internal crates are in that case.
+
+### Context and reporting
+
+**Add context where the operation is still meaningful.** `?` alone says what failed, not what
+was being done.
+
+```rust
+pub fn load_config(path: &Path) -> anyhow::Result<Config> {
+    let text = fs::read_to_string(path)
+        .with_context(|| format!("reading config {}", path.display()))?;
+    let config = toml::from_str(&text)
+        .with_context(|| format!("parsing config {}", path.display()))?;
+    Ok(config)
+}
+```
+
+- Context belongs at I/O and orchestration boundaries: opening a file, sending a request, decoding a payload, calling another service. Adding it at every helper repeats the same sentence down the chain.
+- `with_context` takes a closure, so the message is formatted only on failure.
+- In a library, the equivalent is a variant that carries the context plus the `#[source]`, built with `map_err`.
+
+**A diagnostic for a person says where and what to do.** For user-facing input (configuration,
+flags, patterns, file formats): the file, line and column or byte offset, what was found, what
+was expected, and a hint when there is an obvious repair. An abstract variant name helps
+nobody.
+
+- Rich reports with source snippets and labelled spans (`miette`, `ariadne`, `color-eyre`) belong in the binary. Do not put their types in a library's public API; expose spans and messages as plain data and let the binary render them.
+- **Diagnostics must survive non-UTF-8 data.** Paths, command output and protocol bytes are not always valid UTF-8. Print paths with `.display()`, bytes with an escaping formatter, and do not convert to `String` early with `unwrap` or lose data with a silent lossy conversion.
+- Never put secrets, tokens or whole payloads in an error message. Errors travel to logs and to users.
+
+**The binary owns the exit code.**
+
+```rust
+fn main() -> ExitCode {
+    match run() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) if is_broken_pipe(&error) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("error: {error:#}");
+            ExitCode::from(2)
+        }
+    }
+}
+```
+
+- Returning `ExitCode` from `main` lets destructors run; `std::process::exit` does not, so buffered output and temporary files can be lost.
+- A closed pipe (`tool | head`) is not a failure. Look for `io::ErrorKind::BrokenPipe` in the chain and exit quietly.
+- `{error:#}` prints an `anyhow` error with its causes on one line; `{error:?}` prints the multi-line report with a backtrace if one was captured.
+- Distinct exit codes for distinct classes (usage error, runtime failure) are part of a CLI's interface; document them. Errors go to stderr, results to stdout.
+- **A library never exits the process,** prints to stdout or stderr, or installs global handlers.
+
+### Panics
+
+- **Audit production paths before a release:** `unwrap`, `expect`, `panic!`, `unreachable!`, `todo!`, slice indexing and arithmetic on external input. Each becomes a `Result` or gets a comment stating the invariant.
+
+```sh
+cargo clippy -- -W clippy::unwrap_used -W clippy::expect_used \
+  -W clippy::indexing_slicing -W clippy::panic
+```
+
+- Compiling and passing unit tests does not show that a panic is unreachable. For each boundary, one test feeds the bad input and asserts the returned error.
+- These lints are noisy in tests; allow them there (`#![cfg_attr(test, allow(clippy::unwrap_used))]`) instead of weakening them everywhere.
+- **A panic must not cross an FFI boundary.** Catch it with `catch_unwind` at every exported `extern "C"` function and turn it into an error code.
+
