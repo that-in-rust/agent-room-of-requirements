@@ -618,3 +618,95 @@ pub fn format_named(name: &str) -> Result<Box<dyn Format>, UnknownFormat> {
 - If the members share no behaviour and differ only in data, a table of structs is simpler. If the set is fixed and small and the logic is a `match`, an enum keeps exhaustiveness checking, which a trait object gives up.
 - **Plugins loaded at run time** come from an explicit registry or manifest, one coordinator calls their hooks in a stated order, and a plugin that fails to load is reported at startup, never skipped silently.
 
+- **A default method can lie.** An empty default silently drops data for every member that has not implemented the richer method, and nothing fails. When "not supported" and "supported, found nothing" must be told apart, return `Option` from the default or split the capability into its own trait. Every non-default method callers rely on gets a fixture per member.
+
+### Dependencies, resources and real inputs
+
+**Depend on the trait, not the concrete adapter.**
+
+```rust
+// Bad: the component can only ever be built with a real database and a real watcher.
+pub struct Indexer {
+    database: SqliteConnection,
+    watcher: NotifyWatcher,
+}
+
+// Good: the dependencies are parameters.
+pub struct Indexer<D, W> {
+    database: D,
+    watcher: W,
+}
+
+impl<D: Database, W: FileWatcher> Indexer<D, W> {
+    pub fn new(database: D, watcher: W) -> Self {
+        Self { database, watcher }
+    }
+}
+
+pub type ProductionIndexer = Indexer<SqliteDatabase, NotifyFileWatcher>;
+```
+
+- **Bounds go on the `impl`, not on the struct definition.** A bound on the struct must be repeated on every `impl` and every function that mentions the type. Put it on the struct only when a field's type or the `Drop` impl needs it.
+- **Ask for `Send + Sync` where it is needed** (the function that spawns), not on every type by reflex.
+- **Wrap in `Arc` only what is shared.** A component with a single owner holds its dependencies by value.
+- **Two or three type parameters is the practical ceiling.** Beyond that, signatures and error messages become unreadable; switch to `Arc<dyn Trait>` fields, or group the dependencies behind one context trait.
+
+**Resources are released by RAII, with an explicit path for teardown that can fail.**
+
+```rust
+pub struct Session {
+    connection: Option<Connection>,
+}
+
+impl Session {
+    /// Flushes and closes. Call this on the normal path; it reports failure.
+    pub fn close(mut self) -> Result<(), CloseError> {
+        match self.connection.take() {
+            Some(connection) => connection.close(),
+            None => Ok(()),
+        }
+    }
+}
+
+impl Drop for Session {
+    fn drop(&mut self) {
+        // Fallback for early returns and panics: best effort, never panics.
+        if let Some(connection) = self.connection.take() {
+            if let Err(error) = connection.close() {
+                tracing::warn!(%error, "session dropped without close(); close failed");
+            }
+        }
+    }
+}
+```
+
+- `Option::take` lets `close(self)` and `Drop` share the resource without closing it twice.
+- **Drop order is part of the design.** Struct fields drop in declaration order; local variables drop in reverse order of declaration. If the pool must outlive the workers that use it, declare the workers first, or shut down explicitly.
+- A guard whose only job is cleanup is bound to a name (`let _guard = ...`), never to `_`.
+- *Anti-patterns:* a `Drop` that blocks on a network call or joins a thread with no timeout; a `Drop` that panics (a panic during unwinding aborts the process); async cleanup attempted in `Drop` by spawning a task nobody waits for; `mem::forget` used to skip cleanup.
+
+**Model the input you will really receive.** A type sketched from the simplest example breaks
+on the first real file.
+
+```rust
+// Sketch: fine until a generic, async or pub(crate) function shows up.
+pub struct Function {
+    pub name: String,
+    pub signature: String,
+}
+
+// Model: every part a requirement reads has a field with a type.
+pub struct Function {
+    pub name: Ident,
+    pub visibility: Visibility,
+    pub generics: Option<GenericParams>,
+    pub where_clause: Option<WhereClause>,
+    pub is_async: bool,
+    pub signature: Signature,
+}
+```
+
+- **Test against samples taken from real code,** including the awkward ones: nested generics, `where` clauses, attributes, macros, unusual whitespace, non-ASCII identifiers.
+- **Model what a requirement uses, and be explicit about the rest.** Either keep the unparsed remainder (a span or the raw text) or return an "unsupported" error. Never drop it silently, because a quietly incomplete result is worse than a failure.
+- *Skip the full model when* the tool needs one fact (a name, a count). Extract that fact, and still test it against the awkward samples.
+
