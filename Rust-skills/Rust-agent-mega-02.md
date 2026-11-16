@@ -1011,3 +1011,104 @@ pub trait Rule {
 
 - **Parser inputs are hostile.** Bound recursion depth, input size and time; return an error with a byte offset; never panic on malformed input. A fuzz target or a property test (`parse` never panics; `print(parse(x))` re-parses to the same tree) finds what examples miss.
 
+### Pipelines, registries and handler chains
+
+**A phased pipeline is data.** A compiler, indexer or ETL job is an ordered table of passes,
+each with a name and a failure policy.
+
+```rust
+struct Pass {
+    name: &'static str,
+    required: bool,
+    run: fn(&mut Context) -> anyhow::Result<()>,
+}
+
+for pass in PASSES {
+    let started = Instant::now();
+    let result = (pass.run)(&mut ctx);
+    tracing::info!(pass = pass.name, elapsed = ?started.elapsed(), ok = result.is_ok());
+    match result {
+        Err(error) if pass.required => return Err(error.context(pass.name)),
+        Err(error) => {
+            tracing::warn!(pass = pass.name, %error, "optional pass failed");
+            ctx.degraded.push(pass.name);
+        }
+        Ok(()) => {}
+    }
+}
+```
+
+- **Order is behaviour.** A new pass states what it needs from earlier passes and where it sits, and gets a test for cancellation after it.
+- **"Optional" is rare and visible.** An optional pass that fails is recorded in the result (`degraded` above), not only logged, so the caller and the tests can see it. Default to required; a pass nobody would miss should not exist.
+- *Skip the table for* two or three steps. Three function calls in a row are clearer than a pass framework.
+
+**A handler chain where a handler can say "not mine".** In a chain of plugins, codecs,
+authentication schemes or planners, each handler returns `Result<Option<T>>`: `Ok(None)` means
+"not mine", `Err` means "mine, and it failed".
+
+```rust
+let mut plan = None;
+for planner in &self.planners {
+    plan = planner.plan(node, inputs).await?;
+    if plan.is_some() {
+        break;
+    }
+}
+let plan = plan.ok_or_else(|| PlanError::NoPlannerFor { node: format!("{node:?}") })?;
+self.ensure_schema_matches(node.schema(), &plan)?;
+```
+
+- The first `Some` wins, so registration order is behaviour: document it and test two handlers that both accept an input.
+- "Nothing accepted this" is its own error and names the input.
+- Validate what a handler returns before trusting it; a plugin is not your code.
+- *Anti-pattern:* a handler that returns `Ok(None)` on its own failure. The chain then moves on and the real error is lost.
+- If every handler must handle every input, use plain `Result`.
+
+**Check every rewrite rule where it runs.** A rewrite pipeline (optimiser, tree or graph
+transform) wraps each rule in a postcondition that names the rule, so a bad rewrite is caught
+next to its cause and not three passes later.
+
+```rust
+let before = plan.schema();
+let plan = rule.rewrite(plan, config)?;
+if !is_allowed_schema_change(&before, &plan.schema()) {
+    return Err(OptimizerError::SchemaChanged { rule: rule.name().to_owned() });
+}
+#[cfg(debug_assertions)]
+check_invariants(&plan)?;
+```
+
+- Cheap checks always run. Whole-structure walks run under `cfg(debug_assertions)` or a flag, and CI runs the test suite with them on.
+- Each rule ships with a negative test built on a deliberately invalid rewrite, which proves the check can fire.
+- Say what the check does not cover. A partial invariant read as a full one gives false confidence.
+
+**Registries.**
+
+- **An open set is a trait plus registration; a closed set is a `match`.** Use a registry when the set is meant to grow without edits to the orchestration (languages, providers, formats). For one or two cases a `match` is simpler and exhaustive.
+- **An unknown key is a typed error that lists the supported values.** Never a panic on a missing map entry, never a silent default.
+- **Decide the duplicate policy** (reject, or last wins) and test it. Reject is the safer default.
+- **Capabilities are read from the registry.** Do not keep a second hand-written support matrix; it will drift. Capability tests and help output query the registry.
+- **A new member is added to every per-member table in one change,** with one smoke fixture that exercises the whole path.
+- **The fallback arm of a dispatcher returns a domain error naming the operation and the back end** ("no translation for `X` in back end `Y`"), raised at the dispatch point. Not `unreachable!()`, and not a missing-function error from deep inside.
+
+**Extension traits: each default states what it means.** Required methods form the core
+contract. For every default method decide whether it means *unsupported* (an error naming the
+operation), *no-op* or *delegate*. A default encoder that returns `Ok(())` loses data silently;
+prefer the explicit unsupported error unless a round-trip test proves the no-op is lossless.
+Decode failures are always explicit.
+
+**Inject content access.** An analyser or parser takes a narrow reader, for example
+`impl Fn(&Path) -> io::Result<Vec<u8>>`, and does not call `std::fs::read` itself. The same
+logic then runs over the working tree, a Git revision or an in-memory fixture. Document whether
+paths are absolute or relative to a root. *Skip when* the code needs metadata, streaming or
+directory walking; pass a small file-system trait then.
+
+**A storage capability in front of handlers.** Handlers depend on a few domain operations
+(`begin_upload`, `reader`, `finalize_upload`), not on file paths or bucket names. Add a method
+when a second call site needs it. *Skip when* there is one back end, no test double, or the
+call sits in a hot loop where a boxed reader per item costs too much.
+
+**Derived state is computed, not stored.** `plan.is_executable()` is derived from the steps; a
+stored `supported: bool` can disagree with them. Store a derived value only as a measured
+cache, with one function that updates both.
+
