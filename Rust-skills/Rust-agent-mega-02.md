@@ -9719,3 +9719,125 @@ directory for stronger crash guarantees). For a batch:
 - A batch of renames is not atomic as a whole. If readers must never see a mixed state, write a new directory and switch one pointer (a symlink or a manifest file) at the end.
 - Test edits, creates, nested directories, and a failure injected at each step.
 
+### Verification runners, retry loops and command-line shapes
+
+**A verification runner records skipped steps as skipped.** Step order encodes dependency
+(format, lint, types, tests), cheapest first. When a step fails, later ones do not run and
+are reported with the reason, so a summary never shows a step as missing or as passed.
+
+```rust
+pub enum StepStatus {
+    Pass,
+    Fail,
+    Skipped { reason: String },
+}
+```
+
+- Tool output is parsed into a typed result. Status is an enum, never a string compared by text.
+- **"Skipped" is not "passed".** A report with skipped steps is not a green report, and must not be summarised as one.
+- Stopping early hides unrelated later failures. Offer a keep-going mode for when a complete inventory is wanted.
+
+**A generate, validate, retry loop keeps its state in one typed struct:** attempt count,
+limit, last validation result and error history. The retry decision is a pure function of
+that state, so it can be tested without running the generator.
+
+- **Bound the history.** An append-only error log grows without limit, anchors a model on its earlier failures, and can carry secrets from tool output back into prompts.
+- **Stop when attempts stop making progress,** not only at the limit: the same validation error twice in a row is a reason to give up or change approach.
+- Isolate attempts (a fresh copy of the workspace) when a failed attempt could leave damage behind.
+
+**Run the expensive fallback only when the cheap pass is measurably weak.** A wider search,
+a second model call or a slower algorithm runs when the first result falls below a named
+threshold, so the common case pays nothing.
+
+```rust
+const SEARCH_LIMIT: usize = 10;
+const MINIMUM_RESULTS: usize = SEARCH_LIMIT / 2;
+
+let mut results = self.search(&query, SEARCH_LIMIT).await?;
+if results.len() < MINIMUM_RESULTS {
+    tracing::debug!(found = results.len(), "first pass weak; widening search");
+    results.extend(self.widened_search(&query, SEARCH_LIMIT).await?);
+    dedup_and_sort(&mut results);
+}
+```
+
+- The threshold is a named constant, the fallback is logged, and merged results are deduplicated and ordered deterministically.
+- Not for exact lookups or security-sensitive searches, where a looser second pass adds false positives.
+
+**Degradation under a size budget has named modes:** the full content if it fits, otherwise
+a compressed form, otherwise a listing of what was left out. Log the mode taken and tell
+the consumer what was omitted. Never cut raw text blindly, and cut at a line or item
+boundary. Where an omission would be unsafe (compliance, legal, safety review), stop
+instead of pruning.
+
+**Command-line and tooling shapes.**
+
+- **Resolve configuration once, at start-up:** flag, then environment variable, then file, then default, validated together into one typed value. Nothing below that boundary reads the environment. Secrets are masked in any printed summary.
+- **Offer a parse entry point that does not exit:** `try_parse_from(args)` returns an error where `parse()` would end the process, so argument handling is testable.
+- **Sibling subcommands that share options embed one struct** with `#[command(flatten)]`.
+- **A `cargo foo` subcommand** is a binary named `cargo-foo` whose parser expects `foo` as its first argument, since Cargo passes it along. Set `bin_name = "cargo"` so help reads correctly, and forward everything after `--` with a trailing `#[arg(last = true)] Vec<String>`.
+- **Get build outputs from Cargo's JSON messages** (`--message-format=json` read with `cargo_metadata::Message::parse_stream`), not by guessing paths under `target`. Check the exit status after reading the stream.
+- **A bad log-level setting never stops the program.** Print one line to stderr and use the default.
+- **Libraries do not print progress.** They take a callback or a writer; the binary decides whether there is a terminal.
+- **Validate a directory layout once.** A tool that needs a particular folder structure checks it at start-up into one value, with errors that name the path. Later code takes that value and does no existence checks of its own.
+- **A path that will be written and a path that must exist are different types** after validation, and the writable one owns its clean-up. Errors show the path as the user typed it.
+- **Paths handed to other programs on Windows:** `std::fs::canonicalize` returns extended-length paths (`\\?\C:\...`) that many tools reject. Use `dunce::canonicalize` for paths passed to a child process, written to a generated file or shown to a user.
+- **A batch tool that parses source on a thread pool sets the worker stack size explicitly,** since deeply nested input overflows the default. The binary builds the global Rayon pool once, before any parallel work. **A library never configures the global pool.**
+- **Syntax-level metrics with `syn::visit`** suit counting and risk scouting (unsafe blocks, nesting). Anything that needs types, macro expansion or borrow facts needs the compiler; say which the tool is.
+- **Findings are printed as labelled source snippets** with a bounded context window, clamped at both ends of the file. Snapshot a finding at the first line and at the last.
+- **One model, two outputs.** A generator that writes a human document and a machine-readable file renders both from one validated, sorted model.
+- **Generated files are checked in CI:** run each generator and fail if the working tree differs.
+- **Binding crates forward.** A Python or Node binding holds no behaviour of its own, and its smoke test uses the same fixtures as the Rust tests.
+- **A plugin checks the host's version** against the range it was built for, and warns clearly on a mismatch instead of failing obscurely later.
+
+### Gate discipline
+
+**Before any claim of completion:**
+
+1. Identify the command that would prove the claim.
+2. Run it fresh and in full, after the last edit.
+3. Read the output and the exit status.
+4. Report what happened, and only then say done or not done.
+
+A result from before the last change proves nothing about the code as it now is. "It
+should pass" is not a result.
+
+**A completion claim does not stand if:**
+
+- a requirement has no test;
+- a failure path that matters is untested;
+- a performance claim has no measurement;
+- concurrency safety is asserted, not exercised;
+- a long-running task has no stated cancellation or shutdown behaviour;
+- a public interface changed without a compatibility review.
+
+**Changes that need their own look:**
+
+- **Public interface:** leaked dependency types, the error surface, re-exports, auto traits.
+- **Unsafe:** a `SAFETY` comment for the new invariant, and a targeted test, under Miri where possible.
+- **Generated code:** regenerated from its true inputs and diffed, not hand-edited.
+- **Lint suppressions:** each is a design decision with a stated reason.
+
+**From rule to test to gate:**
+
+| Rule | Evidence | Gate |
+|---|---|---|
+| Newtypes at boundaries | Unit tests for valid and invalid parsing | `cargo test` |
+| Typestate | Compile-fail test for an illegal transition | `trybuild` suite or `compile_fail` doc test |
+| Recovery-aware errors | Unit tests for the retryable and the permanent branch | `cargo test` |
+| Iterator and transformation logic | Property tests for correctness and order | `cargo test` |
+| Workspace and features | Build across the supported feature combinations | `cargo hack` or a CI matrix |
+| No blocking, no lock across await | Clippy's `await_holding_lock` lints, review, a latency test under load | Clippy, `cargo test` |
+| Bounded concurrency and cancellation | Integration tests with a deadline and a cancelled caller | `cargo test` |
+| Task ownership | Teardown and failure-propagation tests | `cargo test`, `loom` for hand-written synchronisation |
+| Transport to domain at the edge | Integration tests of conversion and error shaping | `cargo test` |
+| Unsafe containment | Tests of the safe wrapper's invariants | `cargo miri test` |
+| Explicit close and shutdown fan-out | Integration tests with a signal and a timeout | `cargo test` |
+| Dependency exposure | A downstream compile, doc tests | Review, `cargo semver-checks` |
+| Measure first | Benchmark with a baseline and a profile | Benchmark job |
+| Everything | Format and lint | `cargo fmt --check`, Clippy with warnings denied |
+
+A stress test passing does not prove the absence of a race or a blocked executor; it only
+fails to find one. Where a rule can be checked statically (a lint, a type), prefer that to
+a test that depends on timing.
+
