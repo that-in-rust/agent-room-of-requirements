@@ -9986,3 +9986,129 @@ filter to stop at: a change that passes the first read still goes through every 
 | Implementation | Test first where the behaviour is known; use ownership for clean-up; add error context; exercise concurrency |
 | Maintenance | Keep documentation checked against code; keep one command per feature; run the full suite in CI |
 
+### Technique reminders by area
+
+A last scan before finishing a design. Each line points back to a section that explains
+when the technique fits and when it does not; none is a rule to apply everywhere.
+
+- **Ownership (7):** move out of a `&mut` place with `mem::take` or `mem::replace` instead of cloning; move out of collections with `drain`, `pop`, `swap_remove` or `into_iter`; take owned values where the function keeps them and borrow where it only reads.
+- **Resources (7, 9):** fields drop in declaration order and locals in reverse, so order them when it matters; pool what is expensive to create; cap what can grow.
+- **Builders (6):** validate in `build()` and return `Result`; use a typestate builder only when a missing field must be a compile error, since it costs readability.
+- **Traits (6):** extension traits for foreign types; default methods to keep the required set small; sealed traits when outside implementations must be prevented. Auto traits are inferred from fields, so **adding a field can silently remove `Send` or `Sync`**; assert them in a test for public types.
+- **Types (6):** newtypes for meaning, since a type alias gives no safety; const generics for sizes known at compile time; `Debug` on every public type, `Display` only for user-facing text.
+- **Dynamic typing (6):** prefer enums and generics. Use `Any` or type erasure only at a real plugin or registry boundary, and keep the erased type private.
+- **`Option` and `Result` (8):** never `if x.is_some() { x.unwrap() }`; use `if let`, `let else`, `?` or a combinator. In tests, compare whole values and test the `None` and `Err` cases explicitly.
+- **Collections (7):** `get` where an index can be out of range; `sort_unstable` when equal elements need not keep their order; `binary_search` only on data known to be sorted; iterators in place of exposing internals.
+- **Serialisation (6, 11, 14):** derive where possible; version every persisted or wire format; validate during deserialisation so invalid data never becomes a domain value.
+- **Compile-time checks (6, 10):** `const _: () = assert!(size_of::<T>() == N);` for layout facts that code depends on; validation in `const fn` constructors.
+- **Macros (12):** try a function or a generic first; document every exported macro with a compiling example; debug with `cargo expand`.
+- **Unsafe and panics (10):** keep invariants true at every point where a panic can unwind, or restore them with a guard in `Drop`.
+- **FFI (10):** a safe owning wrapper per handle; `CStr` and `CString` at the edge; pointer plus length for arrays; one stated side allocates and frees; no panic crosses the boundary.
+- **Async services (9, 14):** a deadline on every external call; bounded buffers and queues; retries only for idempotent operations, with capped backoff and jitter; a circuit breaker where a failing dependency would otherwise absorb all capacity; every spawned task owned.
+- **Networking (9, 14):** separate connect and request timeouts; pooled connections; `rustls` unless a platform TLS stack is required; a schema for contracts shared between services.
+- **Middleware (14):** cross-cutting concerns as Tower layers. Order is behaviour: with `ServiceBuilder` the first layer added is outermost and sees the request first.
+- **I/O (11):** `BufReader` and `BufWriter` around files and sockets, with an explicit `flush` whose error is checked; in async code, async file APIs or `spawn_blocking`.
+- **Streams (9):** bounded; cancellable by drop; a per-stream decision on whether an item error ends the stream or is skipped.
+- **Platform code (10, 11):** one module per capability with a portable fallback; detect CPU features at run time before using them.
+- **Long-lived state (6, 11):** an explicit state machine with validated transitions; versioned snapshots, migrated on load, with a recovery test from each persisted version.
+- **Async tests (5, 9):** `#[tokio::test(start_paused = true)]` and advancing time, not sleeping; injected faults (timeouts, dropped connections, partial writes); `loom` for hand-written synchronisation.
+- **Tests (5):** table-driven cases; assertion messages that state the expected behaviour; unit tests beside the code, integration tests under `tests/`.
+- **Performance (11):** measure, find the bottleneck, then fix in this order: algorithm, data structure, allocation, memory layout, parallelism. Stop at the stated target. SIMD, prefetching and lock-free structures need a benchmark that proves the gain.
+- **Library releases (12, 16):** semantic versioning checked by `cargo semver-checks`; deprecate before removing; record breaking changes in a changelog.
+
+### Review questions
+
+**Types and invariants.**
+
+- Which invariant is carried only by a comment, not by a type or a test?
+- Which primitives stand for distinct domain concepts?
+- Where would a newtype, an enum or `TryFrom` remove a whole class of bug?
+
+**Ownership and interface.**
+
+- Where does ownership look accidental: a function that takes ownership because it was convenient, or borrows because the author avoided a move that is semantically right?
+- Which clone, allocation or lock is hiding a boundary mistake?
+- Which public item leaks internal storage or an adapter's shape, and will be painful to change?
+- Which public error or type has committed the crate to a dependency's version?
+
+**Errors and recovery.**
+
+- Which error makes the caller guess how to recover?
+- Are typed and dynamic errors each at the right layer?
+- Where is the context too thin to diagnose a failure from the log alone?
+- Are non-UTF-8 paths and binary data handled, or assumed away?
+
+**Async and concurrency.**
+
+- What happens under cancellation and under timeout, at each await that matters?
+- Which queue, channel or fan-out has no bound, or no stated behaviour when full?
+- Is any task spawned without an owner, a shutdown path and visible errors?
+- Does any clean-up need awaiting or remote coordination, with no explicit shutdown API to do it?
+- **Where could a logical race exist although the code is free of data races?** The compiler rules out the second, not the first: check-then-act across an await, two locks taken in different orders, stale reads between transactions.
+
+**Architecture.**
+
+- Are transport, domain and persistence shapes separate, and does any framework type leak inward?
+- Are trait seams at real external boundaries, and absent elsewhere?
+- Could a new contributor or agent build and test from the workspace root without hidden knowledge?
+- Is generated code being edited as if hand-written?
+
+**Honesty of verification.**
+
+- Does each important claim have evidence from the current code?
+- Is each bug fix backed by a test that failed before the fix?
+- Does the mix of tests match where the risk is, or only where testing was easy?
+- Which performance claim lacks a threshold or a profile?
+
+**Scepticism about abstraction.**
+
+- Which abstraction is not yet justified by reuse, an invariant or compatibility pressure?
+- Is unsafe code, a procedural macro, a lock-free structure or typestate here because the problem needs it?
+- Would a simpler boundary give clearer guarantees?
+
+### Production-readiness questions
+
+For a service, worker or tool boundary, ask for four artefacts. Adjectives such as
+"robust" and "scalable" do not stand in for them.
+
+| Artefact | Contents |
+|---|---|
+| Interface contract | Input, output, error taxonomy, idempotency key, timeout, retry rule, resource bounds, owner |
+| Capacity targets | p50, p95 and p99 latency, throughput, memory budget, the saturation signal, the degraded behaviour, what changes at ten times the load |
+| Observability map | Which logs, metrics and traces exist, and the alert threshold for each |
+| Failure drill | One dependency failure, one slow path, one malformed input and one stale input, each with the expected recovery written down |
+
+Scale this to the thing being built. A command-line tool needs the interface contract and
+the failure cases; a multi-tenant service needs all four. Inventing percentile targets for
+a script is ceremony.
+
+**Further checks:**
+
+- **Debugging locality.** When an outcome is bad, the telemetry shows which stage produced it.
+- **Rust failure modes to model:** executor starvation, unbounded task spawning, lock contention, oversized clones, error erasure and hidden blocking calls.
+- **Service failure modes to model:** a dependency timeout, a partial database failure, a slow downstream service, a replayed request or token.
+- **A hook or callback cannot stall its host.** It has a timeout, its failure is isolated from the caller, and each run is logged with its duration and outcome.
+- **A missing configuration key never enables risky behaviour.** Defaults are the safe choice. A validation error names the field, and a rejected configuration leaves the previous one in force.
+- **An extension has a compatibility contract:** version negotiation with the host, and install, update, removal and rollback that each work.
+- **Generated output is reproducible.** Record the seed, the inputs and the generator version, and test that the same seed gives the same bytes.
+- **Terminal output has a width contract,** with a snapshot at that width. Output that is piped, not shown on a terminal, carries no colour codes and no progress bars.
+- **A deployable has an operations model:** objectives, capacity limits, deployment checks, rollback triggers and a runbook.
+- **A threat model names actions, not adjectives:** what an attacker does, what each failure exposes, where the permission boundaries are, and how a new dependency is reviewed.
+- **Crate health is tracked over time:** build time, test duration, dependency count, binary size. A change that grows one of them says so. Keep one cheap test tier that runs on every change.
+- **Test-loop health:** flake rate and suite duration are watched. A test that never failed and a stale green check are both defects.
+- **A verification record can be rerun.** Each claim carries the exact command that proves it, and evidence is stale once the code under it changes.
+- **Evidence is small enough to review:** the command, pass or fail, the failing lines, the changed files and the unresolved risks. A raw transcript hides the one line that matters.
+- **Shortcuts taken to make a test pass are written down,** and the list is emptied in the refactoring step, not carried into the handoff.
+
+### The short version
+
+If nothing else from this guide is in reach:
+
+1. **Say what "correct" means before writing code,** in terms something can check.
+2. **Put invariants in types** where that is cheap, and in tests where it is not.
+3. **Make ownership, errors, cancellation and shutdown deliberate.** Each should be a decision someone can point to.
+4. **Bound everything that can grow:** queues, buffers, retries, recursion, waits, output.
+5. **Treat everything from outside the process as untrusted** until it has been parsed into a type that cannot hold the invalid form.
+6. **Measure before optimising, and state the method with the number.**
+7. **Follow the repository you are in** over any general convention, this guide included.
+8. **Report what you ran and what you saw.** Unverified is a legitimate status; passing it off as verified is not.
