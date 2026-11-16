@@ -6385,3 +6385,100 @@ Test crash recovery with mixed and deleted partitions.
 - **Non-overlapping chunks by line ownership.** Sort symbol spans longest first and assign each span's lines to it in that order, so a nested span overrides its parent; emit runs of one owner as chunks and window the unowned gaps. A file that fails to parse falls back to plain windows instead of failing the index. *Not when* retrieval benefits from overlapping context.
 - **Expansion signals are opt-in and down-weighted** (graph neighbours of a hit), so they cannot outrank direct matches. Inspect each ranked list separately before changing weights.
 
+### Pipelines, sync and derived indexes
+
+**Decorate, compute, undecorate.** When an algorithm compares heavy values many times (diff,
+longest common subsequence, deduplication over long strings), map each distinct value to a
+small integer once, run the algorithm on integers, and map back at the end.
+
+```rust
+fn intern<'a, T: Eq + Hash>(
+    values: &'a [T],
+    ids: &mut HashMap<&'a T, u32>,
+    by_id: &mut Vec<&'a T>,
+) -> Vec<u32> {
+    values
+        .iter()
+        .map(|value| {
+            *ids.entry(value).or_insert_with(|| {
+                by_id.push(value);
+                (by_id.len() - 1) as u32
+            })
+        })
+        .collect()
+}
+```
+
+- The reverse table is a `Vec` indexed by id: no second map, no `unwrap`.
+- Interned ids make equality exact, unlike a hash, which can collide. The same idea gives subtrees an identity: intern each node's shape plus its children's ids.
+- *Not worth it* when values are small or compared only a few times.
+
+**Batch each stage to its own bottleneck.** In an offline job, slow external calls
+(inference, remote APIs) run in fixed-size chunks with bounded concurrency; results land in
+a pre-sized `Vec` by index, so order is preserved; one bulk write follows when everything
+exists. Report progress per chunk. *Not for* streaming ingestion, where partial results
+must be usable at once.
+
+**Synchronise an inventory by diff, not rebuild.** Build maps of the existing and the
+discovered items on a stable key, compare a fingerprint of the meaningful fields, and return
+what happened.
+
+```rust
+pub struct SyncReport {
+    pub added: Vec<Key>,
+    pub updated: Vec<Key>,
+    pub removed: Vec<Key>,
+    pub unchanged: usize,
+    pub errors: Vec<(Key, SyncError)>,
+}
+```
+
+- One bad item is recorded in `errors`; it does not fail the whole run.
+- The key must be unique within its scope, or a rename looks like a removal plus an addition.
+- **An empty or failed discovery is not "delete everything".** Distinguish "source returned nothing" from "source could not be read" before removing.
+
+**An incremental plan keeps four outcomes apart.** The timestamp decides when to hash; the
+hash decides what changed.
+
+| Observation | Step |
+|---|---|
+| Modified time newer, hash differs | index the new version, retire the old |
+| Modified time newer, hash equal | record the new time only |
+| Path gone | remove |
+| Modified time not newer | nothing |
+
+- **Metadata is a shortcut, not proof.** Timestamp precision varies by filesystem, and clocks and checkouts can move times backwards. Where a missed change is costly, compare with "different", not "newer", or hash regardless.
+- A two-stage key does the same for caches: a cheap metadata key first, the content key as the authority. Write down what the cheap key assumes.
+
+**Derived structures change together.**
+
+- **After a registry change, everything derived from it is rebuilt and swapped as one unit:** one `ArcSwap` or one lock over a struct holding all of them. Readers never see a new index beside an old lookup table.
+- **A derived index is keyed by everything that produced it:** source identity (repository and commit), tool version, schema version and relevant settings. Commit alone goes stale on a tool upgrade, and is wrong when uncommitted or generated files feed the index.
+- **A content-addressed store shared by several tags** (branches, workspaces) tracks which tags use each artefact. Adding a tag recomputes nothing; removing the last tag deletes the artefact. Tag changes are transactional when writers run concurrently. *Skip it* when artefacts are cheap to rebuild.
+
+**Graph results cross a boundary ready to use.** Return analysed structures, not raw
+traversal order.
+
+```rust
+let has_self_edge = component.len() == 1
+    && graph
+        .get(&component[0])
+        .is_some_and(|children| children.contains(&component[0]));
+components.push(Component {
+    is_cycle: component.len() > 1 || has_self_edge,
+    nodes: component,
+});
+```
+
+- A single-node component is a cycle only when it has an edge to itself.
+- Sort roots and children before traversal, so output is deterministic.
+- **Recursive graph algorithms overflow the stack on deep input.** Use an explicit stack for anything whose depth the input controls.
+
+**Smaller rules.**
+
+- **A ranking is sorted by score, then by a stable key.** `HashMap` iteration order must never decide the order of equal scores.
+- **A fused score is relative evidence,** not a probability. Validate that the number of weights equals the number of lists.
+- **One connection boundary for a subsystem with several services.** `connect` is idempotent, checks every dependency before any work, and fails with a message that says how to fix it. Keep health per dependency visible when they can degrade independently.
+- **Export files follow the importer's boundaries** (one file per table or relation). Write a header only when creating the file, put the path in every I/O error, and remove partial files after a failed write.
+- **Oversized inputs are skipped before expensive work,** by a stated size cap, and the skip is reported.
+
