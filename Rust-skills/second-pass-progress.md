@@ -24,7 +24,7 @@ Each file goes through the same cycle:
 | 4 | `meta-rust-ref-202606-Part4.md` | 975-5761 | DONE | 4,787 | 71 | 61 |
 | 5 | `meta-rust-ref-202606-Part5.md` | 1214-5715 | DONE | 4,502 | 77 | 55 |
 | 6 | `critique-JD-01.md` | 1-4166 | DONE | 4,166 of 4,166 | 34 | 19 |
-| 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | RED | 2,500 of 2,878 | 11 | 0 |
+| 7 | `critique-SD-01.md` (deleted in pass 1, read from history) | all | RED | 2,878 of 2,878 | 11 | 0 |
 | 8 | 19 June `generated-references` files (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
 | 9 | 7 JSON index files (deleted in pass 1, read from history) | all | STUB | 0 | 0 | 0 |
 
