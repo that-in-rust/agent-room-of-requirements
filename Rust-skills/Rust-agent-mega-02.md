@@ -813,3 +813,98 @@ pub type ByteRecordDeserializer<'r> = RecordWrap<ByteRecord<'r>>;
 - **Parsers:** keep syntax in the grammar or combinators and hand-write only context-sensitive lexing. Recovery that rewrites the input is accepted only when the reparse is clean and every node maps back to original byte offsets; on any doubt keep the original result.
 - **Searching many shards with one query:** compute the expensive query representation once, search each shard, merge, sort globally, then apply the limit. Scores compare only when every shard uses the same model and normalisation. Normalise vectors once, and reject near-zero vectors instead of dividing by their length.
 
+### Boundary patterns
+
+**Side effects behind a trait that carries the policy.** When a side effect is subject to a
+policy (a sandbox, a tenant, a permission set), the policy travels with each call, and the
+adapter, not the caller, picks the safe back end.
+
+```rust
+#[async_trait]
+pub trait FileSystem: Send + Sync {
+    async fn read_file(&self, path: &AbsolutePath, policy: &AccessPolicy) -> FsResult<Vec<u8>>;
+    async fn write_file(&self, path: &AbsolutePath, contents: Vec<u8>, policy: &AccessPolicy) -> FsResult<()>;
+}
+```
+
+- Once the trait exists, nothing above it calls `std::fs` directly. One direct call is one hole in the policy; a clippy `disallowed-methods` entry enforces it.
+- Prefer a required policy parameter to `Option<&Policy>`. With an optional one, the easiest call to write is the unchecked one. If "no policy" is legitimate, make it a named value (`AccessPolicy::unrestricted()`) that shows up in review.
+- An async method must not hide blocking I/O; the adapter uses async I/O or `spawn_blocking`.
+- Where back ends differ in execution model, the trait fixes the contract and each back end decides batching and I/O. An optional optimisation with a no-op default is documented as such, so callers do not assume it ran.
+- *Skip when* file access is the whole program and there is no policy boundary.
+
+**Platform facade over private `cfg` back ends.** One public API, with OS-specific modules
+chosen at compile time.
+
+```rust
+#[cfg(target_os = "windows")]
+#[path = "windows/mod.rs"]
+mod platform;
+#[cfg(target_os = "macos")]
+#[path = "macos/mod.rs"]
+mod platform;
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+compile_error!("unsupported target: only Windows and macOS are implemented");
+
+pub struct EventLoop<T: 'static> {
+    inner: platform::EventLoop<T>,
+    _not_send_sync: PhantomData<*mut ()>,
+}
+```
+
+- An unsupported target fails at compile time with a message, not at run time.
+- **`Send` and `Sync` on a public wrapper are decided, not inherited.** Auto traits are an API promise, and for a handle tied to one thread they are unsound. Pin the decision with a compile test:
+
+```rust
+fn assert_send<T: Send>() {}
+#[test]
+fn proxy_is_send() { assert_send::<EventLoopProxy<()>>(); }
+// and a compile-fail test (trybuild) that assert_send::<EventLoop<()>>() does not compile
+```
+
+- Every platform module exposes the same items with the same signatures, and CI builds each target (`cargo check --target ...`). A `cfg` branch that is never compiled is broken.
+- *Use run-time selection* (a trait object) when the back end is chosen by configuration or by what is installed, not by the target.
+
+**Hot reload: mark dirty, rebuild lazily.** The watcher only records that something changed.
+The owner rebuilds at the next use, on its own thread.
+
+```rust
+pub fn set_shader_code(&mut self, code: Vec<u32>) {
+    self.shader_code = code;
+    self.dirty = true;
+}
+
+pub fn pipeline(&mut self) -> anyhow::Result<&Pipeline> {
+    if self.dirty {
+        match self.build_pipeline() {
+            Ok(built) => self.pipeline = Some(built),
+            Err(error) => tracing::warn!(%error, "rebuild failed; keeping the previous pipeline"),
+        }
+        self.dirty = false;
+    }
+    self.pipeline.as_ref().context("pipeline was never built")
+}
+```
+
+- A failed rebuild reports the error and keeps the last working object. A syntax error in a file being edited must not take the program down.
+- Debounce events (editors write a file several times per save), and give the watcher thread a stop signal and a join.
+- The same shape fits configuration reload: parse and validate the new configuration completely, then swap it in atomically (`ArcSwap` or a `watch` channel). Never apply half a configuration.
+
+**Smaller patterns worth knowing.**
+
+- **Report what was left out.** Anything that filters aggressively (an indexer, a walker, a deduplicator) returns the excluded set and the reason alongside the result, so "why is my file missing" has an answer. Skip lists belong to a named mode (`enum IndexMode { Fast, Full }`), not to a constant buried in the code.
+- **Dispatch over a closed set with one exhaustive `match`** into dedicated functions that all produce the same normalised record. No `_ =>` arm, so a new variant fails to compile until it is handled.
+- **A fast path is a trait method, not a downcast:** `fn as_native(&self) -> Option<&Native>` in place of `Any` at call sites. Document that the fast path aliases the original.
+- **Options scoped to one run travel in a context value** passed down the call path. They are not constructor parameters and not globals.
+- **An expensive batch job streams to a caller-owned sink** (`FnMut(Finding) -> Result<(), E>`), so the caller decides rendering, limits and when to stop. Return a `Vec` when results are small.
+- **Help text, completions and defaults are generated from the registry used at run time,** so they cannot drift from behaviour.
+- **Wrap generated types in a thin newtype** (`pub struct Term(generated::Program);`) and implement the public traits on the wrapper, so regenerating does not change the public API.
+- **The file system as the ledger.** A tool that needs a durable list without a database uses one directory per item with a metadata file. Write into a temporary directory and `rename` into place, so a crash never leaves a half-written item visible. Every field the writer writes, the loader reads, and a round-trip test proves it.
+- **Declared-then-run pipelines compile once,** at first use, and the documentation says errors surface then. Offer an explicit `build()` or `validate()` for callers who want them early.
+- **Tree and plan nodes that are transformed by copying are immutable:** private fields, accessors, and `with_x(self, ..) -> Self`. No reference into the old node survives a transformation.
+- **A value that may be borrowed, shared or owned says which:** `Cow<'a, str>`, `Arc<str>`, or an enum with `into_owned()` called before the value outlives its source.
+- **An operator set that is small and closed is an enum with `match`.** Use a trait with the full lifecycle (initialise, consume, reset) when third parties add operators, and implement every method before registering one.
+- **Rules as data use a small algebra of typed variants,** never raw strings: `enum Matcher { Call { name }, Attribute { root, field }, Regex(CompiledRegex) }`. A variant that one back end cannot evaluate must not silently match nothing; a coverage test lists each (variant, back end) pair.
+- **A fingerprint for deduplication or suppression** is a deterministic hash of normalised domain facts (rule ID, relative path, location or snippet hash, message) with a separator between fields. Never hash an address, an absolute path or an iteration order. Too many fields and it breaks on every edit; too few and it suppresses unrelated findings. Keep reading the old format when the scheme changes.
+
