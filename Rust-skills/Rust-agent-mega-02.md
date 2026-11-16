@@ -9008,3 +9008,115 @@ pnpm build
 pnpm tauri build
 ```
 
+### Running the Tauri gates
+
+- **Run both families in CI:** the Rust gates and the front-end and bundle commands. Spend human review time on what commands cannot see.
+- **The bundle build is the slowest gate and the first one skipped.** Running it nightly, or only on changes under the Tauri directory, is an acceptable compromise when written down. Deleting it is not.
+- **Copy gate commands with their flags intact.** A command missing `-D warnings` looks the same in a skim and checks less. Where `--all-features` conflicts with feature-gated plugins, use the project's feature matrix.
+- **A failed gate is information.** Rerun only after something changed, and say what changed. Do not answer a red lint with `#[allow]`, or a failed bundle by dropping the command. Fix a flaky front-end test; rerun-until-green teaches a team to distrust the gate.
+- The same check failing across several changes points to a gap earlier in the work, not to a check that should be loosened.
+
+**Desktop logs live on the user's machine and cannot be recalled.**
+
+- **Check logging by absence:** read the output of the release configuration for tokens, payloads, file contents and personal paths. Debug builds log more than what ships.
+- Log-everything-and-filter-later is a server habit. It does not fit here.
+- Cap logs at the source, by size and count. Nobody rotates them on a user's disk.
+
+**Performance is gated by structure before any benchmark.** Each structural rule bounds the
+load on one shared resource: the runtime (no blocking in async commands), the IPC channel
+(channels and binary responses for volume), the store (small structured state only), the
+start-up path (bounded setup and sidecar waits). For a new case, ask which shared resource
+the change loads without a bound.
+
+- **A benchmark at test volume passes designs that collapse at user volume.** An event per row is fine for a hundred rows and freezes the window at a million.
+- **`spawn_blocking` keeps the runtime responsive; it does not make the work faster.** An async command that runs for a minute still needs progress and cancellation. Responsiveness and completion time are separate budgets.
+- **Choose the lane for each payload at design time.** An export keeps metadata in the store, sends progress on a channel, and hands the archive over as a file path.
+- **A fixed sleep is not a bounded wait.** A bound is a deadline on a polled readiness condition.
+
+**No operator watches a user's machine.** The application supervises its own children:
+sidecars, setup tasks and update flows.
+
+**Release readiness** is judged from the artefact: code, capability files, configuration,
+documentation, and command output. Intentions are not inputs.
+
+- Tick an item only against something checkable: a linked test, a command log, a capability file.
+- If commands could not be run, say the review was by inspection only.
+- Scale the walk to the boundary changed. A documentation change skips the bundle build, with the reason. A sidecar change is the longest walk: supervision, bounded start-up, permission scope and packaging are checked separately.
+- **Ask how costly a choice is to undo.** Naming and diagram style are conventions, waived with a reason. Exposure that outlives the change (a granted permission, a panic in a shipped command, a leaked log line) is a gate and is not waived.
+- Repeated waivers of one convention mean it does not fit the project. Amend it locally and openly.
+
+### Tauri anti-patterns
+
+```rust
+// Blocking in an async command: freezes a runtime worker for five seconds.
+#[tauri::command]
+async fn export() -> String {
+    std::thread::sleep(Duration::from_secs(5));
+    "done".into()
+}
+// Fix: async I/O, tokio::time::sleep, or spawn_blocking for CPU-bound and blocking work.
+
+// Borrowed argument in an async command: does not compile as written.
+#[tauri::command]
+async fn greet(name: &str) -> String { format!("hello {name}") }
+// Fix: take String.
+
+// Panic on a reachable path, and a path relative to the working directory.
+#[tauri::command]
+fn read_now() -> String { std::fs::read_to_string("file.txt").unwrap() }
+// Fix: async, Result<T, AppError>, path resolved from the application directories.
+
+// Double-wrapped state.
+builder.manage(Arc::new(Mutex::new(AppState::default())));
+// Fix: manage(Mutex::new(AppState::default())).
+```
+
+Reject by default:
+
+- **`"permissions": ["fs:default", "shell:default"]`,** or any broad grant used as a convenience. *Fix:* exact commands with scoped paths, per window.
+- **A command that takes a path, URL or shell fragment from the webview and uses it directly.** *Fix:* accept an identifier, or validate against an allow-list in Rust.
+- **Events used as a data stream,** or large payloads sent as JSON. *Fix:* a channel, a binary response, or a file path.
+- **The store as a blob sink.** A theme preference is fine; base64 screenshot history and multi-megabyte scrollback are not. *Fix:* files with a reference.
+- **A sidecar spawned and then assumed ready, well-behaved and quiet.** *Fix:* a supervisor with a health check, a deadline, an argument scope and capped logs.
+- **Opaque or unserialisable command errors,** or a front end that parses error message text.
+- **String-named `invoke` calls scattered across components.**
+- **Updater, tray, single-instance or deep-link behaviour verified only in `tauri dev`.**
+- **Generic Rust habits overriding Tauri's rules** where they conflict: for example, renaming a command or window label for style when the name is a compatibility surface.
+- **Requirements with nothing measurable** ("more reliable", "safer").
+
+## 16. Quality gates and commands
+
+**The required gates,** cheapest first so the fastest check fails first:
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-targets --all-features
+cargo test --workspace --doc --all-features
+```
+
+- **Use the repository's own gate if it has one** (a `just` or `make` target, a CI script). It encodes the feature sets and flags that are known to work. These commands are the default when there is none.
+- **`--all-targets` does not run doc tests.** They need the separate `--doc` run, or a plain `cargo test`. Leaving it out lets every documentation example rot.
+- **Clippy without `-D warnings` is not the gate.** It prints and passes.
+- **Keep `--all-targets` and the feature flags.** Feature-gated code that never builds in CI is a common way for a defect to ship. Dropping a flag quietly shrinks the gate.
+- **`--all-features` is wrong for crates with mutually exclusive features** (two back ends, two runtimes, `std` against `no_std`). Test the supported combinations explicitly, and include `--no-default-features` if the crate claims to work without defaults. `cargo hack --feature-powerset` automates this for a library.
+- **Add `--locked` in CI** when the lock file is committed, so the build cannot silently pick new dependency versions.
+- A separate `cargo build` adds little after clippy and test have compiled everything. It earns its place when checking the release profile, a cross-compiled target, or a `no_std` target that tests cannot run on.
+- **A waiver with a reason may apply to a convention, never to these commands.** When a change cannot run one (no toolchain, no network), say which and why; do not report it as passed.
+
+**Gates for higher-risk changes.** Run the ones whose risk the change touches, and record
+the call when you skip them:
+
+| Gate | Run it when |
+|---|---|
+| `cargo test --release` | Behaviour could differ with optimisation: overflow checks, `debug_assert`, timing, unsafe code |
+| `cargo +nightly miri test` | Unsafe code changed |
+| `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps` | Public items or documentation changed |
+| `cargo deny check` or `cargo audit` | Dependencies changed |
+| `cargo semver-checks` | A published library's public interface changed |
+| A build on the minimum supported Rust version | The crate declares `rust-version` |
+| `cargo llvm-cov --workspace --fail-under-lines <floor>` | The project has agreed a coverage floor |
+| Benchmarks against a baseline | A performance claim is made, or a hot path changed |
+
+- **A coverage floor is a tripwire for untested additions, not a quality measure.** Pick the floor from the project's current number, not from a round figure, and never write tests whose only purpose is to raise it.
+
