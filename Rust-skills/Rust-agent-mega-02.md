@@ -9630,3 +9630,92 @@ filter, score, deduplicate and pack stages, each stage returns what survived and
 dropped, with a reason. Test that `included + dropped == total`. Stage order is semantic: a
 sensitivity filter that runs after packing has already leaked.
 
+### File discovery, generated text and partial results
+
+**Discover files with the `ignore` crate,** so a tool sees what Git sees by default, and
+make the ignore policy an explicit option.
+
+```rust
+let (sender, receiver) = crossbeam_channel::unbounded();
+builder.git_ignore(options.git_ignore).build_parallel().run(|| {
+    let sender = sender.clone();
+    Box::new(move |entry| {
+        let stop = entry.is_err();
+        match sender.send(entry) {
+            Ok(()) if !stop => ignore::WalkState::Continue,
+            _ => ignore::WalkState::Quit,
+        }
+    })
+});
+drop(sender);                                       // or the drain below never ends
+let mut entries: Vec<_> = receiver.iter().collect::<Result<_, _>>()?;
+entries.sort_by(|a, b| a.path().cmp(b.path()));     // parallel walk order is not deterministic
+```
+
+- **The parallel walk only discovers.** Parsing and analysis happen afterwards, on the sorted list.
+- **`run` returns only when the walk ends,** so with this shape the channel must be unbounded, or the walkers block on a full channel that nobody is reading. To bound memory on a huge tree, consume from another thread while the walk runs.
+- Decide whether one unreadable directory should end the walk, as here, or be reported and skipped. A tool run over a home directory usually wants the second.
+- **A security or audit scanner must be able to include ignored files.** Secrets and build outputs live exactly there.
+- Test the default, the no-ignore mode, and several roots.
+
+**Overlapping matches are arbitrated by a total order.** When several rules claim byte
+ranges of the same source (diagnostics, highlights, suggested fixes), sort by specificity,
+then width, then start position, and accept a candidate only if it overlaps nothing already
+accepted. A total order makes output independent of rule registration order. A new rule
+states what it claims and has an overlap test against a broader neighbour.
+
+**Analysis returns a message key with typed parameters; a catalogue renders the prose.**
+
+- Rule code contains no sentences, so wording changes and translation do not touch analysis, and tests assert on keys, not on text.
+- A missing key is a hard error, and a test checks that every key exists in every required catalogue.
+- Worth it for a tool with many diagnostics or more than one language. For a small tool, a `Display` implementation on a typed error is the same idea at lower cost.
+
+**A result assembled from several optional sources says when it is partial.**
+
+- Each source is fetched independently. A failing one adds a labelled error, and the rest still return.
+- A source is recorded as used only after its data is present. The output shows its errors and provenance, so a partial result never looks complete.
+- **Do not return partial output where a missing part changes the meaning:** an authorisation decision, a financial total, a safety check. Fail instead.
+- **Trimming to a budget follows an explicit ladder,** ordered by how cheaply a part can be fetched again and how much the decision depends on it, not by section order or size. Items the caller named explicitly are placed first and never trimmed.
+- When items are ranked and the rendered size grows with the prefix length, binary-search the longest prefix that fits. Measure with the real tokenizer or byte count, not an estimate.
+
+**A managed block in a file the user also edits** is delimited by stable start and end
+markers, and a rerun replaces only that range.
+
+- The operation is idempotent: running the installer twice leaves one block.
+- **Handle the damaged cases explicitly:** a start marker with no end, markers in the wrong order, two blocks. Stop and report; do not guess and delete user text.
+- Preserve the file's line endings and trailing newline, and write atomically.
+- **If the format has a real parser or merge interface, use it** instead of text markers (`toml_edit` keeps comments and layout).
+
+**Generate near-identical variants from one source.** When several consumers need almost
+the same declarative text (configuration flavours, query dialects), generate each from one
+canonical source through a table of flavours. Adding a flavour is one table entry, never a
+copied file. Generated files carry a "do not edit" header, and CI regenerates and fails on a
+difference.
+
+**Documented examples are checked.**
+
+- Rust examples in documentation are doc tests; keep them compiling (`no_run` for those that need a network, never `ignore` as a convenience).
+- Examples in other documents (a README table of commands and outputs, an API reference) are parsed into the same data a hand-written test uses and run. When a signature changes, the code and the example change together.
+- Runnable request examples take the base URL and credentials from a per-environment file that is not committed. They do not replace a regression suite.
+
+**Long multi-step work keeps its state in one durable, readable artefact** with explicit
+status fields and a log of what changed and why, not in conversation memory or scattered
+notes. A plain text file has weak concurrency: simultaneous writers conflict, so
+high-frequency machine coordination needs structured storage with locking.
+
+**A small vocabulary of named combinators before a large grammar.** With `nom`, `winnow` or
+`chumsky`, define helpers for the recurring shapes (separated list, delimited form, optional
+argument list), so the domain rules read like the grammar. Keep the helpers shallow: they
+can hide precedence and recovery behaviour, so forms with unusual recovery stay
+hand-written. Each helper has a test with nesting and an ambiguous case.
+
+**Rolling back a multi-file change.** Section 11 covers the atomic write of one file
+(temporary file in the same directory, `write_all`, `sync_all`, rename; sync the parent
+directory for stronger crash guarantees). For a batch:
+
+- Every error carries the target path and the I/O source.
+- **Record each step as it succeeds, and roll back in reverse order:** remove created files, then restore the saved originals of edited files.
+- **Rollback can fail too.** Report which files were restored and which were not; never report a clean rollback that was not verified.
+- A batch of renames is not atomic as a whole. If readers must never see a mixed state, write a new directory and switch one pointer (a symlink or a manifest file) at the end.
+- Test edits, creates, nested directories, and a failure injected at each step.
+
