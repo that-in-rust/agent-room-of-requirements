@@ -6007,3 +6007,106 @@ impl<const N: usize> FixedBuffer<N> {
 - **A large `[T; N]` lives wherever its owner does.** On the stack, a big `N` overflows it, and moves copy all `N` elements; put large fixed storage in a `static` or behind a reference.
 - When allocation is acceptable, use `Vec` and `String`. Fixed capacity is a constraint to satisfy, not an optimisation to reach for.
 
+### Arenas, drops and the allocator
+
+**An arena's lifetime matches one phase of work.** Many small allocations that die together
+(one file's syntax tree, one request's scratch data) go into a bump arena such as
+`bumpalo::Bump`, which is reset at the phase boundary and reused.
+
+- Name the owning phase. Nothing arena-backed escapes it; the `&'bump` borrow enforces that.
+- **A bump arena does not run destructors** for what it holds unless you use its owning `Box`. Keep plain data in it, not types that own files, locks or heap memory.
+- **A long-lived arena is a leak in disguise.** It grows to the largest workload it has seen and frees nothing until reset.
+- *Not for* objects with independent lifetimes, or data that must outlive the phase.
+
+**Move an expensive drop off the latency-critical thread.** When freeing a large structure
+(a deep tree, a big index) stalls a UI or request thread, send the value to a long-lived
+background thread that only receives and drops.
+
+```rust
+// Fails only if the background thread is gone; then the value drops here, as before.
+let _ = self.drop_queue.send(std::mem::take(&mut self.tree));
+```
+
+- *Not for* a resource that must be released before the next step (a lock, a file another process waits on). Confirm with a profile that the drop was the stall.
+- A deep recursive structure can also overflow the stack while dropping. Write an iterative `Drop`, or hold the nodes in a `Vec` or arena.
+
+**The global allocator** is changed only when allocation is a measured bottleneck, typically
+a multi-threaded server with many small allocations.
+
+```rust
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+```
+
+- Measure throughput, tail latency and resident memory before and after; an allocator can win on speed and lose on memory. Only a binary sets it, never a library.
+
+**Build settings.**
+
+```toml
+[profile.release]
+lto = "thin"        # "fat" for a little more speed and much longer builds
+codegen-units = 1   # better optimisation, slower builds
+panic = "abort"     # smaller and slightly faster; only if nothing relies on unwinding
+```
+
+- These trade build time for run time. Measure the gain; on I/O-bound programs it is often nil. Keep them out of the dev profile.
+- **`panic = "abort"` changes behaviour:** no `catch_unwind`, no destructors on panic, and one panicking task ends the whole server.
+- **`target-cpu=native` makes a binary that may crash on other machines.** Use it only when you build on, or for, the machine that runs it. Otherwise detect features at run time (`is_x86_feature_detected!`).
+- **`#[inline]` matters for small functions called across crates,** which cannot otherwise be inlined without LTO. Generic functions already can be. `#[inline(always)]` is for measured cases only; applied widely it bloats code and slows it down. `#[cold]` on error paths is the cheaper hint.
+- Profile-guided optimisation (`cargo-pgo`) is worth setting up for a long-lived hot binary with a representative workload, and not before.
+
+### Caches
+
+**A cache is a correctness risk bought for speed.** Before adding one, state the key, what
+invalidates an entry, the size bound and what a stale read costs.
+
+- **Bound it:** a maximum size, usually a time to live as well. An unbounded map used as a cache is a memory leak. `moka` for a concurrent cache with eviction; a `HashMap` or `lru` behind the owner's lock for a small one.
+- **The key contains every input that changes the answer.** Tenant, authorisation scope, locale, version, options. A key that omits the user serves one user's data to another.
+- **Never cache what is not a pure function of the key** unless staleness is accepted and bounded.
+- **Policy is part of a cache's identity.** Settings that change validity (time to live, capacity, persistence, scope) belong in the type or key that decides whether an existing cache may be reused.
+- **Negative results are cached separately,** with a shorter life: "not found" goes stale as soon as the thing is created.
+- **Many concurrent misses for one key should compute once.** Use the cache's get-or-insert-with, or single-flight, not a check followed by an insert.
+- **Measure the hit rate.** A cache that rarely hits costs memory, locking and complexity for nothing.
+- A process-wide cache needs an invalidation path, and tests need a way to start with it empty.
+
+**Build-style cache keys come from every semantic input.**
+
+```rust
+let mut entries: Vec<_> = fs::read_dir(dir)?.collect::<Result<_, _>>()?;
+entries.sort_by_key(|entry| entry.file_name()); // traversal order must not change the key
+for entry in entries {
+    hasher.update(b"file\0");
+    hasher.update(entry.file_name().as_encoded_bytes());
+    hasher.update(b"\0");
+    hasher.update(&fs::read(entry.path())?);
+}
+```
+
+- Hash the tool version, the input contents, the options and each environment setting that affects output. Separate fields with a tag and a delimiter, so `("ab", "c")` and `("a", "bc")` differ.
+- **Size and modification time may shortcut re-reading an unchanged file; they are never the identity.**
+- Use a stable hash (BLAKE3, SHA-256) for anything persisted. `DefaultHasher` is not stable across Rust versions.
+- Namespace cached output by the producer's version, write with a temporary file and an atomic rename, treat an unreadable entry as a miss, and keep a `--force` or `--no-cache` escape hatch.
+- **Invalidate by interface when that is what dependants use.** Hash the sorted public facts (names, signatures, imports) and classify a change as none, cosmetic or structural. The hash ignores bodies by design; add behaviour inputs explicitly if they matter.
+- **Cache a compiled intermediate form** (a lowered plan, a compiled template) with `OnceLock` or a keyed cache, and know what invalidates it before the source is allowed to change.
+
+### Bulk data
+
+- **Per-thread worker state in `rayon`:** `for_each_init` or `map_init` builds the non-thread-safe state per worker split; shared immutable data goes in an `Arc`.
+
+```rust
+let outcomes: Vec<(usize, Result<(), ProcessError>)> = files
+    .par_iter()
+    .enumerate()
+    .map_init(
+        || Highlighter::with_store(Arc::clone(&store)), // per worker, not per item
+        |highlighter, (index, path)| (index, process(highlighter, path)),
+    )
+    .collect();
+```
+
+- Return per-item results and report them from one place. Printing from inside workers interleaves output and loses the count of failures.
+- **Parallel export with one sink per chunk** works only where independent output chunks are acceptable. Where order or one transaction is required, keep a single ordered writer.
+- **Batch writes by statement shape,** not only by count, so each batch is one prepared statement. Parallel batches each need their own connection and a first-error policy.
+- **An append-only chunk writer** reuses one buffer, writes a placeholder header, streams records through the compressor and checksum, backfills length and checksum, and issues one `write_all`. Shrink the buffer after an unusually large batch. A round-trip reader test accompanies every format change.
+- **Columnar engines** (Polars, Arrow with DataFusion): use the lazy or SQL API so the engine can plan, push filters down and stream. Do not convert columns to row structs early; that discards the vectorisation you adopted the engine for. Fix the query plan before tuning thread or memory settings.
+
