@@ -7683,3 +7683,115 @@ a snapshot that may coexist with writes; a write transaction is the single write
 read transactions short, because a long-lived reader pins old state and blocks space
 reclamation. Do not wrap a whole workflow in one transaction by default.
 
+### Settings, transactions and stores: further patterns
+
+**User-edited configuration reports typos with their path.** Collect unknown keys with the
+full path, and make a type error name the field.
+
+```rust
+let mut unknown = Vec::new();
+let deserializer = serde_ignored::Deserializer::new(value, |path| unknown.push(path.to_string()));
+let settings: Settings = serde_path_to_error::deserialize(deserializer)?; // error names the path
+if !unknown.is_empty() {
+    return Err(ConfigError::UnknownKeys(unknown));
+}
+```
+
+- *Not when* a file written for a newer version must still load. Then warn about unknown keys and keep going.
+
+**A setting is a typed key** carrying its name, description, default and parser, read
+through one getter that applies precedence: explicit value, environment, default.
+
+```rust
+pub struct Setting<T> {
+    pub key: &'static str,
+    pub description: &'static str,
+    pub default: fn() -> T,
+    pub parse: fn(&str) -> Result<T, SettingError>,
+}
+```
+
+- **A value that fails to parse is an error naming the key and the value.** Falling back to the default silently means the operator's setting is ignored and nobody knows.
+- The one tolerable exception is a pure tuning knob, and even that logs a warning.
+
+**A knob read on a hot path is parsed once** into a `OnceLock` or `LazyLock`. Put the
+parsing in a pure function that tests call directly, since the cell cannot be reset.
+
+```rust
+fn parse_budget(raw: Option<&str>) -> usize {
+    raw.map(str::trim)
+        .and_then(|text| text.parse::<usize>().ok())
+        .filter(|budget| *budget > 0)
+        .unwrap_or(DEFAULT_BUDGET)
+}
+```
+
+- **Tests do not mutate the process environment.** `std::env::set_var` is `unsafe` from edition 2024 and races with other test threads. Pass the value in.
+- Not for configuration that must change while the process runs.
+
+**Ambient state.**
+
+- **Avoid thread-local context in async code;** a task moves between threads. Pass the handle, or use `tokio::task_local!`.
+- **A temporary override restores the exact previous value in `Drop`,** not a default, so nested overrides unwind correctly. Offer it as one function taking a closure, and test nesting.
+
+**A transaction helper commits only what it began.** If it joined the caller's transaction,
+it neither commits nor rolls back; the outer owner does. It retries only errors classified
+as retryable, rolling back first, and its closure must be safe to run more than once.
+
+**Several databases.** Each pool is a named field or newtype
+(`struct Pools { primary: PgPool, reporting: PgPool }`), each repository takes the pool it
+owns, and no transaction spans pools. Two writes to two databases are a workflow with
+intermediate states, not a transaction: use the outbox.
+
+**The outbox record.**
+
+```rust
+pub struct OutboxEntry {
+    pub id: Uuid,
+    pub aggregate_id: Uuid,
+    pub operation: OutboxOperation,
+    pub payload: serde_json::Value,
+    pub created_at: DateTime<Utc>,
+    pub processed_at: Option<DateTime<Utc>>,
+    pub attempt_count: u32,
+}
+```
+
+- The relay stamps `processed_at` on success and increments `attempt_count` on failure. After a bound, the row is parked for an operator.
+- Delivery is at least once: the target deduplicates on the outbox id, and the payload carries every identifier a replay needs.
+- With several relay instances, claim rows with `FOR UPDATE SKIP LOCKED` or a lease. Ordering across aggregates is not guaranteed; if order per aggregate matters, process each aggregate's rows in sequence.
+- Processed rows are pruned, or the table grows without bound.
+- *Not when* the second effect must be synchronous.
+
+**External formats with several versions.** Detect the version once (an unknown version is
+an error listing what was seen), convert each version to one internal form at the boundary,
+and keep the raw input for audit. Everything downstream is version-agnostic; a new dialect
+is a new converter.
+
+- The same applies to files: probe at the edge (magic bytes), convert legacy formats once. A missing file, an unsupported format and a malformed one are three different errors.
+- **A loader that writes a converted copy says so in its signature.** A caller expecting a read-only load must not find new files.
+
+**Storage engines behind a trait.** The back-end trait holds only the primitives an engine
+must supply (fetch, mutate, iterate). Shared query and validation logic lives once on a
+generic wrapper.
+
+```rust
+pub trait Datastore {
+    type Transaction<'a>: Transaction<'a> where Self: 'a;
+    fn transaction(&self) -> Self::Transaction<'_>;
+}
+
+pub struct Database<D: Datastore> {
+    datastore: D,
+}
+```
+
+- A new operation goes on the wrapper when it can be composed from primitives, and on the trait only when an engine can do it much more efficiently.
+- An optional capability is a default method returning "unsupported", and callers must handle that.
+- Not worth it for a single engine.
+
+**Hash-gated writes to a shared index.** A writer reads the local and remote content hash
+before mutating, and afterwards advances the remote hash only if the two were equal. If
+they differed, it warns and leaves the hash alone, so drift stays visible and a sync must
+reconcile.
+
