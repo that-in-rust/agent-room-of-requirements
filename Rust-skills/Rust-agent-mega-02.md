@@ -5882,3 +5882,128 @@ pub fn mentions(content: &str) -> impl Iterator<Item = &str> {
 - `Cow` pays off when the unchanged case is common. If nearly every input is rewritten, return `String` and keep the signature simple.
 - Returning an iterator of borrowed slices lets the caller decide whether to collect at all.
 
+**In order of how often they pay off:**
+
+1. **Do not allocate in the loop.** Hoist the buffer out and `clear()` it each iteration; `clear` keeps the capacity.
+2. **Reserve when the size is known:** `Vec::with_capacity`, `String::with_capacity`, `extend` from an exact-size iterator.
+3. **Borrow instead of cloning:** take `&str` and `&[T]`, return slices or iterators, share with `Arc` when ownership really is shared.
+4. **Avoid intermediate collections:** chain iterators instead of `collect` and then iterate again; `write!` into an existing `String` instead of `format!` and then `push_str`.
+5. **Then, with a profile:** small-size-optimised containers, arenas, pools, a different global allocator.
+
+```rust
+let mut line = String::new();
+while reader.read_line(&mut line)? != 0 {
+    handle(line.trim_end());
+    line.clear(); // keeps the allocation for the next line
+}
+```
+
+- **A `match` on string literals is already compiled to efficient comparisons.** It needs no macro. For a large static lookup table, `phf` builds a perfect hash at compile time.
+
+**A buffer pool, when reuse in place is not possible** (buffers handed between tasks). The
+guard returns the buffer on drop.
+
+```rust
+pub struct PooledBuffer {
+    buffer: Option<Vec<u8>>, // an Option so that Drop can take it
+    pool: Weak<Pool>,        // a buffer that outlives the pool is simply freed
+}
+
+impl Drop for PooledBuffer {
+    fn drop(&mut self) {
+        if let (Some(mut buffer), Some(pool)) = (self.buffer.take(), self.pool.upgrade()) {
+            buffer.clear();
+            if buffer.capacity() <= MAX_RETAINED_CAPACITY {
+                pool.put_back(buffer);
+            }
+        }
+    }
+}
+```
+
+- **A pool holds on to peak memory.** Cap both the number of buffers kept and the capacity of each, or one huge request pins that memory for the life of the process.
+- Clear on return, so data from one request can never be read by the next.
+- The allocator is already a good pool for small short-lived objects. Add a pool only when a profile shows allocation of large buffers is the cost.
+
+**Inline small case, heap for the rest.** `SmallVec`, a small-string type, or an enum such
+as `Inline(InlineData) | Heap(Arc<HeapData>)` keeps the common small case free of
+allocation.
+
+- Adopt after profiling shows allocation or cache misses dominate. An inline container is larger to move, and every access branches on which form it is; with the wrong inline size it is slower than `Vec`.
+- Pin the size where it matters: `const _: () = assert!(size_of::<Node>() == 16);`.
+- A layout change touches every copy, free and tag path. It is never a local edit.
+
+**Permissive builder, compact final form.** Accept entries in any order (edges, sparse
+triplets), then convert once to a compressed form: count per row, prefix-sum to offsets,
+fill one contiguous array, merging duplicates in that pass. Lookups then read one cache-
+friendly array instead of chasing a `Vec<Vec<T>>`. The converting constructor is fallible
+for untrusted input; it does not `assert!`.
+
+**Dense internal ids.** Map external keys (strings, sparse numbers) to `0..n` at the input
+boundary, run the kernel on plain arrays indexed by id, and map back at the output. The
+mapping never leaks into the kernel. "No result" is `Option`, or one named sentinel
+constant where the array's size matters.
+
+**Scoped memory accounting.** A child tracker forwards each `allocate(bytes)` to its parent
+and remembers the total; on drop it releases the total in one call. A query or a collection
+is then accounted for without tracking each element.
+
+```rust
+pub struct ScopedTracker<'parent> {
+    parent: &'parent Tracker,
+    tracked: usize,
+}
+
+impl ScopedTracker<'_> {
+    pub fn allocate(&mut self, bytes: usize) -> Result<(), OutOfBudget> {
+        self.parent.allocate(bytes)?;
+        self.tracked += bytes;
+        Ok(())
+    }
+}
+
+impl Drop for ScopedTracker<'_> {
+    fn drop(&mut self) {
+        self.parent.release(self.tracked);
+    }
+}
+```
+
+- The budget check happens before the allocation it accounts for, and running out is an error the query can report, not an abort.
+
+### Without a heap
+
+**Capacity is a const generic, and running out is an error.** In `no_std`, embedded or
+deterministic code, storage is on the stack or static, and every write that could exceed it
+returns a structured error.
+
+```rust
+pub struct FixedBuffer<const N: usize> {
+    buffer: [u8; N],
+    length: usize, // invariant: length <= N
+}
+
+impl<const N: usize> FixedBuffer<N> {
+    pub fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), CapacityExceeded> {
+        let remaining = N - self.length;
+        if bytes.len() > remaining {
+            return Err(CapacityExceeded {
+                needed: bytes.len(),
+                available: remaining,
+            });
+        }
+        self.buffer[self.length..self.length + bytes.len()].copy_from_slice(bytes);
+        self.length += bytes.len();
+        Ok(())
+    }
+}
+```
+
+- **A failed write leaves the buffer unchanged.** Check first, then mutate.
+- The error says how much was needed and how much was available.
+- If `as_str()` relies on the contents being UTF-8, every write path preserves that and never splits a multi-byte character; a `write_str` that takes `&str` and writes all or nothing does.
+- Implement `core::fmt::Write` so `write!` works.
+- Prefer `heapless` (`Vec`, `String`, queues, maps) or `arrayvec` to writing these by hand.
+- **A large `[T; N]` lives wherever its owner does.** On the stack, a big `N` overflows it, and moves copy all `N` elements; put large fixed storage in a `static` or behind a reference.
+- When allocation is acceptable, use `Vec` and `String`. Fixed capacity is a constraint to satisfy, not an optimisation to reach for.
+
