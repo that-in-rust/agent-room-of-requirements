@@ -1747,3 +1747,137 @@ fn req_001_filter_keeps_only_implementation_entities() {
 - Arrange, act, assert, with one behaviour per test. Several assertions about one behaviour are fine.
 - `test_1`, `it_works` and `test_filter` say nothing when they fail. `filter_returns_empty_for_empty_input` does.
 
+### Skeletons by evidence type
+
+**Async integration.** Return `Result` so set-up can use `?`, and assert on an observable
+outcome, not on "it did not error".
+
+```rust
+#[tokio::test]
+async fn req_001_pipeline_completes_valid_input() -> anyhow::Result<()> {
+    let fixture = valid_pipeline_fixture().await?;
+
+    let output = run_pipeline(&fixture).await?;
+
+    assert_eq!(output.status, Status::Completed);
+    assert_eq!(output.records.len(), fixture.expected_records);
+    Ok(())
+}
+```
+
+- A test that can hang gets a timeout (`tokio::time::timeout`), so a deadlock fails the run instead of stalling it.
+- Tests that depend on time use `#[tokio::test(start_paused = true)]` and advance the clock. Real sleeps make a suite slow and flaky.
+
+**Doctest.** The hidden last line lets the example use `?`.
+
+```rust
+/// ```
+/// # use my_crate::{UserId, UserIdError};
+/// let user_id = UserId::try_from("user_123")?;
+/// assert_eq!(user_id.as_str(), "user_123");
+/// # Ok::<(), UserIdError>(())
+/// ```
+```
+
+**Compile-fail.** Each file under `tests/ui/` is one misuse, with its expected error beside it.
+
+```rust
+#[test]
+fn req_003_misuse_does_not_compile() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/ui/*.rs");
+}
+```
+
+- The `.stderr` files change with the compiler version. Pin the toolchain for this test or expect to refresh them on upgrade. For a single small case, a `compile_fail` doctest is lighter.
+- Review the expected error once: a file can fail to compile for the wrong reason (a typo, a missing import) and the test still passes.
+
+**Property.** State the property, then let the generator find the counter-example.
+
+```rust
+proptest! {
+    #[test]
+    fn req_004_wire_round_trip(input in valid_entity()) {
+        let encoded = encode(&input)?;
+        let decoded = decode(&encoded)?;
+        prop_assert_eq!(decoded, input);
+    }
+}
+```
+
+- Properties that pay for themselves: a round trip; agreement with a simple reference implementation; idempotence (`f(f(x)) == f(x)`); an invariant kept by every operation; "never panics" on arbitrary bytes.
+- Commit the regression file `proptest` writes, and turn each counter-example it finds into a named unit test as well.
+- A generator that produces only tidy values proves little. Include empty, maximal, non-ASCII and boundary values.
+- Anti-pattern: a property that re-implements the function under test and compares the two copies.
+
+**Concurrency: a stress run is a smoke check, a model is a proof.**
+
+```rust
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn req_005_no_lost_updates_under_load() -> anyhow::Result<()> {
+    let counter = Arc::new(Counter::default());
+
+    let tasks: Vec<_> = (0..100)
+        .map(|_| {
+            let counter = Arc::clone(&counter);
+            tokio::spawn(async move { counter.increment().await })
+        })
+        .collect();
+    for task in tasks {
+        task.await??;
+    }
+
+    assert_eq!(counter.get().await, 100);
+    Ok(())
+}
+```
+
+- Assert the final state, not only that every task returned `Ok`. One hundred successful tasks and a lost update is exactly the bug.
+- The default `#[tokio::test]` runtime is single-threaded; real parallelism needs `flavor = "multi_thread"`.
+- This sees only the schedules the runtime happened to choose. Where the order of operations on shared state matters, model it:
+
+```rust
+#[cfg(loom)]
+#[test]
+fn req_005_two_writers_never_lose_an_update() {
+    loom::model(|| {
+        let counter = loom::sync::Arc::new(Counter::default());
+        let other = counter.clone();
+        let handle = loom::thread::spawn(move || other.increment());
+        counter.increment();
+        handle.join().unwrap();
+        assert_eq!(counter.get(), 2);
+    });
+}
+```
+
+- `loom` explores every interleaving, so the model must be tiny: two or three threads and a few operations. The code under test must use `loom`'s `sync` and `atomic` types behind a `cfg`, and it runs with `RUSTFLAGS="--cfg loom"`.
+- `loom` does not fit code that does real I/O or uses an async runtime. A stress test is the legitimate fallback there; write down that it is a substitute and why.
+- A limit stated in a requirement (retries, concurrency, queue depth) has a test that reaches it.
+- **Test that nothing is left running.** After shutdown, every spawned task has been joined or aborted. No detached task survives its owner.
+
+**Performance: a threshold in a test is a tripwire, not a measurement.**
+
+```rust
+#[test]
+#[ignore = "timing; run with: cargo test --release -- --ignored"]
+fn req_006_filter_10k_stays_under_budget() {
+    let input = entities(10_000);
+    let mut samples: Vec<Duration> = (0..200)
+        .map(|_| {
+            let start = Instant::now();
+            std::hint::black_box(filter_implementation_entities(std::hint::black_box(&input)));
+            start.elapsed()
+        })
+        .collect();
+    samples.sort();
+    let p99 = samples[samples.len() * 99 / 100];
+    assert!(p99 < Duration::from_micros(500), "p99 was {p99:?}");
+}
+```
+
+- `cargo test` builds without optimisation, where a latency number means little. Timing tests run with `--release`, and are `#[ignore]`d from the default run so a loaded CI machine does not fail unrelated work.
+- One `Instant` reading is noise. Repeat, discard nothing silently, and assert on a percentile. `black_box` stops the optimiser deleting the work.
+- For a real measurement or a comparison of two versions use `criterion`; for CI gating that must not flake, count instructions (`iai-callgrind`) or allocations instead of wall-clock time.
+- **A performance claim has four parts:** the current value, the target, the percentile and the population ("from 5 ms to under 1 ms at p99 for 10,000 entities"). A new system with no current value still states percentile and population.
+
