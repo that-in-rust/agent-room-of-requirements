@@ -5022,3 +5022,125 @@ let per_worker: Vec<Vec<(usize, Output)>> = thread::scope(|scope| {
 - **A lock held in a database row** for long background work records the owner, what is locked and a heartbeat the holder refreshes, so a stale lock can be detected and explained. A constraint enforces the single row. It is a single-host convenience, not a distributed lock.
 - **State for a callback whose signature cannot carry it** may go in a `thread_local!` `RefCell`, set before the call and read inside. Keep borrows short and never hold `borrow_mut` across a call that may re-enter. Valid only while the whole call runs on one thread.
 
+### Cancellation, saturation and shutdown as contracts
+
+**Say what each long-running operation does when it is cancelled:** cancel-safe (nothing is
+lost), restartable (safe to run again from the start), resumable (continues from a persisted
+point) or lossy. If partial progress matters, persist the intent before acting, so an
+interruption leaves something to resume from and not a silent half-change.
+
+**Name the saturation policy.** When producers can outpace consumers, the choices are: make
+the producer wait, reject, shed the oldest or newest, batch, or spill to durable storage.
+"The queue should stay small" is not a policy. One unbounded producer anywhere defeats every
+bounded channel downstream of it.
+
+**The shutdown contract** states who starts it, how the signal reaches every task, how
+completion is awaited, and that calling it twice is harmless.
+
+- **Rust has no async destructors.** Clean-up that must be awaited (flush, close a protocol properly, deregister) is an explicit `async fn shutdown(self)`. It belongs in the API documentation and in a test; `Drop` is the best-effort fallback.
+- **At shutdown, every accepted job has a known fate:** it ran, or it was closed without running and its submitter was told. Nothing is left silently in a queue.
+- `tokio_util` supplies the pieces: `CancellationToken` (with `drop_guard()`, so that dropping an owner cancels its group) and `TaskTracker` (wait until every tracked task has finished). Prefer them to a hand-built guard with a reference count and a channel; a `JoinSet` is enough when one owner spawns and joins.
+- **Test shutdown under load.** Inject cancellation while messages are in flight and assert that none is lost or handled twice. It is where bounded channels, tokens and cancel-safe branches either work together or fail together.
+
+**Retries interact with cancellation.** A retry loop around a future that is not cancel-safe
+re-enters half-consumed state on each attempt. The hazards: a timeout after the remote effect
+already happened, a library retry nested inside an application retry, cancellation between
+an effect and its acknowledgement, and a backoff that outlasts the caller's deadline. Keep
+the first error as well as the last; the first usually names the cause.
+
+**Do not hold a span guard across `.await`.**
+
+```rust
+// Wrong: the span stays "entered" on this thread while the task is suspended,
+// so unrelated tasks polled here are recorded inside it.
+let _entered = span.enter();
+fetch().await;
+
+// Right.
+fetch().instrument(span).await;
+```
+
+- Useful telemetry follows the design: each task's parent and how it ended, queue depth beside its capacity, and cancellation recorded as its own outcome and not as an error. Metric labels never come from user input, since each distinct value is a new time series.
+
+### More queue and event patterns
+
+**The capacity permit travels with the queued item.**
+
+```rust
+pub struct Queued {
+    pub message: Message,
+    // Held only for its Drop: returns the capacity when the item is dropped.
+    _capacity: OwnedSemaphorePermit,
+}
+```
+
+- Capacity is returned wherever the item ends up: processed, discarded or cancelled. The field looks unused and is load-bearing, so the comment stays.
+- **Count what is sent but not yet acknowledged.** A send queue limited by bytes must include batches awaiting acknowledgement, or memory is unbounded while the peer is slow.
+- **Admit before enqueueing.** Ask the admission policy first, make room second, and increase the running count immediately before the spawn. Then a task that never runs cannot have displaced accepted work or leaked a count. Anything held while waiting is released by a guard, so cancellation of the wait releases it.
+
+**`try_send` from a thread that must not block.** A blocking send from an event-loop or
+reactor thread onto a full inbox parks the thread that drives everything else.
+
+```rust
+match inbox.try_send(message) {
+    Ok(()) => {}
+    Err(TrySendError::Full(_)) => {
+        dropped.increment(1);
+        warn!(shard, "inbox full, message dropped");
+    }
+    Err(TrySendError::Closed(_)) => return Err(Error::ShardStopped { shard }),
+}
+```
+
+- A dropped message needs a written recovery path (retransmission, a log to replay). Without one, this is data loss with a log line.
+
+**Discard results from superseded requests.** For typeahead, search or preview, cancelling
+the previous request is not enough: its result may already be on the way.
+
+```rust
+let generation = self.latest.fetch_add(1, Ordering::Relaxed) + 1;
+let results = search(&query).await;
+if generation == self.latest.load(Ordering::Relaxed) {
+    self.show(results); // otherwise a newer request has started; drop this one
+}
+```
+
+- Use an ordered queue instead when every request must complete.
+- **Coalesce level-triggered state, never edge-triggered events.** "Needs a rerun" can be merged into one flag. One-shot triggers and queued items must each be kept, or they are lost.
+- **A guard can signal completion on every exit path** by sending in `Drop`. It cannot tell success from failure from cancellation, so use it only where "finished, somehow" is the whole message.
+
+**One event enum drives a terminal UI or long-running client.** Ticks, input and loaded data
+become one stream consumed by one state machine.
+
+```rust
+pub enum Event {
+    Key(KeyEvent),
+    Tick,
+    Loaded(Result<Data, LoadError>),
+}
+
+loop {
+    let event = tokio::select! {
+        _ = ticker.tick() => Event::Tick,
+        Some(key) = keys.recv() => Event::Key(key),
+        Some(loaded) = results.recv() => Event::Loaded(loaded),
+    };
+    if app.update(event) == Flow::Quit {
+        break;
+    }
+    terminal.draw(|frame| app.render(frame))?;
+}
+```
+
+- A new action is a new variant handled in `update`. Rendering reads state and performs no I/O; loading happens in tasks that report back as events.
+- Bound the channel or coalesce ticks, or a slow render builds an unseen backlog.
+- *Not when* the UI framework already owns the event loop.
+
+**Smaller rules.**
+
+- **An in-process event broker** keys subscriptions by event type, returns a `#[must_use]` handle that unsubscribes on drop, keeps payloads cheap to clone, and bounds what a slow subscriber can hold up. Not for cross-process or durable delivery.
+- **A resource that is expensive or not thread-safe belongs to one worker;** only job payloads cross the queue, and failures come back through the job's result. Cancellation covers queued and in-flight jobs alike.
+- **Blocking reads behind an async API** run in `spawn_blocking` under a configurable semaphore. Too many permits overload the storage; too few slow every reader.
+- **Round-robin by `fetch_add(1, Relaxed) % len`** is fine for spreading load over candidates that are already filtered. A least-loaded picker rotates its ties, or the first candidate always wins.
+- **Bridging to a foreign event loop** (a UI loop, another language's runtime): the Rust future holds a guard that cancels the foreign task if dropped early, and all calls into the foreign loop go through its thread-safe entry point. Prefer a maintained adapter crate to a hand-written bridge.
+
