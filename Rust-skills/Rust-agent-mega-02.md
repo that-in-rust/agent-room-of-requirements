@@ -8616,3 +8616,90 @@ pub fn run() {
 - The `expect` on `run` is the accepted exception to the no-panic rule: there is no application to report to yet.
 - A command that takes a `WebviewWindow` or `AppHandle` gets the calling window or the application injected; the front end does not pass them.
 
+### Setup, raw IPC and sidecar scope in practice
+
+**Setup registers state, then starts background work without waiting for it:**
+
+```rust
+tauri::Builder::default()
+    .setup(|app| {
+        let settings = Settings::load(&app.path().app_config_dir()?)?;   // small and required
+        app.manage(AppState::new(settings));
+        let handle = app.handle().clone();
+        tauri::async_runtime::spawn(async move {
+            match services::warm_start(&handle).await {
+                Ok(()) => handle.state::<AppState>().mark_ready(),
+                Err(error) => handle.state::<AppState>().mark_degraded(error),
+            }
+            let _ = handle.emit("startup-state-changed", ());
+        });
+        Ok(())
+    })
+```
+
+- **Application-wide initialisation belongs in `.setup(...)`,** not scattered across the first command that happens to need it.
+- **Nothing slow runs inline in setup.** It runs before the event loop, so the window does not appear until it returns.
+- **Readiness is state the front end can query,** plus an event when it changes. An event alone is lost if it fires before the window has registered its listener.
+- **A background start-up failure is recorded and shown,** not swallowed by the spawned task.
+- Use `AppHandle` for path resolution, window lookup by label, and restart or update access. Clone it into tasks; do not hold window references across awaits.
+
+**Reading bytes for the front end:**
+
+```rust
+#[tauri::command]
+async fn read_attachment(id: AttachmentId, state: State<'_, AppState>) -> Result<Response, AppError> {
+    let path = state.attachments.path_for(&id)?;     // looked up, never supplied
+    Ok(Response::new(tokio::fs::read(path).await?))
+}
+```
+
+- **A command that reads whatever path the webview sends is an arbitrary-file-read primitive** for any script that runs there. Accept an identifier and resolve it in Rust, or check the path against an allowed base as in section 14.
+- Use a binary response for file, image and download bytes. Keep JSON for structured metadata.
+- For media the webview displays directly, the asset protocol with a narrow scope avoids copying bytes through IPC at all.
+
+**A raw request is a privileged entry point.** Use it only when a typed JSON argument will
+not do, such as an upload body.
+
+```rust
+#[tauri::command]
+async fn upload_attachment(request: Request<'_>, state: State<'_, AppState>) -> Result<AttachmentId, AppError> {
+    let InvokeBody::Raw(bytes) = request.body() else {
+        return Err(AppError::InvalidRequest { field: "body".into() });
+    };
+    if bytes.is_empty() || bytes.len() > MAX_UPLOAD_BYTES {
+        return Err(AppError::InvalidRequest { field: "body".into() });
+    }
+    let kind = request.headers().get("x-attachment-kind").and_then(|v| v.to_str().ok());
+    let kind = AttachmentKind::parse(kind)?;
+    state.attachments.store(kind, bytes).await
+}
+```
+
+- **Validate the body kind, its size, and every header you read.** Parse headers into types.
+- **Checking that a header is present is not a check.** A header set by your own front end authenticates nothing; authorisation comes from the calling window and the application's own session state.
+- Sniff or verify content you will later interpret (an image, an archive); do not trust a declared type.
+
+**Sidecar permission scope:**
+
+```json
+{
+  "identifier": "main-window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        { "name": "binaries/indexer", "sidecar": true, "args": ["serve", "--port", { "validator": "\\d{1,5}" }] }
+      ]
+    }
+  ]
+}
+```
+
+- **Capabilities restrict what the webview may invoke.** Rust code in the application is not restricted by them. If only Rust starts the sidecar, as in the supervisor above, give the webview no shell permission at all. That is the safer design.
+- **If the front end must start it:** `shell:allow-spawn` for `spawn()`, `shell:allow-execute` for `execute()`, the name matching the configured binary exactly, and arguments listed literally or by a tight validator.
+- **A validator is a pattern for one whole argument.** `.*` or a pattern that admits a leading `-` lets the caller inject options.
+- **Never grant broad shell access because the application needs one safe sidecar.**
+- The binary is declared in the bundle configuration (`externalBin`) and exists on disk once per target, with the target triple as a suffix. A missing triple fails only when building for that platform.
+
