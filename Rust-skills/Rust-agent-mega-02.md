@@ -2148,3 +2148,99 @@ is possible; then the compiler does this.
 - **A lifetime contract gets a compile-fail test:** if a wrapper must not outlive its parent, a case that tries must fail to compile.
 - **A regression test for a UI bug** uses the smallest fixture that reproduces the state change, and selects elements by stable test IDs, not by styling.
 
+### Harnesses, fakes and failure injection
+
+**A snapshot matrix generated from fixtures.** For compilers, formatters, renderers and
+migrations, generate one test per fixture file and back end with a custom harness
+(`harness = false` in `Cargo.toml`, `libtest-mimic` for the trials).
+
+```rust
+fn build_trials() -> Vec<Trial> {
+    let mut trials = Vec::new();
+    for case in collect_cases("tests/fixtures") {
+        for backend in Backend::ALL {
+            let case = case.clone();
+            let name = format!("{}::{}", backend.name(), case.name);
+            let trial = Trial::test(name, move || run_case(&case, *backend));
+            trials.push(trial.with_ignored_flag(case.skip_reason.is_some()));
+        }
+    }
+    trials
+}
+```
+
+- Each trial has a specific name, so one failure can be run alone with a filter. A skipped case is marked ignored with its reason; it does not silently vanish.
+- Adding support for a construct is then adding one named fixture.
+- For security-sensitive or numeric behaviour, assert the property directly as well. A snapshot is too easy to accept.
+
+**One recording fake tests every layer.** A fake inner implementation records calls and injects
+errors on demand. Each wrapper (retry, timeout, metrics, cache) is tested against it for five
+things: untouched operations are forwarded, the retry count is exact, a timeout cancels the
+inner call, the metric is emitted once, and the inner error survives intact.
+
+**Reference implementations and injected failures, for storage and anything stateful.**
+
+- **A verification adapter** runs a simple, slow, obviously correct implementation (a `BTreeMap`) beside the real one and compares every result. Under a property test or a fuzzer generating operation sequences, it finds what example tests do not.
+- **Failures are injected at named points:** an I/O error on the nth write, a crash before and after each flush. After each, reopen and check that the state is one of the allowed ones (the old value or the new one, never a mixture).
+- **A write-restart-read test** exists for anything that claims durability.
+- **A panic in a caller-supplied closure must not leave half a mutation.** Either the transaction is rolled back or the handle is poisoned and the next commit fails. Test it by panicking inside the closure and reading the earlier data back.
+- **Adapters agree on failures.** A conformance test checks that every provider adapter maps authentication, not-found, conflict and retryable errors to the same domain errors.
+
+**A real-socket harness, only when one is needed.**
+
+- If calling the router as a service in-process is enough (`tower::ServiceExt::oneshot`), do that; it is faster and has no ports to manage.
+- When a real listener is needed, a harness behind a `test-support` feature owns the temporary storage, binds port 0, starts the server, and reports the bound address. Its `Drop` signals shutdown and joins the thread, so no server outlives its test.
+- **Functions that probe the outside world take the probe as a parameter** (an `exists` closure, an environment lookup), so their logic is tested without a real file system or environment.
+- **A loader for plugins is tested with built fixtures:** small crates generated in a temporary directory, a sanitised environment so nothing leaks from the developer's shell, the real binary run, and its output asserted. Cases: a duplicate name, missing metadata, an explicit override.
+
+**Honest results.**
+
+- **An unimplemented check must not look like a clean result.** A detector or rule whose body is a stub returns "not implemented" or is left out of the registry. A stub returning an empty list is indistinguishable from "no findings": a missing feature becomes a false all-clear. Test that every registered check fires on a fixture built to trigger it.
+- **A reported crash becomes a fixture.** The smallest input from the bug report is committed with the issue reference, so that recovery on that malformed input stays tested.
+- **One fixture per feature,** named after what it exercises. Coverage is then counted in features handled, not files processed.
+- **A quality benchmark names its ground truth:** one primary measure, an independent source of truth, and a dataset version reported with every result. Every tool compared runs through the same adapter.
+- **Scenario tests keep state in a typed struct** with named fields, not a string-keyed bag. *Skip the scenario layer* when plain unit tests say the same thing.
+
+### What to test, by risk
+
+| Risk surface | Evidence |
+|---|---|
+| Pure logic | Unit tests, plus a property where there is an invariant |
+| Public API contract | Unit tests, doctests, misuse cases |
+| Persistence or I/O | Integration tests against the real thing, write-restart-read |
+| Async orchestration | Integration tests with timeout, cancellation and shutdown cases |
+| Shared mutable state | A stress test, and `loom` where the ordering is subtle |
+| Parsing or protocol | A corpus, malformed input, a property test, a fuzz target |
+| Compile-time misuse | Compile-fail tests |
+| A performance claim | A benchmark with a threshold |
+| Unsafe or FFI | A harness, Miri, sanitizers |
+
+- **A bug fix has a test that was seen to fail.** Reproduce the bug, write the test, watch it fail on the broken code, fix, watch it and the wider suite pass. Do not report a regression test that was never observed failing.
+- **Differential tests** are the cheapest strong evidence when an old and a new implementation, or a simple and a fast one, can check each other.
+- **Adversarial inputs at every edge:** malformed, truncated, huge, deeply nested, non-UTF-8. Not only the well-formed cases.
+- **In a long session, checkpoint the state:** which step of the loop you are in, the tests failing right now, the files touched, the open questions. A checkpoint guards against drift; it does not replace running the tests again.
+
+### Fixtures and helpers
+
+- **Fixture paths start from `env!("CARGO_MANIFEST_DIR")`,** so the test does not depend on the working directory.
+- **Helpers that can fail are `#[track_caller]` and name the path,** so the panic points at the test, and a missing fixture cannot look like a parse failure.
+
+```rust
+#[track_caller]
+fn read_fixture(rel: &str) -> String {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures").join(rel);
+    fs::read_to_string(&path).unwrap_or_else(|e| panic!("fixture {}: {e}", path.display()))
+}
+```
+
+- **Path tests use awkward paths:** spaces, non-ASCII characters, a trailing separator, a relative path, a symlink. Plain alphanumeric names hide quoting and normalisation bugs.
+- **Tests for an optional feature are gated** with `#[cfg(feature = "...")]` so the default run stays green, and CI runs the feature matrix. A gated test that CI never enables is not a test.
+- **Start an out-parameter at the wrong value.** If a function writes through `&mut`, initialise the target to something other than the expected result, so a function that writes nothing cannot pass.
+- **A streaming parser is tested for chunking equivalence:** the whole input in one call and one byte at a time must give the same events. A property test checks it at random split points.
+- **Check the representation before the value** when a type has several (borrowed or owned, sparse or dense, inline or heap). Otherwise a test passes because the value silently fell back to the slow form.
+- **Prove the fast path was taken.** A test that an asset is embedded, a cache is hit or an index is used asserts that directly (a fetch counter of zero, an offline run, a query plan), not only that the answer is right.
+- **Every member of a closed set is exercised.** A test iterates `Language::ALL` (or the equivalent) and loads each one.
+- **When one datum appears in two places in a response, read each event kind from exactly one,** and test that the other place produces nothing. Reading both emits duplicates.
+- **An embeddable component has a test constructor** (`build_for_testing()`) that owns its temporary storage, so tests do not repeat the set-up.
+- **Expose internals to a fuzz crate through one dedicated module,** not by making them public.
+
