@@ -4444,3 +4444,133 @@ loop {
 - **Use a `CancellationToken` for cooperative shutdown.** Pass it down, check it in loops and `select!`, and give children `child_token()` so a subtree can be cancelled alone.
 - Document, for every public async function, whether it is cancel-safe.
 
+### Tasks and their owners
+
+**A spawned task belongs to something that waits for it.** A detached `tokio::spawn` whose
+handle is dropped keeps running, its panic goes unnoticed, and shutdown cannot wait for it.
+
+```rust
+let mut tasks = JoinSet::new();
+for job in jobs {
+    tasks.spawn(process(job));
+}
+while let Some(joined) = tasks.join_next().await {
+    match joined {
+        Ok(Ok(report)) => reports.push(report),
+        Ok(Err(error)) => return Err(error), // dropping the set aborts the rest
+        Err(join_error) => return Err(Error::TaskPanicked(join_error)),
+    }
+}
+```
+
+- `JoinSet` aborts its remaining tasks when dropped, so an early return does not leak work. A `JoinError` is a panic or an abort; handle it, do not `unwrap` it.
+- **Bound the fan-out.** A `Semaphore` permit per task, or `futures::stream::iter(jobs).map(f).buffer_unordered(limit)` when the futures need not be spawned.
+- **`join!` and `try_join!` for a fixed, small set** of futures on the current task: no spawn, no `'static` bound, borrowing allowed. `tokio::spawn` when the work should run in parallel on other threads or outlive the caller.
+- **A background task for the life of the service** is held by the component that starts it: store the `JoinHandle` and the cancellation token, and have `shutdown()` cancel and then await it with a time limit.
+- **Carry trace context across the spawn.** Do it in the project's one spawn helper, so tasks inherit the caller's span by default.
+
+```rust
+tokio::spawn(work().instrument(tracing::Span::current()));
+
+let span = tracing::Span::current();
+tokio::task::spawn_blocking(move || span.in_scope(blocking_work));
+```
+
+- **Threads:** name them (`thread::Builder::new().name(...)`), join them, and prefer `std::thread::scope` when they only need to borrow local data for a bounded time.
+
+**A supervisor fails in-flight jobs before it restarts the worker.** A worker that can crash
+(a thread, a child process, a WASM instance) has a supervisor holding a registry of pending
+replies.
+
+```rust
+struct Supervisor {
+    in_flight: HashMap<JobId, oneshot::Sender<Result<Output, WorkerError>>>,
+    consecutive_restarts: u32,
+}
+
+impl Supervisor {
+    fn on_worker_exit(&mut self) -> Result<(), WorkerError> {
+        for (_, reply) in self.in_flight.drain() {
+            let _ = reply.send(Err(WorkerError::Crashed)); // the caller may have gone away
+        }
+        self.consecutive_restarts += 1;
+        if self.consecutive_restarts > MAX_RESTARTS {
+            return Err(WorkerError::GaveUp);
+        }
+        self.spawn_worker()
+    }
+
+    fn on_worker_ready(&mut self) {
+        self.consecutive_restarts = 0; // only a successful start resets the count
+    }
+}
+```
+
+- **A clean error beats a future that never completes.** Jobs are failed, not replayed: only the caller knows whether a retry is safe.
+- Restart with backoff and a cap. A worker that dies at start-up must not be restarted in a tight loop.
+- Per-job resources are freed by an owning guard's `Drop`, so the crash path releases them too.
+
+**A timeout does not mean the work stopped.** Dropping a timed-out future stops async work at
+its next `.await`, but a `spawn_blocking` closure, a thread or a child process carries on.
+
+```rust
+match self.running.get(&job) {
+    Some(handle) if !handle.is_finished() => return Tick::StillRunning, // skip this tick
+    Some(_) => {
+        self.running.remove(&job);
+    }
+    None => {}
+}
+let handle = tokio::task::spawn_blocking({
+    let job = job.clone();
+    move || run(job)
+});
+self.running.insert(job, handle);
+```
+
+- For a periodic job, skip the tick while the previous run is alive, or runs pile up on the same data.
+- For work that must stop, give it a flag or token it checks, or run it in a child process that can be killed.
+- Report "timed out, still running" differently from "failed".
+
+### Shared state and primitives
+
+| Need | Use |
+|---|---|
+| One producer of work, many async consumers of results | `tokio::sync::mpsc` (bounded) |
+| One reply to one request | `tokio::sync::oneshot` |
+| The latest value; readers may skip intermediate ones | `tokio::sync::watch` |
+| Every subscriber sees every message | `tokio::sync::broadcast` (slow receivers get `Lagged`) |
+| Limit concurrency | `tokio::sync::Semaphore` |
+| Wake a waiter without data | `tokio::sync::Notify` |
+| Threads, not tasks; multi-consumer; `select` | `crossbeam-channel` or `flume` |
+| Initialise once | `OnceLock`, `LazyLock`, `tokio::sync::OnceCell` for async |
+
+- **Bounded channels by default.** An unbounded queue turns overload into memory growth that shows up far from its cause. A full bounded channel makes the producer wait or fail, which is the signal you want. Decide which: `send().await` waits, `try_send` sheds.
+- **Do not call a blocking channel operation in async code,** and use `blocking_send` to feed a Tokio channel from a thread.
+- **Prefer one owning task and messages to a shared lock** when state has a lifecycle or multi-step updates. Callers hold a cheap handle with a sender; each request carries a `oneshot` for the reply. A plain `Mutex` is still right for a small map with short updates.
+- **Atomics: choose the ordering by argument.** `Relaxed` for a counter nobody synchronises on. `Acquire`/`Release` when a store publishes data another thread then reads. `SeqCst` when several atomics must be seen in one global order, or when you cannot yet make the argument. A wrong `Relaxed` passes every test on x86 and fails on ARM.
+- **Two atomics are not one atomic state.** If two values must change together, use one atomic holding both, or a lock.
+- **Globals:** `LazyLock` for an immutable table or compiled regex is fine. Global mutable state leaks between tests and hides dependencies; pass it in.
+
+**Model-check small lock-free pieces with `loom`.** One passing run of a concurrent test
+proves little. `loom` runs a small model under every interleaving and weak-memory behaviour.
+
+```rust
+#[test]
+#[cfg(loom)]
+fn two_increments_are_both_counted() {
+    loom::model(|| {
+        let counter = Arc::new(Counter::new());
+        let other = Arc::clone(&counter);
+        let handle = loom::thread::spawn(move || other.increment());
+        counter.increment();
+        handle.join().unwrap();
+        assert_eq!(counter.get(), 2);
+    });
+}
+```
+
+- Keep the model tiny: two or three threads, a few operations. The state space grows explosively.
+- The code under test must use `loom`'s atomics and locks when built with `--cfg loom`, usually through one small `sync` module of re-exports.
+- For ordinary lock-based code, a stress test under ThreadSanitizer and a look at lock order are better value.
+
