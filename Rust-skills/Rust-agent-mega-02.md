@@ -3257,3 +3257,150 @@ include!(concat!(env!("OUT_DIR"), "/api.rs"));
 - Linking: `cargo::rustc-link-lib` and `cargo::rustc-link-search`. A crate that links a native library sets `links = "name"` in its manifest so two versions cannot both be linked.
 - **Prefer checked-in generated code plus a test that it is current** when the generator is slow, needs tools users may lack, or the output is worth reviewing in diffs.
 
+- A procedural-macro crate sets `proc-macro = true` under `[lib]` and can export nothing else, so the runtime types it refers to live in a sibling crate that re-exports the macro.
+
+### Registries, back ends and generated code
+
+**One declaration line per variant, when the same list drives several sites.** A small macro
+turns a list of names into the enum and its dispatch, so the two cannot drift.
+
+```rust
+pub trait Phase {
+    fn apply(&self, items: &mut Vec<Item>);
+}
+
+macro_rules! declare_phase_kind {
+    ($($name:ident = $phase:expr),* $(,)?) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        pub enum PhaseKind { $($name,)* }
+
+        impl PhaseKind {
+            pub const ALL: &'static [PhaseKind] = &[$(PhaseKind::$name,)*];
+        }
+
+        impl Phase for PhaseKind {
+            fn apply(&self, items: &mut Vec<Item>) {
+                match *self { $(Self::$name => $phase.apply(items),)* }
+            }
+        }
+    };
+}
+
+declare_phase_kind! {
+    Desugar = DesugarPhase,
+    Inline = InlinePhase { threshold: 8 },
+}
+```
+
+- The enum is `Copy` and can be named in configuration and in ordered phase lists. `ALL` lets a test assert that every kind appears in at least one pipeline.
+- *Skip the macro* for a list used in one place. A plain enum with an exhaustive `match` already fails to compile when a variant is missing, and anyone can read it.
+- A phase with run-time state does not fit a `Copy` variant; that calls for a registry of boxed values.
+
+**When one matrix drives many sites, keep one inventory macro that takes a callback.**
+
+```rust
+macro_rules! for_all_sources {
+    ($callback:ident) => {
+        $callback! {
+            { Kafka, KafkaProperties, KafkaSplit },
+            { Pulsar, PulsarProperties, PulsarSplit },
+        }
+    };
+}
+
+macro_rules! declare_properties_enum {
+    ($({ $name:ident, $props:ty, $split:ty }),* $(,)?) => {
+        pub enum SourceProperties { $($name($props),)* }
+    };
+}
+for_all_sources!(declare_properties_enum);
+```
+
+- Adding a row updates every generated site at once. That is the whole benefit, and it is real only from about three sites up.
+- Callback macros are hard to read and produce poor errors. Keep each callback small, and keep the row shape identical everywhere.
+
+**A back end is a narrow trait: shared flow provided, the difference required.**
+
+```rust
+pub trait Backend {
+    type Printer: Printer;
+    const NAME: &'static str = <Self::Printer as Printer>::NAME;
+
+    fn phases(&self) -> Vec<PhaseKind> {
+        Vec::new()
+    }
+
+    /// The one thing every target must supply.
+    fn module_path(&self, module: &Module) -> PathBuf;
+
+    fn emit(&self, modules: Vec<Module>, printer: Self::Printer) -> Vec<File> {
+        /* shared flow, written once */
+    }
+}
+```
+
+- Preparation (phases) stays separate from rendering (the printer); escaping rules for a target live only in its printer.
+- A shared phase can carry one target's assumptions into another. Review each back end's phase list on its own.
+- *Not for* targets whose pipelines have nothing in common; forcing them under one trait produces a trait of optional methods.
+
+**Capabilities become parser settings before parsing.** Permissions and feature gates are
+turned into settings by one function, and the parser consults the settings. Checking the tree
+afterwards means every new syntax needs a second, forgettable check.
+
+```rust
+pub fn settings_from(capabilities: &Capabilities) -> ParserSettings {
+    ParserSettings {
+        files_enabled: capabilities.allows(Experimental::Files),
+        ..ParserSettings::default()
+    }
+}
+```
+
+- The same text can be valid under one setting and invalid under another, so the diagnostic names the disabled capability, not just "unexpected token".
+- The entry point rejects input longer than the offset type can address (a `u32` offset means inputs up to 4 GiB) with a typed error, before parsing.
+
+**A recursive parser spends a depth budget, and every exit restores it.** Unbounded recursion
+on untrusted input is a stack overflow, which aborts the process and cannot be caught.
+
+```rust
+fn nested<T>(
+    &mut self,
+    span: Span,
+    parse: impl FnOnce(&mut Self) -> Result<T, SyntaxError>,
+) -> Result<T, SyntaxError> {
+    if self.depth_left == 0 {
+        return Err(SyntaxError::too_deep(span));
+    }
+    self.depth_left -= 1;
+    let result = parse(self);
+    self.depth_left += 1;
+    result
+}
+```
+
+- Every recursive production goes through the one helper (or one `Drop` guard). Nobody edits the counter by hand, and `?` inside the closure cannot skip the restore.
+- Pick the limit from the smallest stack the parser runs on: a spawned thread defaults to 2 MiB, less than the main thread. Test the limit on that stack, in a debug build, where frames are largest.
+- Test both the depth error and that a parse succeeds after one failed, which proves the budget came back.
+- The same applies to every recursive walk over the tree afterwards: visitors, printers, `Drop` of a deeply nested tree. A parser limit protects them all only if they recurse no deeper than it did.
+
+**Generated bindings come from a typed spec list and are written atomically.** What to
+generate is data (an enum of wrapper kinds), so adding an item is one entry plus a generator
+test; nobody edits generated files by hand.
+
+```rust
+fn save_atomically(content: &str, target: &Path) -> io::Result<()> {
+    let dir = target.parent().unwrap_or(Path::new("."));
+    let mut file = tempfile::NamedTempFile::new_in(dir)?;
+    file.write_all(content.as_bytes())?;
+    file.as_file().sync_all()?;
+    file.persist(target).map_err(|e| e.error)?;
+    Ok(())
+}
+```
+
+- The temporary file is created in the target's directory. A rename is atomic only within one filesystem; a temp file under `/tmp` may not be.
+- On Unix the temporary file is created readable by the owner only, and keeps that mode after `persist`. Set permissions explicitly if others must read it.
+- `sync_all` matters when the file must survive a crash; skip it for build outputs that can be regenerated.
+- Generation is idempotent: the same spec gives the same bytes, and unchanged output is not rewritten, so timestamps do not trigger rebuilds.
+- Validate each spec at generation time. A wrong signature that is only discovered at the foreign call is a run-time crash.
+
