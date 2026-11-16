@@ -908,3 +908,106 @@ pub fn pipeline(&mut self) -> anyhow::Result<&Pipeline> {
 - **Rules as data use a small algebra of typed variants,** never raw strings: `enum Matcher { Call { name }, Attribute { root, field }, Regex(CompiledRegex) }`. A variant that one back end cannot evaluate must not silently match nothing; a coverage test lists each (variant, back end) pair.
 - **A fingerprint for deduplication or suppression** is a deterministic hash of normalised domain facts (rule ID, relative path, location or snippet hash, message) with a separator between fields. Never hash an address, an absolute path or an iteration order. Too many fields and it breaks on every edit; too few and it suppresses unrelated findings. Keep reading the old format when the scheme changes.
 
+### Transformations that must not lose data
+
+These apply to anything that rewrites, merges, formats or migrates someone else's content.
+
+**A smart algorithm over a trusted conservative one.** Guard the smart path with cheap
+preconditions, check its output, and fall back.
+
+```rust
+if is_binary(base) || is_binary(ours) || is_binary(theirs) {
+    return fallback(base, ours, theirs, FallbackReason::Binary);
+}
+if [base, ours, theirs].iter().any(|text| text.len() > MAX_SMART_BYTES) {
+    return fallback(base, ours, theirs, FallbackReason::TooLarge);
+}
+let merged = smart_merge(base, ours, theirs)?;
+if !postconditions_hold(&merged, ours, theirs) {
+    return fallback(base, ours, theirs, FallbackReason::SuspiciousOutput);
+}
+```
+
+- Preconditions cover what the smart path cannot handle (binary, size, unsupported syntax). Postconditions look for lost or duplicated content.
+- **Every fallback is recorded with its reason and counted.** A silent fallback hides that the smart path stopped working; a fallback rate that climbs is a bug report.
+- Tests include an adversarial input that forces each fallback, and one that proves the smart path leaves untouched content byte-identical.
+- *Skip when* there is no trusted simpler implementation to fall back to. Then the failure is an error, not a guess.
+
+**Pair every structural rewrite with a cheap conservation check.** Count what must be conserved
+before and after, and return the original on any difference.
+
+```rust
+let mut balance = HashMap::<ItemSignature, i32>::new();
+for signature in signatures_of(original)? {
+    *balance.entry(signature).or_insert(0) += 1;
+}
+for signature in signatures_of(&rewritten)? {
+    *balance.entry(signature).or_insert(0) -= 1;
+}
+if balance.values().any(|count| *count != 0) {
+    return Ok(original.to_owned()); // something was lost or duplicated
+}
+```
+
+- **Formatters and codemods are idempotent and output still parses.** Both are tests: `format(format(x)) == format(x)`, and the result parses to an equivalent tree.
+- **Re-parse after every change to the text.** No pass reads a tree built from an earlier version of the string.
+- **Protected regions round-trip byte for byte.** Replace each opt-out region with a placeholder that cannot collide with real content, run the passes, restore, on every path including errors.
+- **Reordering uses a stable sort,** carries comments and attributes with their item, and leaves unknown nodes in place. Do not reorder where order has meaning (macro definitions, `mod` declarations with `#[macro_use]`, trait-impl overlap, SQL migrations).
+
+**A plan carries unsupported work as data.** A planner for migrations, rollouts or refactors
+returns the whole plan, with the parts it cannot do as typed steps, so a reviewer sees
+everything at once. It does not stop at the first incompatible change.
+
+```rust
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum MigrationStep {
+    AddType { name: String },
+    RenameType { from: String, to: String },
+    Unsupported { entity: String, reason: String },
+}
+
+pub struct MigrationPlan {
+    pub steps: Vec<MigrationStep>,
+}
+
+impl MigrationPlan {
+    pub fn is_executable(&self) -> bool {
+        !self.steps.iter().any(|step| matches!(step, MigrationStep::Unsupported { .. }))
+    }
+}
+```
+
+- Planning is pure and separate from execution: plan, show, confirm, apply. The executor refuses a plan that contains an unsupported step; it never skips one.
+- The plan is serialisable, so it can be reviewed, stored and replayed.
+
+**Coordinating several writers.** A claim ("agent A is editing this") is an advisory lock; it is
+not proof that nothing else changed. Detect concurrent edits with a version (a counter, a
+content hash, or a version vector with one counter per writer) checked at write time, and
+expire stale claims with a heartbeat. *For one writer, or where a hard lock is acceptable, a
+database transaction is simpler and stronger.*
+
+### Parsers, rule engines and linters
+
+Rules for the cases where a task builds or extends one.
+
+- **Operators that share a parse shape are a table,** `const BINARY_OPS: &[(Token, Prec, Assoc)]`, driving one precedence-climbing function. A new operator is a row.
+- **Try the most specific alternative first.** Add a broad fallback only after a real input proves the need, and give every fallback branch a corpus case.
+- **Context-sensitive lexing is explicit lexer state:** a closing delimiter that must match its opener (heredocs, raw strings with a variable number of `#`) stores the opener and clears it on close. Indentation-sensitive layout is an indent stack, with no indent or dedent tokens inside brackets. If the parser is incremental, that state serialises and the round trip is tested.
+- **A large grammar, schema or rule set is composed from modules,** and composition fails on a duplicate name. A later module never silently wins.
+- **A translator from a specific tree to a common model is pure:** no I/O, no logging, no global state. Queries are compiled once, not per file. The caller adds file and repository context one layer up.
+- **Names emitted by a parser stage are a contract** with the stage that consumes them. Each new one gets a fixture that follows it to its destination. Same-named items (overloads) get a disambiguator so one does not overwrite another.
+- **A rule engine filters once and buckets by kind,** so each item meets only the rules that can apply; route on the enum variant, not on a string prefix. The walker visits the tree once and dispatches by node kind. With a handful of rules, plain `if` statements are clearer.
+- **A rule trait with default no-op hooks** lets a rule opt into raw source, selected nodes, or a final pass:
+
+```rust
+pub trait Rule {
+    fn node_kinds(&self) -> &[&str] { &[] }
+    fn check_source(&mut self, _source: &str) -> Vec<Issue> { Vec::new() }
+    fn check_node(&mut self, _node: &Node, _source: &str) -> Vec<Issue> { Vec::new() }
+    fn finish(&mut self, _source: &str) -> Vec<Issue> { Vec::new() }
+}
+```
+
+- **Parser inputs are hostile.** Bound recursion depth, input size and time; return an error with a byte offset; never panic on malformed input. A fuzz target or a property test (`parse` never panics; `print(parse(x))` re-parses to the same tree) finds what examples miss.
+
