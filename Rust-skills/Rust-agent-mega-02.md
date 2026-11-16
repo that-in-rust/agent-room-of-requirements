@@ -7482,3 +7482,113 @@ configured is not reachable; tested is not deployed; observed once is not attack
 Compilation proves no authorisation property. After a framework upgrade or an advisory,
 re-check behaviour against the locked version and rerun the abuse tests.
 
+### Database access
+
+```rust
+#[derive(Clone)]
+pub struct Database {
+    pool: PgPool,
+}
+
+impl Database {
+    pub async fn connect(settings: &DatabaseSettings) -> Result<Self, sqlx::Error> {
+        let pool = PgPoolOptions::new()
+            .max_connections(settings.max_connections)
+            .acquire_timeout(settings.acquire_timeout)
+            .connect_with(settings.connect_options())
+            .await?;
+        Ok(Self { pool })
+    }
+
+    pub async fn find_user(&self, id: UserId) -> Result<Option<User>, sqlx::Error> {
+        sqlx::query_as!(User, "SELECT id, name, email FROM users WHERE id = $1", id.0)
+            .fetch_optional(&self.pool)
+            .await
+    }
+}
+```
+
+- **Size the pool deliberately.** Instances times `max_connections` must fit under the database's connection limit, with room for migrations and operators. Set an acquire timeout, so pool exhaustion surfaces as an error, not as requests that hang.
+- **A pooled connection held is a connection denied to others.** Do not hold one across a remote call, a long computation or a slow client.
+- **Compile-time checked queries** (`query!`, `query_as!`) verify SQL and types against a real schema. They need a database at build time, or prepared metadata (`cargo sqlx prepare`) committed and checked for staleness in CI. *Use the unchecked functions* for SQL assembled at run time, with bound values.
+- **Where migrations run is a deployment decision.** Running them at start-up is fine for one instance. With several replicas or stepwise rollouts, run them as a separate step: replicas otherwise race, and a tightening migration applies before old code is gone.
+- `fetch_optional` for zero-or-one, `fetch_one` only when absence is a bug, and a `LIMIT` on anything a user can make large.
+- Map database errors to domain errors in this layer: a unique-constraint violation becomes `Conflict`, not a 500.
+
+**A lazy result stream owns its connection.** Bundle the stream with the resource it reads
+from, so a caller cannot consume rows after the transport is gone.
+
+```rust
+pub struct DetachedRowStream {
+    stream: RowStream,
+    connection: ManagedConnection,
+}
+
+impl DetachedRowStream {
+    pub async fn next(&mut self) -> Result<Option<Row>> {
+        self.stream.next(&mut self.connection).await
+    }
+
+    pub async fn finish(mut self) -> Result<RunSummary> {
+        self.stream.finish(&mut self.connection).await
+    }
+}
+```
+
+- An open stream holds a pooled connection, so a slow consumer can starve the pool. Bound it with a timeout, or buffer fully when results are small.
+- Test partial consumption followed by drop, and `finish()`.
+
+**A query macro may read like `format!` only if every value becomes a bound parameter.**
+Test both the rendered text and the parameter map. Identifiers and dynamic clauses never go
+through value parameters; they have their own validation.
+
+### A service skeleton
+
+```rust
+#[derive(Clone)]
+pub struct AppState {
+    db: Database,
+    settings: Arc<Settings>,
+}
+
+pub fn build_router(state: AppState) -> Router {
+    Router::new()
+        .route("/health/live", get(|| async { StatusCode::OK }))
+        .route("/health/ready", get(readiness))
+        .route("/api/users", post(create_user))
+        .route("/api/users/{id}", get(get_user))
+        .layer(
+            ServiceBuilder::new()
+                .layer(TraceLayer::new_for_http())
+                .layer(TimeoutLayer::new(state.settings.request_timeout))
+                .layer(DefaultBodyLimit::max(state.settings.max_body_bytes))
+                .layer(cors_layer(&state.settings)),
+        )
+        .with_state(state)
+}
+
+async fn create_user(
+    State(state): State<AppState>,
+    Json(request): Json<CreateUserRequest>,
+) -> Result<(StatusCode, Json<UserResponse>), ApiError> {
+    let new_user = NewUser::try_from(request)?; // DTO to domain type; validation lives here
+    let user = state.db.insert_user(&new_user).await?;
+    Ok((StatusCode::CREATED, Json(UserResponse::from(user))))
+}
+
+async fn get_user(
+    State(state): State<AppState>,
+    Path(id): Path<UserId>,
+) -> Result<Json<UserResponse>, ApiError> {
+    let user = state.db.find_user(id).await?.ok_or(ApiError::NotFound)?;
+    Ok(Json(UserResponse::from(user)))
+}
+```
+
+- **CORS is an allow-list from settings.** `CorsLayer::permissive()` is for local development only; combined with credentials it lets any site act as the user.
+- **The router is built by a function that takes state,** so a test can build the same router against a test database.
+- **Request and response types are separate from the domain type.** `User` may hold a password hash; `UserResponse` cannot.
+- A create returns 201; an absent resource returns 404 through the error type, not through an `Option` serialised as `null`.
+- Timeouts, body limits and state are set from typed settings, not literals in the router.
+- Path syntax, layer order and extractor rules differ between framework versions. Write against the version in `Cargo.lock`.
+
