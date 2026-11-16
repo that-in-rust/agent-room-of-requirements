@@ -6305,3 +6305,83 @@ let to_remove: Vec<&Hash> = old_hashes
 - **In a streaming operator ordered by logical time,** buffered work is released when input progress proves that nothing earlier can arrive, never by a wall-clock timer. A held capability or watermark blocks everything downstream; drop it as soon as its output is emitted.
 - **A parameter outside the supported range is a typed error before any work,** never an unbounded build. The bound is a product decision, since cost often grows steeply with it.
 
+### Hashes, prefilters and storage invariants
+
+**More on identity hashes.**
+
+- **Put a format version in the hashed data,** so a change to the canonical form cannot be mistaken for unchanged content.
+- **Normalise per domain type through a trait.** Never hash `Debug` output or default serialisation and hope it is stable: field order, float formatting and map order are not promises.
+- For each new field, decide whether it is semantic or presentation-only, and change the canonical form and the hash-stability tests in the same commit.
+- A value that cannot be hashed deterministically is an explicit error.
+- **An identity hash is not a security proof.** For anything an attacker can influence, use a keyed MAC or a signature.
+- **A semantic hash over a syntax tree** skips noise nodes (comments, whitespace), emits kind and text for value-bearing nodes and kind only for structural ones. Those three sets define "semantic": a value-bearing kind left out reports "unchanged" for a real change. Changing them is a version bump. *Not where* exact text or comments are part of the record.
+
+**A cheap bit test in front of expensive scoring.**
+
+```rust
+#[derive(Clone, Copy, Default)]
+pub struct CharBag(u64); // one bit per lowercased a-z and 0-9
+
+impl CharBag {
+    pub fn is_superset(self, other: CharBag) -> bool {
+        self.0 & other.0 == other.0
+    }
+}
+```
+
+- A candidate whose bag lacks any query character cannot match, so most are rejected with one AND. The filter rejects only the impossible and is never the only check.
+- **Scratch matrices are fields reused across candidates** (`clear()` then `resize`), stored as one flat `Vec` indexed `row * width + column`. A `Vec<Vec<T>>` allocates per row and scatters rows across the heap.
+- Cost grows with query length times candidate length, so a long search keeps its cancellation checks.
+
+**A rolling hash nominates; comparison decides.** Finding repeated fixed-size windows with a
+rolling hash costs one pass over the input.
+
+```rust
+hash = hash.wrapping_mul(BASE).wrapping_add(incoming);
+hash = hash.wrapping_sub(POWER.wrapping_mul(outgoing)); // POWER = BASE^window
+```
+
+- Equal hashes mean "probably equal". Confirm by comparing the blocks. This holds for any hash used as a shortcut for equality.
+- Use explicit `wrapping_*` arithmetic; plain `*` and `+` panic on overflow in debug builds.
+- Long runs of identical items produce a quadratic number of matches; collapse them first.
+
+**A snapshot is a leased read instant.** Opening one registers its sequence number and
+returns a guard whose `Drop` deregisters it. Garbage collection frees only versions below
+the lowest number still registered.
+
+```rust
+pub fn open(&self) -> SnapshotGuard {
+    let _gc = self.gc_lock.read(); // collection cannot run between the load and the insert
+    let sequence = self.sequence.load(Ordering::Acquire);
+    *self.open.entry(sequence).or_insert(0) += 1;
+    SnapshotGuard::new(sequence, self.clone())
+}
+
+pub fn publish(&self, batch_sequence: u64) {
+    self.sequence.fetch_max(batch_sequence + 1, Ordering::AcqRel); // never moves backwards
+}
+```
+
+- **A leaked or long-held snapshot blocks collection for ever.** Export the age of the oldest open snapshot as a metric.
+- Test that an old snapshot still reads old values after later writes and an explicit collection.
+
+**Shared durable artefacts are deleted only when every dependant is past them.** A
+write-ahead-log segment serving several partitions records one sequence number per
+partition. Deletion walks from the oldest segment and stops at the first one that some live
+partition has not yet persisted beyond. A deleted partition stops holding segments back.
+Test crash recovery with mixed and deleted partitions.
+
+**Durable formats.**
+
+- **Every serialised field has a permanent tag or name,** never reused and never renumbered. Retired tags are reserved.
+- **New fields arrive as optional.** A reader distinguishes absent from zero or false with `Option<T>`, not a defaulted scalar, and tolerates unknown fields. Use `#[serde(default)]` only where the default truly means "absent".
+- Test three cases: field absent (old writer), field present, unknown field present (newer writer).
+- **Separate physical storage from logical meaning:** a small stable set of storage types, plus tagged logical annotations carrying their parameters (`Decimal { precision, scale }`, `Timestamp { unit, utc }`). A new logical type also updates reader validation and round-trip tests.
+- `#[serde(deny_unknown_fields)]` suits configuration files, where a typo should fail. It is wrong for a wire format that newer writers will extend.
+
+**Smaller rules.**
+
+- **A cache miss is a value.** Absence in a cache or content-addressed store is `Ok(None)`; `Err` is for real failures. Removing an entry that is already gone is success.
+- **Non-overlapping chunks by line ownership.** Sort symbol spans longest first and assign each span's lines to it in that order, so a nested span overrides its parent; emit runs of one owner as chunks and window the unowned gaps. A file that fails to parse falls back to plain windows instead of failing the index. *Not when* retrieval benefits from overlapping context.
+- **Expansion signals are opt-in and down-weighted** (graph neighbours of a hit), so they cannot outrank direct matches. Inspect each ranked list separately before changing weights.
+
