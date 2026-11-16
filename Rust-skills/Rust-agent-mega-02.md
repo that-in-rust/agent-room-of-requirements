@@ -1323,3 +1323,113 @@ the sources from cheapest to dearest (summary, outline, the relevant path, raw s
 the cheapest and go up a rung only when the current one did not answer the question, under a
 hard cap.
 
+### Storage, artifacts and edits
+
+**One core crate, several thin adapters.** When one engine serves a desktop UI, a CLI, a server
+and tests, the core owns the request and response types and the orchestration. Each adapter
+converts input, calls the core and maps the error, and nothing else. Review check: an adapter
+file containing an `if` about domain rules has logic in the wrong place.
+
+**A storage factory with an in-memory back end.** The back end is chosen by configuration (a
+URI scheme: file, object store, memory). The in-memory one implements the same trait and passes
+the same contract suite, which gives tests a fast, deterministic store.
+
+```rust
+// One suite, run against every back end.
+pub fn contract_suite(store: &dyn Storage) {
+    put_then_get_returns_same_bytes(store);
+    get_missing_key_is_not_found(store);
+    overwrite_replaces_value(store);
+    list_is_sorted_and_complete(store);
+}
+
+#[test]
+fn memory_store_meets_contract() { contract_suite(&MemoryStore::default()); }
+#[test]
+fn file_store_meets_contract() { contract_suite(&FileStore::new(tempfile::tempdir().unwrap().path())); }
+```
+
+- The contract suite is what keeps a fake honest. Without it, tests pass against behaviour the real back end does not have (ordering, case sensitivity, atomicity).
+- *Skip the trait when* every call site needs back-end-specific features; a lowest common denominator that leaks is worse than a concrete type.
+- **An enum for which, a trait for how.** A persisted enum of provider kinds maps each variant to an implementation that can detect, install and run it, and every variant passes the same contract tests. Renaming a persisted variant is a data migration.
+
+**Artifacts on disk.**
+
+- **Any artifact of more than one file has a manifest** naming each file, its layout and the format version. The reader opens files through the manifest, never by file-name convention. Tests round-trip the manifest and open an artifact written by the previous version.
+- **A format carries a version from its first release,** and the reader rejects a version it does not know with an error that states both versions.
+- **A manifest does not store its own path.** A type that saves itself keeps the path in a `#[serde(skip)]` field set by the reader. A missing file is `Ok(None)`, not an error, when absence is normal.
+- **Memory-mapped data sits behind typed cursors.** Validate the ID at the edge and return a typed view over `offsets[n]..offsets[n + 1]`; higher layers never index the raw mapping. A mapped file is untrusted input: check every offset and length before slicing, and remember that another process truncating the file makes the mapping fault.
+- **Write atomically:** write to a temporary file in the same directory, flush, then rename over the target.
+
+**A validated edit set, applied back to front.** A tool that modifies text computes every edit
+as a byte range against the original, rejects out-of-range and overlapping edits, and applies
+from the end backward so earlier offsets stay valid.
+
+```rust
+pub struct TextEdit {
+    pub start: usize,
+    pub end: usize,
+    pub replacement: String,
+}
+
+pub struct EditSet {
+    edits: Vec<TextEdit>,
+}
+
+impl EditSet {
+    pub fn new(mut edits: Vec<TextEdit>, source: &str) -> Result<Self, EditConflict> {
+        edits.sort_by_key(|e| (e.start, e.end));
+        for e in &edits {
+            let in_bounds = e.start <= e.end
+                && e.end <= source.len()
+                && source.is_char_boundary(e.start)
+                && source.is_char_boundary(e.end);
+            if !in_bounds {
+                return Err(EditConflict::OutOfBounds { start: e.start, end: e.end });
+            }
+        }
+        for pair in edits.windows(2) {
+            if pair[1].start < pair[0].end {
+                return Err(EditConflict::Overlap { at: pair[1].start });
+            }
+        }
+        Ok(Self { edits })
+    }
+
+    /// `source` must be the string the set was validated against.
+    pub fn apply(&self, source: &str) -> String {
+        let mut out = source.to_owned();
+        for e in self.edits.iter().rev() {
+            out.replace_range(e.start..e.end, &e.replacement);
+        }
+        out
+    }
+}
+```
+
+- The `is_char_boundary` check is what stops `replace_range` panicking on multi-byte text.
+- **Positions are converted once, in one tested function.** Editors count lines and UTF-16 code units, parsers count bytes, humans count from one. Tests include a multi-byte character and an emoji before the edited position.
+- Two inserts at the same offset need a stated order (a priority field, or input order with a stable sort).
+- Tests: one edit, several disjoint edits, same-position inserts, overlap rejected, out-of-bounds rejected, non-ASCII text.
+
+**Editor back ends.** Translate each change into the parser's native edit, apply it to the old
+tree and re-parse incrementally; recompute highlights and diagnostics on a debounce. Keep a
+bounded map from buffer version to tree, and cancel a stale parse when a newer edit arrives.
+Test insert, delete and multi-line edits, not only the first parse. *For small files or
+parse-once input, a full re-parse is simpler and none of this is needed.*
+
+**A stdio tool server is a loop over a registry.** Read one JSON-RPC request per line, dispatch
+by method, write exactly one JSON line per response.
+
+- **Stdout carries the protocol and nothing else.** Logs go to stderr. One stray `println!`, from your code or a dependency, corrupts the stream.
+- Invalid JSON gets a parse-error response and the loop continues. An unknown method gets a method-not-found response. A handler that panics must not take the server down: isolate it and answer with an internal error.
+- Flush after every response, and exit cleanly when stdin reaches end of file.
+- Integration tests send initialise, list, an unknown method, invalid JSON and one real call, and assert that every response is one line of valid JSON.
+
+**Invariants over a whole collection.**
+
+- **A collection invariant lives in a wrapper.** When no single element can enforce it (every batch has the declared schema, every part belongs to one tenant), a wrapper owns the collection and `try_new` rejects the first violation, naming the expected and the actual value. `TryFrom` impls reuse that constructor; `into_inner` gives the parts back. Do not hand out `&mut` to the inner collection, or the invariant is gone.
+- **A duplicate registration is a typed error.** Whatever owns scarce names (routes, URL schemes, sockets, commands) refuses a second registration with an error carrying the name, and leaves its state unchanged. Nothing is overwritten silently.
+- **Typed attributes for composed views.** When several views share one graph or document model, the view-specific meaning is a typed attribute (`enum EdgeKind { Ast, ControlFlow, DataFlow }`), not a free-form string that degrades silently when misspelled.
+- **Emulating a missing platform feature** with a narrower one is a small pure module of three functions (match, apply, revert) with a round-trip test and a test that names sharing a prefix do not match. Not where security depends on the original semantics, such as a page's origin.
+
