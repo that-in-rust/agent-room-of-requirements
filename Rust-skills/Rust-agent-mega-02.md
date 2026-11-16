@@ -4250,3 +4250,90 @@ let _ctx = panic_context::enter(format!("request: {method}"));
 - It is thread-local, so it does not follow an async task that moves between threads. There, use `tracing` spans.
 - It explains crashes. It is not error handling and must not replace a `Result`.
 
+### Errors on the wire
+
+**One metadata trait and one envelope, when a machine acts on the error.** Errors that cross
+an API, CLI or agent boundary need a stable code, a retry hint and a decision about what is
+safe to show. Every domain error implements one trait; one envelope carries the fields.
+
+```rust
+pub trait ErrorData {
+    fn code(&self) -> &'static str;
+    fn retryable(&self) -> bool;
+    /// Internal errors are not shown to external callers.
+    fn internal(&self) -> bool;
+    fn http_status(&self) -> u16 {
+        500
+    }
+    /// What the caller can do about it.
+    fn hint(&self) -> Option<String> {
+        None
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorEnvelope {
+    pub code: String,
+    pub message: String,
+    pub retryable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hint: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<serde_json::Value>,
+}
+```
+
+- **`code`, `retryable` and `internal` have no defaults,** so a new variant cannot be added without deciding them. Prefer a `match` with no wildcard arm, or a derive that generates one.
+- **Two projections of one error.** The external one replaces an internal error's message with a generic text and a correlation ID; the detailed one goes to logs. The web framework's response conversion uses only the external one. An internal message reaching a client (a SQL fragment, a file path, a host name) is an information leak.
+- **A table test covers every visible variant:** status, code, serialised shape and retry class. A snapshot of the envelope catches a renamed field.
+- **A public code is a compatibility promise.** Put a new error in the narrowest existing class (client error, transient, server error); clients decide to retry from the class, never from the message.
+- *Not for* a small private module, where `thiserror` and context are enough.
+
+**Translate a generated client's errors once, at the SDK boundary.** An extension trait on the
+generated `Result` maps into the house error type. A documented API error keeps its status,
+code and source; a transport error becomes a communication error that is retryable for
+connect and timeout failures. Do not flatten everything into one variant while a caller still
+needs the status or the retry decision.
+
+**Classify from the whole chain.** When errors are wrapped with context, the type that decides
+retryability is the innermost one.
+
+```rust
+fn is_transient(error: &anyhow::Error) -> bool {
+    error
+        .chain()
+        .find_map(|cause| cause.downcast_ref::<BackendError>())
+        .is_some_and(BackendError::is_transient)
+}
+```
+
+- Retry only what is explicitly temporary. A typed permanent error passes through unchanged; an unknown error is treated as permanent.
+- In a stack of backends or plugins, one wrapper adds the operation, service and path as structured fields, and retry policy reads a typed field, never a substring.
+
+### Recovery by error class
+
+| Class | Where it arises | Recovery | Represent as |
+|---|---|---|---|
+| Validation | parsing, input edge | reject with the reason | typed parse or validation error |
+| Business rule | domain workflow | reject with a precise outcome | named domain error or outcome enum |
+| Transient external | network, storage, subprocess | retry with bounds, degrade, reschedule | retryable variant or flag |
+| Permanent external | auth, contract or schema mismatch | fail fast, name the repair | typed permanent error |
+| Timeout | async orchestration | fail, retry or cancel, explicitly | timeout error carrying the limit |
+| Cancellation | task or workflow boundary | stop cooperatively, clean up | its own path, not a failure |
+| Overload | queue, pool, stream | reject, shed or wait with a bound | explicit "saturated" result |
+| Invariant breach | core logic | make impossible by construction, else fail fast | a narrow panic or an internal error |
+| Clean-up failure | close, shutdown | explicit `close`, best-effort `Drop` | close error or shutdown report |
+| FFI boundary | ABI, foreign ownership | convert, isolate or abort | the safe wrapper's error |
+
+- **A message answers three questions:** what failed, where, and what the reader should do next.
+- **If callers branch on it, give them structure; if they only pass it up, give them context.** Most errors are the second kind.
+- Cancellation and overload are not failures of the operation and should not be logged or counted as such.
+- A dependency's error type in your public signature makes its version part of your API. Wrap it or re-export it deliberately.
+
+**Smaller rules.**
+
+- **An undo log for in-memory mutations that need rollback.** Record each mutation's inverse as data (`enum UndoOp { CreateNode(NodeId), UpdateAttr { id, old } }`) and replay it backwards on failure. A new mutation kind adds its undo record in the same change; an exhaustive `match` enforces it. Use real transactions when the storage engine has them.
+- **`no_std` errors:** implement `core::fmt::Display` by hand and `core::error::Error` directly (stable since Rust 1.81), or put `std::error::Error` behind a `std` feature on older toolchains.
+- **Tests assert the variant or code, not message text,** so wording can improve. Retry tests assert behaviour (a permanent error is attempted once; the deadline stops the loop), not exact jittered delays.
+
