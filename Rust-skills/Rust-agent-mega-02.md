@@ -1955,3 +1955,98 @@ proptest! {
 - This is useful when the rule is simpler to state than the implementation is to write. When the "expected" line is a copy of the implementation, the test proves nothing; write example tests at the boundaries instead (empty, whitespace only, exactly `max_len`, one over).
 - Decide and state what a length means: bytes (`len()`), `char`s, or grapheme clusters. They differ for non-ASCII text, and the generator `".*"` will find the difference.
 
+**Skeletons freeze library shapes.** `#[tokio::test]`, `trybuild`, `proptest!` and
+`loom::model` are written against particular crate versions. Compile a copied skeleton against
+the project's own versions before building on it, and if it fails, suspect a changed crate API
+before your own code.
+
+### More kinds of evidence
+
+**Fuzzing, for anything that takes bytes from outside.**
+
+```rust
+#![no_main]
+use libfuzzer_sys::fuzz_target;
+
+fuzz_target!(|data: &[u8]| {
+    if let Ok(value) = my_crate::parse(data) {
+        // Not only "does not panic": what parsed must survive a round trip.
+        let again = my_crate::parse(&value.to_bytes()).expect("re-parse of own output");
+        assert_eq!(value, again);
+    }
+});
+```
+
+- A target that only ignores the result finds panics, overflows (in debug) and hangs. Add an assertion and it finds logic errors: a round trip, agreement with a reference implementation, an invariant on the output.
+- Seed the corpus with real inputs, and keep it. Every crash becomes a checked-in regression test with the minimised input.
+- For structured input derive `arbitrary::Arbitrary` instead of hand-decoding bytes.
+- Run it with a time limit on a schedule, not on every push. Set a per-input timeout and a memory limit so a hang or an allocation bomb is reported as a finding.
+- *Use for* parsers, decoders, decompressors, protocol state machines, and unsafe code reachable from input. *Skip for* code whose input is already a validated domain type.
+
+**Snapshots, where the whole text is the contract.**
+
+```rust
+use expect_test::expect;
+
+#[test]
+fn renders_a_two_node_graph() {
+    let got = render(&two_node_graph());
+    expect![[r#"
+        digraph {
+          a -> b
+        }
+    "#]]
+    .assert_eq(&got);
+}
+```
+
+- Good for parsers, formatters, diagnostics, plans and macro expansion. `expect-test` keeps the text inline and updates with `UPDATE_EXPECT=1`; `insta` keeps files and has a review command.
+- **A snapshot nobody reads is not a test.** Keep each one small enough to review in a diff, and read the diff on every update. An update accepted blindly records the bug as the expected output.
+- Remove what varies before comparing: timestamps, temporary paths, addresses, map order, durations.
+- Anti-pattern: one huge snapshot of a whole response where three fields matter. Assert the three fields.
+
+**Mutation testing asks whether the tests would notice a bug.** `cargo-mutants` changes the
+code (flips a comparison, replaces a return value) and reports each change no test caught.
+
+- A survivor is usually a missing boundary case. For a length check from 2 to 100, the tests need 1, 2, 100 and 101, not only "empty" and "valid".
+- Run it on a module that matters (validation, money, authorisation, parsing), not on the whole workspace on every push; it is slow.
+- Not every survivor is worth killing. Equivalent mutants and changes to log text are noise.
+
+**Test infrastructure serves the failure, not the pass.** A suite is as fast as its slowest
+diagnosis.
+
+- Each test gets its own temporary directory (`tempfile::tempdir()`), its own port (bind to port 0 and read it back) and its own data. Tests run in parallel and in any order; shared state between them is where flakiness comes from.
+- A failing assertion shows both values and enough context to act on: `assert_eq!(got, want, "for input {input:?}")`. Use a diffing assertion (`pretty_assertions`, `similar-asserts`) for multi-line values.
+- No test depends on the working directory, the wall clock, the locale, the network or an environment variable set elsewhere. Inject them. A test that needs an external service is `#[ignore]`d or feature-gated, with the command to run it written beside it.
+- **A flaky test is a bug with a cause.** Find it (a race, a real sleep, shared state, an unordered map) before reaching for a retry. Retry only an operation known to be flaky in the operating system, and say which.
+- Table-driven tests keep many cases cheap; make each case name itself in the failure message.
+
+### Documentation that is checked
+
+Every public item that can fail, panic or be misused says so. An undocumented panic or unsafe
+precondition is a defect.
+
+```rust
+/// Parses a port from text.
+///
+/// # Errors
+/// Returns [`PortError::NotANumber`] if `text` is not a decimal integer, and
+/// [`PortError::OutOfRange`] if it is zero or above 65535.
+///
+/// # Examples
+/// ```
+/// # use my_crate::parse_port;
+/// assert_eq!(parse_port("8080")?.get(), 8080);
+/// assert!(parse_port("0").is_err());
+/// # Ok::<(), my_crate::PortError>(())
+/// ```
+pub fn parse_port(text: &str) -> Result<Port, PortError> { /* ... */ }
+```
+
+- `# Errors` names the variants and their conditions; "returns an error if something goes wrong" documents nothing. `# Panics` lists every condition, or the function does not panic. `# Safety` on an `unsafe fn` lists what the caller must guarantee.
+- A doctest asserts something. An example that only calls the function checks that it compiles and nothing else.
+- Show the error case in the example when the error is part of what a caller must handle.
+- Keep doctests small; each is compiled as its own crate, so hundreds of them slow the suite. Long scenarios belong in `tests/`.
+- Use `no_run` for examples that need a network or a device (still compiled), and avoid `ignore`, which checks nothing.
+- In compile-fail tests, do not depend on exact compiler wording more than the tool forces you to; the message changes between releases.
+
