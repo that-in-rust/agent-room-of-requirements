@@ -3049,3 +3049,98 @@ pub fn read_config(path: impl AsRef<Path>) -> Result<Config, ConfigError> {
 }
 ```
 
+- **Visibility is the narrowest that works.** Start private; widen to `pub(crate)`, then `pub` when something outside needs it. Every `pub` item in a library is a promise.
+- **Do not clone to quiet the borrow checker.** The error is usually pointing at an ownership question: who should own this, and for how long. Answer that. `Rc` or `Arc` is for when several owners really exist.
+- **Monomorphisation has a cost.** If generics inflate compile time or binary size, use `dyn Trait` at boundaries and on cold paths, and measure the effect (`cargo llvm-lines`, `cargo bloat`).
+- **Name the collection type where it reads best:** `let v: Vec<_> = iter.collect();` or `iter.collect::<Vec<_>>()`. Collect into `Result<Vec<_>, _>` to stop at the first error.
+- **Pick the pattern form by the number of cases.** `match` when every case matters; `if let` for one case where the rest is nothing; `let ... else` to unwrap or leave early and keep the happy path unindented; `while let` to drain; `matches!` for a boolean test.
+
+```rust
+let Some(user) = users.get(&id) else {
+    return Err(Error::UnknownUser(id));
+};
+```
+
+- **`#[non_exhaustive]` keeps room to grow.** On a public enum, other crates must write a wildcard arm, so adding a variant is not a breaking change; on a struct, they cannot construct it literally, so adding a field is not either. *Use on* public error enums and option structs expected to grow. *Do not use on* an enum callers are meant to match exhaustively (a closed set of states), because it takes the compiler's check away from them. It has no effect inside the defining crate.
+- **Avoid a wildcard arm on your own enums.** `_ =>` silences the compiler exactly when a new variant arrives. List the variants, or group them explicitly.
+
+### Traits: the details that bite
+
+- **Object safety (dyn compatibility) is a design decision made early.** A trait is usable as `dyn Trait` only if its methods take `&self`, `&mut self`, `Box<Self>`, `Rc<Self>`, `Arc<Self>` or `Pin<..>`, have no generic type parameters, and do not return `Self`. Keep a method off the trait object, and the trait usable, with `where Self: Sized`:
+
+```rust
+pub trait Shape {
+    fn area(&self) -> f64;
+
+    fn scaled(self, factor: f64) -> Self
+    where
+        Self: Sized;
+}
+```
+
+  Add a test that names `dyn Shape` (`fn _assert(_: &dyn Shape) {}`), so a later method cannot silently break it.
+- **Async methods in traits.** `async fn` in a trait works with generics and static dispatch, but the trait is then not usable as `dyn`, and the returned future's `Send`-ness cannot be named by callers. For a `dyn` trait, return `Pin<Box<dyn Future<Output = T> + Send + '_>>` by hand or through `async-trait`; the cost is one allocation per call, which is negligible beside I/O. In a public trait whose futures must be `Send`, write `fn f(&self) -> impl Future<Output = T> + Send`.
+- **Seal a trait you are not ready to let others implement.** Then adding a method is not a breaking change.
+
+```rust
+mod private {
+    pub trait Sealed {}
+}
+pub trait Format: private::Sealed {
+    fn name(&self) -> &'static str;
+}
+```
+
+  Document that it is sealed. *Do not seal* a trait that exists to be an extension point.
+- **Coherence.** Either the trait or the type must be local. Extend a foreign type with an extension trait; implement a foreign trait for a foreign type through a newtype. A blanket `impl<T: Other> Mine for T` prevents you and everyone else from writing any other overlapping impl later: add one only when it is the whole story.
+- **Higher-ranked bounds for callbacks that borrow.** `F: for<'a> Fn(&'a Row) -> &'a str` says the callback works for any lifetime. Elision usually writes this for you in `Fn(&Row) -> &str`. Do not demand `'static` from a callback that is only called before the function returns.
+- **Generic associated types for lending.** When an associated type must borrow from `self` (a lending iterator, a cursor over a buffer), a GAT (`type Item<'a> where Self: 'a;`) expresses it without allocation. It also makes the trait harder to use and not `dyn`-compatible. Reach for it when returning owned items is measurably too slow, not before.
+- **Trait-object lifetimes default to `'static` in a `Box`.** `Box<dyn Trait>` means `Box<dyn Trait + 'static>`. To box something that borrows, write `Box<dyn Trait + 'a>`. The error "borrowed value does not live long enough" on a boxed closure is often this.
+- **Lifetime elision** covers one input reference, or `&self`. With two input references and a returned reference, write the lifetimes; that is the place to decide which input the output borrows from.
+- **Upcasting** from `&dyn Sub` to `&dyn Super` works directly on recent toolchains (1.86 and later). Older code needs an `as_super(&self) -> &dyn Super` method; check the project's minimum supported version before removing one.
+- **No specialisation in library code.** It is unstable and its soundness questions are open. Design the trait explicitly, or dispatch on an enum.
+- **`where` clauses** take bounds that do not fit on the signature line.
+- **A crate `prelude` is for traits users must import to call methods,** plus a few ubiquitous types. Keep it small; a glob import that brings in fifty names causes collisions.
+- **`NonZero`, zero-sized and uninhabited types** when they are the honest model: `Option<NonZeroU32>` for an ID where zero means absent (and it is the size of a `u32`); a zero-sized marker for compile-time state; `Infallible` for an error that cannot occur. Use them because the model is clearer, not because the layout is clever.
+- **Edition 2024** changes how `ref` and `mut` interact with default binding modes in patterns, among other things. Migrate with `cargo fix --edition` and read the diff; do not hand-edit patterns in bulk.
+
+### Pin and hand-written futures
+
+Most code never needs this. `async fn`, `tokio::pin!` and `Box::pin` cover nearly everything.
+
+- **Project pinned fields with `pin-project-lite`,** never by hand and never with `Pin::new_unchecked` without a written proof.
+
+```rust
+pin_project_lite::pin_project! {
+    pub struct Timed<F> {
+        #[pin]
+        inner: F,
+        started: Instant,
+    }
+}
+
+impl<F: Future> Future for Timed<F> {
+    type Output = (F::Output, Duration);
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.project();
+        let output = std::task::ready!(this.inner.poll(cx));
+        Poll::Ready((output, this.started.elapsed()))
+    }
+}
+```
+
+- **The `Pending` contract:** return `Poll::Pending` only after something has been arranged to wake the task (usually by polling an inner future that registered the waker). Returning `Pending` without that hangs forever; calling `wake` immediately and returning `Pending` is a busy loop.
+- Do not poll a future again after it returned `Ready` unless it is documented as fused.
+- *Prefer* an `async` block or a combinator. Write a manual `Future` only for a leaf primitive or when the state machine must be named and stored.
+
+### Features, macros and targets
+
+- **Features are additive.** Enabling a feature never removes or changes existing API, and no two features are mutually exclusive, because Cargo unifies features across the whole dependency graph and some crate will enable both. For a real either-or (two TLS back ends), pick a documented precedence or fail with `compile_error!` that names both.
+- Name features for what they add (`serde`, `tokio`), without `use-`, `with-` or `no-` prefixes. `default` features are a compatibility surface: removing one is a breaking change.
+- **Macro hygiene.** A macro bug repeats at every expansion. In `macro_rules!`, use `$crate::` paths. In a procedural macro, emit absolute paths (`::core::option::Option`), never rely on the caller's imports, and report user errors with `syn::Error` at the offending span, not with a panic.
+- **Prefer a function, then a generic, then `macro_rules!`, then a procedural macro.** Each step costs compile time, tooling support and readability of errors.
+- **Native and WebAssembly bounds behind local aliases.** A library for both targets defines a few traits once per target (`MaybeSend`: `Send` on native, nothing on wasm) and uses those, never a bare `Send`. Build both targets in CI before any bound changes.
+- **One wrapper around the HTTP request builder,** so hooks, authentication, timeouts and target-specific execution apply to every request. Call sites never reach the underlying client.
+- **External tools share one lifecycle trait** (minimum version, install, update, instructions) and one logging command runner. Check the version again after an automatic update, and remember that command transcripts can contain environment values.
+
