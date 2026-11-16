@@ -8443,3 +8443,94 @@ fn notify_window(app: &AppHandle, label: &str, notice: &Notice) {
 - Leave `dangerousDisableAssetCspModification` off. Any option whose name starts with `dangerous` needs a written reason.
 - A policy too strict for the dev server is fixed with a dev-only override, not by loosening the shipped one.
 
+### A supervised sidecar
+
+Treat a sidecar as a subsystem with an owner, not as a shell command.
+
+```rust
+pub struct SidecarSupervisor {
+    running: tokio::sync::Mutex<Option<Running>>,   // held across the whole start: single flight
+    logs: Arc<Mutex<VecDeque<String>>>,
+    http: reqwest::Client,                          // built once: short timeout, no proxy
+}
+
+struct Running {
+    child: CommandChild,
+    endpoint: Endpoint,                             // loopback URL plus a per-launch token
+}
+
+impl SidecarSupervisor {
+    pub async fn ensure_ready(&self, app: &AppHandle) -> Result<Endpoint, AppError> {
+        let mut running = self.running.lock().await;
+        if let Some(current) = running.as_ref() {
+            if self.is_healthy(&current.endpoint).await {
+                return Ok(current.endpoint.clone());
+            }
+        }
+        if let Some(stale) = running.take() {
+            let _ = stale.child.kill();
+        }
+
+        let endpoint = Endpoint::allocate()?;       // free loopback port, fresh random token
+        let (mut events, child) = app
+            .shell()
+            .sidecar("indexer")?
+            .args(["serve", "--port", &endpoint.port().to_string()])
+            .env("INDEXER_TOKEN", endpoint.token())
+            .spawn()?;
+
+        let logs = Arc::clone(&self.logs);
+        let (exited_tx, mut exited) = tokio::sync::oneshot::channel();
+        tauri::async_runtime::spawn(async move {
+            while let Some(event) = events.recv().await {
+                match event {
+                    CommandEvent::Stdout(line) | CommandEvent::Stderr(line) => {
+                        push_capped(&logs, String::from_utf8_lossy(&line).into_owned());
+                    }
+                    CommandEvent::Terminated(status) => {
+                        let _ = exited_tx.send(status.code);
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        });
+
+        let deadline = tokio::time::Instant::now() + STARTUP_TIMEOUT;
+        loop {
+            if self.is_healthy(&endpoint).await {
+                *running = Some(Running { child, endpoint: endpoint.clone() });
+                return Ok(endpoint);
+            }
+            if let Ok(code) = exited.try_recv() {
+                return Err(AppError::SidecarExited { code });
+            }
+            if tokio::time::Instant::now() >= deadline {
+                let _ = child.kill();
+                return Err(AppError::SidecarStartTimeout);
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+}
+```
+
+What the example is doing, and why:
+
+- **One owner holds the child handle,** in managed state. Nothing else spawns the binary.
+- **Starting is single-flight.** Two windows calling `ensure_ready` together must not spawn two children; the async mutex is held across the start on purpose, which is the legitimate case for one.
+- **The old child is killed before a replacement starts,** and a child that never became healthy is killed too, not abandoned.
+- **Start-up has a deadline, and an early exit ends the wait at once.** Waiting thirty seconds for a process that died in the first is a poor failure.
+- **Logs go into a ring buffer with a cap.** Collecting them and discarding them, or keeping all of them, are both wrong.
+- **The health client disables proxies and has a short timeout.** A system proxy must not intercept a loopback request.
+- **The capability names the executable and its allowed arguments.**
+
+What to decide beyond it:
+
+- **A fixed port is a liability.** It collides with another program, and a health check on it will accept whatever is listening. Allocate a port per launch.
+- **A loopback HTTP server is reachable by every local process and, without care, by web pages in a browser.** Require a per-launch token on every request, bind to `127.0.0.1` only, and reject unexpected `Origin` and `Host` headers.
+- **State the restart rule:** restart on unexpected exit, with backoff, at most N times in a window, then surface a persistent error. An unbounded restart loop hides a crash.
+- **Kill the child when the application exits,** in the exit handler. An orphaned sidecar holds its port and files, and blocks the next launch or an update.
+- Where the child must die even if the parent is killed, use an operating-system mechanism: a job object on Windows, a parent-death signal on Linux, or have the child watch its stdin close.
+- If stdio is enough, prefer it to HTTP: there is no port, and nothing else can connect.
+
