@@ -8364,3 +8364,82 @@ tauri::Builder::default()
 - A plugin registered in Rust with no permission in any capability fails at run time with a permission error; a permission for an unregistered plugin fails the build. Change both together.
 - Keep the Rust crate and the JavaScript package of a plugin on matching versions.
 
+### Progress, bytes, events and CSP in practice
+
+**A download reports progress on a channel as chunks arrive, and returns bytes as a binary
+response:**
+
+```rust
+#[derive(Clone, Serialize)]
+struct DownloadProgress {
+    received: u64,
+    total: Option<u64>,
+}
+
+#[tauri::command]
+async fn download_asset(
+    asset: AssetId,                               // an identifier, not a URL
+    on_progress: Channel<DownloadProgress>,
+    state: State<'_, AppState>,
+) -> Result<Response, AppError> {
+    let mut response = state.http.get(state.catalog.url_for(&asset)?).send().await?.error_for_status()?;
+    let total = response.content_length();
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await? {
+        if bytes.len() + chunk.len() > MAX_ASSET_BYTES {
+            return Err(AppError::TooLarge);
+        }
+        bytes.extend_from_slice(&chunk);
+        let _ = on_progress.send(DownloadProgress { received: bytes.len() as u64, total });
+    }
+    Ok(Response::new(bytes))
+}
+```
+
+- **Report progress while the work happens.** Downloading the whole body and then sending one progress message at 100% is not progress.
+- **The front end names what to fetch; Rust decides the URL.** A command that fetches any URL the webview supplies is a request-forgery proxy with the user's network position. If arbitrary URLs are the feature, apply the outbound-request rules of section 14.
+- **Bound the size,** and for anything large write to a file and return its path, not the bytes.
+- **Map errors to the right variant.** Reusing an unrelated variant (a network failure reported as a sidecar failure) defeats the typed error.
+- Do not imitate streaming with hundreds of small `invoke` calls.
+
+**An event aimed at one window:**
+
+```rust
+fn notify_window(app: &AppHandle, label: &str, notice: &Notice) {
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.emit_to(label, "notice", notice);
+    }
+}
+```
+
+- **Use events for state changes that any listener may care about:** a background job finished, settings changed, a window-targeted notice. Keep payloads small.
+- **A global `emit` reaches every window,** including ones with fewer privileges. Target the window when the payload is not for all of them.
+- Do not put secrets in event payloads.
+- An event emitted before the front end has registered its listener is lost. For state the window needs on load, expose a command it can call, and use the event only for later changes.
+
+**Content security policy:**
+
+```json
+{
+  "app": {
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data:",
+        "connect-src": "'self' https://api.example.com",
+        "frame-src": "'none'"
+      }
+    }
+  }
+}
+```
+
+- **`script-src` stays `'self'`.** A remote or inline script in a window with IPC access can call every command that window is permitted.
+- **`connect-src` lists the hosts the application talks to.** A wildcard there lets injected content send data anywhere.
+- `'unsafe-inline'` for styles is a common concession to UI libraries and a much smaller risk than for scripts; remove it if the libraries allow.
+- `img-src https:` allows any remote image, which leaks requests to third parties. Add it only when the application displays arbitrary remote images.
+- Leave `dangerousDisableAssetCspModification` off. Any option whose name starts with `dangerous` needs a written reason.
+- A policy too strict for the dev server is fixed with a dev-only override, not by loosening the shipped one.
+
