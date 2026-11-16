@@ -7193,3 +7193,170 @@ once.
 - **Recursive SQL suits graph traversal** when the graph is relational and the result joins back to relational data. Review the base case, the recursive case, the termination or depth cap, and the path reconstruction separately. A reusable path service with complex policy belongs in application code that can be unit-tested.
 - **Graph and path results are parsed by the grammar,** then hydrated through an identity cache keyed by entity id, so a vertex repeated in a path is one object. Never split such values by hand.
 
+### Process, state and storage edges
+
+**Shutdown is a process concern.** One future, passed to the framework's graceful-shutdown
+hook, waits for SIGTERM or SIGINT on Unix and Ctrl-C on Windows, and logs which arrived.
+Signal handling stays out of application state and handlers.
+
+```rust
+async fn shutdown_signal() {
+    let ctrl_c = async { tokio::signal::ctrl_c().await.ok(); };
+    #[cfg(unix)]
+    let terminate = async {
+        let mut signal = signal(SignalKind::terminate()).expect("install SIGTERM handler");
+        signal.recv().await;
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! { _ = ctrl_c => {}, _ = terminate => {} }
+}
+
+axum::serve(listener, app).with_graceful_shutdown(shutdown_signal()).await?;
+```
+
+- Graceful shutdown has a deadline shorter than the orchestrator's kill timeout. After the server stops accepting, drain tracked background tasks, then flush telemetry.
+- A container's default stop signal is SIGTERM. A service that handles only Ctrl-C is killed mid-request on every deploy.
+
+**A library that ships routes is generic over a state capability.** It does not fix the
+host's state type. It defines a small trait for what its handlers need.
+
+```rust
+pub trait HasCommandServer {
+    fn command_server(&self) -> &Arc<CommandServer>;
+}
+
+pub fn create_router<S>() -> Router<S>
+where
+    S: HasCommandServer + Clone + Send + Sync + 'static,
+{
+    Router::new()
+        .route("/commands", post(create_command::<S>))
+        .route("/commands/{command_id}", get(get_command_status::<S>))
+}
+```
+
+- The host implements the trait on its own state, and a test uses the service itself as the state. No global singleton.
+- In Axum, `FromRef` gives the same result for extracting a sub-state. Inside one application, use that and skip the trait.
+
+**Bind to port 0 and read the port back.** A worker, agent or test server binds
+`127.0.0.1:0`, takes the assigned port from `local_addr`, registers it, and only then
+starts accepting. Fixed ports collide across instances and parallel tests.
+
+**Reading a request body consumes it.** A router that picks an upstream from a body field
+parses the body once into a typed enum of the payloads it supports, derives the key, and
+rebuilds the upstream request from that value. Forwarding the original request after
+inspecting it sends an empty body. Unsupported payloads are rejected, not passed through.
+
+**Uploads stream into storage.** Write each chunk to the storage writer, count bytes
+against a limit as they arrive, and flush explicitly.
+
+- Body-read errors and storage-write errors are separate variants: one is the client's fault.
+- A failed or oversized upload removes its partial object.
+- When the whole body must be validated before any write, use a size-limited extractor with a documented limit.
+- Test with a body larger than one chunk, and assert the stored length and digest.
+
+**Archives are inspected behind a size gate,** counting uncompressed size and entry count,
+not the size on the wire. Before supporting extraction, add fixtures for an entry that
+escapes the target directory (`../`, an absolute path, a symlink).
+
+**Database layer.**
+
+- **Identifiers formatted into SQL go through one validating helper;** values are always bound parameters. There is no third case.
+- **One module per aggregate,** with methods named after the domain operation (`join_channel`, not `insert_row`), taking id newtypes.
+- **The database layer never sends notifications.** An operation that others must hear about returns a result naming them; the caller notifies after the commit. A notification sent inside the transaction announces something that may roll back.
+- **An instant is stored in a time-zone-aware column** and mapped to `DateTime<Utc>`. When migrating a zone-less column, the migration states which zone the old values were in.
+- A batch write runs in one transaction; an empty batch returns early.
+- Database tests use unique table or schema names, so they can run in parallel.
+- **A single-process tool may keep one SQLite connection behind a mutex.** A server uses a pool. With async code, the mutex guard must not be held across an await: run the query in `spawn_blocking`, or use an async driver.
+
+**Clients of external APIs.**
+
+- **The base URL is a parameter,** so tests point the client at a mock server.
+- Every client sets a timeout and a user agent, and clamps paging to the provider's limits.
+- Each status maps to a domain error: authentication, rate limit (after its retries), and invalid request with the provider's message parsed out.
+- Tests inject the delay or use a paused clock. No real sleeps.
+
+**Optional exporters sit behind a cargo feature;** core metrics are always compiled, and
+tests run with and without the feature. An in-memory metric store has a retention bound.
+
+### Security of a service
+
+This is a floor, not a threat model. Authorisation design, CSRF, SSRF, key management,
+dependency risk and data retention each need their own review.
+
+**Limits on every public listener.**
+
+| Control | Guards against | Typical tool |
+|---|---|---|
+| Request timeout | Slow clients holding connections | `tower_http::timeout::TimeoutLayer` |
+| Body size limit | Memory exhaustion | `DefaultBodyLimit`, per-route where uploads differ |
+| Rate limit | Brute force, abuse | `tower_governor`, or the gateway |
+| Concurrency limit, bounded queues | Overload collapse | `ConcurrencyLimitLayer`, bounded channels |
+| TLS | Interception | `rustls`, or termination at a trusted proxy |
+
+- **Middleware order is behaviour.** A body limit placed after a layer that buffers the body protects nothing. Check order against the framework version in `Cargo.lock`.
+- A rate limit keyed on client address is only as good as the address: behind a proxy, take it from the header your proxy sets, not from one the client can send.
+
+**Secrets and credentials.**
+
+- Credentials and tokens are typed, redacting values (`secrecy`), exposed at the one place they are used. Sensitive buffers are wiped (`zeroize`).
+- **Passwords are hashed with a memory-hard function** (Argon2id) using parameters from current guidance, and verified on the blocking pool: a hash takes tens of milliseconds of CPU.
+- **Secret comparison is constant-time** (`subtle`, or the verify function of the MAC or hash crate). `==` on tokens leaks through timing.
+- **Reset tokens are not sessions:** random, single use, short-lived, scoped to one action, stored hashed.
+- **Sessions have a revocation path.** A stateless token that cannot be revoked needs a short lifetime.
+- A type wrapper is not access control. A typed `UserId` says the id is well-formed, not that the caller may use it.
+
+**One public shape for authentication failures.** Login and reset return the same body,
+status, redirect and timing whether or not the account exists. Diagnostics go to logs.
+
+- "Same timing" means doing the same work: verify against a dummy hash when the user is unknown.
+- **A product-required disclosure is an isolated exception.** If an invitation flow must reveal account state, confine it to that flow, rate-limit it and test its abuse boundary.
+- A test that asserts a distinguishable response for unknown accounts encodes a defect.
+
+**Idempotency and replay.**
+
+- **An idempotency key is bound to the caller and the request content.** A replay never returns a response the caller is no longer authorised to see. Keys expire, and their records do not hold sensitive payloads longer than policy allows.
+- **Workers acknowledge a job only after durable completion,** and tolerate duplicate delivery. Exactly-once delivery cannot be assumed, least of all across services.
+- **A timeout after the remote may have acted is ambiguous, not failed.** Do not retry a charge-like effect blindly: query the provider with the idempotency key or reconcile first. A cancellation is not a failure to replay.
+- **Webhook handlers verify the signature over the raw body** before parsing, store each provider event id and ignore repeats, apply status changes through explicit transitions (events arrive out of order), and are backed by periodic reconciliation with the provider.
+- **Every externally visible result corresponds to a durable, authorised state.** Model each sensitive flow as an explicit state machine. An unmodelled intermediate state is the most dangerous defect: it can leak information and duplicate an effect at once.
+
+**Observability without leaks.**
+
+- Link events by an opaque flow id, never an email, token or key.
+- No metric label or log field that reveals whether a user exists. No payload data inside idempotency keys.
+- Log failures and cancellations as well as successes. Operator records have access control and bounded retention.
+
+**Tests these flows need.**
+
+- Compare public responses and timing for known and unknown accounts.
+- Race identical writes; send concurrent requests, not only sequential ones.
+- Reuse and replay reset tokens, including concurrently.
+- Crash before and after the commit. Inject each remote failure class, and a timeout after the remote succeeded.
+- Fixtures: an isolated database, a controlled clock and randomness, and a fake remote that can fail both before and after its effect.
+- **Benchmark with the controls on.** Removing hashing, durable writes or failure shaping makes an unsafe path look fast.
+
+**Design order for a sensitive flow:** assets and actors; what each party can observe;
+durable states and effects; typed boundaries and error classes; idempotency and transaction
+scope; inline or worker; abuse and crash tests; staged rollout with a rehearsed rollback.
+
+**Release blockers:**
+
+- raw credentials past the adapter, or secrets in logs;
+- public failures that depend on whether an identity exists;
+- reusable, long-lived or over-broad reset tokens;
+- idempotency keys not bound to actor and request;
+- a lock or transaction held across a remote effect;
+- a remote call with no timeout, or a retry of a permanent failure;
+- an acknowledgement before durable completion.
+
+**Judgement calls.**
+
+- **Deny by default.** A new route is protected until someone decides otherwise.
+- **A queue moves a failure; it does not remove it.** Add background work only with a durable owner and a way for an operator to see and recover stuck jobs.
+- **Retries can amplify an outage.** Bound them, add jitter, and stop when the dependency is clearly down.
+- **A deploy rollback does not roll back data.**
+- Prefer the design with the fewest ambiguous states over the one with the lowest latency or least code.
+- When state is unclear during an incident, slow or stop intake. More requests obscure which effects already happened. Keep the evidence: do not restart in a way that erases it.
+
