@@ -8002,3 +8002,52 @@ none of this.
 - Classify a failing gate before rerunning it. One rerun for a transient cause; repeated silent reruns hide a real failure.
 - Split the work by window or capability domain when window labels, capability files, sidecars or platform differences multiply, and add a dedicated security review.
 
+### Requirements and design for a Tauri change
+
+**When a request would widen permissions or weaken lifecycle safety, do not simply
+comply.** Say what it weakens and propose the least-privilege version.
+
+- Keep a repository's established permission model. Tighten it where it is broader than needed; never widen it to match an example from documentation.
+- Replacing hand-written plugin bridging with an official plugin is a change to argue for, not to assume.
+
+**Requirements name the window, the action and the bound.** Use explicit units for latency,
+payload size, retries and start-up time. Keep security, lifecycle and operability as
+separate requirements, not clauses of one.
+
+| Vague | Checkable |
+|---|---|
+| "Add a sync feature." | A typed command validates its input, reports progress on a channel, and returns a serialisable result or a typed error. |
+| "Make permissions safer." | Filesystem and plugin permissions for the `main` window are limited to the named paths and commands; a call outside them is denied. |
+| "Handle start-up better." | Required state is initialised in setup without blocking the main thread; the window is interactive within the stated bound. |
+| "Support tray and deep links." | Tray actions and deep links reach the primary instance, start no second set of background workers, and focus the existing window. |
+| "Improve reliability." | No panic in a command or lifecycle path; errors reach the front end typed; sidecar start-up and retries are bounded. |
+
+**Design questions, one per layer.**
+
+| Layer | Holds | Ask |
+|---|---|---|
+| Front-end contract | Typed invoke arguments, results, events, channels | What exact shape may the UI rely on? |
+| Command layer | `#[tauri::command]` functions, input validation, error mapping | What belongs here, and what belongs deeper? |
+| Rust core | Domain logic, adapters, sidecar supervision | What must test without a desktop runtime? |
+| Managed state | Shared state and its lock | What is shared, and is the lock ever held across an await? |
+| Capabilities | Capability files, window labels, filesystem and plugin scope | What is the least set for these windows and these actions? |
+| Lifecycle and packaging | Setup, tray, updater, single instance, deep links, bundled binaries | Who owns each background thing, and what is guaranteed per platform? |
+
+- **Fix the invoke contract before implementing either side.** Choose the narrowest request, response or stream the UI needs.
+- **Scope permissions by real window labels and concrete actions,** not by UI titles or by what a future feature might want.
+- **Sidecars, updater, tray and single-instance behaviour are design decisions.** Left to the end, they become packaging surprises.
+
+**What each kind of test can show.**
+
+| Test | Shows | Cannot show |
+|---|---|---|
+| Rust unit | Core logic is correct | Anything about IPC or permissions |
+| Rust integration | Commands, adapters and serialisation agree | Front-end expectations |
+| Front-end test with mocked IPC | The UI handles each result and error | That the real command returns that shape |
+| Shared contract check (generated bindings, or one fixture both sides parse) | The two sides agree on the payload | Behaviour |
+| Mocked runtime test (`tauri::test`) | A command runs with state and a mock app handle | Real windows, permissions as packaged |
+| Packaged-build run on each platform | Capabilities, sidecars, tray, deep links, updater | Nothing quickly: keep these few |
+| Performance | A stated latency or payload bound | Anything, if no bound was stated |
+
+- **Generated bindings remove payload drift at its source.** Tools such as `tauri-specta` or `ts-rs` derive the TypeScript types from the Rust ones. Without them, keep one fixture that both a Rust test and a front-end test parse.
+
