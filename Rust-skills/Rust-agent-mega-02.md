@@ -7114,3 +7114,82 @@ how tasks are registered, observed, drained and reported.
 - **One function builds the invariant part of an external command,** with the variable part passed in. A logged command line can expose credentials.
 - **Turning on autoscaling or rolling deploys makes the service multi-instance that day,** not at the first scale-out. Stepwise migrations become mandatory in the same change.
 
+### Routes, authentication and readiness
+
+**The verified type is the only way into a protected handler.** Split authentication into
+an extractor that parses and one that verifies.
+
+```rust
+pub struct ValidCredentials(pub UserId);
+
+impl FromRequestParts<Arc<App>> for ValidCredentials {
+    type Rejection = StatusCode;
+
+    async fn from_request_parts(parts: &mut Parts, state: &Arc<App>) -> Result<Self, StatusCode> {
+        // `Unverified` only parses the header: malformed is 400.
+        let unverified = Unverified::from_request_parts(parts, state).await?;
+        state
+            .auth
+            .check_credentials(&unverified)
+            .await
+            .map(ValidCredentials)
+            .ok_or(StatusCode::UNAUTHORIZED)
+    }
+}
+```
+
+- A protected handler takes `ValidCredentials` in its signature, so forgetting the check is a compile error, not a missing middleware line.
+- **Authentication is not authorisation.** The extractor proves who; the handler, in its first lines, checks whether this user may touch this resource. 401 for no valid identity, 403 for a valid one without permission, and 404 where even existence must not leak.
+- The rejection is a bare status: no detail about why verification failed.
+- Multi-step flows (redirects, sessions) need middleware; an extractor does not fit them.
+
+**Route layout.**
+
+- One builder registers every route; each endpoint lives in its own handler module; one error type maps to responses. Split the route file by group once it stops being scannable.
+- **Every path segment and query value built from data is percent-encoded.** Use the URL type's segment API, not `format!`.
+- **Degraded behaviour for each downstream call is decided per method** and written beside the client: fail fast, fallback value, retry, or enqueue. Never a no-op by default: a fallback that only logs loses the work for good unless something reconciles it.
+- **A handler offering buffered and streamed responses** runs one parse, validate and authorise path and branches on output mode last. An error after the first chunk cannot become a status code, so errors after headers are sent get their own tests.
+- **Version negotiation is an explicit parameter** from route to domain (requested in, actual out and echoed in a header), never ambient state. When an option can arrive by query string or body, document and test the precedence.
+
+**Readiness that depends on an expensive condition is a flag that flips once.** The probe's
+fast path is one atomic load; the expensive check runs in a background task that the probe
+wakes.
+
+```rust
+pub async fn check_ready(&self) -> bool {
+    if self.ready.load(Ordering::Acquire) {
+        return true;
+    }
+    self.wake_checker.notify_one();
+    tokio::time::timeout(PROBE_TIMEOUT, self.wait_ready()).await.is_ok()
+}
+
+fn set_ready(&self) {
+    self.ready.store(true, Ordering::Release);
+    self.ready_signal.notify_waiters();
+}
+```
+
+- The waiter registers its `Notified` future before re-checking the flag, or a `notify_waiters` between the check and the wait is lost.
+- Once ready it stays ready. Later regressions belong to a separate health check; decide for each new criterion which of the two it is.
+- Tell operators what "ready" means.
+
+**Wire payloads become small internal types at the boundary.** JSON-RPC, server-sent events
+and webhooks are framed and parsed by a real parser, then converted to a minimal internal
+type with explicit defaults.
+
+- **A malformed payload is an error, never an empty list.** "No results" and "could not parse" are different outcomes.
+
+**One wrapper retries a transactional callback.** It owns begin, commit and rollback, the
+backoff (initial delay, multiplier, jitter), an overall deadline, cancellation, and which
+errors are retryable (serialisation failure, deadlock). Non-retryable errors propagate at
+once.
+
+- **The callback may run more than once,** and its documentation says so. It contains database work only: no emails, no remote calls, no mutation of outside state.
+
+**Smaller rules.**
+
+- **A logical write spanning several tables** is turned by one function into an ordered list of statements, parent first. A separate executor applies the list in one transaction. Parameters are bound, never formatted into SQL.
+- **Recursive SQL suits graph traversal** when the graph is relational and the result joins back to relational data. Review the base case, the recursive case, the termination or depth cap, and the path reconstruction separately. A reusable path service with complex policy belongs in application code that can be unit-tested.
+- **Graph and path results are parsed by the grammar,** then hydrated through an identity cache keyed by entity id, so a vertex repeated in a path is one object. Never split such values by hand.
+
