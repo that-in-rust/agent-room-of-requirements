@@ -5257,3 +5257,126 @@ let bytes: [u8; 4] = unsafe { mem::transmute(buffer) };
 - **`static mut` is almost never right.** Use an atomic, a `Mutex`, `OnceLock`, or an `UnsafeCell` wrapper with a documented `Sync` argument.
 - **`transmute` is the last resort.** Prefer `to_ne_bytes`/`from_ne_bytes`, pointer `cast`, `bytemuck`, or a `union`. Never transmute between types whose layout is unspecified, and never to extend a lifetime.
 
+### The FFI boundary
+
+**Only C-shaped types cross.** `&str`, `&[T]`, `String`, `Vec`, `&dyn Trait`, tuples and
+default-layout structs have no stable ABI. Pass a pointer and a length; pass structs marked
+`repr(C)`.
+
+```rust
+#[repr(C)]
+pub struct ByteSlice {
+    pub ptr: *const u8,
+    pub len: usize,
+}
+
+/// # Safety
+///
+/// `input.ptr` must point to `input.len` readable bytes that are not modified during
+/// the call. `out` must be valid for one write.
+#[unsafe(no_mangle)] // `#[no_mangle]` before edition 2024
+pub unsafe extern "C" fn lib_checksum(input: ByteSlice, out: *mut u64) -> i32 {
+    let outcome = std::panic::catch_unwind(|| {
+        if input.ptr.is_null() || out.is_null() {
+            return Err(Status::NullPointer);
+        }
+        // SAFETY: non-null was checked; the caller guarantees the length and validity.
+        let bytes = unsafe { std::slice::from_raw_parts(input.ptr, input.len) };
+        let value = checksum(bytes).map_err(Status::from)?;
+        // SAFETY: `out` is non-null and valid for one write by the caller's contract.
+        unsafe { out.write(value) };
+        Ok(())
+    });
+    match outcome {
+        Ok(Ok(())) => 0,
+        Ok(Err(status)) => status as i32,
+        Err(_panic) => Status::Panic as i32,
+    }
+}
+```
+
+- **A panic never unwinds into foreign code.** Catch it at every exported function and every callback handed to C, and turn it into an error code. Since Rust 1.81 an uncaught panic leaving `extern "C"` aborts the process; before that it was undefined behaviour. `extern "C-unwind"` is only for a boundary where both sides have agreed to unwinding. With `panic = "abort"`, `catch_unwind` catches nothing, so know which profile ships.
+- **Check every incoming pointer for null,** and treat every length, index and enum value from the other side as untrusted input.
+- **Results go out through out-parameters and a status code.** Error detail comes from a "last error" function or an error out-parameter, never from a Rust type.
+- **Nullable things are `Option<NonNull<T>>`, `Option<&T>` or `Option<extern "C" fn(...)>`.** These have the same representation as a nullable C pointer, and the type forces the check. No magic sentinel integers.
+- **An integer from C is not yet a Rust enum.** An unknown discriminant is undefined behaviour the moment the enum value exists. Receive the integer and convert it with `TryFrom`. Give C-facing enums an explicit `#[repr(u8)]` or `#[repr(C)]` and explicit values.
+
+**Layout.**
+
+| Attribute | Use |
+|---|---|
+| `#[repr(C)]` | any struct, union or enum the other side reads or writes |
+| `#[repr(transparent)]` | a newtype that must be passed exactly like its one field (`struct Fd(i32)`) |
+| `#[repr(u8)]`, `#[repr(i32)]` | a field-less enum with a fixed integer size |
+| `#[repr(align(N))]` | raise alignment, for example to a cache line to stop false sharing |
+| `#[repr(packed)]` | match a packed C or wire layout; only when you must |
+
+- The default layout is unspecified and may change between compiler versions; that freedom is why it packs best. Never rely on field order or size without a `repr`.
+- **A reference to a packed field is undefined behaviour** because it may be unaligned. Copy the field out by value, or use `&raw const` and `read_unaligned`.
+- Check layout assumptions at compile time: `const _: () = assert!(size_of::<Header>() == 16);`.
+- For reading wire formats, parsing bytes into fields is usually simpler and safer than a packed struct overlay; `zerocopy` does the overlay safely when the speed matters.
+
+**Ownership across the boundary.**
+
+- **Memory is freed by the side that allocated it,** with that side's function. A string from the C library is copied and then released with the library's free; a Rust allocation handed to C comes back to Rust to be dropped.
+- **An opaque handle** is `Box::into_raw(Box::new(value))` going out and `Box::from_raw` exactly once coming back, in an exported `destroy` function that accepts null.
+- **Strings:** `CStr::from_ptr` borrows a NUL-terminated string from C; it is not necessarily UTF-8, so convert with `to_str()` and handle the error, or use `to_string_lossy()` knowingly. `CString::new` fails on an interior NUL. A `CString` given away with `into_raw` is reclaimed with `CString::from_raw`, never with C's `free`.
+- **Never take `.as_ptr()` from a temporary.** `CString::new(name)?.as_ptr()` dangles at the end of the statement. Bind the owner to a variable that outlives the call. The same holds for a `Cow` or any buffer normalised for the call.
+- **Callbacks** are an `extern "C" fn` plus a `*mut c_void` for user data. State who owns the user data, how long the callback may be called, and from which thread; that decides whether the data must be `Send`.
+
+**A child handle borrows its parent.** The wrapper owns the raw pointer, keeps alive anything
+the C side still points into, and carries the parent's lifetime in `PhantomData`.
+
+```rust
+pub struct RawIterator<'db> {
+    inner: NonNull<ffi::iterator_t>,
+    _options: ReadOptions,              // the C iterator points into this
+    _database: PhantomData<&'db Database>, // cannot outlive the database
+}
+
+impl Drop for RawIterator<'_> {
+    fn drop(&mut self) {
+        // SAFETY: `inner` came from `iterator_create` and is destroyed only here.
+        unsafe { ffi::iterator_destroy(self.inner.as_ptr()) }
+    }
+}
+```
+
+- A raw pointer field makes the type `!Send` and `!Sync`, which is the safe default. Add `unsafe impl Send` only after reading what the C library promises about threads.
+
+**One helper for a C error out-parameter.** Copy the message, free it with the library's own
+function, and convert to `Err`, in one place.
+
+```rust
+/// # Safety
+///
+/// `message` must be a NUL-terminated string allocated by the library.
+pub(crate) unsafe fn take_error(message: *mut c_char) -> Error {
+    // SAFETY: guaranteed by the caller.
+    let text = unsafe { CStr::from_ptr(message) }.to_string_lossy().into_owned();
+    // SAFETY: allocated by the library, so released by the library. Never Rust's allocator.
+    unsafe { ffi::lib_free(message.cast()) };
+    Error::new(text)
+}
+
+macro_rules! ffi_try {
+    ($function:path, $($argument:expr),* $(,)?) => {{
+        let mut error: *mut ::std::ffi::c_char = ::std::ptr::null_mut();
+        let result = $function($($argument,)* &mut error);
+        if !error.is_null() {
+            return Err(unsafe { $crate::take_error(error) });
+        }
+        result
+    }};
+}
+```
+
+**Crate layout.** Raw bindings live in a `foo-sys` crate with `links = "foo"` in its manifest
+and a build script that finds or builds the library; it contains declarations and nothing
+else. A separate `foo` crate depends on it and exposes the safe API. Generate bindings with
+`bindgen` (and headers for a Rust library with `cbindgen`) so that declarations cannot drift
+from the header; a hand-written signature that disagrees with the C one is undefined
+behaviour that no tool reports.
+
+- **Keep the public API's constraints in safe types and the unchecked path private.** The implementation takes a fast path (`get_unchecked`, a flat loop over contiguous storage) only after it has established the shape that makes it valid, and falls back to the checked path otherwise.
+
