@@ -4018,3 +4018,101 @@ cargo clippy -- -W clippy::unwrap_used -W clippy::expect_used \
 - These lints are noisy in tests; allow them there (`#![cfg_attr(test, allow(clippy::unwrap_used))]`) instead of weakening them everywhere.
 - **A panic must not cross an FFI boundary.** Catch it with `catch_unwind` at every exported `extern "C"` function and turn it into an error code.
 
+### Retries
+
+**Whether an error may be retried is a property of the error type,** decided where the error
+is created, never by matching message text.
+
+```rust
+pub trait Retryable {
+    /// Permanent unless a variant opts in.
+    fn is_retryable(&self) -> bool {
+        false
+    }
+}
+
+pub struct RetryPolicy {
+    pub max_attempts: NonZeroU32,
+    pub base_delay: Duration,
+    pub max_delay: Duration,
+    pub max_total: Duration,
+}
+
+pub async fn retry<T, E, Fut>(
+    policy: &RetryPolicy,
+    sleeper: &impl Sleeper,
+    mut op: impl FnMut() -> Fut,
+) -> Result<T, E>
+where
+    E: Retryable,
+    Fut: Future<Output = Result<T, E>>,
+{
+    let started = sleeper.now();
+    let mut attempt = 1;
+    loop {
+        match op().await {
+            Ok(value) => return Ok(value),
+            Err(error) if !error.is_retryable() => return Err(error),
+            Err(error) if attempt >= policy.max_attempts.get() => return Err(error),
+            Err(error) => {
+                let delay = policy.jittered_delay(attempt);
+                if sleeper.now() - started + delay > policy.max_total {
+                    return Err(error);
+                }
+                sleeper.sleep(delay).await;
+                attempt += 1;
+            }
+        }
+    }
+}
+```
+
+- **Retry only idempotent operations,** or ones made idempotent with a key the server deduplicates on. Retrying a non-idempotent write duplicates it.
+- **Bound attempts and total time, back off exponentially, add jitter.** Without jitter, clients that failed together retry together.
+- **Default to permanent.** A wrong "retryable" turns one outage into a retry storm; a wrong "permanent" only surfaces an error.
+- **Typical classification for HTTP:** retry timeouts, connection resets, 429, 502, 503 and 504; honour `Retry-After`. Do not retry 400, 401, 403, 404 or 422: the request is wrong and will stay wrong. Treat 500 as retryable only for idempotent calls.
+- **Inject the clock and the sleep** (the `Sleeper` above), so tests of the retry loop run instantly and can assert the delays.
+- **One layer retries.** Retries at three layers multiply: three by three by three is twenty-seven calls. Put the loop at the operation boundary; inner layers return classified errors.
+- **A closure passed to a retrying helper may run more than once.** Say so in the docs. It must not move out of captured state or leave partial effects behind.
+- **Retrying a stream restarts it.** Either the caller tolerates repeated partial output, or only committed chunks are passed on and the retry resumes from the last committed position.
+- Stop when the caller's deadline or cancellation fires; a retry loop that outlives its request is a leak.
+- When retries are exhausted, return the last error together with the attempt count, not a generic "retries exhausted".
+
+### Diagnostics at scale
+
+- **Explain the known cause, keep the original.** At startup and configuration boundaries, match the typed causes you recognise and print what it means plus one concrete action ("port 8080 is in use; pass `--port` or stop the other process"), with the original error attached. Do not guess at causes you have not matched: a confident wrong hint is worse than the raw error.
+- **Presentation is owned by helpers, facts by the error.** Quote and escape every interpolated identifier, path and value through shared helpers, so messages are consistent and hostile input cannot inject control characters or fake log lines.
+- **Rate-limit a log line on a hot failure path, and count it.** Keep the state per call site (a `static` atomic counter and timestamp), and pair it with a metric, since suppressed lines hide how often it happens. Never rate-limit security or audit events.
+- **One `ensure!`/`bail!` pair per crate** that builds the crate's typed error, if invariant checks are numerous. Use the project's existing macros; a new error macro hides control flow and must earn its place through repetition.
+- **A debug switch for backtraces, not a second code path.** Capture a `Backtrace` in the error when `RUST_BACKTRACE` (or a project variable read once) asks for it. Keep the default path cheap.
+- Install a report handler (`color_eyre::install()`, `miette`'s hook) once, at the top of `main`, in the binary only.
+- `snafu` is an alternative to `thiserror` when most call sites need to attach context to the same underlying error: its context selectors make "this I/O error, while reading this path" one short expression. Use one of the two per crate.
+
+**An error that crosses a process or language boundary is versioned data.** Its numeric code
+and stable name are a wire contract.
+
+```rust
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+pub enum WireCode {
+    Unknown = 1,
+    InvalidConfiguration = 2,
+    ResourceNotFound = 20,
+}
+
+impl WireCode {
+    pub fn from_u32(raw: u32) -> Self {
+        match raw {
+            2 => Self::InvalidConfiguration,
+            20 => Self::ResourceNotFound,
+            _ => Self::Unknown,
+        }
+    }
+}
+```
+
+- Every variant has an explicit number. Never renumber or reuse one; retire it and leave a comment.
+- **Decoding an unknown code yields `Unknown`, not a failure,** so an old client survives a new server.
+- Send the code, a stable machine name and a human message as separate fields. Clients branch on the code, never on the message, which is then free to improve.
+- Use the stable name in metrics and logs. *Not for* internal errors, which should stay free to change.
+
