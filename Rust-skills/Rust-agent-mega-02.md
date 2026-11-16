@@ -6838,3 +6838,171 @@ removed from a long-lived map, and anything whose clean-up is async and so canno
 - **Moving a cost instead of removing it.** A convenience in one function often transfers a panic, an allocation, a queue or a compatibility burden to callers and operators. Ask who pays now.
 - **The unnamed shortcut.** A design that deliberately avoids a tempting default (a clone per call, `Arc<Mutex<_>>` around everything, `Box<dyn Error>` in a public API) says so at the boundary. Otherwise the next change puts it back.
 
+## 14. Rust web back ends
+
+This section applies to HTTP services (Axum, Actix or similar) and their workers and queues.
+Libraries, CLIs, parsers and FFI follow sections 1 to 13. The costly misrouting is a web
+service reviewed as a generic library: sessions, migrations and idempotency go unexamined.
+
+### Start from the risk
+
+**Name the task's dominant risk before designing.** It is often not the ticket's topic.
+
+| Risk | Typical task | What must exist before code |
+|---|---|---|
+| Ambiguity | New endpoint, vague request | Testable requirements, including each invalid-input case |
+| Sequencing | Schema change, deploy-order change | A rollout plan with a rollback answer per step |
+| Security | Auth, sessions, credentials, reset flows | Storage, failure behaviour, what an attacker learns from each response |
+| Resilience | External calls, retries, workers | Failure classes, idempotency definition, the state left by a crash |
+| Operations | Configuration, tracing, health, CI | Boot behaviour, what is observable, what is reversible |
+
+- A migration's topic is schema; its risk is rollout order. A retry question is about idempotency, not about the HTTP client.
+- **Re-classify mid-task.** When delivery work uncovers an auth or durability question, stop and apply that risk's rules. Consulted after the code is written, they arrive too late.
+- **A task that will not classify is two tasks.** Split a migration-plus-worker ticket.
+- **One service slice per change:** an endpoint or a worker, with its requirements and tests. An endpoint, its schema change and a new worker loop are three changes. Trivial read endpoints that share every boundary may be batched.
+- **Version-specific crate questions are answered from `Cargo.lock` and the changelog,** not from memory. Web framework APIs change between versions.
+
+### Layers give every failure an owner
+
+| Layer | Owns |
+|---|---|
+| Transport (extractors, DTOs) | Parsing, shape and size limits, authentication of the request |
+| Handler | Orchestration, mapping domain errors to responses |
+| Domain types | Invariants; values that cannot be invalid |
+| Persistence | Queries, transactions |
+| Typed clients | Remote calls: timeouts, retries, failure classification |
+
+- Walk a request end to end and name the owner of each step. A step with no owner is a boundary the design still owes.
+- **Transport validation is not domain validation.** A DTO that deserialised is well-formed, not valid. Convert it to domain types at the edge, and pass only those inward.
+- **Pools and clients are built once,** held in application state and wired in one place. A client constructed per request pays connection set-up on every call and defeats pooling.
+- The layers are the rule. The crates are replaceable.
+
+**Reject on sight in a back-end review:**
+
+- business rules inside extractor or middleware glue;
+- SQL or client construction inside handlers;
+- unchecked strings travelling through the core;
+- a multi-write workflow with no named transaction owner;
+- a transaction held open across a remote call;
+- a mutation with no idempotency definition that clients will retry;
+- secrets in logs, errors or panic messages;
+- environment variables read outside the settings module.
+
+**When refactoring an existing service, fix in this order:** layer separation, edge
+validation, transaction ownership, typed clients, then the worker split. Do not tune
+connection pools while unchecked strings still travel through the core. Validation and
+transaction ownership come first because their failures corrupt data.
+
+### Inline or worker
+
+**Keep work inline in the request until one of these holds:** retries must outlive the
+request; the call fans out to unreliable systems; the client would wait longer than it
+reasonably keeps a connection open.
+
+- A slow remote call kept inline holds connections open and turns client retries into duplicate side effects. Keeping it inline needs a stated reason.
+- **A queue needs a durability reason.** A worker hiding a simple request flow adds a second failure domain for nothing.
+- When you split, define four things: what the endpoint commits, what the worker consumes, what "already processed" means, and what an operator can observe.
+- Re-ask as traffic grows. An inline call that was fine at ten requests a day duplicates side effects at ten thousand, though the code never changed.
+
+### Transactions, remote calls and retries
+
+**Saving intent and calling a remote system in one block is correct until one half fails.**
+The remote call succeeds and the commit does not, or the reverse.
+
+- **Never hold a database transaction open across a remote call.** Remote slowness becomes pool exhaustion.
+- **Use an outbox:** in one transaction, commit the state change and a row describing the side effect. A worker performs the side effect with an idempotency key and marks the row done. A crash at any point leaves a state the worker can resume.
+
+```rust
+let mut tx = pool.begin().await?;
+orders::mark_paid(&mut tx, order_id).await?;
+outbox::enqueue(&mut tx, OutboxMessage::SendReceipt { order_id }).await?;
+tx.commit().await?;
+// The worker delivers SendReceipt at least once; the receiver deduplicates on order_id.
+```
+
+- For every multi-step workflow, write down the state left by a crash after each step, and what resumes or compensates it.
+
+**Classify remote failures before choosing a retry policy.**
+
+| Failure | Default policy |
+|---|---|
+| Client error (4xx other than 408, 429) | Fail fast. A retry burns quota and cannot succeed |
+| 429, 503 with `Retry-After` | Retry after the stated delay, within a budget |
+| Server error, transport failure | Retry with backoff and jitter, if idempotent |
+| Timeout | Outcome unknown: retry only with an idempotency key |
+| Malformed response | Fail and surface to an operator; do not retry blindly |
+
+- **A retry is safe only under an idempotency definition:** the key, what counts as the same request, what is replayed to a duplicate, and what happens when two arrive at once. A reused key with a different body is an error, not a replay.
+- No blanket retry count. Retries that must outlive the request go behind a worker, and unbounded worker retries need a dead-letter state and an alert.
+- Test each failure class with simulated faults, and assert that no side effect ran twice.
+
+### Configuration and secrets
+
+- **Parse configuration once at start-up into typed settings and fail fast.** A missing or invalid value stops the process at boot with a specific error. No `std::env::var` scattered through handlers, and no flag read lazily at first use.
+- Settings hold types, not raw strings: `Url`, `Duration`, `SocketAddr`, validated newtypes.
+- **Unknown keys fail the boot,** so a typo is caught at deploy. Strict-in-production and tolerant-in-development are configuration layers, not code branches.
+- Configuration is supplied to the image, never baked into it.
+- **Each secret field is wrapped in a redacting type** (`secrecy::SecretString` or equivalent). A derived `Debug` on the settings struct otherwise prints every secret the first time anything logs it, and a hand-written `Debug` breaks when the next field is added.
+- Test it: boot with deliberately broken configuration and expect a loud, specific failure.
+
+### Schema changes are rollouts
+
+**A schema change that alters what running code assumes ships as ordered steps,** each its
+own release:
+
+1. **Expand:** add the new shape compatibly, with no strict constraint.
+2. **Deploy code that reads and writes both shapes.** This is application work, and it is routinely underestimated because the schema diff already looks finished.
+3. **Backfill.**
+4. **Tighten:** add the constraint; later, remove the old shape.
+
+- **Never merge expand and tighten because the data looks clean.** During a rolling deploy, old code is still writing the old shape. A required column added in one migration is a defect.
+- **Answer five questions in writing with the code:** what lands first; which code works against both shapes; when the backfill runs; when constraints tighten; what rollback still works after each step.
+- **Reversibility expires step by step.** After a backfill, some changes need a forward fix. Re-answer the rollback question after every step.
+- The trigger is the kind of change, not its size, and not whether a migration file was touched: a code-only change that alters rollout behaviour needs the same plan.
+- Rehearse on production-shaped data. An empty database hides lock times, foreign keys and bad rows.
+- **A failed migration step is never simply rerun.** Stop, assess, and start from that step's rollback answer. A failed boot or health check changed nothing durable and may be retried automatically, under a crash-loop limit.
+- Do not batch two unrelated migrations into one sequence: their rollback answers become entangled.
+- Any change touching the schema runs tests against a real database with migrations applied. Green unit tests over a stale schema prove nothing.
+
+### Operability
+
+Three properties, each proven before it is relied on: **state is explicit at boot,
+behaviour is explainable per request, and change is reversible per step.**
+
+- **One correlation identifier per request,** propagated through every layer, into outbound calls and into worker hand-offs. A batch job correlates by job id. Test: follow one real request by identifier alone.
+- **Structured traces, not formatted strings.** Record high-value fields once on the span and let them propagate. Do not trace every function entry.
+- **Readiness is separate from liveness,** and reflects the dependencies the service cannot work without. Document which. Removing a slow dependency check from readiness is how a green endpoint ends up in front of a failing service.
+- **Count errors, timeouts, retries and saturation** (pool waits, queue depth). Sampling high-volume reads is fine; mutations stay unsampled.
+- **Before rollout, plan for a surge:** rate limits, bounded queues, request timeouts, load shedding, and the rollback procedure.
+- Adopt in order: typed fail-fast configuration and redaction, then correlated tracing, then honest health checks, then CI gates and migration sequencing. Runbooks are premature for a service that prints passwords or crash-loops on a malformed variable.
+
+**Decay happens through additions.** A new setting bypasses the settings module; a new code
+path skips the correlation field; a health check stops matching the real dependency list;
+each successful migration justifies less care on the next. Probe for each periodically.
+
+### Performance of a service
+
+**Audit four mechanisms before reading latency numbers:** pool and client reuse,
+transaction scope, inline-or-worker placement, and fan-out.
+
+- **Fix the mechanism, not the symptom.** Do not put a cache over an endpoint whose pool is exhausted by held transactions; move the remote call after the commit.
+- **Averages hide the tail.** One password hash run on the async executor stalls every request on that worker thread. Measure p95 and p99.
+- Require a service-specific latency objective before deployment. Absent one, a local default such as p95 under 200 ms and p99 under 500 ms for representative handlers is a starting point, not a fact about your users.
+- Image builds: order layers so dependency compilation is cached separately from application source (`cargo-chef` or equivalent).
+
+### What tests cannot show
+
+- **Unit tests cover the layer back ends break least.** Wiring, routing, serialisation and state set-up fail in integration. Default stack: spawned-app tests on a random port with an isolated database and migrations applied; mock-server contract tests for each outbound client; property tests for domain constructors; migration tests when the schema moves.
+- **Each empty, malformed and duplicate input is a named test.**
+- **Ambiguity under failure passes every deterministic test.** Kill a worker mid-workflow in staging and check the state it leaves.
+- Passing format, lint, tests and build is no evidence for "faster" or "safer". Each such claim needs its own measurement.
+
+**Seven questions for any back-end review:** Are credentials typed? Are logs redacted? Are
+failures shaped for the client? Are transactions explicit? Is idempotency defined for each
+mutation? What state is left if the process dies mid-workflow? Should this work be
+asynchronous?
+
+**Per release, four things should be zero:** unowned transactions; retried writes with no
+idempotency definition; unclassified remote failure paths; rollout steps with no rehearsed
+rollback.
+
