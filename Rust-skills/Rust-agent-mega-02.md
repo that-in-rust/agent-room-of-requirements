@@ -123,3 +123,71 @@ Trait` here because this is a plugin seam; revisit if it shows up in a profile."
 can then tell a decision from an accident. Replacing a public error type is a SemVer break even
 when every call site still compiles for you.
 
+### Priorities by task type
+
+| Task | Put first |
+|---|---|
+| Library or public API | Borrowed inputs and explicit conversions; validated newtypes; typed errors; a surface that can grow without a SemVer break; doctests, and compile-fail tests for misuse the types are meant to stop |
+| CLI or binary | Written contracts for user-visible behaviour (output, exit codes, stdin and stdout rules); diagnostics a user can act on; integration tests that run the real binary |
+| Async service or back end | Typed parsing at the edge; no blocking and no lock guard across `.await`; bounded queues and concurrency; a timeout on every outbound call; cancellation and shutdown that are designed, not accidental |
+| Parser or protocol | No panic on any input; checked slicing and arithmetic; byte-safe diagnostics; property tests, fuzzing, round-trip checks; a limit on input size and nesting depth |
+| FFI or unsafe boundary | The smallest unsafe surface; written invariants; layout, nullability, ownership and unwinding rules at the boundary; Miri or sanitizers |
+| Review or hardening | Misuse resistance; whether errors stay distinguishable; who owns each task and how it stops; the anti-pattern list; whether the gates really ran |
+
+### Default reliability stack
+
+When nothing else tells you what matters most, work down this list:
+
+1. Model invariants with newtypes, enums and explicit conversions.
+2. Keep library errors typed and application errors contextual.
+3. Make async code non-blocking, bounded and cancel-safe.
+4. Remove panics from parsing, slicing and arithmetic on outside input.
+5. Turn examples, invariants and misuse cases into tests.
+6. Keep unsafe small, argued and verified.
+7. Design logging, metrics and secret handling in; do not bolt them on.
+
+Most production Rust uses a small core: ownership and borrowing, RAII, `Result` and `Option`
+with `?`, enums with `match`, newtypes, iterators, `Arc` for sharing, derive macros and a few
+established crates. Reach past that core only when a named problem needs it.
+
+### Concrete first, abstract on the second use
+
+- Write the concrete type and function first. Introduce a trait, a generic parameter or a builder when a second real implementation or caller exists, or when a test needs a fake at an I/O boundary.
+- Use libraries with known behaviour; benchmark a choice only when the operation is on a path with a stated budget.
+- Where a timing or memory limit is a requirement, write its test before the implementation (section 5 shows how to keep such a test honest).
+- One lock guards one invariant. A design that needs two locks held together needs a documented lock order, or a redesign that puts both pieces of state under one lock.
+
+*Use this strictly when* limits are hard and known: constrained memory or CPU, a latency budget,
+well-defined concurrent access. *Relax it for* a prototype or exploration, where the aim is to
+learn the shape of the problem; say so in the handover so nobody mistakes it for production code.
+
+**Anti-patterns.** A trait with one implementation and no test fake. A generic parameter that
+is always the same type. A `Config` option nobody asked for. A plugin system for two fixed cases
+(use an enum). Each adds a seam that must be kept working and proves nothing yet.
+
+### Rule strength, waivers and severity
+
+- **Strength.** MUST and MUST NOT hold unless a waiver is written down. SHOULD is a default that context can override, with the reason stated. MAY is optional.
+- **A waiver records** the exact rule, the reason, the narrowest scope, the compensating control for the risk the rule guarded against, and when it is revisited (the next refactor or release of that code). Checking added under a waiver is stricter than the baseline for that area.
+- **Not valid reasons:** deadline alone; "MVP" with no compensating control; "we know it is safe"; "we will test later"; "the compiler is annoying"; "the framework makes it awkward"; not knowing the Rust feature that would solve it.
+- **A waiver never makes a hidden thing permanent.** Hidden cleanup, an unowned background task or an unplanned dependency stays temporary only if a replacement plan is written beside it.
+- **Review severity.**
+  - P0: likely wrong behaviour, data corruption, a security hole, or a claim of completion that is not true.
+  - P1: a serious design or reliability weakness with high regression risk.
+  - P2: a notable weakness in maintainability, verification or a boundary.
+  - P3: polish and clarity.
+- **Confidence in a rule.** High when a language guarantee or std behaviour backs it; medium for strong ecosystem precedent that depends on context; low for a heuristic or a house convention. Argue hardest for the high ones and yield first on the low ones.
+
+### First principles not already stated
+
+- **Ownership is a design tool.** Who owns a value answers who may change it, who frees it and how long it lives. Decide that before choosing between `&T`, `T`, `Arc<T>` and a channel.
+- **A simple public surface beats internal sophistication.** Complexity belongs behind the API, and only where it pays.
+- **Destructor timing is part of the program's meaning.** When a guard, a file, a transaction or a temporary is dropped decides when a lock is released or a write is flushed.
+
+**Where to enforce an invariant, in order of preference:**
+
+1. In a type, when that is cheap: the invalid value cannot be built.
+2. Once, at the narrowest boundary that sees the raw input. Do not re-validate downstream; pass the validated type.
+3. With `debug_assert!` for expensive internal consistency checks. This never replaces boundary validation, because release builds skip it.
+4. An `_unchecked` fast path exists only beside the checked function that defines the contract, is `unsafe` if violating it breaks memory safety, and is added only after a profile shows the check matters.
+
