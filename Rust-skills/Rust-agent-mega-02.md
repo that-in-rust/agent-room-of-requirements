@@ -475,3 +475,146 @@ because an ignored example rots.
 - **A filled-in template can be hollow.** A `WHEN` that says "sometimes" or a metric that says "fast" has the shape and defeats the purpose. Review what is in the blanks, not that the headings are present.
 - **If the rewrite needs a number you do not have, ask or measure.** Do not invent a threshold; record the current measured value as the baseline and state that the target is still to be agreed.
 
+### Work packet template
+
+Use this when a request is not ready for coding:
+
+```markdown
+## Work mode
+<the modes chosen, and why>
+
+## Executable requirements
+### REQ-RUST-001.0: <title>
+**WHEN** ... **THEN** the system SHALL ... **AND** SHALL ...
+
+## Design
+- L1 core:
+- L2 orchestration:
+- L3 adapters:
+- Trait seams:
+
+## Verification matrix
+| req_id | test_id | test_type | assertion | metric |
+|---|---|---|---|---|
+
+## Implementation plan
+1. STUB  2. RED  3. GREEN  4. REFACTOR  5. VERIFY
+
+## Quality gate results
+- fmt:      <command, result>
+- clippy:   <command, result>
+- tests:    <command, result>
+- build:    <command, result>
+
+## Open questions
+```
+
+- **A packet is one document.** Every requirement ID appears again in the matrix and every matrix row in the plan; searching for the IDs checks it. A test row with no requirement behind it means the requirement gets written first.
+- **Gate lines hold real results.** Passing tests do not imply that `cargo build --all-targets --all-features` passes, so the build line is reported on its own.
+- **Template text left in place marks a hollow packet:** example modes, example IDs, a matrix row that cites a requirement the packet never defined.
+
+## 4. Architecture and boundaries
+
+Decide the layers before writing code. Dependencies point inward only.
+
+| Layer | Holds | May depend on |
+|---|---|---|
+| L1 Core | Domain types, invariants, state rules, pure functions, the traits the core needs from outside | `core`/`std` data types and small pure crates |
+| L2 Orchestration | Use cases: sequencing, error composition, collections, concurrency policy | L1, the standard library |
+| L3 Adapters | Runtime, database, HTTP, serialisation formats, tracing setup, FFI | L1 and L2, external crates |
+
+- **L1 never imports L3.** No `tokio`, `sqlx`, `reqwest` or web-framework type in a domain signature. The core defines the trait; the adapter implements it.
+- **Push validated types down.** If the core receives a `UserId`, nothing below the edge handles a raw string.
+- **Wiring happens once,** in `main` or one composition module: build the adapters, hand them to the services, start the runtime.
+- **Layers are modules first.** Split into crates when compile time, reuse or an enforced dependency rule justifies it. Three crates for five hundred lines is ceremony.
+
+*Use when* the program has I/O and logic worth testing apart from it. *Skip for* a small script
+or a thin CLI: one module with a pure `run(input) -> Result<Output>` function and a `main`
+that does the I/O gives the same testability.
+
+**Pragmatic exception.** `#[derive(Serialize, Deserialize)]` on a domain type is acceptable
+when the wire shape and the domain shape are the same thing and no outside party depends on
+the format. Once they differ, or the format is a public contract, use a separate transport
+type and convert at the edge.
+
+**Anti-patterns.** A handler that builds SQL. A domain function that takes a connection pool.
+A `utils` or `common` module everything depends on and nothing owns. A core that reads
+environment variables or the clock directly. Layers that exist as folders while every file
+imports every other.
+
+### Trait seams
+
+Define the trait before the adapter when I/O should be kept out of domain logic, when tests
+need a fake, or when behaviour should be settled before storage or transport is chosen.
+
+```rust
+pub trait EntityStore {
+    fn load(&self, id: EntityId) -> Result<Option<StoredEntity>, StoreError>;
+}
+
+pub struct EntityService<S> {
+    store: S,
+}
+
+impl<S: EntityStore> EntityService<S> {
+    pub fn describe(&self, id: EntityId) -> Result<String, ServiceError> {
+        let entity = self.store.load(id)?.ok_or(ServiceError::NotFound(id))?;
+        Ok(entity.summary())
+    }
+}
+```
+
+- **The trait is owned by its consumer and sized to it.** It lists the few operations the service needs, in domain terms (`load`, `save_order`), not the adapter's whole API (`execute_sql`).
+- **The error type belongs to the trait,** not to the adapter. `StoreError` does not expose `sqlx::Error`.
+- **Generic or `dyn`.** A generic parameter (`S: EntityStore`) costs nothing at run time and suits one implementation per binary. `Arc<dyn EntityStore>` suits a choice made at run time, heterogeneous collections, and stopping a type parameter spreading through every signature. Default to generics inside a library and `dyn` at the application's wiring layer.
+- **Async methods.** `async fn` in a trait works with generics but makes the trait unusable as `dyn`, and promises nothing about `Send`. For `dyn` use, return a boxed future or use the `async-trait` crate; for a public trait, write the return type as `impl Future<Output = T> + Send` so spawned callers compile.
+- **A fake is a real implementation,** usually an in-memory map, kept in the test support code and run through the same contract tests as the real adapter. A fake that only ever returns `Ok` tests nothing about failure.
+
+*Skip the trait when* there is one implementation, no test needs a fake, and the dependency is
+pure (a parser, a formatter, a calculation). Call the function.
+
+**Algorithms over the smallest capability traits.** When a library has several representations
+of one concept (graph storage, matrix layouts, byte sources), write each algorithm against the
+smallest set of capability traits it needs, and implement those per representation:
+
+```rust
+pub fn dijkstra<G, F, K>(graph: G, start: G::NodeId, edge_cost: F) -> HashMap<G::NodeId, K>
+where
+    G: IntoEdges + Visitable,
+    G::NodeId: Eq + Hash,
+    F: FnMut(G::EdgeRef) -> K,
+    K: Measure + Copy,
+```
+
+- Start from the weakest bounds; add a stronger trait only when an operation needs it.
+- Each representation passes one shared conformance suite for every capability it claims.
+- *Skip when* there is one representation, or the algorithm relies on layout, mutation or complexity guarantees the traits cannot express. The bounds above are hard to read and hard to debug; they must buy real reuse.
+
+**A closed set of variants: one trait, one factory.** When each member of a family (languages,
+file formats, back ends) supplies the same handful of operations, give the family one trait
+with defaults for optional parts, and build members in one place:
+
+```rust
+pub trait Format: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn extensions(&self) -> &'static [&'static str];
+    fn parse(&self, text: &str) -> Result<Document, ParseError>;
+    fn imports(&self, _doc: &Document) -> Vec<String> {
+        Vec::new() // optional capability: the default says "none"
+    }
+}
+
+pub fn format_named(name: &str) -> Result<Box<dyn Format>, UnknownFormat> {
+    match name {
+        "json" => Ok(Box::new(Json)),
+        "toml" => Ok(Box::new(Toml)),
+        other => Err(UnknownFormat { name: other.to_owned(), supported: &["json", "toml"] }),
+    }
+}
+```
+
+- The pipeline is written once against `dyn Format`; adding a member touches its own file and the factory.
+- An unknown name is an error that lists what is supported, not a silent `None`.
+- If the members share no behaviour and differ only in data, a table of structs is simpler. If the set is fixed and small and the logic is a `match`, an enum keeps exhaustiveness checking, which a trait object gives up.
+- **Plugins loaded at run time** come from an explicit registry or manifest, one coordinator calls their hooks in a stated order, and a plugin that fails to load is reported at startup, never skipped silently.
+
