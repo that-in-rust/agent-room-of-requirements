@@ -6110,3 +6110,124 @@ let outcomes: Vec<(usize, Result<(), ProcessError>)> = files
 - **An append-only chunk writer** reuses one buffer, writes a placeholder header, streams records through the compressor and checksum, backfills length and checksum, and issues one `write_all`. Shrink the buffer after an unusually large batch. A round-trip reader test accompanies every format change.
 - **Columnar engines** (Polars, Arrow with DataFusion): use the lazy or SQL API so the engine can plan, push filters down and stream. Do not convert columns to row structs early; that discards the vectorisation you adopted the engine for. Fix the query plan before tuning thread or memory settings.
 
+### Derived data, hashing and streaming input
+
+**Derived data cached on its owner has one invalidation function.** Derived facts (a
+transpose, degree counts, a sorted flag) are computed lazily and reused.
+
+```rust
+pub struct Graph {
+    edges: Vec<Edge>,              // private: mutated only through methods below
+    degrees: OnceCell<Vec<u32>>,
+    is_symmetric: Option<bool>,    // None means "not yet known"
+}
+
+impl Graph {
+    pub fn add_edge(&mut self, edge: Edge) {
+        self.edges.push(edge);
+        self.invalidate_derived();
+    }
+
+    fn invalidate_derived(&mut self) {
+        self.degrees = OnceCell::new();
+        self.is_symmetric = None;
+    }
+}
+```
+
+- The base field is private and every mutating method calls the one invalidation function. A stale derived fact gives wrong answers silently, so this is not left to each caller.
+- "Not computed" and "unknown" are explicit (`Option`, a three-state enum), never a default that looks like an answer.
+- *Not when* the base changes on nearly every operation: recompute, or maintain the fact incrementally.
+
+**Canonical hashing of structured values.** Raw bytes hash directly. A structured value is
+hashed in a canonical form: object keys sorted, only identity-bearing fields included,
+arrays left in order when order has meaning.
+
+- Write down which fields define identity before adding the hash.
+- Test both directions: the same content in another key order gives the same hash, and different content of the same shape gives a different one. Over-normalising merges distinct inputs; under-normalising causes needless misses.
+- **Canonicalise floats used as keys:** `-0.0` and `0.0` compare equal but have different bits, and NaN has many bit patterns and equals nothing. Normalise both before hashing, or do not key on floats.
+
+**On-disk caches of regenerable results.**
+
+- The cache version combines a hand-bumped schema number with the package version; a mismatch means start empty. Any change to what is stored bumps the schema number in the same commit.
+- A missing, truncated or unreadable entry is a miss, never an error. The cache can always be deleted.
+- **A key is validated so that it cannot be a path:** no separators, no `..`. Better, name files by the hex hash of the key.
+- A small index stays in memory; payloads load on demand.
+
+**Stream a large top-level JSON array** one element at a time instead of deserialising the
+whole document. With `serde`, a `Visitor` whose `visit_seq` handles each element as it
+arrives does this without hand-parsing brackets and commas:
+
+```rust
+struct ForEach<F>(F);
+
+impl<'de, F: FnMut(Record)> Visitor<'de> for ForEach<F> {
+    type Value = usize;
+
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("an array of records")
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(mut self, mut seq: A) -> Result<usize, A::Error> {
+        let mut count = 0;
+        while let Some(record) = seq.next_element::<Record>()? {
+            (self.0)(record);
+            count += 1;
+        }
+        Ok(count)
+    }
+}
+
+let mut deserializer = serde_json::Deserializer::from_reader(BufReader::new(file));
+let count = deserializer.deserialize_seq(ForEach(|record| sink.push(record)))?;
+```
+
+- `serde_json`'s `StreamDeserializer` (`into_iter`) handles concatenated or newline-separated values, not a comma-separated array. If you control the format, newline-delimited JSON is simpler to stream, append to and resume.
+- Wrap the reader in a `BufReader`, and make errors name the element index.
+- *Not when* validation needs the whole document before any element may be acted on.
+
+**A prefilter may give false positives and never false negatives.** A cheap test in front of
+an expensive match can say "maybe" wrongly; it can never say "no" wrongly.
+
+- Decide what "cannot translate this condition" means before writing the combinators. In an `And`, an untranslatable term is dropped: fewer conditions still admit every real match. In an `Or`, one untranslatable branch makes the whole `Or` unknown, because dropping the branch would drop real matches.
+- An evaluation error in the prefilter counts as "maybe".
+- Test it as a property: everything the full matcher accepts, the prefilter also accepts.
+
+**Greedy selection under a budget.**
+
+```rust
+scored.sort_by(|a, b| b.score.total_cmp(&a.score).then_with(|| a.id.cmp(&b.id)));
+
+let mut used = 0;
+let mut selected = Vec::new();
+for candidate in scored {
+    if used + candidate.cost <= budget {
+        used += candidate.cost;
+        selected.push(candidate);
+    }
+}
+```
+
+- `f64::total_cmp` gives a total order that tolerates NaN; `partial_cmp().unwrap()` panics on it. The tie-break makes the selection deterministic.
+- An item that does not fit is skipped and a smaller later one may still fit. This is a heuristic, not optimal packing; say so, and return the amount used.
+
+**Caches that own live resources.**
+
+- **A manager owns expensive open handles** (files, sessions): a bounded LRU, its lock, and close-on-evict. The key includes every argument that distinguishes handles (path, mode, options). Callers never close what the manager gave them.
+- **Eviction of an async resource only signals stop,** because eviction is synchronous and clean-up is not. Each session runs in a task that holds its resources and waits for the signal. Shutdown makes an explicit pass that awaits every such task; fire-and-forget eviction is not a shutdown guarantee.
+- **A cache addressed by two keys** keeps the forward and reverse maps in one struct and updates both in every add, move, remove and clear.
+- **A shortened hash used as an identifier can collide.** Detect it; do not assume it away.
+- **A fixed table of `OnceLock` indexed by a small parameter space** is a cache bounded by construction.
+
+**Smaller rules.**
+
+- **Hidden reordering stays hidden.** A batching optimisation that reorders its inputs (sorting by length to reduce padding) restores the original order before returning.
+- **A per-call override is a parameter.** Pass `top_k` with the request or apply it to a per-request copy. Never mutate a shared component and restore it afterwards: concurrent requests race, and an early return leaves it changed.
+- **Variants are chosen by exact identifier,** not by substring match with a silent default.
+- **A long batch run checkpoints each finished unit** under a deterministic key, written with a temporary file and a rename, and skips saved keys on resume. Replacing a unit that failed for infrastructure reasons is a separate, explicit operation.
+- **Randomness is injected** (`&mut impl Rng`, or a seed that is logged), so a run can be reproduced.
+- **At the boundary of a typed kernel,** match on the type tag once and downcast inside the arm that proved the type, not repeatedly in the inner loop.
+- **In an incremental framework** (`salsa`), every changing fact is a typed input, and each new query is checked for what invalidates it: one query that reads global data makes everything recompute. A tool that runs once and exits needs no such framework.
+- **When several ranking signals are fused,** keep each signal's contribution on the result so the ranking can be explained and tuned. Demote with a negative signal instead of excluding.
+- **A vector index compares like with like.** Inner product equals cosine similarity only for normalised vectors, so never mix normalised and unnormalised embeddings. Never hold the index lock across the call that computes an embedding.
+
