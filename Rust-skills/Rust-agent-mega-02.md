@@ -5559,3 +5559,83 @@ impl<T> Copy for Handle<T> {}
 - `PhantomData<fn() -> T>` keeps the handle `Send` and `Sync` whatever `T` is, and tells the compiler the handle does not own a `T`.
 - This is entirely safe code. Indices plus an arena are the usual way to avoid unsafe pointer graphs.
 
+### Wrappers around native handles
+
+**Early close is idempotent.** Normally the owning wrapper frees its native peer once, in
+`Drop`. Where a handle must also be closable early, as in bindings for a garbage-collected
+language, hold it as an `Option` and let exactly one function free it.
+
+```rust
+pub struct Parser {
+    raw: Option<NonNull<ffi::Parser>>,
+}
+
+impl Parser {
+    pub fn close(&mut self) {
+        if let Some(raw) = self.raw.take() {
+            // SAFETY: `raw` came from `ffi::parser_new`, and `take()` means it is freed once.
+            unsafe { ffi::parser_free(raw.as_ptr()) }
+        }
+    }
+
+    fn handle(&self) -> Result<NonNull<ffi::Parser>, Error> {
+        self.raw.ok_or(Error::Closed)
+    }
+}
+
+impl Drop for Parser {
+    fn drop(&mut self) {
+        self.close();
+    }
+}
+```
+
+- Every public method goes through `handle()` and returns a "closed" error; none touches a freed peer.
+- A wrapper that may hold either an owned or a borrowed handle records which, and never frees a borrowed one.
+- An atomic pointer makes reading the pointer atomic. It does not make the native object thread-safe.
+- In plain Rust code, prefer consuming `self` in `close(self)`: use after close then fails to compile and no closed state exists.
+
+**One gateway for foreign status codes.** Every call into a C library that returns an integer
+status passes through one function that turns the code into a typed status and then a domain
+error. The library's detailed message is fetched lazily, on failure only.
+
+```rust
+fn check(code: ffi::Status, detail: impl FnOnce() -> String) -> Result<(), NativeError> {
+    match Status::try_from(code) {
+        Ok(Status::Success) => Ok(()),
+        Ok(status) => Err(NativeError::new(status, detail())),
+        Err(_) => Err(NativeError::unknown_code(code)),
+    }
+}
+```
+
+- Call sites never compare raw integers, and a code the binding does not know is an error of its own, not a success and not a panic.
+
+**One closed enum owns a set of native bindings.** When a fixed set of native components is
+linked in (grammars, codecs, drivers), one enum is the only code that calls their `extern`
+constructors, and it also drives listing, parsing of names and display.
+
+```rust
+impl Language {
+    pub fn grammar(self) -> tree_sitter::Language {
+        // SAFETY: each function returns a pointer to a static grammar linked into this binary.
+        unsafe {
+            match self {
+                Language::Go => tree_sitter_go(),
+                Language::Rust => tree_sitter_rust(),
+                Language::TypeScript => tree_sitter_typescript(),
+            }
+        }
+    }
+}
+```
+
+- No wildcard arm, so a new variant does not compile until it is wired. Components loaded at run time need a registry instead.
+
+**Smaller rules.**
+
+- **One native artefact, thin loaders.** A native library used from several runtimes is one core product with a minimal loader per runtime. Each loader has the same smallest test, "the library loads here", written before any behaviour test. It catches packaging and link failures and says nothing about correctness, which is tested once, in the core.
+- **A native binding must pay for itself.** It is justified when the hot operation's cost outweighs the build, packaging and safety burden of the binding.
+- **Raw-pointer containers** (intrusive lists, linked nodes) sit behind a narrow set of typed operations written once, as a generic or a macro. The raw form never leaks out of its module. Try an arena with indices first.
+- **Arena handles do not survive a rebuild of the arena.** Either the arena never moves or reuses slots, or handles carry a generation that is checked.
+
