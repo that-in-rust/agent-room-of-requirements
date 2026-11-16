@@ -8909,3 +8909,102 @@ pub fn parse(raw: &str) -> Result<LinkAction, LinkError> {
 - If the front end listens for the link event itself, its capability needs the event and deep-link permissions. Routing in Rust and sending the front end a typed action keeps the parser in one place.
 - Another application can register the same scheme. Do not send secrets through a custom scheme without a binding such as PKCE.
 
+### Launch arguments and window state in practice
+
+**Declare launch arguments in the CLI plugin's configuration and read them through it:**
+
+```json
+{
+  "plugins": {
+    "cli": {
+      "description": "Notes",
+      "args": [{ "name": "verbose", "short": "v", "description": "Verbose logging" }],
+      "subcommands": {
+        "open": {
+          "description": "Open a note",
+          "args": [{ "name": "path", "index": 1, "takesValue": true }]
+        }
+      }
+    }
+  }
+}
+```
+
+```rust
+.plugin(tauri_plugin_cli::init())
+.setup(|app| {
+    match app.cli().matches() {
+        Ok(matches) => launch::apply(app.handle(), LaunchOptions::from_matches(&matches)?),
+        Err(error) => tracing::warn!(%error, "ignoring unparseable launch arguments"),
+    }
+    Ok(())
+})
+```
+
+- **One declared argument surface, one conversion into a typed `LaunchOptions`.** No second hand-written parser for the same arguments.
+- **The single-instance handler receives raw arguments,** not plugin matches. Route them into the same `LaunchOptions` conversion so a second launch means what a first one does.
+- **Decide what bad arguments do.** A desktop application launched from an icon has no console to print usage to; ignoring with a log entry is usually right, while a headless subcommand should exit non-zero.
+- **On Windows a packaged GUI application cannot reliably write to the calling console.** Do not build a flow that depends on its stdout. Offer a separate console binary if scripting matters.
+- A path given as an argument is relative to the launching directory, which on handoff is the *second* process's. Resolve it against the working directory the handler is given.
+- The front end reads matches only with the plugin's permission in its capability. Prefer applying them in Rust.
+
+**Window state:**
+
+```rust
+#[cfg(desktop)]
+app.handle().plugin(tauri_plugin_window_state::Builder::default().build())?;
+```
+
+- **Create the window with `visible: false` and show it after restoration,** to avoid a flash at the default size.
+- **The plugin saves on close.** Where layout is part of the work (a multi-window workspace), save explicitly at meaningful moments too, since a crash or forced quit skips the close.
+- A restored position may be on a display that is no longer attached. Verify the window is visible on some monitor, and fall back to centred.
+- Decide which properties are restored. Restoring "maximised" and "fullscreen" is usually wanted; restoring "hidden" is how a window becomes unreachable.
+
+### The five Tauri boundaries, and the pre-ship check
+
+Reliability in a Tauri application comes mostly from five boundaries being explicit, typed
+and least-privilege: **the command boundary, the window capability boundary, the
+filesystem scope, the sidecar process, and the size of persisted state.**
+
+**The trade-offs are decided by an observable condition, not by taste:**
+
+| Choice | Decided by |
+|---|---|
+| `std` mutex or async mutex | Whether the guard must be held across an await |
+| Event or channel | Volume and duration of the stream |
+| Store or file | Payload size |
+| Mock or built-application test | Whether the behaviour can be mocked faithfully; lifecycle usually cannot |
+
+Start on the cheap side, and move when the condition is observed. Do not shrink a volume
+estimate to keep the cheap tool. A rule from the list above is fixed, not quietly excepted:
+"owned inputs are optional for internal commands" is a shadow rule nobody reviewed. A
+temporary exception during a migration is dated, recorded and expires.
+
+A new command lands with its boundary test in the same change. Coverage that grows with the
+IPC surface is the only kind that keeps up with it.
+
+**Before shipping a Tauri feature, verify:**
+
+- **Commands:** structured success and structured failure; no blocking call in an async command; no `unwrap()` or `expect()` on a reachable path; names unique across modules; bytes returned as a binary response.
+- **State:** the right lock for each piece; no guard across an await unless an async mutex was chosen for that reason.
+- **Permissions:** each new permission is the narrowest that works; a high-privilege window inherits nothing through merged capabilities; sidecar scope names the binary and its arguments; the CSP was not widened.
+- **Persistence:** stored payloads stay under their caps; files are written atomically.
+- **Sidecars:** start-up has a deadline and a health check; the child is stopped on exit.
+- **Lifecycle:** single-instance is registered first; deep links are validated beyond the scheme; the window does not flash on restore; tray and quit paths were run on each platform.
+- **Front end:** listeners are removed on unmount; mocks are cleared between tests.
+- **Build:** hooks and output paths match the front-end tooling; platform overrides are intentional and small; updater keys are not in the repository; no secret or sensitive payload is logged.
+
+**Green `cargo` gates are required and not sufficient.** Clippy and `cargo test` do not see
+an over-broad grant, a blocked main thread in a packaged build, or a drifted payload. A
+review fails a broad shell or filesystem permission even when every test passes. Use this
+list at the end of the work; do not design from it.
+
+Alongside the Rust gates of section 16, run the repository's own front-end and Tauri
+scripts with its own package manager, for example:
+
+```bash
+pnpm test
+pnpm build
+pnpm tauri build
+```
+
