@@ -8312,3 +8312,55 @@ the shortest way to satisfy Tauri, and enough for an application that only displ
 messages. Once the front end must branch (retry, re-authenticate, show a field error), use
 the tagged form shown earlier. Do not parse message text.
 
+### Permissions, paths and plugins in practice
+
+- **Grant per window, not per application.** Prefer a granular permission (`fs:allow-read-text-file`) over a default set (`fs:default`).
+- **Never grant `fs:default` plus `shell:default` as a convenience.** Together they are close to arbitrary file access and code execution for anything running in the webview.
+- **A sidecar needs its own explicit execute or spawn permission,** naming the binary and its arguments.
+- The safest bug is the one the window is not permitted to perform.
+
+**File access from the front end is anchored to a base directory:**
+
+```typescript
+import { BaseDirectory, exists, mkdir, readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+
+export async function loadSettings(): Promise<Settings> {
+  const options = { baseDir: BaseDirectory.AppData };
+  if (!(await exists("settings.json", options))) {
+    return defaultSettings;
+  }
+  try {
+    return parseSettings(JSON.parse(await readTextFile("settings.json", options)));
+  } catch {
+    return defaultSettings; // corrupt or from an older version: report it, do not crash
+  }
+}
+
+export async function saveSettings(settings: Settings): Promise<void> {
+  await mkdir("", { baseDir: BaseDirectory.AppData, recursive: true });
+  await writeTextFile("settings.json", JSON.stringify(settings, null, 2), {
+    baseDir: BaseDirectory.AppData,
+  });
+}
+```
+
+- **Paths are capability-bound resources, not free-form strings.** Prefer `BaseDirectory`-anchored access to hand-built absolute paths, and keep user data in the application's own directories.
+- **Every path accessed must fall inside the declared scope.** A path that works in development and is denied when packaged usually means the scope was never checked.
+- **Validate what you read back.** `JSON.parse(text) as Settings` is a cast, not a check; a file from an older version or a partial write passes it. Parse through a schema, and fall back or migrate.
+- **This write is not atomic.** For data that must survive a crash mid-write, do the write in a Rust command with a temporary file and a rename.
+- **Choose one side to own each file.** If both the front end and a Rust command write `settings.json`, they will overwrite each other.
+- Path separators, case sensitivity and reserved names differ by platform. Constrain paths early, and test on each platform you ship.
+
+**Plugins are registered explicitly, each with its matching permission:**
+
+```rust
+tauri::Builder::default()
+    .plugin(tauri_plugin_store::Builder::default().build())
+    .plugin(tauri_plugin_fs::init())
+    .plugin(tauri_plugin_shell::init())
+```
+
+- **Every plugin widens what the application can do.** Keep the list intentional, and remove a plugin when its last use goes.
+- A plugin registered in Rust with no permission in any capability fails at run time with a permission error; a permission for an unregistered plugin fails the build. Change both together.
+- Keep the Rust crate and the JavaScript package of a plugin on matching versions.
+
