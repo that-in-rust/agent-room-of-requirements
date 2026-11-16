@@ -5380,3 +5380,88 @@ behaviour that no tool reports.
 
 - **Keep the public API's constraints in safe types and the unchecked path private.** The implementation takes a fast path (`get_unchecked`, a flat loop over contiguous storage) only after it has established the shape that makes it valid, and falls back to the checked path otherwise.
 
+### Containing unsafe in larger designs
+
+**Checked constructor first; an unchecked twin only after profiling.**
+
+```rust
+impl SortedIds {
+    pub fn try_new(ids: Vec<u32>) -> Result<Self, NotSorted> {
+        if ids.is_sorted() { Ok(Self { ids }) } else { Err(NotSorted) }
+    }
+
+    /// # Safety
+    ///
+    /// `ids` must be sorted ascending: exactly what `try_new` checks.
+    pub unsafe fn new_unchecked(ids: Vec<u32>) -> Self {
+        debug_assert!(ids.is_sorted());
+        Self { ids }
+    }
+}
+```
+
+- Add the unchecked form only when a profile shows validation repeated on data already proven valid. Its preconditions are exactly the checks of the safe one, and each call site says why they hold.
+- A `debug_assert!` of the precondition inside the unchecked function catches wrong callers in tests at no release cost.
+- **It needs `unsafe` only if breaking the invariant can cause undefined behaviour** (other code skips bounds checks on the strength of it). If a broken invariant merely gives wrong answers, name it `new_unchecked` without `unsafe`, or better, drop it.
+- Never call the unchecked form to make an error go away.
+
+**Smaller rules.**
+
+- **A trait whose answers unsafe code trusts is an `unsafe trait`.** If a fast path believes `is_contiguous()` or `len()` and skips checks, a wrong implementation is undefined behaviour, so implementing it must be an explicit promise.
+- **One narrow type owns raw allocation.** If raw buffers are needed at all, one small struct holds the pointer, length and `Layout`, and is the only code that calls the allocator and frees in `Drop`. Prefer `Vec`, `Box<[T]>` or an established buffer crate; zero-size and overflowing layouts are easy to get wrong.
+- **At an exported entry point, in order:** set out-parameters to null or zero, convert opaque pointers to references once, validate every size and relation between the arguments, then work. A failed call then leaves nothing uninitialised for the caller to read.
+- **Low-level copy and bit-packing routines** keep their separate fast paths (tiny, byte-aligned, unaligned). Do not simplify one without benchmarks and tests for zero, tiny, aligned, unaligned and boundary-spanning ranges.
+- **Owned or borrowed, for every function of a C API.** Write the owning wrapper, whose `Drop` calls the matching release function, before any logic. An owning wrapper around a borrowed handle is a double free. RAII settles lifetime, not thread safety.
+- **Unsafe wrapping in one place.** When a typed wrapper is only valid for raw values produced by a particular object (a match from *this* query, an index into *this* arena), one `unsafe fn wrap` does the pairing and the public iterator always supplies the right pair, so callers stay safe.
+
+**Bindings for another language over a Rust core.**
+
+- **The binding layer is thin:** convert inputs, call the core, wrap the result. It has no behaviour of its own, so the core is tested without the host language.
+- **Errors cross through one pair of conversions,** core error to host exception and back, not an ad hoc `map_err` per function. A host exception that passes through Rust comes out as the original exception. Interrupts and cancellation keep their identity; they are not wrapped as generic failures.
+- **Host control signals become a typed value at the boundary;** every other exception propagates unchanged.
+
+```rust
+match callback_result {
+    Ok(_) => Ok(Control::Continue),
+    Err(error) if error.is_instance_of::<PruneSearch>(py) => Ok(Control::Prune),
+    Err(error) if error.is_instance_of::<StopSearch>(py) => Ok(Control::Stop),
+    Err(error) => Err(error), // never swallow an unknown exception as control flow
+}
+```
+
+- **Cross the boundary once, before going parallel.** Call every host callback and validate every value (NaN, negative weights) up front on the calling thread, into a plain table. The parallel section touches only native data and never calls back into the host runtime, which avoids its global lock and its exceptions inside worker threads. *Not when* the callback depends on traversal state or must be lazy.
+- **Model the host's scope protocol as states.** For a context manager or similar: `Pending`, `Entered`, `Finalized`. Re-entry and use after finalisation return an error; they never touch released state.
+- **Field order is drop order.** When a wrapper holds a resource and the owner it depends on, the dependent field comes first, with a comment saying the order is load-bearing.
+
+```rust
+struct ActiveWrite {
+    transaction: WriteTransaction, // must drop before `database`: declared first on purpose
+    database: Py<Database>,
+}
+```
+
+**Dynamic-library plugins.** Rust has no stable ABI. A plugin exposing Rust types is valid
+only when built by the same compiler version, for the same target, against the same API
+version.
+
+```rust
+fn check_compatible(plugin: &BuildInfo, host: &BuildInfo) -> Result<(), PluginError> {
+    if plugin.api_version != host.api_version {
+        return Err(PluginError::ApiMismatch);
+    }
+    if plugin.rustc != host.rustc {
+        return Err(PluginError::CompilerMismatch);
+    }
+    if plugin.target != host.target {
+        return Err(PluginError::TargetMismatch);
+    }
+    Ok(())
+}
+```
+
+- **The build-info query is itself a C-ABI function returning plain data,** and it is the first thing called. Nothing else in the library runs until it passes.
+- Both sides must allocate and free with the same allocator; the host passes its own, or ownership never crosses.
+- **Unloading is not safe in general:** any vtable, `'static` string or thread from the plugin dangles afterwards. Leak the library deliberately and accept that "reload" keeps the old code mapped.
+- **Prefer alternatives.** A C-ABI interface (`abi_stable` or hand-written), WebAssembly, or a separate process over IPC all give versioning and isolation that a Rust-ABI `dylib` cannot. Untrusted plugins always run sandboxed or out of process; a loaded library has the host's full privileges.
+- **A binding mirrors the C library's supported ABI version range** and checks a loaded artefact against it before use.
+
