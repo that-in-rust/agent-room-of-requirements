@@ -5760,3 +5760,125 @@ impl Client {
 - **A microbenchmark supports a claim about that operation on that machine.** Confirm with an end-to-end measurement before claiming the program is faster.
 - **Let the measurement reject work.** The most useful result is often that the optimisation is unnecessary; keep the simpler code when the requirement is already met.
 
+### Structural speed-ups
+
+**Per-stage timings at the orchestration boundary.** A multi-stage pipeline takes one borrowed
+options struct and returns how long each stage took, so a regression can be attributed.
+
+```rust
+pub struct SearchOptions<'a> {
+    pub path: &'a Path,
+    pub queries: &'a [String],
+    pub language: Option<Language>,
+    pub max_results: Option<usize>,
+    pub timeout: Duration,
+}
+
+#[derive(Default)]
+pub struct SearchTimings {
+    pub query_preprocessing: Option<Duration>,
+    pub file_searching: Option<Duration>,
+    pub result_processing: Option<Duration>,
+    pub total: Option<Duration>,
+}
+```
+
+- `None` means the stage did not run, which is different from running in zero time.
+- Options are typed: a `Duration`, not a bare `u64`; an enum, not a string. The struct holds what the pipeline needs and does not become a dumping ground for every flag in the program.
+- Measure with `Instant`, never the wall clock. For anything finer than stages, use spans and a profiler instead of more fields.
+
+**Parse once, plan once, evaluate many.** When one query is evaluated against many inputs,
+build a plan up front: resolved term indices, required and excluded sets, and shortcut flags
+such as "matches everything". The scan never walks the syntax tree again. *Not for*
+single-shot evaluation, where the plan is pure overhead.
+
+**Per-thread caches for worker state.** State that is expensive to build, mutable or not
+`Send` (parsers, compiled queries, scratch buffers) is cached per worker thread, not behind
+one shared `Mutex` that every worker queues on.
+
+```rust
+thread_local! {
+    static PARSERS: RefCell<HashMap<Language, Parser>> = RefCell::new(HashMap::new());
+}
+
+fn with_parser<R>(
+    language: Language,
+    work: impl FnOnce(&mut Parser) -> R,
+) -> Result<R, ParseSetupError> {
+    PARSERS.with(|parsers| {
+        let mut parsers = parsers.borrow_mut();
+        let parser = match parsers.entry(language) {
+            Entry::Occupied(slot) => slot.into_mut(),
+            Entry::Vacant(slot) => {
+                let mut parser = Parser::new();
+                parser.set_language(&language.grammar())?;
+                slot.insert(parser)
+            }
+        };
+        Ok(work(parser))
+    })
+}
+```
+
+- Initialise lazily and return the construction error. `work` must not call `with_parser` again: the `RefCell` is borrowed, and the second borrow panics.
+- The cache lives as long as the thread, and a pool has many threads, so memory is cache size times thread count. Bound it.
+- **In async code a thread-local is not per task:** a task moves between worker threads at each `.await`. Use it only within one synchronous stretch, or in `rayon` and `spawn_blocking` work.
+- A shared cache that must be shared is sharded (`dashmap`, or an array of locks indexed by hash), not one `Mutex<LruCache>`.
+- *Not for* small single-threaded tools; it only complicates lifecycle and tests.
+
+**The runtime chooses the representation.** When a step can run over a sparse or a dense form
+(a frontier as a list or a bitmap), the shared runtime picks from a cheap estimate against a
+threshold, not each algorithm. A bad threshold costs speed, never correctness. A flag forces
+either mode, and a test runs both and compares results.
+
+**Cache a stable yes-or-no at the call site.** When a hot path asks "is this enabled?" and
+the answer changes only with configuration, cache it in an atomic so the path costs one
+load. Every reconfiguration must run the rebuild, or sites stay wrongly on or off; test
+reconfiguration after the sites exist. Logging and tracing crates already do this for level
+checks. *Not when* the answer depends on per-record state.
+
+**Slow side effects leave the hot path through a bounded channel.** Log and telemetry I/O
+goes to a worker thread, and the constructor returns a guard whose `Drop` flushes.
+
+```rust
+let (writer, _guard) = tracing_appender::non_blocking(file);
+// `_guard` lives to the end of scope. `let _ = ...` would drop it now and lose the logs.
+```
+
+- Choose the pressure policy and write it down: lossy (drops counted and exposed as a metric) or blocking (producers feel backpressure).
+- Never for audit or transactional records, which must be durable before the program continues.
+
+**Data larger than memory.**
+
+- The decision sits beside the storage metadata: if the budget is smaller than the data, stream partitions; otherwise read it in.
+- The algorithm is a callback over partitions the storage layer has already filtered, so "what to compute" stays apart from "how to stream". State what the callback may mutate: atomics, or partition-local state merged afterwards.
+- **Memory mapping is not free.** It gives no crash-consistent writes, an I/O error arrives as a signal instead of a `Result`, and another process truncating the file is undefined behaviour, which is why creating a map is `unsafe`. It suits large read-only files you control. Not small files, and not files others may modify.
+
+**Manual prefetching and similar micro-techniques** (staging a ring of independent lookups so
+cache misses overlap) help only memory-bound pointer-chasing over large data. Keep the simple
+path, and adopt the staged one only with benchmark evidence on the target CPUs; it can make
+other machines slower.
+
+### Allocating less
+
+**Borrow when nothing changes; allocate only when something does.**
+
+```rust
+pub fn normalize_newlines(content: &str) -> Cow<'_, str> {
+    if content.contains('\r') {
+        Cow::Owned(content.replace("\r\n", "\n"))
+    } else {
+        Cow::Borrowed(content)
+    }
+}
+
+pub fn mentions(content: &str) -> impl Iterator<Item = &str> {
+    content
+        .split_whitespace()
+        .filter_map(|word| word.strip_prefix('@'))
+}
+```
+
+- `Cow` pays off when the unchanged case is common. If nearly every input is rewritten, return `String` and keep the signature simple.
+- Returning an iterator of borrowed slices lets the caller decide whether to collect at all.
+
