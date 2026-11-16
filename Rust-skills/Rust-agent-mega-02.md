@@ -2589,3 +2589,115 @@ screen may be several `char`s.
 - Test with ASCII, a two-byte character, an emoji outside the basic plane (two UTF-16 units, four UTF-8 bytes), a combining mark, a tab, and CRLF line endings.
 - A column shown to a person is one-based and, for alignment, depends on display width (`unicode-width`), which is a fourth number.
 
+- **A fragment parser tries a small set of wrapping contexts** (as an expression, as a statement, as an item), records the wrapper offsets so the fragment's own range can be recovered, and reports which context parsed. Many contexts mean ambiguous matches.
+- **A whole-file follow-up found during a tree walk** (reformat, fix imports) is registered as a deferred pass that runs once afterwards. A node visit does not restart from the root.
+
+### Decorators and policy layers
+
+**Cross-cutting policy wraps the service; it is not sprinkled inside it.** Rate limiting,
+retry, metrics and caching implement the same trait around an inner implementation, and are
+applied once, in the factory.
+
+```rust
+pub struct RateLimited<S> {
+    inner: S,
+    limiter: RateLimiter,
+}
+
+impl<S: Completion> Completion for RateLimited<S> {
+    async fn generate(&self, prompt: &str, options: &Options) -> Result<TextStream, CompletionError> {
+        self.limiter.acquire(1).await;
+        self.inner.generate(prompt, options).await
+    }
+}
+```
+
+- **Order of layers is behaviour.** Retry outside a rate limiter makes every attempt wait for a permit; retry inside it does not. A timeout outside retry bounds the whole operation; inside, each attempt. A cache outside metrics hides hits from them. Write the order down and test it.
+- A limiter that counts requests cannot express a quota in tokens, bytes or per-endpoint budgets. Turning "per minute" into per-second refills changes the burst behaviour relative to the provider's window.
+- Selection of the back end and application of the wrappers live in one factory. Adding a back end touches dispatch, request shaping, capability flags and wrapping in one change.
+- **A back-end kind from configuration is parsed into an enum when the configuration loads.** An unknown kind is a typed configuration error at start-up, never a `panic!` in the factory at first use.
+- In a service already built on `tower`, use its `Layer` and `Service` instead of a parallel mechanism.
+
+**Decoding policy wraps the raw stream.** A provider's chunk stream stays raw; product rules
+(stop sequences, trimming, limits) sit in a layer over it.
+
+```rust
+let mut text = String::new();
+let mut stop = StopMatcher::new(&stop_sequences); // stateful: one per request
+while let Some(chunk) = chunks.next().await {
+    text.push_str(&chunk?);
+    if let Some(cut) = stop.find_in(&text) {
+        text.truncate(cut); // a byte index on a char boundary
+        break;
+    }
+}
+```
+
+- **A marker can be split across chunks.** Match against the accumulated text (or keep a tail as long as the longest marker), never against one chunk alone.
+- `String::truncate` panics off a character boundary; an index from `str::find` is always on one.
+- When forwarding incrementally, hold back the last `longest_marker - 1` bytes until the next chunk shows they are not the start of a marker.
+- Test a marker split at every position, a marker at the very start and the very end, and text that only resembles one.
+
+### Identifiers and conversions
+
+**Many IDs over one primitive: one generic wrapper, one marker per kind.** Shared trait
+implementations are written once, and the IDs still cannot be mixed.
+
+```rust
+pub struct Id<T> {
+    raw: u32,
+    _kind: PhantomData<fn() -> T>,
+}
+
+impl<T> Clone for Id<T> {
+    fn clone(&self) -> Self { *self }
+}
+impl<T> Copy for Id<T> {}
+impl<T> PartialEq for Id<T> {
+    fn eq(&self, other: &Self) -> bool { self.raw == other.raw }
+}
+impl<T> Eq for Id<T> {}
+
+pub struct TableKind;
+pub struct JobKind;
+pub type TableId = Id<TableKind>;
+pub type JobId = Id<JobKind>;
+```
+
+- **Write the trait impls by hand, or use `derive-where`.** `#[derive(Clone)]` on `Id<T>` adds `T: Clone`, which the marker types do not satisfy.
+- `Debug` should print the kind (`TableId(7)`), or logs are full of bare numbers.
+- A handful of IDs is simpler as hand-written or macro-generated newtypes. An ID with its own invariant (a checksum, a format) is always its own type.
+- IDs from different instances of the same store are still mixable. If that matters, the handle carries the store's identity too, checked in debug builds.
+
+**Withhold a `From` that would lose context.** If `?` would silently turn a low-level error
+into yours while dropping what the caller needs to know, do not implement the conversion.
+Provide named constructors that demand the context.
+
+```rust
+#[derive(Debug, thiserror::Error)]
+pub enum RpcError {
+    #[error("{service}: {status}")]
+    Status { service: &'static str, status: Box<tonic::Status> },
+    #[error(transparent)]
+    Internal(#[from] anyhow::Error),
+}
+
+// Deliberately no From<tonic::Status>: a status must say which service produced it.
+impl RpcError {
+    pub fn from_status(service: &'static str, status: tonic::Status) -> Self {
+        Self::Status { service, status: Box::new(status) }
+    }
+}
+```
+
+- The call site becomes `.map_err(|s| RpcError::from_status("meta", s))?`: one visible line instead of an invisible lossy one.
+- Leave a comment where the impl would be, so nobody "helpfully" adds it.
+- Boxing a large payload keeps the error enum, and every `Result` that carries it, small.
+- **`let _ = fallible();` needs a comment saying why the error does not matter.** Without one it reads as an oversight, and usually is.
+
+**One exhaustive serialiser per export format.** Writing typed values back into a replayable
+text format puts every escaping rule (identifier quoting, string escapes, float precision,
+date syntax) behind one `match` with no wildcard arm. A new value type then fails to compile
+until its arm exists, and arrives with an export-then-import round-trip test. Formatting
+scattered across call sites is how one path forgets to escape.
+
