@@ -1433,3 +1433,122 @@ by method, write exactly one JSON line per response.
 - **Typed attributes for composed views.** When several views share one graph or document model, the view-specific meaning is a typed attribute (`enum EdgeKind { Ast, ControlFlow, DataFlow }`), not a free-form string that degrades silently when misspelled.
 - **Emulating a missing platform feature** with a narrower one is a small pure module of three functions (match, apply, revert) with a round-trip test and a test that names sharing a prefix do not match. Not where security depends on the original semantics, such as a page's origin.
 
+### Module depth and seams
+
+- **Judge a module by its depth.** A module's interface is everything a caller must know: signatures, invariants, ordering rules, errors, configuration and performance. A deep module hides a lot of behaviour behind a small interface. *Deletion test:* if deleting the module would push the same complexity into every caller, it earns its place; if the complexity simply disappears, it was a pass-through.
+- **A seam needs two adapters.** Put a trait where behaviour really varies: several back ends, or a production and a test implementation. A trait with one implementation and no test double is not a seam yet; it is an indirection.
+- **Semantics belong to the interface.** If correctness depends on conflict rules, scan order, write ordering or atomicity, the trait's documentation states them and each adapter either implements them or returns an explicit unsupported error. A contract suite checks it.
+- **One required method, many provided.** When many wrapper types share operations, the trait requires one accessor to the core and supplies the rest as default methods.
+- **Plugin seams are object-safe.** A trait called through `dyn` has no generic methods and no `Self` by value; generic conveniences live in an extension trait or a builder. Publish one implementation-independent test suite that every adapter runs.
+- **Back ends advertise what they support.** Default bodies return an explicit unsupported error, capability flags say which are real, and a conformance test checks the flags against the behaviour.
+
+### Protocols, messages and state
+
+**Parse bytes without doing I/O.** A codec takes a byte slice and returns a frame plus the
+number of bytes consumed. The transport owns reads, timeouts, encryption and backpressure.
+
+```rust
+pub enum Decoded<'a> {
+    Frame { frame: Frame<'a>, consumed: usize },
+    NeedMore { at_least: usize },
+}
+
+pub fn decode(buf: &[u8]) -> Result<Decoded<'_>, FrameError> {
+    let Some(header) = buf.get(..HEADER_LEN) else {
+        return Ok(Decoded::NeedMore { at_least: HEADER_LEN - buf.len() });
+    };
+    let len = u32::from_be_bytes([header[0], header[1], header[2], header[3]]) as usize;
+    if len > MAX_FRAME_LEN {
+        return Err(FrameError::TooLarge { len });
+    }
+    let total = HEADER_LEN + len;
+    match buf.get(HEADER_LEN..total) {
+        Some(payload) => Ok(Decoded::Frame { frame: Frame { payload }, consumed: total }),
+        None => Ok(Decoded::NeedMore { at_least: total - buf.len() }),
+    }
+}
+```
+
+- "Not enough bytes yet" is not an error; it is distinct from "malformed". Conflating them either drops slow connections or accepts garbage.
+- **Check the declared length against a maximum before allocating or waiting for it.** A length field from the network is an allocation request from a stranger. Use `get(..)` and checked arithmetic, never indexing.
+- The same codec then works over TCP, a file, a test vector and a fuzzer. Tests: a short header, a length beyond the buffer, a length over the maximum, several frames back to back, a round trip. A fuzz target asserts that decoding never panics.
+- **A stream that ends at a record boundary is `Ok(None)`; one that ends inside a record is an error.**
+- A format that leaves the process family gets a version header and compatibility tests.
+
+**An envelope for every message on a shared bus.**
+
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BusEvent<T> {
+    pub id: Uuid,
+    pub subject: String,
+    pub timestamp: DateTime<Utc>,
+    pub source: String,
+    pub payload: T,
+}
+```
+
+- Subjects are constants shared by publisher and subscriber. The subject and source stay in the body, not only in broker headers, so an event can be stored, replayed and inspected on its own.
+- **Delivery is at least once, so consumers are idempotent,** keyed on `id`. Order across subjects is not guaranteed unless the broker says so.
+- Adding an optional payload field is compatible; renaming or removing one is not. Version the subject or the payload when it must break.
+- Tests round-trip real payloads and cover acknowledge, reject and redelivery against a real broker, not a mock.
+
+**Wire types and internal types are different types.**
+
+- **Internal events are translated, not serialised.** One function maps each internal event to an optional protocol message; internal enums never go on the wire, or every refactor becomes a protocol change. Snapshot-test each mapping.
+- **Nothing unwraps a wire field.** Required fields go through a helper that returns an error naming the missing field. Each variant has a golden fixture, plus a negative one with a required field removed.
+- **A name resolved on demand needs an allow-list.** A lookup that falls back to treating an unknown name as a URL or a path accepts only explicit schemes and rejects the rest clearly. This is how a convenient fallback becomes a file-read or request-forgery hole.
+
+**Actors behind a typed mailbox.** Callers hold a handle with methods; the channel is private.
+
+```rust
+#[derive(Clone)]
+pub struct CounterHandle {
+    tx: mpsc::Sender<Command>,
+}
+
+enum Command {
+    Add { amount: u64, reply: oneshot::Sender<u64> },
+}
+
+impl CounterHandle {
+    pub async fn add(&self, amount: u64) -> Result<u64, ActorGone> {
+        let (reply, rx) = oneshot::channel();
+        self.tx.send(Command::Add { amount, reply }).await.map_err(|_| ActorGone)?;
+        rx.await.map_err(|_| ActorGone)
+    }
+}
+```
+
+- The mailbox is bounded, and what happens when it is full is decided (wait, or `try_send` and reject).
+- The actor ends when every handle is dropped (`recv` returns `None`) or on a shutdown signal, and its exit is observable through its `JoinHandle`.
+- Tests work at the handle: send after exit, a full queue, a dropped reply, a panic inside the actor.
+- *Use when* state has one logical owner and several async callers. *Skip when* a mutex held briefly with no `.await` inside does the job; it is simpler and faster.
+
+**Smaller rules.**
+
+- **Lifecycle metadata lives apart from payloads.** For jobs with large bodies, one store holds the record (ID, state, attempts, deadlines, last error) and another holds the bodies. Leases, retries and polling then change without touching payload storage.
+- **A journal sits on narrow storage.** The storage trait offers positioned read and write; the journal above it owns append, lookup and recovery. The same tests run against a temporary file and memory, including reopen, a torn final record and a corrupted entry.
+- **Lazy loading state is an enum in the registry:** not loaded, loading with its waiters, loaded, failed with the cached error. Concurrent requests join the one load (`tokio::sync::OnceCell` covers the simple case). Decide whether a failure is cached or retried.
+- **Detection is pure; verification is a later step.** Classify arguments with slice patterns in a function with no side effects; file-system checks and execution come after, explicitly.
+- **A rewrite reports whether it changed anything,** and an unchanged node must say so, or a fixed-point loop never ends. The driver also has a pass limit and checks an invariant after every rule.
+- **Variants of one algorithm share one output type,** and a compare mode runs the simple and the optimised variant and fails when they differ. It is the cheapest oracle available for an optimisation.
+- **An operator that returns a stream does no work until polled** and never blocks inside `poll`. Tests poll it, check the schema and drop it early.
+- **A guard fixes the order of unlock and side effect.** When an effect must follow a lock release, a guard's `Drop` releases and then runs the effect, so no path can do them in the wrong order.
+- **Versions are explicit in storage.** A read states the version it reads as of, and a held read blocks compaction below that version. Operations that combine versions or timestamps return `None` on overflow.
+- **A schema states capabilities per field** (queryable, stored, sortable); ingestion and query parsing both read it, and a query on an unsupported field is an error, not an empty result.
+- **Constrained choices are `Copy` enums with `ALL` and `const fn` relations** (valid partners, command names, defaults), so prompts, validation and docs read one source.
+
+**Small languages and analysis hosts.**
+
+- **A public parse entry point consumes the whole input:** skip surrounding whitespace, then require end of input, so trailing garbage fails. Inner rules never require end of input, because they must compose.
+- **Two entry points:** one returning the domain error for programs, one returning a rendered diagnostic with a source span for people. The parsing library's types stay inside the module; the API returns owned nodes.
+- **Grammar first, meaning second.** The grammar accepts the shape. Rules that need context (duplicates, unknown names) live in a later check with domain messages, and negative tests assert the message.
+- **Owned output keeps byte ranges.** When results outlive the source text, convert to owned values paired with their source ranges. Never drop the ranges; diagnostics and navigation map back through them.
+- **A hand-written mini-language stays tiny.** Acceptable for a controlled internal format with a handful of constructs. Once it needs expressions, escaping, includes or untrusted input, use a maintained parser crate.
+- **A virtual file system sits between I/O and analysis.** Analyses never read the disk; a loader does, and the VFS assigns file identities and merges changes. Tests use an in-memory loader.
+- **Extraction is pure; storage is incremental.** Functions turn input into facts; a store keeps them. A test changes one file and checks that only its dependents are recomputed. An incremental result is compared with a from-scratch run on the final input: that golden test catches most incremental bugs.
+- **One context owns the caches,** with a memoised "derive this" method; individual checks consume the context. A test runs two checks over one item and asserts a single derivation.
+- **Anything touching unstable compiler internals sits in one thin adapter,** and the toolchain version is pinned and treated as part of the interface.
+- **External tools are candidates behind a trait** (detect, installed, install, version) that receives a command runner; tests pass a fake runner.
+
