@@ -1649,3 +1649,101 @@ fn query_for(language: Language, kind: QueryKind) -> Option<&'static str> {
 - **An orchestrator's module doc lists its responsibilities,** and gives the reason when work is deliberately sequential, so nobody parallelises it without measuring.
 - **Reduce a misparse to the smallest input and read the parser's trace** before changing the grammar. Every declared grammar conflict has a comment and a test input that needs it.
 
+### Last rules for tools that process source
+
+- **Build a line-start index once per file** and binary-search it. Calling `source.lines().collect()` or counting newlines for every symbol is quadratic in the file size.
+- **An incremental command says how it detects change and what that can miss.** Modification time plus size is cheap and misses a same-size edit within the timestamp's granularity, so offer a content-hash mode. Do the CPU work in parallel and write from one thread in one transaction. The summary counts what was skipped and why.
+- **Limits are a named struct, and every limit is enforced.** `ChunkLimits { max_lines, max_chars, overlap_lines }` replaces three positional numbers of the same type. Construction rejects nonsense (an overlap not smaller than the maximum). A limit that is accepted and never checked is a bug.
+- **Unknown input falls back to a named strategy,** such as one whole-file chunk, so nothing is dropped silently. User configuration overrides the built-in table entry by entry.
+- **Invented positions use one named constant** (`Span::DUMMY`), never a zero range written inline, so diagnostics can tell real positions from synthesised ones.
+- **Wrappers are peeled in one loop into a flat result.** For modifiers, parentheses or reference markers around an inner node, walk inward with an exhaustive `match`, set a flag per wrapper and stop at the innermost name. A new wrapper kind is then a compile error in one place.
+- **Copy out of a lending iterator inside the loop.** A streaming cursor's item borrows from the cursor, so use `while let Some(m) = matches.next()` and take what you need before the next step; it cannot be collected.
+- **Do not glob re-export enum variants** (`pub use self::Kind::*`); it pollutes the namespace and a later variant can shadow a type. A type with an argument-free `new` also implements `Default`.
+
+## 5. Verification and test-first delivery
+
+### Choose the evidence before writing the code
+
+| Evidence | Choose it when | It does not show |
+|---|---|---|
+| Unit test | Behaviour is local and deterministic | That the parts work together |
+| Integration test | Behaviour crosses a module, process or adapter boundary | Every edge case; too slow for that |
+| Doctest | A public example is part of the contract | Anything about error paths, unless written |
+| Compile-fail test (`trybuild`) | Misuse must not compile: typestate, `Send` bounds, lifetimes | Run-time behaviour |
+| Property test (`proptest`) | An invariant or a round trip matters more than examples | That the stated property is the right one |
+| Fuzzing (`cargo-fuzz`) | A parser, decoder or other frontier takes untrusted bytes | Semantic correctness; it finds panics, hangs and whatever you assert |
+| `loom` | A small concurrent state machine built on atomics or locks | Anything about async I/O or large systems; the model must be tiny |
+| Miri | Unsafe code, aliasing, uninitialised memory | Paths the tests do not execute; no FFI |
+| Benchmark | A latency or memory threshold was stated | Production behaviour, unless the input is representative |
+| Snapshot test (`insta`) | Output is large and structured: rendered text, plans, diagnostics | Correctness of the first snapshot; a person must read it |
+
+- **Pick the rows at the start and record which ones the change triggers.** A matrix filled in after the code only justifies the evidence that already exists. Formatting, lints, tests and a build can all pass over a parser that was never fuzzed and a lock whose interleavings were never explored.
+- **No threshold, no performance claim.** The benchmark row is owed only when a number was stated; without one, do not write "fast" in the report either.
+- **Choose the smallest set that covers the risk,** not the largest that can be listed.
+- **A missing test is written as missing.** An empty row marked "not covered" is honest; an invented test name is not.
+- Coverage is a tool for finding untested code. It is not evidence that the tested code is right, and it is a poor target.
+
+### The test-first loop
+
+```text
+STUB -> RED -> GREEN -> REFACTOR -> VERIFY
+```
+
+- **STUB.** Write the signature with a `todo!()` body, and the tests against it. At least one test per requirement.
+- **RED.** Run it and *read the failure*. The first failure should be the missing behaviour. An unrelated compile error or a panic in the set-up means the test is not yet testing the thing. A test that has never failed has not been shown to test anything.
+- **GREEN.** The least code that passes. Resist generalising here.
+- **REFACTOR.** Improve names, decomposition and ownership with the tests green. No behaviour change in this step.
+- **VERIFY.** Formatting, lints, the full test suite and a build, plus whichever rows from the table the change triggered.
+
+For each requirement, cover three paths: the normal one, the error one, and an edge (empty,
+one, maximum, boundary). State the empty case in the requirement itself: no matches is an empty
+`Vec`, not an error and not `None`.
+
+**When to apply it strictly, and when not.**
+
+- *Strictly* for a bug fix (the failing test is the reproduction and stays as the regression test), for logic with a clear input-to-output contract, and for anything behind a public API.
+- *Loosely* for exploratory work where the interface is not known yet: spike without tests, learn the shape, then throw the spike away or write the tests before it is merged. Do not let a spike become the implementation untested.
+- *Not test-first* for pure wiring, generated code and thin adapters; an integration test afterwards covers them better than unit tests written in advance.
+- Anti-pattern: writing the implementation, then writing tests that assert whatever it does. Those tests pin the bugs.
+- Anti-pattern: changing the assertion to make a failing test pass, without first deciding whether the code or the test was wrong.
+
+**Cheap checks before commit.** Search the added lines of the diff for `TODO`, `FIXME`,
+`todo!`, `unimplemented!` and `dbg!`, and the added non-test lines for `.unwrap()` and
+`.expect(`. Each hit is either removed or justified.
+
+### The requirement-to-test table
+
+| Requirement | Test | Type | Asserts | Evidence kind |
+|---|---|---|---|---|
+| REQ-RUST-001.0 | `req_001_rejects_empty_id` | unit | An empty ID returns `IdError::Empty` | correctness |
+| REQ-RUST-001.0 | `req_001_persists_and_reloads` | integration | A stored entity reloads equal | integration |
+| REQ-RUST-003.0 | `ui/unsealed_state.rs` | compile-fail | Sending before connecting does not compile | misuse |
+| REQ-RUST-004.0 | `req_004_round_trip` | property | `decode(encode(x)) == x` | invariant |
+| REQ-RUST-005.0 | `req_005_counter_under_contention` | loom | No lost update with two writers | safety |
+| REQ-RUST-006.0 | `bench_filter_10k` | benchmark | p99 under 500 µs for 10,000 entities | latency |
+
+- The rows are an example, not a quota. A small change may have two.
+- Read the last column top to bottom as a risk profile. All "correctness" and no "safety" on code with shared state is a finding before any code is read.
+- *Use the table when* the work has stated requirements or is being reviewed by someone else. *Skip it for* a small fix, where the test name and the commit message carry the same information.
+
+### Test names and shape
+
+Name a test for the behaviour it proves, and include the requirement ID when there is one. The
+name should read as a sentence when the test fails.
+
+```rust
+#[test]
+fn req_001_filter_keeps_only_implementation_entities() {
+    let input = mixed_entities();
+
+    let output = filter_implementation_entities(&input);
+
+    assert!(!output.is_empty(), "fixture must contain implementation entities");
+    assert!(output.iter().all(Entity::is_implementation));
+}
+```
+
+- **Guard against the vacuous pass.** `all()` on an empty collection is true. Assert the count or non-emptiness first.
+- Arrange, act, assert, with one behaviour per test. Several assertions about one behaviour are fine.
+- `test_1`, `it_works` and `test_filter` say nothing when they fail. `filter_returns_empty_for_empty_input` does.
+
