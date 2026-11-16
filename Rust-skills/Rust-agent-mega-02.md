@@ -7900,3 +7900,105 @@ pub fn discover() -> Result<Option<Self>, ConfigError> {
 handle.** Use the driver's statement cache (`prepare_cached` in `rusqlite`), and do not
 share one connection across threads without a pool or a documented lock.
 
+### Last service patterns
+
+**A relative path in a configuration file is relative to that file,** not to the working
+directory. The single load function records the file's directory, and every path field is
+read through a resolver.
+
+```rust
+impl AppConfig {
+    pub fn load(path: &Path) -> Result<Self, ConfigError> {
+        let mut config: AppConfig = parse(&fs::read_to_string(path)?)?;
+        config.base_dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+        Ok(config)
+    }
+
+    pub fn auth_env_file(&self) -> Option<PathBuf> {
+        let path = Path::new(self.auth.env_file.as_deref()?);
+        Some(if path.is_absolute() { path.to_path_buf() } else { self.base_dir.join(path) })
+    }
+}
+```
+
+- `base_dir` is private and skipped by serde. Do not derive `Default` on such a type: an empty base directory resolves silently against the working directory.
+
+**A read-only query gate.** When users or agents may submit queries but only reads are
+allowed:
+
+- **The database enforces it:** a read-only role or connection (`SQLITE_OPEN_READ_ONLY`, a role with only `SELECT`), plus a statement timeout and a row limit.
+- A validator in front is defence in depth: one shared function for every entry point, which strips literals and comments, rejects statement separators, and rejects mutating keywords on word boundaries.
+- **A keyword scan alone is not a sandbox.** Functions with side effects, pragmas and writable common table expressions get past it.
+- Test forbidden keywords in comments, in strings and in mixed case.
+
+**A service address taken from the request is checked against an allow-list.** A handler
+that forwards to a `url` parameter is a request-forgery hole. The default is a named
+constant, overrides come from configuration, and traversal parameters such as `depth` are
+bounded in the typed query struct.
+
+**Additive schema repair for an embedded database.** An embedded SQLite application may add
+missing nullable or defaulted columns at start-up by comparing `PRAGMA table_info` with the
+schema in the code.
+
+- Identifiers come from the code, never from input.
+- Type changes, backfills, index rebuilds and anything destructive stay ordered migrations, tracked by a version (`PRAGMA user_version` or a migrations table).
+- Test against saved copies of old database files.
+
+**A registry of named pipelines** (tokenisers, analysers) hands out a clone, so no lock is
+held while the pipeline runs. Re-registering an existing name silently invalidates data
+built with the old pipeline: reject it or version the name. Freeze the registry after
+start-up when persisted data depends on it.
+
+**Result limits resolve in one helper:** configuration, then the caller's default, then a
+built-in default. Clamp to at least 1. An interactive tool may log a malformed limit and
+use the default; a service fails start-up.
+
+## 15. Tauri desktop apps
+
+A Tauri application is two programs with a trust boundary between them: a webview running
+front-end code, and a Rust process with the user's privileges. Most Tauri-specific defects
+live at that boundary or in the desktop lifecycle, not in either half alone.
+
+Where Tauri's security or lifecycle rules conflict with a general Rust habit, the Tauri
+rule wins. Check everything here against the project's Tauri major version: capability and
+permission formats changed between 1 and 2.
+
+### Classify the work
+
+| The change touches | Decide first | Verify with |
+|---|---|---|
+| A command or event (IPC) | The typed contract: arguments, result, error shape | Rust tests of the core, a contract check both sides share, mocked-IPC front-end tests |
+| Managed state | Who owns it, which lock, what crosses an await | Rust unit and concurrency tests |
+| Filesystem, shell, plugin or capability scope | The narrowest permission, per window | A test that the out-of-scope call is denied |
+| Sidecar or external binary | Who supervises it, how it is packaged per platform | A packaged-build check; a kill-and-restart test |
+| Updater | Signing key custody, endpoint, rollback | A staged update on each platform |
+| Tray, single instance, deep link, window state | The lifecycle path: cold start, already running, shutdown | Manual or automated runs on each platform |
+| Front-end only, never crossing IPC | Nothing Tauri-specific | Front-end tests |
+
+### How to work
+
+1. **Name the boundary crossed** before anything else: which window, which command, which permission. A plan that never names a window, a permission or an IPC shape has not yet dealt with Tauri.
+2. **Write requirements with a checkable outcome** (section 3). "Safer" and "more reliable" are not requirements. Do not quietly reword a vague request into a different vague one; ask.
+3. **Design across four layers:** the front-end contract, the command layer, the Rust core, and the desktop permissions and lifecycle.
+4. **Keep commands thin** over a core that tests without a desktop runtime. A trivial command needs no extra layer.
+5. **Match each test to the boundary where the risk lives.** Passing front-end tests say nothing about the IPC contract. A permission requirement proved only by a unit test is tested in the wrong place.
+6. **Run the gates and record each result:** format, lints, Rust tests, Rust build, front-end checks, Tauri build. A gate that could not run on this platform is recorded as skipped, not passed.
+
+**Size the effort by the trust boundaries crossed, not by the diff.** A small diff that
+rewrites every window's permissions is a large change. Styling that never crosses IPC needs
+none of this.
+
+**Tauri-specific failure classes to look for:**
+
+- **A permission gap that appears only in the packaged build.** It often surfaces in the webview as a generic error. Catch it with a mocked-IPC or denied-call test before packaging.
+- **Payload drift** between the front end and a command: a renamed field, a changed casing, an optional that became required.
+- **An unsupervised sidecar** that dies and nothing notices.
+- **A broken single-instance handoff:** the second launch's arguments or deep link never reach the first instance.
+- **Behaviour that differs by platform:** paths, tray, window decorations, webview engine.
+
+- A wrong permission or an untyped payload ships inside a binary on users' machines and cannot be hot-fixed like a server. These come before general tidiness.
+- Front-end code calling `window.__TAURI__` globals with no typed wrapper has skipped the contract.
+- A gate command copied from another repository can run nothing and still exit zero. Confirm it did real work.
+- Classify a failing gate before rerunning it. One rerun for a transient cause; repeated silent reruns hide a real failure.
+- Split the work by window or capability domain when window labels, capability files, sidecars or platform differences multiply, and add a dedicated security review.
+
