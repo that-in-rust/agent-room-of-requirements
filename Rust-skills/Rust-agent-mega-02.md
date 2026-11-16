@@ -8837,3 +8837,75 @@ test("the settings screen shows the stored theme", async () => {
 - **A bundled binary is part of your release:** it is signed and notarised with the application where the platform requires it, and its licence and vulnerabilities are yours.
 - Read-only resources go in `bundle.resources` and are located through the path API at run time. The installation directory is not writable; anything the application modifies is copied to the data directory first.
 
+### Deep links with single instance in practice
+
+A deep link can arrive three ways: as the launch argument of a cold start, as the argument
+of a second launch that the single-instance plugin hands over, or as an event while the
+application runs. **All three go through one parser and one router.**
+
+```rust
+pub fn run() {
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        // First, so no other plugin starts work in a process that is about to exit.
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            window::reveal_main(app);
+            links::route_all(app, args.iter().skip(1).map(String::as_str));
+        }));
+    }
+
+    builder
+        .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            #[cfg(any(windows, target_os = "linux"))]
+            app.deep_link().register_all()?;                 // development and unpackaged runs
+
+            if let Some(urls) = app.deep_link().get_current()? {
+                links::route_all(app.handle(), urls.iter().map(|url| url.as_str()));
+            }
+            let handle = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                links::route_all(&handle, event.urls().iter().map(|url| url.as_str()));
+            });
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+// links.rs
+pub enum LinkAction {
+    OpenNote(NoteId),
+    CompleteSignIn { state: OAuthState, code: AuthCode },
+}
+
+pub fn parse(raw: &str) -> Result<LinkAction, LinkError> {
+    let url = Url::parse(raw)?;
+    if url.scheme() != "notes-app" {
+        return Err(LinkError::WrongScheme);
+    }
+    match (url.host_str(), url.path()) {
+        (Some("note"), path) => Ok(LinkAction::OpenNote(path.trim_start_matches('/').parse()?)),
+        (Some("auth"), "/callback") => parse_sign_in(&url),
+        _ => Err(LinkError::UnknownAction),
+    }
+}
+```
+
+```json
+{ "plugins": { "deep-link": { "desktop": { "schemes": ["notes-app"] } } } }
+```
+
+- **Register single-instance first.** It has no JavaScript interface; drive it from Rust.
+- **Parse every link into a closed set of typed actions.** Reject the rest and log it. Never pass a link's text to a shell, a file path, a navigation or an `eval`.
+- **Matching the scheme proves nothing about the sender.** Any web page, e-mail or local program can open `notes-app://...`, and a user can type one as a launch argument.
+- **A link may navigate; it may not act.** Opening a note is fine. Deleting, sending, paying or changing settings needs a confirmation the user sees inside the application.
+- **A sign-in callback is checked against a pending request:** the `state` value the application generated, unexpired, used once. An unsolicited callback is dropped.
+- **Second-launch arguments are filtered:** only arguments that parse as a link (or as your launch options) are routed. The rest are ignored.
+- A link that arrives before the window or the session is ready is queued in state and handled when ready, not dropped and not handled twice.
+- Runtime registration (`register_all`) is for development, AppImage-style runs and portable builds. Installed applications get the scheme from the bundle; on macOS it comes from the bundle only, so it works only in a built application.
+- If the front end listens for the link event itself, its capability needs the event and deep-link permissions. Routing in Rust and sending the front end a typed action keeps the parser in one place.
+- Another application can register the same scheme. Do not send secrets through a custom scheme without a binding such as PKCE.
+
