@@ -5639,3 +5639,124 @@ impl Language {
 - **Raw-pointer containers** (intrusive lists, linked nodes) sit behind a narrow set of typed operations written once, as a generic or a macro. The raw form never leaks out of its module. Try an arena with indices first.
 - **Arena handles do not survive a rebuild of the arena.** Either the arena never moves or reuses slots, or handles carry a generation that is checked.
 
+### More handle and callback rules
+
+**A typed wrapper keeps its library context alive.** The wrapper holds the raw handle, an
+`Arc` of the context the handle belongs to, and the element type as `PhantomData<T>`. `Drop`
+frees the handle; the `Arc` guarantees the context is still there when it does.
+
+```rust
+pub struct SparseMatrix<T: ValueType> {
+    context: Arc<Context>,
+    raw: ffi::Matrix,
+    _element: PhantomData<T>,
+}
+
+impl<T: ValueType> SparseMatrix<T> {
+    /// Gives up ownership. The caller must free the handle while the context lives.
+    pub fn into_raw(self) -> (ffi::Matrix, Arc<Context>) {
+        let this = ManuallyDrop::new(self);
+        // SAFETY: `this` is never dropped, so the `Arc` is moved out exactly once.
+        (this.raw, unsafe { ptr::read(&this.context) })
+    }
+}
+```
+
+- Handing ownership out is safe, like `Box::into_raw`; taking a raw handle back in (`from_raw`) is the `unsafe` direction, because the caller vouches for where it came from.
+- A handle borrowed from another owner gets a separate borrowed wrapper with a lifetime, and no `Drop`.
+- Review drop, clone, extraction and the context's lifetime together, and re-justify each `unsafe impl Send` or `Sync` when any of them changes.
+
+**One opaque Rust type per kind of foreign object,** so two handle types cannot be passed for
+each other.
+
+```rust
+#[repr(C)]
+pub struct Store {
+    _data: [u8; 0],
+    _marker: PhantomData<(*mut u8, PhantomPinned)>,
+}
+
+pub type StoreRef = *const Store;
+```
+
+- The marker makes the type `!Send`, `!Sync` and `!Unpin`, and it can never be constructed or read in Rust. Take integer and boolean widths from the `-sys` crate's typedefs (`c_int`, `c_long`), never from a guess: `long` is 32 bits on Windows.
+
+**A closure handed to a C library** that takes a function pointer and a user-data pointer:
+
+- Box a context struct holding the closure and anything it must keep alive. Pass `Box::into_raw` as the user data, and register an `extern "C"` trampoline that casts the pointer back and calls the closure inside `catch_unwind`.
+- **Reclaim the box with `Box::from_raw` in exactly one place,** reached both when the callback is replaced and when the owner is dropped. Clear the registration in the C library first, so it never holds a dangling pointer.
+- If the library may call from another thread, the closure must be `Send`; say so in the bound.
+- **State for a single-threaded host** (an editor's scripting engine, a UI thread) can be `Rc<RefCell<T>>`. The wrapper is then `!Send`, which is the correct statement of the host's rule. Do not reach for `Arc<Mutex<T>>` to quiet the compiler.
+- Positions crossing such a boundary are newtypes converted at the edge; the two sides often count in different units (bytes, UTF-16 units, characters).
+
+**A synchronous foreign surface shares one runtime.** When the host cannot await a Rust
+future, the FFI library holds one process-wide runtime and each exported method calls
+`block_on` on it. No exported method builds its own.
+
+```rust
+static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("tokio runtime for the FFI layer")
+});
+
+impl Client {
+    pub fn connect(&self) -> Result<(), ClientError> {
+        RUNTIME.block_on(self.inner.connect())
+    }
+}
+```
+
+- This belongs at the FFI edge only. Calling `block_on` from inside async code panics or deadlocks; a callback that re-enters an exported method from a runtime thread hits exactly that.
+
+**Smaller rules.**
+
+- **Resources in a managed runtime** (a JVM object behind a global reference) are owned by a Rust wrapper. Scope-bound local references never leave it. `Drop` closes the resource and logs a failure; it never panics.
+- **`Drop` does not run on abort, `SIGKILL` or power loss.** A type that creates a temporary system resource (a mount, a keychain, a lock file) also offers explicit clean-up, and start-up removes leftovers from a previous crashed run.
+- **Generated C is not held to your warning policy.** When a build script compiles generated code with `cc`, turn warnings off for that unit.
+- **A binding crate tests every public member on every target it claims.** A binding that passes on the host can fail under another ABI. Tests that share one native object do not depend on order.
+- **A binding generator evaluates C constants in a wide type** (`i128`) and narrows at the end, with a fixture per expression form. A macro it cannot evaluate is skipped with a diagnostic, never emitted as a wrong constant.
+- **The core `run` function takes its arguments as parameters,** not from `std::env::args()`, so a binding and the command-line binary share one implementation.
+
+**Verification for unsafe code.**
+
+| Tool | Finds |
+|---|---|
+| `cargo +nightly miri test` | aliasing violations, use of uninitialised memory, out-of-bounds and use-after-free, in what the tests execute. Cannot run foreign code. |
+| AddressSanitizer, ThreadSanitizer | memory errors and data races across the FFI boundary |
+| `cargo fuzz` | inputs that reach a bad state in parsers and decoders |
+| `loom` | interleavings of small concurrent models |
+| `cargo geiger`, `cargo-careful` | where unsafe is; extra standard-library checks |
+
+- Miri and sanitizers only judge the paths the tests take, so the tests must cover empty, one-element, boundary and error cases. A clean run is evidence, not proof.
+
+## 11. Performance
+
+**Defaults.**
+
+- **Correct first, then measured, then faster.** Do not optimise without a profile showing where time or memory goes, and do not keep an optimisation without a benchmark showing it helped.
+- **The largest wins are algorithmic and structural:** a better complexity class, less work, fewer allocations, fewer passes, data laid out for the cache. Micro-tuning comes last and matters least.
+- **Build in release mode to measure.** A debug build can be ten to a hundred times slower and has a different profile.
+- Clear, idiomatic Rust (iterators, slices, borrowed arguments) is usually already fast. Optimisation that costs clarity must pay for it in numbers.
+
+### Speed that keeps the checks
+
+- **A performance change is verified on two axes:** the benchmark delta, and that no checked operation became unchecked and no cached value can outlive its input. Do not replace `.get()` with indexing because a benchmark improved.
+- **Prefer speed-ups that add named structure to ones that remove checks.** A precomputed view as its own type is safer than a skipped validation.
+- **"Already proved above" stops being true when code moves.** If a check is removed, the invariant is stated where the check was, and ideally carried by a type.
+- **On external input, use `checked_*` arithmetic and `.get()`** for offsets, lengths and cursor movement. Use `saturating_*` only where saturation is the documented meaning, never to hide an overflow.
+- **Prepare once, query many.** Compile, normalise or index once into a named value (a compiled pattern set, a routing table), then reuse it. *Not when* the preparation costs more than the reuse saves, or the prepared value can go stale unnoticed.
+- **Accumulate, then build.** Structures that can only be optimised when the whole batch is known (pattern sets, registries) collect their inputs, and per-item errors, then build once. Do not rebuild on every addition.
+- **A builder is mutable; the configuration it produces is frozen** and cheap to share during execution.
+
+### Benchmarks you can trust
+
+- **State the conditions:** input sizes and distribution, toolchain, target, profile and features, machine. A number without them cannot be reproduced.
+- **Check both versions return the same result** before comparing their speed.
+- **Stop the optimiser deleting the work:** pass inputs and results through `std::hint::black_box`. A benchmark that reports a fraction of a nanosecond measured nothing.
+- **Report spread, not one number.** Use `criterion` or `divan` for statistics, and look at the tail (p99) for latency, since an average hides it. Reproduce a result on a second run before acting.
+- **Noise sources:** frequency scaling, other processes, cache warmth, allocator state, hash seeds, runtime start-up. For CI, instruction counts (`iai-callgrind`) are steadier than wall time.
+- **A microbenchmark supports a claim about that operation on that machine.** Confirm with an end-to-end measurement before claiming the program is faster.
+- **Let the measurement reject work.** The most useful result is often that the optimisation is unnecessary; keep the simpler code when the requirement is already met.
+
