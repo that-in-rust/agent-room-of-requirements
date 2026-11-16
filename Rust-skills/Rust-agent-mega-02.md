@@ -3144,3 +3144,116 @@ impl<F: Future> Future for Timed<F> {
 - **One wrapper around the HTTP request builder,** so hooks, authentication, timeouts and target-specific execution apply to every request. Call sites never reach the underlying client.
 - **External tools share one lifecycle trait** (minimum version, install, update, instructions) and one logging command runner. Check the version again after an automatic update, and remember that command transcripts can contain environment values.
 
+- **Optional dependencies use `dep:`,** so the feature name is yours and the dependency does not create an implicit feature. Each feature has a line of documentation saying what it adds.
+
+```toml
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1", optional = true, features = ["derive"] }
+```
+
+- **Test the feature combinations you support:** none, default, all, and each alone (`cargo hack --each-feature check`). Code behind a feature CI never enables rots.
+
+### More type details
+
+- **An associated type when the implementer fixes the answer; a generic parameter when the caller chooses.** `Iterator::Item` is associated: one iterator has one item type. `From<T>` is generic: one type converts from many. Choosing wrongly shows up as ambiguity errors or as impls you cannot write.
+- **An empty enum models "cannot happen" in a generic position.** Prefer `std::convert::Infallible` to a home-made `Void`. A `Result<T, Infallible>` is unwrapped without a panic path:
+
+```rust
+fn into_ok<T>(result: Result<T, Infallible>) -> T {
+    match result {
+        Ok(value) => value,
+        Err(never) => match never {},
+    }
+}
+```
+
+  Never pass an uninhabited type across FFI.
+- **`..` in a pattern is a decision about future fields.** Destructuring your own struct *without* `..` makes the compiler stop you when a field is added, which is what you want in `Hash`, `PartialEq`, serialisation and anything else that must consider every field. Use `..` when the code truly does not care about the others, and you must use it for `#[non_exhaustive]` types from other crates.
+
+```rust
+impl PartialEq for Account {
+    fn eq(&self, other: &Self) -> bool {
+        let Self { id, email, cached_score: _ } = self; // a new field fails to compile here
+        *id == other.id && *email == other.email
+    }
+}
+```
+
+- **Seal a trait that vouches for a representation.** A trait promising layout, a wire format, zero-copy casting or FFI safety must not be implementable outside the crate, because unsafe code relies on every implementer being correct. If outsiders must implement it, make it an `unsafe trait` with the obligations written down.
+
+```rust
+mod private {
+    pub trait Sealed {}
+}
+pub trait NativeType: Copy + Send + Sync + private::Sealed + 'static {}
+
+impl private::Sealed for u32 {}
+impl NativeType for u32 {}
+```
+
+### Macros and build scripts
+
+**Choosing.** A derive generates impls from a type's structure. An attribute macro wraps or
+rewrites an item. A function-like macro is for syntax a function cannot take: variadic
+arguments, a small DSL, compile-time checks of a literal. If a function or a generic does the
+job, write that.
+
+**`macro_rules!`.**
+
+```rust
+#[macro_export]
+macro_rules! hashmap {
+    ($($key:expr => $value:expr),* $(,)?) => {{
+        let mut map = ::std::collections::HashMap::new();
+        $( map.insert($key, $value); )*
+        map
+    }};
+}
+```
+
+- Absolute paths (`::std::`, `$crate::`) so the expansion does not depend on the caller's imports. Accept a trailing comma.
+- Each `$x:expr` is evaluated where it is written: once if used once, twice if used twice. Bind it to a `let` in the expansion if it appears more than once.
+- Use the narrowest fragment specifier that works (`ident`, `ty`, `expr`, `path`); `tt` is the escape hatch. Keep matchers simple; a recursive muncher has a recursion limit and awful errors.
+- Test the expansion like any API, including a compile-fail case for misuse. `cargo expand` shows what it produces.
+
+**Procedural macros.**
+
+- Parse with `syn`, generate with `quote!`, and put the logic in a function over `proc_macro2::TokenStream` so it can be unit-tested without a compiler. Never build code by string concatenation.
+- **A user error is a `syn::Error` at the offending span,** returned as `to_compile_error()`. A panic in a macro gives the user a message with no location. Collect several errors and report them together where possible.
+- A procedural macro runs arbitrary code at build time with the developer's privileges, and adds `syn` to everyone's compile. Keep it small and deterministic: no network, no clock, no reading files outside the crate without telling Cargo.
+- Generated code that users will see in errors should be as plain as hand-written code.
+
+**Build scripts.**
+
+```rust
+// build.rs
+use std::{env, fs, path::PathBuf};
+
+fn main() {
+    println!("cargo::rerun-if-changed=schema/api.json");
+    println!("cargo::rerun-if-env-changed=API_SCHEMA_STRICT");
+
+    let out = PathBuf::from(env::var_os("OUT_DIR").expect("set by Cargo"));
+    let code = generate_from(&fs::read_to_string("schema/api.json").expect("read schema"));
+    fs::write(out.join("api.rs"), code).expect("write generated code");
+}
+```
+
+```rust
+// lib.rs
+include!(concat!(env!("OUT_DIR"), "/api.rs"));
+```
+
+- **Write only under `OUT_DIR`.** A build script that edits the source tree breaks read-only checkouts, vendoring and reproducibility.
+- **Declare every input.** Without any `rerun-if` line the script re-runs on every change to the package; with one, it runs only when a listed input changes, so a forgotten input means stale output.
+- Output is deterministic: sort what you iterate, embed no timestamps.
+- `expect` with a message is acceptable here; a panic is how a build script reports failure. Make the message say what to fix.
+- The `cargo::` prefix needs Cargo 1.77 or later; older toolchains use `cargo:`. Check the project's minimum supported version.
+- A custom `cfg` set by the script is declared with `cargo::rustc-check-cfg=cfg(has_foo)`, or every use warns.
+- Linking: `cargo::rustc-link-lib` and `cargo::rustc-link-search`. A crate that links a native library sets `links = "name"` in its manifest so two versions cannot both be linked.
+- **Prefer checked-in generated code plus a test that it is current** when the generator is slow, needs tools users may lack, or the output is worth reviewing in diffs.
+
