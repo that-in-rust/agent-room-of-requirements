@@ -2020,7 +2020,7 @@ Length follows scope: a loop index may be `i`; a public function may not be `pro
 
 ### Anti-patterns
 
-Most of these are covered in their own sections. This is the list to scan in review. Each
+This is the list to scan before handing work over. Each
 has an exception, because the opposite mistake exists too.
 
 ### Reject by default
@@ -2070,7 +2070,7 @@ removed from a long-lived map, and anything whose clean-up is async and so canno
 - **Broad desktop privilege:** wide filesystem grants, generic shell access, sidecar processes with no owner or health check. Running on the user's own machine is not an exception.
 - **Hazards a signature does not show:** a guard kept alive by an iterator or a temporary in a `match` scrutinee; an `Arc` cycle; a new trait method that breaks object safety; a new auto-trait-breaking field (`Rc`, a raw pointer) that silently removes `Send` from a public type.
 
-### Mistakes in applying this section
+### Mistakes in applying this list
 
 - **Over-correcting.** Removing every clone, making every `&str` parameter `impl AsRef<str>`, giving every function its own error enum, adding a trait to mock one call. A clone is right when it makes ownership clear and the cost is unmeasured or small. Fix the instance that hurts.
 - **Fixing the symptom.** Similar symptoms need opposite fixes: a borrow error may want a clone, a restructured scope, or a different owner. Reproduce the failure in the smallest case, confirm the mechanism, then change the code. Adding a clone, a retry, a lock or a trait before that is guessing.
