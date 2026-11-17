@@ -1249,8 +1249,6 @@ for its own kind of Rust more firmly, that statement wins.
 - `Arc` for shared ownership across threads, `Rc` within one. Neither is a substitute for deciding who owns the data.
 - Hold locks and `RefCell` borrows for the shortest scope that is correct, and never across an `.await`.
 
-**Working with the borrow checker.**
-
 **The error usually describes a real overlap.** Find which borrow is still alive and why,
 then shorten it, instead of reaching for `clone` or `Rc<RefCell<_>>`.
 
