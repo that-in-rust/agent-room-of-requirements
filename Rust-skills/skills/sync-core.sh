@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# Copies _core.md into every skill, between the core:begin and core:end markers.
-# Run from anywhere after editing _core.md:  Rust-skills/skills/sync-core.sh
+# Copies the shared blocks into every skill:
+#   _core.md        between <!-- core:begin --> and <!-- core:end -->          (every skill)
+#   _essentials.md  between <!-- essentials:begin --> and <!-- essentials:end --> (writer skills)
+# Run from anywhere after editing either file:  Rust-skills/skills/sync-core.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 for skill in */SKILL.md; do
   grep -q '<!-- core:begin -->' "$skill" || { echo "no core marker in $skill" >&2; exit 1; }
-  awk -v core=_core.md '
-    /<!-- core:begin -->/ { print; while ((getline line < core) > 0) print line; close(core); skipping = 1; next }
-    /<!-- core:end -->/   { skipping = 0 }
-    !skipping             { print }
+  awk '
+    function emit(file,   line) { while ((getline line < file) > 0) print line; close(file) }
+    /<!-- core:begin -->/       { print; emit("_core.md");       skipping = 1; next }
+    /<!-- essentials:begin -->/ { print; emit("_essentials.md"); skipping = 1; next }
+    /<!-- (core|essentials):end -->/ { skipping = 0 }
+    !skipping { print }
   ' "$skill" > "$skill.tmp"
   mv "$skill.tmp" "$skill"
   echo "synced $skill"
