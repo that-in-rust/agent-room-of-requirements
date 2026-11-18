@@ -19,7 +19,7 @@ vague request
   -> report evidence clause by clause
 ```
 
-Ten rules carry most of the value:
+Eleven rules carry most of the value:
 
 1. Write the contract before the code. A failing test is a clearer target than prose.
 2. One requirement, one decidable behaviour. Split anything joined by "and also".
@@ -31,6 +31,8 @@ Ten rules carry most of the value:
 8. Do not invent product intent. Mark it as an assumption and ask the owner.
 9. A passing run is evidence for the clauses it observed, on the revision it ran on.
 10. When a requirement changes, its tests, evidence and approval are stale until redone.
+11. Write tests outside-in: behaviour first, then interfaces, then units. Steer with
+    the fast inner tests.
 
 ## What a Spec Is Not
 
@@ -186,6 +188,56 @@ Two layers apply. A small floor of commands is owed on every change. Heavier che
 are owed by the boundary the change touches: concurrency, unsafe, an input frontier,
 a misuse contract. Classify the change by boundary, or it gets only the floor.
 
+### Work outside-in
+
+Write tests from the outside of the system inward. Each layer narrows what the code
+can be, which is what makes an agent converge instead of wander.
+
+```text
+end-to-end test    what the user or caller must observe      (few, slow)
+        |
+interface test     which seam must provide it, and its shape (some)
+        |
+unit test          how one piece behaves                     (many, fast)
+```
+
+Why this order helps:
+
+- The outer test pins the observable outcome, so a plausible but unwanted design
+  fails early.
+- Interfaces come from what a real caller needs. The agent does not invent a seam and
+  then write tests that mirror its own code.
+- Each inner test is a smaller target with a faster signal than the one above it.
+
+Run it as two loops:
+
+```text
+write outer behavioural test -> RED (stays red; it is the goal)
+    write interface test -> RED
+        write unit test -> RED -> GREEN -> REFACTOR
+        repeat until the interface test is GREEN
+    repeat until the outer test is GREEN
+```
+
+Keep it balanced. Three limits apply:
+
+- **The outer test is the goal, not the steering signal.** A red end-to-end test says
+  something is wrong but not where. Drive each step with a fast inner test. If you
+  are editing code against a red outer test alone, stop and write a narrower one.
+- **Outside-in is the order of writing, not the proportion.** Finish with few
+  end-to-end tests and many unit tests. A large outer suite gets slow and flaky, and
+  a flaky outer test tempts an agent to change the test.
+- **Write inner tests just in time.** Write the outer test first, then interface and
+  unit tests as the design emerges. Unit tests written up front for a guessed design
+  freeze the guess.
+
+One exception: for an algorithmic core such as a parser, codec or state machine, the
+outer test still defines the goal, but property tests on the core usually do more of
+the work than another end-to-end case.
+
+Make the outer test deterministic before relying on it: fixed clock, fixed seed,
+disposable data, substituted external services.
+
 ### Make sure the check can fail
 
 A linked test name is not coverage. For each check, ask:
@@ -211,6 +263,10 @@ STUB -> RED -> GREEN -> REFACTOR -> VERIFY
 - **GREEN.** Write the smallest code that satisfies the contract.
 - **REFACTOR.** Improve names and structure while the checks stay green.
 - **VERIFY.** Run the full gate set and walk the matrix clause by clause.
+
+Apply the loop outside-in: the outer behavioural test goes red first and stays red
+while inner interface and unit tests cycle red to green beneath it (see "Work
+outside-in" in Step 3).
 
 Work one requirement at a time. After each one goes green, write a short checkpoint
 (what is done, what is next, what you learned) to a file. Context windows forget;
@@ -354,6 +410,11 @@ Each line is a failure, how to spot it, and what to do instead.
   Treat it as advisory until it has failed on a known defect.
 - **Flaky verdict.** Timing or randomness decides the result.
   Inject the clock and seed; isolate the dependency.
+- **Outer test as steering.** Code is edited repeatedly against one red end-to-end
+  test.
+  Write a narrower failing test at the seam.
+- **Inside-out guess.** Unit tests written for a design no caller has asked for.
+  Start from the outer behaviour and derive the seam.
 - **Tests exist, so done.** The handoff omits skipped checks and uncovered clauses.
   Report clause by clause.
 - **Coverage as proof.** High coverage with weak assertions.
@@ -416,6 +477,8 @@ Do this in order:
 5. Build a test matrix: req_id, test_id, type, assertion. Every clause gets a check
    that would fail if the behaviour were removed.
 6. Plan STUB -> RED -> GREEN -> REFACTOR -> VERIFY, one requirement at a time.
+   Write the outer behavioural test first, then interface tests, then unit tests
+   just in time. Keep few end-to-end tests and many unit tests.
 7. After implementing, run the gates fresh, read the full output, and report per
    clause as verified, inferred or unknown.
 
