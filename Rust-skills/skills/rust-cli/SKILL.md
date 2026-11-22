@@ -989,6 +989,12 @@ fn renders_a_two_node_graph() {
 `main`; diagnostics on stdout; a shell string built from input; `Path::exists` followed by
 an open; colour codes in piped output; `String` for paths; a fixed sleep used as a wait.
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **A path resolver bounded to the repository.** Keep raw user paths and resolved absolute paths as two types. Resolve symlinks before checking containment. Access outside the repository needs an explicit `allow_outside` capability passed by the caller, never a default.
+
 ## Out of scope
 
 - **A long-running server or worker.** Use the application-service skill.

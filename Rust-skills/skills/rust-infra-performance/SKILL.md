@@ -1246,6 +1246,13 @@ fn interning_returns_the_same_allocation() {
 - Was the parallel path run under contention, and is output order still deterministic?
 - Is any `unsafe` or lock-free code here justified by a measurement?
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **Columnar builders advance values and validity together (Arrow).** `append_value` and `append_null` both push to the value buffer and to the validity mask. Test that the length and the null count are right after every append and after `finish`.
+- **Rate-limited logging per call site.** A macro holds a static `AtomicU64` counter for each call site and logs at most a set number of events per minute from it (`limit_per_min` in Quickwit). Pair it with a metric, because the suppressed lines are exactly the ones that showed how often the failure happens.
+
 ## Out of scope
 
 - **Service latency caused by pools, transactions or fan-out.** Use the application-service skill first.

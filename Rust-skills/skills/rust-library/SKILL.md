@@ -1150,6 +1150,16 @@ it for an application crate nobody links against.
 removes items; `println!` in library code; a panic on a path input can reach; a public
 item renamed in place for style.
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **Feature combinations.** `--all-features` is wrong when features exclude each other. Name the supported combinations, or run `cargo hack --feature-powerset check`. Add `--locked` in CI when the lockfile is committed, so CI fails if the lockfile is stale.
+- **Generated code written once per content.** Hash the generator's input (for example with `blake3`), write the output under `$OUT_DIR/<checksum>`, and write the file only if its content changed, so unchanged inputs do not trigger rebuilds. Emit the path through `ToTokens`.
+- **A platform workaround gets its own module.** Put the rewrite and its inverse in two pure functions (for example `apply_uri_work_around` and `revert_uri_work_around`) and test that they round-trip.
+- **"Not provided" is not the same as an explicit `None`.** When an API must tell them apart, for example during a deprecation window, use a dedicated enum variant for "not provided".
+- **An optional hook without `Option`.** Implement the hook trait for `()` as a no-op and make that the default type parameter. Request handling then has no `Option<Hook>` branches.
+
 ## Out of scope
 
 - **Hot loops, allocation tuning, custom data structures, parsers and indexes.** Use the infra skill.

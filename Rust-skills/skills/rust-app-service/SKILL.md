@@ -1376,6 +1376,17 @@ rollback.
 The reject-on-sight list is under "Layers", and the release blockers are under "Security
 of a service". Check a change against both before handing it over.
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **An "already in progress" marker with Redis.** `SET key value NX` with a TTL lets one caller claim a piece of work; the expiry frees it if the holder dies. Test it with ten concurrent callers and assert that exactly one wins.
+- **Concurrency tests against a real database.** Run Testcontainers-based tests serially for isolation, then spawn several tasks (five is enough) that insert at once, to exercise the application's own concurrency against real Postgres.
+- **Embedding one query language in another.** When Cypher is wrapped in a PostgreSQL call, allow-list every graph and SQL identifier and choose a dollar-quote delimiter that cannot occur in the embedded text.
+- **A typed local event broker.** Keep one subscription map per event type in a type-keyed map. Subscribing returns a handle that unsubscribes when dropped, and each callback runs under a timeout so one slow subscriber cannot stall publishing.
+- **Shutdown with a final checkpoint.** On a stop signal, request a checkpoint and wait for it with a limit (120 seconds in the observed runner); after the limit, shut down immediately.
+- **When to change the test strategy.** A second service in one user journey calls for contract tests. A datastore shared between suites calls for isolation at schema level. A suite that has grown too slow calls for tiers that are named for what they skip.
+
 ## Out of scope
 
 - **Hot loops, parsers, indexes, storage engines and custom data structures.** A service that contains one hands that part to the infra skill.
