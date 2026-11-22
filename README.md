@@ -10,3 +10,11 @@ Start with [A00](A00-LLM-Principles01.md), [A01](A01-LLM-Workflow01.md), and
 - [Skills library](library/skills/README.md)
 
 Historical material lives in [archive](archive/monthly-agent-snapshots/).
+
+## Where this library is going
+
+This repository is being reduced from 993 files to about 100: one stand-alone skill per
+subject, no duplicate copies, and no records of how documents were produced. Unique guidance
+is merged, not dropped. The target is written as an
+[executable specification](docs/specs/library-reduction/spec.md), and progress is whatever
+`python3 docs/specs/library-reduction/check.py` reports.
