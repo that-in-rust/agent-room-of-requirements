@@ -10,4 +10,4 @@ Start with [A00](A00-LLM-Principles01.md), [A01](A01-LLM-Workflow01.md), and
 - [Rust skills](Rust-skills/skills/README.md) — domain-specific Rust guides with embedded shared core
 - [Curated third-party skills](library/third-party/ATTRIBUTION.md) — MIT-licensed upstream skills with attribution and upstream links for non-MIT references
 
-Historical snapshots and generation logs were removed during the library reduction and remain available in git history. The reduction specification is in [docs/specs/library-reduction/spec.md](docs/specs/library-reduction/spec.md) and verified by `python3 docs/specs/library-reduction/check.py`.
+For the decisions behind this layout and links to earlier skills, references and research, read [How the library evolved](journal-of-evolution/README.md). The reduction specification is in [docs/specs/library-reduction/spec.md](docs/specs/library-reduction/spec.md) and verified by `python3 docs/specs/library-reduction/check.py`.
