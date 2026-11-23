@@ -1225,6 +1225,13 @@ Reject by default:
 - **Front end:** listeners are removed on unmount; mocks are cleared between tests.
 - **Build:** hooks and output paths match the front-end tooling; platform overrides are intentional and small; updater keys are not in the repository; no secret or sensitive payload is logged.
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **Writing a plugin.** The raw `Plugin<R>` trait is wide: startup, command dispatch, navigation, webview creation, page load, runtime events, URI schemes and teardown. `tauri::plugin::Builder` lets a plugin supply only the callbacks it needs and returns one `TauriPlugin`, which implements `Plugin<R>` with defaults for the rest.
+- **The runtime is an adapter.** `Runtime` and its associated types hide the platform; `Wry<T>` is the default implementation. The contract includes ordering and platform facts: the runtime's `new` must be called on the main thread (`new_any_thread` exists only on some platforms), dispatcher handles must be `Send + Sync`, and most calls return `Result` because the window system can fail.
+
 ## Out of scope
 
 - **Tauri plugin internals and mobile-only APIs.** Read the plugin's own documentation for the locked version.

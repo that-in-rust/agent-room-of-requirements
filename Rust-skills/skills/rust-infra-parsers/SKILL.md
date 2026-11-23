@@ -915,6 +915,19 @@ fn renders_a_two_node_graph() {
 - Is any edit applied to text other than the text it was computed from?
 - Is there a property test, a corpus of malformed input and a fuzz target?
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **Reduced-core test fixtures (rust-analyzer).** Analysis tests do not load the real standard library. A fixture header such as `//- minicore: option, result, iterator` asks one fixture file for only the lang items, traits, macros and primitive impls the test needs. Fake core semantics then change in one file, not across hundreds of tests.
+- **Incremental re-parsing in an editor (Warp, tree-sitter).** Key syntax trees and highlight caches by buffer version. Apply an `InputEdit` to the old tree before re-parsing, keep a bounded number of old trees, and abort a parse whose buffer version is already stale.
+- **The tree-sitter interface is the grammar plus its query captures.** Callers depend on capture names, not on node shapes: `(function_definition name: (word) @name)`, `(command_name (word) @call)`, `(comment) @comment`. The generated C entry point (`const TSLanguage *tree_sitter_<lang>(void);`) is the only binding seam; keep it in one adapter.
+- **Language quirks behind a trait, selection by enum (ast-grep).** Parser quirks live in `Language` / `LanguageExt` implementations. A `SupportLang` enum dispatches to them, and one central table maps file extensions to the enum.
+- **Tree traversal from two primitives (DataFusion).** Implement only `apply_children` and `map_children`; derive visit, transform-down, transform-up, rewrite and early-stop traversal from them. A rewrite rule returns a `Transformed` value carrying a changed flag, so the driver never compares plans for equality. Test that each rule is idempotent, and cap the number of passes so a rule that always reports "changed" cannot loop forever.
+- **Fixed-point loops in differential dataflow do not consolidate for you.** Inside `iterate`, add `consolidate()`, `distinct()`, `count()` or another operator that makes the collection converge.
+- **Parser entry points own padding and end of input.** Wrap the top-level parser so it consumes surrounding whitespace and then requires end of input (`then_ignore(end())` in `chumsky`). Inner parsers stay reusable, and trailing garbage is rejected in one place.
+- **Statement splitting for a query shell (Neo4j cypher-shell).** Recognise shell commands only where a statement may start. A semicolon inside a comment, a quoted string or an escape does not end the statement; test each of those cases.
+
 ## Out of scope
 
 - **Argument parsing, exit codes and file discovery for the tool's binary.** Use the command-line skill.

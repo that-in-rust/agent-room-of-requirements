@@ -506,6 +506,13 @@ Reject by default:
 - Piped output carries no colour codes or progress bars.
 - Configuration is resolved once at start-up, and a broken configuration file is an error that names the file.
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **Coverage per crate.** A workspace total can hide one poorly tested crate. On a multi-crate release, give a readiness verdict for each crate. A line-coverage floor (75% with `cargo-llvm-cov` in the source checklist) is a gate to add when risk calls for it, not one of the default gates.
+- **Failure drill.** Before calling a service ready, inject one dependency failure, one slow path, one malformed input and one stale-data case, and write down how the system recovered from each.
+
 ## Out of scope
 
 - **Writing the code.** Use the writer skill for the kind of Rust in question.

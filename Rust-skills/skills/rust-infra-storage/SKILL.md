@@ -981,6 +981,16 @@ fuzz_target!(|data: &[u8]| {
 - What bounds each buffer and queue, and what happens when it is full?
 - Are there round-trip tests, a fixture from each old version, and a decoder test split at every byte?
 
+## Patterns seen in production repositories
+
+Each entry names the project it was observed in. Treat them as shapes to adapt, not as APIs to copy.
+
+- **Append-only segment writer (Iggy).** Write batches with vectored positioned writes (`write_vectored_all_at`), in chunks of at most `MAX_IOV_COUNT` buffers. Take the write position from an atomic byte counter that tracks the segment size. Make `fsync` an explicit policy flag, so its cost is a visible choice and not a hidden default.
+- **A scan contract that carries the performance facts (DataFusion `TableProvider`).** The scan call receives projection indexes in schema order, filters and a limit. Filters may name columns outside the projection. Each provider declares which filters it can push down, so the planner never guesses.
+- **One access trait over many back ends (OpenDAL).** The `Access` trait has associated reader, writer, lister and deleter types, and every operation a back end does not support defaults to `ErrorKind::Unsupported`. A layer (`LayeredAccess`) overrides only what it changes and forwards the rest, which is how retry, timeout, logging, metrics and tracing are added. Layers use static dispatch; erase the type once, when the builder finishes. Every error carries the operation, service, path and byte range.
+- **Resolve a URI to a storage handle (Quickwit).** A resolver maps a URI to an `Arc<dyn Storage>`, and an in-memory implementation (`RamStorage`) is registered the same way for deterministic tests. Write one adapter-independent test suite and run it against the memory and filesystem adapters before adding object storage: missing files, range reads, streaming, whole-object reads, deleting twice, a bulk delete that partly fails, and the URI the store reports.
+- **Keep handlers behind a small async storage trait.** A registry service's handlers depend on a trait that returns boxed readers, so disk, object storage and test doubles vary without touching the handlers.
+
 ## Out of scope
 
 - **SQL schema migrations and transactions in a service.** Use the application-service skill.
