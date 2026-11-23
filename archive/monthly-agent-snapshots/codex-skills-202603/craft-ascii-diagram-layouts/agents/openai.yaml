@@ -1,4 +1,0 @@
-interface:
-  display_name: "Craft ASCII Diagram Layouts"
-  short_description: "Create terminal-native ASCII explainers"
-  default_prompt: "Use $craft-ascii-diagram-layouts to turn this topic into a terminal-native ASCII explainer page with a title, short setup text, stable panel widths, and clean vertical sections."

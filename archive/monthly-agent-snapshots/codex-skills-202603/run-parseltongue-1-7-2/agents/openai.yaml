@@ -1,4 +1,0 @@
-interface:
-  display_name: "Parseltongue 1.7.2 Runner"
-  short_description: "Run Parseltongue for graph workflows"
-  default_prompt: "Use $run-parseltongue-1-7-2 to install Parseltongue 1.7.2, resolve the live server URL, and run forward, backward, meet-in-the-middle, or derived flow-pattern workflows on a codebase."

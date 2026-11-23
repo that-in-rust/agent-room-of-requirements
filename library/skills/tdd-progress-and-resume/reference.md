@@ -471,10 +471,10 @@ further failure case: its phase is wrong, and a wrong journal is worse than none
 
 ```bash
 P=journals/message-dedupe.md
-python3 scripts/progress_journal_orchestrator.py init --path "$P" --task "Message dedupe by client_message_id"
+python3 scripts/journal_orchestrator.py init --path "$P" --task "Message dedupe by client_message_id"
 
 # STUB: test and interface written, not yet run
-python3 scripts/progress_journal_orchestrator.py update --path "$P" --phase Red \
+python3 scripts/journal_orchestrator.py update --path "$P" --phase Red \
   --focus "STUB dedupe test and service signature" \
   --test "test_create_message_deduplicates_client_message_id|pending|second POST with same id returns first record" \
   --implementation "src/domain/message_service.rs: find_by_client_message_id signature only" \
@@ -483,7 +483,7 @@ python3 scripts/progress_journal_orchestrator.py update --path "$P" --phase Red 
   --metric "N/A - no benchmark until Green"
 
 # RED witnessed
-python3 scripts/progress_journal_orchestrator.py update --path "$P" --phase Red \
+python3 scripts/journal_orchestrator.py update --path "$P" --phase Red \
   --focus "Dedupe test fails for the right reason" \
   --test "test_create_message_deduplicates_client_message_id|failing|expected 1 row, got 2" \
   --next-step "Implement lookup by client_message_id in message_service.rs" \
@@ -491,7 +491,7 @@ python3 scripts/progress_journal_orchestrator.py update --path "$P" --phase Red 
   --next-step "Re-run the dedupe test, then the full suite" \
   --metric "N/A"
 
-python3 scripts/progress_journal_orchestrator.py snapshot --path "$P"
+python3 scripts/journal_orchestrator.py snapshot --path "$P"
 ```
 
 Good entries name a real test, its status, its expectation and one file-scoped action.
@@ -617,11 +617,11 @@ grep -cE '^- .+: (passing|failing|pending)( - .*)?$' "$J"
 grep -A1 '^### Next Steps:' "$J" | grep -cE '^1\. .+'
 
 # Script: unchanged copy, and help text
-python3 scripts/progress_journal_orchestrator.py --help
-python3 scripts/progress_journal_orchestrator.py update --help
+python3 scripts/journal_orchestrator.py --help
+python3 scripts/journal_orchestrator.py update --help
 
 # Staleness: last entry time against last commit time
-python3 scripts/progress_journal_orchestrator.py snapshot --path "$J" | grep '^Updated:'
+python3 scripts/journal_orchestrator.py snapshot --path "$J" | grep '^Updated:'
 git log -1 --format='%cI'
 ```
 

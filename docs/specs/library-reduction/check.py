@@ -133,6 +133,7 @@ def check_library_index_links_skills():
 
 def check_relative_links_all_resolve():
     dead = [(f, t) for f in FILES if f.endswith(".md") and not f.startswith("library/third-party/")
+            and f not in ROOT_DOCS
             for t in links_of(f) if not os.path.exists(t)]
     return not dead, f"{len(dead)} broken relative links"
 

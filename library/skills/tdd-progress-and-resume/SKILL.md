@@ -12,7 +12,7 @@ description: >-
   says "where were we", "save progress", "checkpoint this", "resume the TDD work", "hand
   this off", "tests are red now", "all green, time to refactor", "back up the last 5
   messages", "dump recent chat to a file"; when a journals/*.md progress journal, a
-  chat-checkpoint-*.md file or scripts/progress_journal_orchestrator.py is involved. Not
+  chat-checkpoint-*.md file or scripts/journal_orchestrator.py is involved. Not
   for writing requirements or a test matrix (use executable-specs), finding the cause of an
   unknown failure (debug first, then come back with a reproducing test), a one-sitting task
   that finishes warm, full-thread export or encrypted or managed transcript storage,
@@ -91,7 +91,7 @@ both matter.
 1. **Decide and initialize.** At task start, decide whether to journal. If yes, create one
    journal per feature, ticket or workstream. If a journal for this workstream already
    exists, continue it; never start a fresh one beside it.
-   `python3 scripts/progress_journal_orchestrator.py init --path journals/<name>.md --task "<title>"`
+   `python3 scripts/journal_orchestrator.py init --path journals/<name>.md --task "<title>"`
 2. **Work the cycle one behaviour at a time.** STUB -> RED -> GREEN -> REFACTOR, with the
    two witnessed gates (see "The cycle"). One requirement at a time.
 3. **Checkpoint on triggers.** Append an entry at every phase change, test-surface change,
@@ -273,7 +273,7 @@ second reader check entries, since nothing enforces the structure.
 - [Benchmarks, budgets, limits, or N/A]
 ```
 
-**Script shape.** `scripts/progress_journal_orchestrator.py` writes a file header and
+**Script shape.** `scripts/journal_orchestrator.py` writes a file header and
 appends `### Session: <UTC time>` blocks with `####` section headings. Next steps are
 bullets in the order the flags were given; the first `--next-step` is step 1.
 
@@ -363,7 +363,7 @@ that must be validated. This applies after any pause, including a short one.
 **Protocol**
 
 1. Read the latest snapshot.
-   `python3 scripts/progress_journal_orchestrator.py snapshot --path journals/<name>.md`
+   `python3 scripts/journal_orchestrator.py snapshot --path journals/<name>.md`
 2. Confirm the current phase and the failing tests against the live repository: re-run
    the named tests.
 3. Verify whether recorded dependencies and blockers are now resolved. The world can
@@ -608,15 +608,15 @@ least possible thought.
 
 ## Using the bundled script
 
-`scripts/progress_journal_orchestrator.py` needs Python 3 and no packages. The path is
+`scripts/journal_orchestrator.py` needs Python 3 and no packages. The path is
 relative to this skill's directory; call it by its installed path from a project.
 
 ```bash
-python3 scripts/progress_journal_orchestrator.py init \
+python3 scripts/journal_orchestrator.py init \
   --path journals/feature-a.md \
   --task "Feature A end-to-end TDD"
 
-python3 scripts/progress_journal_orchestrator.py update \
+python3 scripts/journal_orchestrator.py update \
   --path journals/feature-a.md \
   --phase Red \
   --focus "Write failing tests for endpoint validation" \
@@ -625,7 +625,7 @@ python3 scripts/progress_journal_orchestrator.py update \
   --next-step "Implement minimum handler logic to satisfy validation tests" \
   --note "Need shared fixture helper for request setup"
 
-python3 scripts/progress_journal_orchestrator.py snapshot \
+python3 scripts/journal_orchestrator.py snapshot \
   --path journals/feature-a.md
 ```
 
@@ -694,7 +694,7 @@ Journal entry gate. Run after each `update`; fix every FAIL by appending a corre
 
 ```bash
 J=journals/feature-a.md
-SNAP="$(python3 scripts/progress_journal_orchestrator.py snapshot --path "$J")"
+SNAP="$(python3 scripts/journal_orchestrator.py snapshot --path "$J")"
 echo "$SNAP" | grep -qE '^#### Current Phase: (Red|Green|Refactor)$' || echo "FAIL: no phase"
 echo "$SNAP" | awk '/^#### Next Steps:/{f=1;next} /^#### /{f=0} f&&/^- /' \
   | grep -v '(none recorded)' | grep -q . || echo "FAIL: Next Steps empty"
@@ -727,7 +727,7 @@ reason, before you continue. If one passes or fails differently, journal the mis
 first.
 
 ```bash
-python3 scripts/progress_journal_orchestrator.py snapshot --path "$J"
+python3 scripts/journal_orchestrator.py snapshot --path "$J"
 git status --short            # files in motion match the entry?
 git log --oneline -5          # anything landed since the entry's timestamp?
 ```

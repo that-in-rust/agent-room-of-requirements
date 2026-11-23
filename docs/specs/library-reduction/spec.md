@@ -86,7 +86,7 @@ licence
 
 ### REQ-LIB-011.0: No broken links
 
-**WHEN** the relative links in tracked Markdown files outside `library/third-party/` are
+**WHEN** the relative links in tracked Markdown files outside `library/third-party/` and the frozen root documents (`A00`–`A03`) are
 resolved
 **THEN** every target SHALL exist.
 
