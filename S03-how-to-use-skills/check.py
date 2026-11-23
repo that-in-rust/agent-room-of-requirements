@@ -6,9 +6,9 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS = ROOT / "skills-for-engineering-teams"
+SKILLS = ROOT / "S01-skills-for-engineering-teams"
 INDEX = SKILLS / "README.md"
-UPSTREAM = ROOT / "curated-upstream-skill-snapshots"
+UPSTREAM = ROOT / "S02-curated-upstream-skill-snapshots"
 
 
 def local_targets(doc):

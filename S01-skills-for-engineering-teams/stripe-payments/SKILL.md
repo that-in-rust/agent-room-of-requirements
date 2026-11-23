@@ -15,7 +15,7 @@ description: >-
 
 Design and verify Stripe integrations as a durable, server-owned payment state machine and ledger boundary. Choose the narrowest Stripe surface that fits the business model, keep amount/currency authority on the server, drive state transitions from authenticated, duplicate-safe asynchronous events, and reconcile against Stripe under a controlled API version.
 
-For Stripe's verbatim MIT best-practices checklist and official documentation URLs, see `../../curated-upstream-skill-snapshots/stripe/stripe-best-practices/SKILL.md`. Always verify API/SDK versions, regional payment methods, account capabilities, and compliance rules against current official Stripe documentation and the live account configuration before launch.
+For Stripe's verbatim MIT best-practices checklist and official documentation URLs, see `../../S02-curated-upstream-skill-snapshots/stripe/stripe-best-practices/SKILL.md`. Always verify API/SDK versions, regional payment methods, account capabilities, and compliance rules against current official Stripe documentation and the live account configuration before launch.
 
 ## When to use and when not to use
 

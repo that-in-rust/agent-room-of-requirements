@@ -857,7 +857,7 @@ EOF
 ```
 
 From the repository root, the navigation and Rust sync check is
-`python3 how-to-use-skills/check.py`.
+`python3 S03-how-to-use-skills/check.py`.
 
 **Gate order for a candidate or a decision.** Follow the cost of finding a problem late:
 gap, overlap, value, ownership, pilot, promotion, recovery. For a plan: classification

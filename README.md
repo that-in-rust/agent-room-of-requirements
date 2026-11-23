@@ -4,11 +4,11 @@ A workshop library for engineers using agents on unfamiliar codebases. Choose a 
 
 | I want to… | Start here |
 |---|---|
-| Run a first workshop | [Map a repo, specify a change, verify it](how-to-use-skills/README.md) |
-| Find a guide for today’s engineering task | [Skill index, including Rust](skills-for-engineering-teams/README.md) |
-| Use the original Superpowers or Stripe guide | [MIT snapshots and attribution](curated-upstream-skill-snapshots/ATTRIBUTION.md) |
-| Recover an old reference or understand a decision | [Journal of evolution](journal-of-evolution/README.md) |
+| Find a guide for today’s engineering task | [S01 · Skill index, including Rust](S01-skills-for-engineering-teams/README.md) |
+| Use the original Superpowers or Stripe guide | [S02 · MIT snapshots and attribution](S02-curated-upstream-skill-snapshots/ATTRIBUTION.md) |
+| Run a first workshop | [S03 · Map a repo, specify a change, verify it](S03-how-to-use-skills/README.md) |
+| Recover an old reference or understand a decision | [S04 · Journey of evolution](S04-journey-of-evolution/README.md) |
 
 **Foundations:** [A00 · LLM principles](A00-LLM-Principles01.md) → [A01 · choose a workflow](A01-LLM-Workflow01.md) → [A02 · idiomatic code](A02-Mega-Idiomatic-Prompt.md) → [A03 · executable specifications](A03-Executable-Specs01.md).
 
-Changing this library? Read the [repository git rules](how-to-use-skills/repository-rules.md) first.
+Changing this library? Read the [repository git rules](S03-how-to-use-skills/repository-rules.md) first.

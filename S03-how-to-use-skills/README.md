@@ -1,6 +1,6 @@
 # Use one skill on one change
 
-Choose a skill by **what you need to do**, not by the name of your agent. Open its `SKILL.md` from the [task index](../skills-for-engineering-teams/README.md) and give that file to the agent as context. Keep its directory intact if copying a skill with helper scripts or assets. Open `reference.md` only if the short guide doesn’t settle a decision.
+Choose a skill by **what you need to do**, not by the name of your agent. Open its `SKILL.md` from the [task index](../S01-skills-for-engineering-teams/README.md) and give that file to the agent as context. Keep its directory intact if copying a skill with helper scripts or assets. Open `reference.md` only if the short guide doesn’t settle a decision.
 
 ## A workshop you can run on this library
 
@@ -8,24 +8,24 @@ Choose a skill by **what you need to do**, not by the name of your agent. Open i
 
 | Step | Give the agent | Ask for evidence |
 |---|---|---|
-| **Map** | [Codebase navigation](../skills-for-engineering-teams/codebase-navigation/SKILL.md) | “Trace how a reader finds the Rust CLI skill from the front page. Show the links, then find the check that would detect a missing index entry. Don’t edit yet.” |
-| **Specify** | [Executable specs](../skills-for-engineering-teams/executable-specs/SKILL.md) | “When a skill exists but the task index doesn’t link to it, the check shall exit nonzero and name it. When the link is added, it shall pass. Show how you’ll demonstrate both outcomes.” |
-| **Verify** | [Review, verify and debug](../skills-for-engineering-teams/review-verify-debug/SKILL.md) | “Run the experiment below. Report the failing output, the one edit that fixed it, and the final exit status. Do not change the checker.” |
+| **Map** | [Codebase navigation](../S01-skills-for-engineering-teams/codebase-navigation/SKILL.md) | “Trace how a reader finds the Rust CLI skill from the front page. Show the links, then find the check that would detect a missing index entry. Don’t edit yet.” |
+| **Specify** | [Executable specs](../S01-skills-for-engineering-teams/executable-specs/SKILL.md) | “When a skill exists but the task index doesn’t link to it, the check shall exit nonzero and name it. When the link is added, it shall pass. Show how you’ll demonstrate both outcomes.” |
+| **Verify** | [Review, verify and debug](../S01-skills-for-engineering-teams/review-verify-debug/SKILL.md) | “Run the experiment below. Report the failing output, the one edit that fixed it, and the final exit status. Do not change the checker.” |
 
 First get a passing baseline. Then create a stand-in for a participant’s new skill and rerun the same check:
 
 ```sh
-python3 how-to-use-skills/check.py
-mkdir skills-for-engineering-teams/workshop-demo
-printf '%s\n' '---' 'name: workshop-demo' 'description: Practice the workshop exercise.' '---' '# Workshop demo' > skills-for-engineering-teams/workshop-demo/SKILL.md
-python3 how-to-use-skills/check.py
+python3 S03-how-to-use-skills/check.py
+mkdir S01-skills-for-engineering-teams/workshop-demo
+printf '%s\n' '---' 'name: workshop-demo' 'description: Practice the workshop exercise.' '---' '# Workshop demo' > S01-skills-for-engineering-teams/workshop-demo/SKILL.md
+python3 S03-how-to-use-skills/check.py
 ```
 
-The last run should fail with `not indexed: skills-for-engineering-teams/workshop-demo/SKILL.md`. Now add the reader’s route and rerun:
+The last run should fail with `not indexed: S01-skills-for-engineering-teams/workshop-demo/SKILL.md`. Now add the reader’s route and rerun:
 
 ```sh
-printf '\n[Workshop demo](workshop-demo/SKILL.md)\n' >> skills-for-engineering-teams/README.md
-python3 how-to-use-skills/check.py
+printf '\n[Workshop demo](workshop-demo/SKILL.md)\n' >> S01-skills-for-engineering-teams/README.md
+python3 S03-how-to-use-skills/check.py
 git status --short
 ```
 

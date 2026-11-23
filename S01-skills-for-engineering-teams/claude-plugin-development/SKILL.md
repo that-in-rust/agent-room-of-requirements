@@ -877,7 +877,7 @@ Gate order for a distributed plugin: static (1 to 6), isolated components (7 to 
 
 ## Upstream reference utilities (linked, not bundled)
 
-Third-party helper scripts from the Apache-2.0 Anthropic `plugin-dev` plugin (`validate-hook-schema.sh`, `test-hook.sh`, `hook-linter.sh`, `parse-frontmatter.sh`, `validate-settings.sh`, `validate-agent.sh`, plus example hooks and MCP configs) and the OpenAI Codex `plugin-creator` skill (`create_basic_plugin.py`) are not copied into this repository. See [the attribution notes](../../curated-upstream-skill-snapshots/ATTRIBUTION.md) for upstream links.
+Third-party helper scripts from the Apache-2.0 Anthropic `plugin-dev` plugin (`validate-hook-schema.sh`, `test-hook.sh`, `hook-linter.sh`, `parse-frontmatter.sh`, `validate-settings.sh`, `validate-agent.sh`, plus example hooks and MCP configs) and the OpenAI Codex `plugin-creator` skill (`create_basic_plugin.py`) are not copied into this repository. See [the attribution notes](../../S02-curated-upstream-skill-snapshots/ATTRIBUTION.md) for upstream links.
 
 If you run those upstream utilities locally, watch for these observed quirks (verified on Linux with bash 5, jq, and python3):
 

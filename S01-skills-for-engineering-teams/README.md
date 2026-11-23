@@ -1,6 +1,6 @@
 # Find a skill by task
 
-Start with one skill. Open its companion reference for examples or tradeoffs, not as a prerequisite. New here? [Try the workshop walkthrough](../how-to-use-skills/README.md).
+Start with one skill. Open its companion reference for examples or tradeoffs, not as a prerequisite. New here? [Try the workshop walkthrough](../S03-how-to-use-skills/README.md).
 
 ## Understand the code and choose a change
 
@@ -42,7 +42,7 @@ Start with one skill. Open its companion reference for examples or tradeoffs, no
 
 ## Build or review Rust
 
-Pick the skill for the component you are changing, then use **Rust Review** for a fresh review pass. Each Rust guide embeds the [core](_core.md); the eight writer guides also embed the [essentials](_essentials.md). Edit the sources, not the copies, and run `skills-for-engineering-teams/sync-core.sh` from the repository root.
+Pick the skill for the component you are changing, then use **Rust Review** for a fresh review pass. Each Rust guide embeds the [core](_core.md); the eight writer guides also embed the [essentials](_essentials.md). Edit the sources, not the copies, and run `S01-skills-for-engineering-teams/sync-core.sh` from the repository root.
 
 | Subject | Skill | Covers |
 |---|---|---|
@@ -56,4 +56,4 @@ Pick the skill for the component you are changing, then use **Rust Review** for 
 | **Rust Tauri** | [SKILL.md](rust-tauri/SKILL.md) | Tauri 2 desktop apps, IPC commands, capabilities, managed state, plugins, packaging |
 | **Rust Unsafe & FFI** | [SKILL.md](rust-unsafe-ffi/SKILL.md) | `unsafe` invariants, raw pointers, `MaybeUninit`, `repr(C)`, C/Python/Node FFI, `Pin` |
 
-Looking for the verbatim Superpowers or Stripe guides? See [upstream snapshots and licences](../curated-upstream-skill-snapshots/ATTRIBUTION.md).
+Looking for the verbatim Superpowers or Stripe guides? See [upstream snapshots and licences](../S02-curated-upstream-skill-snapshots/ATTRIBUTION.md).

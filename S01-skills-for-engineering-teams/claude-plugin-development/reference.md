@@ -699,7 +699,7 @@ Archive and live copies of the same vendor file were byte-identical and count on
 
 ### Sources
 
-- Anthropic Claude Code `plugin-dev` plugin (skills: plugin-structure, command-development, hook-development, mcp-integration, plugin-settings, agent-development, skill-development) (Apache-2.0; ideas folded in, upstream linked in [the attribution notes](../../curated-upstream-skill-snapshots/ATTRIBUTION.md)).
+- Anthropic Claude Code `plugin-dev` plugin (skills: plugin-structure, command-development, hook-development, mcp-integration, plugin-settings, agent-development, skill-development) (Apache-2.0; ideas folded in, upstream linked in [the attribution notes](../../S02-curated-upstream-skill-snapshots/ATTRIBUTION.md)).
 - Anthropic Claude Code `hookify` plugin (rule-writing skill).
 - Anthropic Claude Code `example-plugin` (example skill).
 - Anthropic Claude Code `claude-code-setup` plugin (automation recommender skill and references).
