@@ -28,10 +28,10 @@ not confirmed, so the copies were removed.
 
 | Material | Source | Licence | Where its ideas are used here |
 |---|---|---|---|
-| Claude Code plugins `plugin-dev` (agent, command, hook, MCP, settings, structure and skill development), `hookify`, `example-plugin`, `claude-code-setup` | <https://github.com/anthropics/claude-plugins-official/tree/main/plugins> | Apache-2.0 | [claude-plugin-development](../S01-skills-for-engineering-teams/claude-plugin-development/SKILL.md) |
-| Claude Code plugins `skill-creator` and `plugin-dev/skill-development` | same repository | Apache-2.0 | [authoring-skills-and-references](../S01-skills-for-engineering-teams/authoring-skills-and-references/SKILL.md) |
-| Claude Code plugin `claude-md-management` | same repository | Apache-2.0 | [agent-context-and-orchestration](../S01-skills-for-engineering-teams/agent-context-and-orchestration/SKILL.md) |
-| Claude Code plugins `frontend-design`, `playground` | same repository | Apache-2.0 | [react-frontend](../S01-skills-for-engineering-teams/react-frontend/SKILL.md), [visual-explainers](../S01-skills-for-engineering-teams/visual-explainers/SKILL.md) |
+| Claude Code plugins `plugin-dev` (agent, command, hook, MCP, settings, structure and skill development), `hookify`, `example-plugin`, `claude-code-setup` | <https://github.com/anthropics/claude-plugins-official/tree/main/plugins> | Apache-2.0 | [claude-plugin-development](../S01-skills-for-engineering-teams/tir-claude-plugin-development/SKILL.md) |
+| Claude Code plugins `skill-creator` and `plugin-dev/skill-development` | same repository | Apache-2.0 | [authoring-skills-and-references](../S01-skills-for-engineering-teams/tir-authoring-skills-and-references/SKILL.md) |
+| Claude Code plugin `claude-md-management` | same repository | Apache-2.0 | [agent-context-and-orchestration](../S01-skills-for-engineering-teams/tir-agent-context-and-prompts/SKILL.md) |
+| Claude Code plugins `frontend-design`, `playground` | same repository | Apache-2.0 | [react-frontend](../S01-skills-for-engineering-teams/tir-react-frontend/SKILL.md), [visual-explainers](../S01-skills-for-engineering-teams/tir-visual-explainers/SKILL.md) |
 | OpenAI Codex system skills `imagegen`, `openai-docs`, `plugin-creator`, `skill-creator`, `skill-installer` | <https://github.com/openai/skills/tree/main/skills/.system> | not confirmed | `generative-art-and-images`, `agent-context-and-orchestration`, `claude-plugin-development`, `authoring-skills-and-references` |
-| `agent-debate` protocol | <https://github.com/gumbel-ai/agent-debate> | none published | [explore-and-decide](../S01-skills-for-engineering-teams/explore-and-decide/SKILL.md) (the link between the earlier local skill and this project was not confirmed) |
-| Hermes `local-vision-ollama` skill | source not known | none found | [generative-art-and-images](../S01-skills-for-engineering-teams/generative-art-and-images/SKILL.md) |
+| `agent-debate` protocol | <https://github.com/gumbel-ai/agent-debate> | none published | [explore-and-decide](../S01-skills-for-engineering-teams/tir-explore-and-decide/SKILL.md) (the link between the earlier local skill and this project was not confirmed) |
+| Hermes `local-vision-ollama` skill | source not known | none found | [generative-art-and-images](../S01-skills-for-engineering-teams/tir-algorithmic-art/SKILL.md) |

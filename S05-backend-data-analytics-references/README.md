@@ -2,7 +2,7 @@
 
 Agent-agnostic **Prompt Reference** files for the boundary where backend code becomes data tables, contracts, and analytics metrics.
 
-Unlike `S01` (packaged skills), these files are written as direct **Prompt References** in the [A02](../A02-Mega-Idiomatic-Prompt.md) conditional-guidance style (*under condition X do Y; under condition Z avoid Y*). Attach any file directly to Claude, Codex, Devin, or Cursor during a workshop or engineering session—or wrap it into a thin Claude/Codex `SKILL.md` later using [Authoring Skills and References](../S01-skills-for-engineering-teams/authoring-skills-and-references/SKILL.md).
+Unlike `S01` (packaged skills), these files are written as direct **Prompt References** in the [A02](../A02-Mega-Idiomatic-Prompt.md) conditional-guidance style (*under condition X do Y; under condition Z avoid Y*). Attach any file directly to Claude, Codex, Devin, or Cursor during a workshop or engineering session—or wrap it into a thin Claude/Codex `SKILL.md` later using [Authoring Skills and References](../S01-skills-for-engineering-teams/tir-authoring-skills-and-references/SKILL.md).
 
 ## The 3-Layer Operating Model
 
@@ -31,7 +31,7 @@ Keep the Prompt Reference as the single source of truth. When a team wants auto-
 
 1. Create a skill folder (e.g. `skills/<name>/SKILL.md`) with a crisp `name` and trigger-oriented `description` (what triggers it, what does not).
 2. Keep `SKILL.md` short (~100–250 lines): workflow steps, hard gates, and a link to this Prompt Reference for full decision tables and code recipes.
-3. Follow [Authoring Skills and References](../S01-skills-for-engineering-teams/authoring-skills-and-references/SKILL.md) to avoid duplicating the reference body.
+3. Follow [Authoring Skills and References](../S01-skills-for-engineering-teams/tir-authoring-skills-and-references/SKILL.md) to avoid duplicating the reference body.
 
 ## Provenance & Sources
 

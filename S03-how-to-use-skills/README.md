@@ -8,9 +8,9 @@ Choose a skill by **what you need to do**, not by the name of your agent. Open i
 
 | Step | Give the agent | Ask for evidence |
 |---|---|---|
-| **Map** | [Codebase navigation](../S01-skills-for-engineering-teams/codebase-navigation/SKILL.md) | “Trace how a reader finds the Rust CLI skill from the front page. Show the links, then find the check that would detect a missing index entry. Don’t edit yet.” |
-| **Specify** | [Executable specs](../S01-skills-for-engineering-teams/executable-specs/SKILL.md) | “When a skill exists but the task index doesn’t link to it, the check shall exit nonzero and name it. When the link is added, it shall pass. Show how you’ll demonstrate both outcomes.” |
-| **Verify** | [Review, verify and debug](../S01-skills-for-engineering-teams/review-verify-debug/SKILL.md) | “Run the experiment below. Report the failing output, the one edit that fixed it, and the final exit status. Do not change the checker.” |
+| **Map** | [Codebase navigation](../S01-skills-for-engineering-teams/tir-codebase-navigation/SKILL.md) | “Trace how a reader finds the Rust CLI skill from the front page. Show the links, then find the check that would detect a missing index entry. Don’t edit yet.” |
+| **Specify** | [Executable specs](../S01-skills-for-engineering-teams/tir-executable-specs/SKILL.md) | “When a skill exists but the task index doesn’t link to it, the check shall exit nonzero and name it. When the link is added, it shall pass. Show how you’ll demonstrate both outcomes.” |
+| **Verify** | [Review, verify and debug](../S01-skills-for-engineering-teams/tir-code-review/SKILL.md) | “Run the experiment below. Report the failing output, the one edit that fixed it, and the final exit status. Do not change the checker.” |
 
 First get a passing baseline. Then create a stand-in for a participant’s new skill and rerun the same check:
 

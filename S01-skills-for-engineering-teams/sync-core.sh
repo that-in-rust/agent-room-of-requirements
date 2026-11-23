@@ -8,9 +8,9 @@ fi
 [[ -s _core.md && -s _essentials.md ]] || { echo 'missing Rust shared block' >&2; exit 1; }
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
-for skill in rust-*/SKILL.md; do
+for skill in tir-rust-*/SKILL.md; do
   writer=1
-  [[ $skill != rust-review/SKILL.md ]] || writer=0
+  [[ $skill != tir-rust-review/SKILL.md ]] || writer=0
   awk -v writer="$writer" '
     /^<!-- (core|essentials):begin -->$/ {
       name = $2; sub(/:begin$/, "", name)

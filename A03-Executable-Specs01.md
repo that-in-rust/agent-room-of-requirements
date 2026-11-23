@@ -519,5 +519,5 @@ Load these only when the task needs the detail.
 - [TDD cycle patterns](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/library/idiomatic/202607/tdd_cycle_skill_patterns-20260710.md)
   and [progress journal schema](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/library/idiomatic/202607/tdd_progress_journal_schema-20260710.md)
   — checkpoints and resumable handoffs.
-- [Rust review skill](S01-skills-for-engineering-teams/rust-review/SKILL.md) — what each gate
+- [Rust review skill](S01-skills-for-engineering-teams/tir-rust-review/SKILL.md) — what each gate
   proves and what it does not.

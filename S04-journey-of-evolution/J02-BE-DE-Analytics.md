@@ -12,7 +12,7 @@ To close that gap, [S05 · Backend, Data Engineering & Analytics Prompt Referenc
 
 1. **Tool-agnostic for workshops:** Prompt References attach directly to Claude, Codex, Devin, or Cursor without client-specific packaging or frontmatter constraints.
 2. **Full conditional density:** They follow the [A02](../A02-Mega-Idiomatic-Prompt.md) conditional-guidance format (*under condition X do Y; under condition Z avoid Y*) with runnable Cypher and Polars/Pandas recipes.
-3. **Lossless conversion later:** Any team that wants auto-triggering can wrap a Prompt Reference in a thin Claude or Codex `SKILL.md` using [Authoring Skills and References](../S01-skills-for-engineering-teams/authoring-skills-and-references/SKILL.md).
+3. **Lossless conversion later:** Any team that wants auto-triggering can wrap a Prompt Reference in a thin Claude or Codex `SKILL.md` using [Authoring Skills and References](../S01-skills-for-engineering-teams/tir-authoring-skills-and-references/SKILL.md).
 
 ---
 
@@ -28,6 +28,6 @@ To close that gap, [S05 · Backend, Data Engineering & Analytics Prompt Referenc
 
 ## How this expansion was built and verified
 
-1. **Executable spec first:** Driven by the repository's own [Executable Specs](../S01-skills-for-engineering-teams/executable-specs/SKILL.md) skill (`STUB → RED → GREEN → REFACTOR → VERIFY`).
+1. **Executable spec first:** Driven by the repository's own [Executable Specs](../S01-skills-for-engineering-teams/tir-executable-specs/SKILL.md) skill (`STUB → RED → GREEN → REFACTOR → VERIFY`).
 2. **Two separate knowledge sources:** First-principles engineering judgment combined with direct pattern extraction from open-source reference repos (`DeusData/codebase-memory-mcp`, `tobymao/sqlglot`, `OpenLineage`, `datacontract-cli`, `pandera`, `ydata-profiling`, `metricflow`) cloned into gitignored `/ignore-repos/` plus banking SAS EDA literature—synthesized in original prose per the repository's licensing policy.
 3. **Executable verification:** Runnable Polars profiling, primary-key, fan-out, and reconciliation code verified against dirty synthetic fixtures, alongside `S03-how-to-use-skills/check.py` link and index checks.
