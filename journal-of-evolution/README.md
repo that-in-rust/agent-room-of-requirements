@@ -2,7 +2,7 @@
 
 ## The story in short
 
-**The useful unit turned out to be one skill for the task at hand, not one file for every piece of research.** On January 17, 2026, the repository held [two notes about what to build](https://github.com/that-in-rust/agent-room-of-requirements/tree/44281b992b21669ead3b831975c015eda7ca6cc0). By November 23, a workshop participant could use [one index](../library/README.md) to choose among 18 subject skills and nine Rust skills. The November merge took the tree from **993 tracked files to 120**; it did not take the earlier editions out of Git.
+**The useful unit turned out to be one skill for the task at hand, not one file for every piece of research.** On January 17, 2026, the repository held [two notes about what to build](https://github.com/that-in-rust/agent-room-of-requirements/tree/44281b992b21669ead3b831975c015eda7ca6cc0). By November 23, a workshop participant could use [one index](../skills-for-engineering-teams/README.md) to choose among 18 subject skills and nine Rust skills. The November merge took the tree from **993 tracked files to 120**; it did not take the earlier editions out of Git.
 
 Three decisions explain the change. First, package the **method** from an investigation so someone else can run it. Second, distinguish the **reference a reader needs** from the records of how it was written. Third, **merge by task** without removing context a skill needs when loaded alone. The dates below are commit dates; the historical links open the editions discussed, not today's files.
 

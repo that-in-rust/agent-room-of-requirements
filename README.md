@@ -1,13 +1,14 @@
 # Agent Room of Requirements
 
-Amuldotexe's curated collection of stand-alone agent skills and idiomatic references.
+A workshop library for engineers using agents on unfamiliar codebases. Choose a skill for the task in front of you; you don’t need to install the collection.
 
-Start with [A00](A00-LLM-Principles01.md), [A01](A01-LLM-Workflow01.md), and
-[A02](A02-Mega-Idiomatic-Prompt.md). For executable specifications, read
-[A03](A03-Executable-Specs01.md).
+| I want to… | Start here |
+|---|---|
+| Run a first workshop | [Map a repo, specify a change, verify it](how-to-use-skills/README.md) |
+| Find a guide for today’s engineering task | [Skill index, including Rust](skills-for-engineering-teams/README.md) |
+| Use the original Superpowers or Stripe guide | [MIT snapshots and attribution](curated-upstream-skill-snapshots/ATTRIBUTION.md) |
+| Recover an old reference or understand a decision | [Journal of evolution](journal-of-evolution/README.md) |
 
-- [Skills library index](library/README.md) — 18 merged subject skills and 9 stand-alone Rust skills
-- [Rust skills](Rust-skills/skills/README.md) — domain-specific Rust guides with embedded shared core
-- [Curated third-party skills](library/third-party/ATTRIBUTION.md) — MIT-licensed upstream skills with attribution and upstream links for non-MIT references
+**Foundations:** [A00 · LLM principles](A00-LLM-Principles01.md) → [A01 · choose a workflow](A01-LLM-Workflow01.md) → [A02 · idiomatic code](A02-Mega-Idiomatic-Prompt.md) → [A03 · executable specifications](A03-Executable-Specs01.md).
 
-For the decisions behind this layout and links to earlier skills, references and research, read [How the library evolved](journal-of-evolution/README.md). The reduction specification is in [docs/specs/library-reduction/spec.md](docs/specs/library-reduction/spec.md) and verified by `python3 docs/specs/library-reduction/check.py`.
+Changing this library? Read the [repository git rules](how-to-use-skills/repository-rules.md) first.

@@ -446,14 +446,14 @@ L3 External: runtime, database, HTTP, serialization, FFI
 
 Keep L3 out of L1. Put trait seams around time, randomness, storage and transport so
 tests can substitute them. Prefer making a bad state unrepresentable over testing for
-it. Detail: [Rust core](methodology/executable-specifications/rust/core.md) and
-[Rust reference](methodology/executable-specifications/rust/reference.md).
+it. Detail: [Rust core](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/methodology/executable-specifications/rust/core.md) and
+[Rust reference](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/methodology/executable-specifications/rust/reference.md).
 
 **Tauri.** Specify the IPC boundary: typed command inputs and outputs, serializable
 errors, the narrowest capability and filesystem scope, and lifecycle behaviour for
 sidecars, updater and windows. Test the Rust core and the boundary separately. Detail:
-[Tauri core](methodology/executable-specifications/tauri/core.md) and
-[Tauri reference](methodology/executable-specifications/tauri/reference.md).
+[Tauri core](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/methodology/executable-specifications/tauri/core.md) and
+[Tauri reference](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/methodology/executable-specifications/tauri/reference.md).
 
 **Naming.** Where the repo uses four-word names (`verb_constraint_target_qualifier`,
 for example `filter_implementation_entities_only`), new functions and tests follow it.
@@ -504,20 +504,20 @@ these:
 
 Load these only when the task needs the detail.
 
-- [Core workflow](methodology/executable-specifications/core.md) — the compact skill
+- [Core workflow](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/methodology/executable-specifications/core.md) — the compact skill
   this file expands.
-- [Templates](methodology/executable-specifications/templates.md) — requirement,
+- [Templates](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/methodology/executable-specifications/templates.md) — requirement,
   matrix, TDD and test skeletons for Rust, TypeScript and Go.
-- [Meta-patterns](methodology/executable-specifications/meta-patterns.md) — naming,
+- [Meta-patterns](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/methodology/executable-specifications/meta-patterns.md) — naming,
   context budgets, agent patterns.
-- [Specification skill patterns](library/idiomatic/202607/executable_specification_skill_patterns-20260710.md)
+- [Specification skill patterns](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/library/idiomatic/202607/executable_specification_skill_patterns-20260710.md)
   — states, full anti-pattern registry, worked examples.
-- [Traceability template patterns](library/idiomatic/202607/executable_traceability_template_patterns-20260710.md)
+- [Traceability template patterns](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/library/idiomatic/202607/executable_traceability_template_patterns-20260710.md)
   — traceability as an evidence graph with invalidation.
-- [Completion verification gates](library/idiomatic/202607/completion_verification_gate_patterns-20260710.md)
+- [Completion verification gates](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/library/idiomatic/202607/completion_verification_gate_patterns-20260710.md)
   — what a completion claim needs.
-- [TDD cycle patterns](library/idiomatic/202607/tdd_cycle_skill_patterns-20260710.md)
-  and [progress journal schema](library/idiomatic/202607/tdd_progress_journal_schema-20260710.md)
+- [TDD cycle patterns](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/library/idiomatic/202607/tdd_cycle_skill_patterns-20260710.md)
+  and [progress journal schema](https://github.com/that-in-rust/agent-room-of-requirements/blob/0dc7115c1a395945d6872fff35ef234e1c9a2f08/library/idiomatic/202607/tdd_progress_journal_schema-20260710.md)
   — checkpoints and resumable handoffs.
-- [Rust review skill](Rust-skills/skills/rust-review/SKILL.md) — what each gate
+- [Rust review skill](skills-for-engineering-teams/rust-review/SKILL.md) — what each gate
   proves and what it does not.
