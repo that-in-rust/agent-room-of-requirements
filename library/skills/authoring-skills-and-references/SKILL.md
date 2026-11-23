@@ -269,19 +269,17 @@ Checked when this page was written: the initializer, validator and metadata gene
 
 | File | Use | Notes |
 | --- | --- | --- |
-| [scripts/init_skill.py](scripts/init_skill.py) | Run | Normalises the name, refuses an existing folder, writes a template with TODO markers. `--examples` needs `--resources`. Imports `generate_openai_yaml.py` from the same folder. A fresh template fails `quick_validate.py` until the bracketed description placeholder is replaced. |
-| [scripts/generate_openai_yaml.py](scripts/generate_openai_yaml.py) | Run | Writes only the `interface` block and overwrites the file. Add `dependencies` and `policy` by hand. Enforces 25 to 64 characters. |
-| [scripts/quick_validate.py](scripts/quick_validate.py) | Run | Checks front matter keys, name form and length, description length and angle brackets. Rejects keys outside `name`, `description`, `license`, `allowed-tools`, `metadata`. |
-| [scripts/list-skills.py](scripts/list-skills.py) | Run | Lists a GitHub path and marks names already present under `$CODEX_HOME/skills`. |
-| [scripts/install-skill-from-github.py](scripts/install-skill-from-github.py) | Run | Options `--repo`, `--url`, `--path`, `--ref`, `--dest`, `--name` (single path only), `--method auto\|download\|git`. Aborts if the destination exists. |
-| [scripts/github_utils.py](scripts/github_utils.py) | Imported | Shared request helper; reads `GITHUB_TOKEN` or `GH_TOKEN`. |
-| [scripts/render-graphs.js](scripts/render-graphs.js) | Run | Extracts `dot` blocks from a skill's `SKILL.md` into a `diagrams/` folder. |
+| `init_skill.py` (upstream Codex `skill-creator`, Apache-2.0; not bundled) | Run | Normalises the name, refuses an existing folder, writes a template with TODO markers. `--examples` needs `--resources`. Imports `generate_openai_yaml.py` from the same folder. A fresh template fails `quick_validate.py` until the bracketed description placeholder is replaced. |
+| `generate_openai_yaml.py` (upstream Codex `skill-creator`, Apache-2.0; not bundled) | Run | Writes only the `interface` block and overwrites the file. Add `dependencies` and `policy` by hand. Enforces 25 to 64 characters. |
+| `quick_validate.py` (upstream Codex `skill-creator`, Apache-2.0; not bundled) | Run | Checks front matter keys, name form and length, description length and angle brackets. Rejects keys outside `name`, `description`, `license`, `allowed-tools`, `metadata`. |
+| `list-skills.py` (upstream Codex `skill-installer`, Apache-2.0; not bundled) | Run | Lists a GitHub path and marks names already present under `$CODEX_HOME/skills`. |
+| `install-skill-from-github.py` (upstream Codex `skill-installer`, Apache-2.0; not bundled) | Run | Options `--repo`, `--url`, `--path`, `--ref`, `--dest`, `--name` (single path only), `--method auto\|download\|git`. Aborts if the destination exists. |
+| `github_utils.py` (upstream Codex `skill-installer`, Apache-2.0; not bundled) | Imported | Shared request helper; reads `GITHUB_TOKEN` or `GH_TOKEN`. |
+| [render-graphs.js](../../third-party/superpowers/writing-skills/render-graphs.js) | Run | Extracts `dot` blocks from a skill's `SKILL.md` into a `diagrams/` folder. |
 | [scripts/verify_idiomatic_reference_file.py](scripts/verify_idiomatic_reference_file.py) | Read, then adapt | Per-file verifier from the reference programme: headings preserved, every section expanded, no placeholders, packet has 26 sections, 10 questions each, 6 non-empty fields, exact and normalised uniqueness. |
 | [scripts/test_idiomatic_reference_evolution.py](scripts/test_idiomatic_reference_evolution.py) | Read, then adapt | Corpus test suite: inventory counts, unique ownership, lane manifests, packet structure, queue completeness, placeholder ban. |
 | [scripts/update_idiomatic_evolution_queue.py](scripts/update_idiomatic_evolution_queue.py) | Read, then adapt | Queue updater: verifies before marking complete, writes through a temporary file with `fsync` then replace, `--reopen` returns a path to pending. |
-| [assets/graphviz-conventions.dot](assets/graphviz-conventions.dot) | Read | Flowchart style: diamond for a question, box for an action, plain text for a literal command, ellipse for a state, red octagon for a stop, double circle for start and end. |
-| [assets/license.txt](assets/license.txt) | Keep | Apache 2.0 text shipped with the Codex skill-creator material. |
-| `assets/skill-installer-small.svg`, `assets/skill-installer.png` | Asset | Installer icons, usable as `icon_small` and `icon_large` examples. |
+| [graphviz-conventions.dot](../../third-party/superpowers/writing-skills/graphviz-conventions.dot) | Read | Flowchart style: diamond for a question, box for an action, plain text for a literal command, ellipse for a state, red octagon for a stop, double circle for start and end. |
 
 The three programme scripts are copied unchanged. They compute the repository root from their original location and import each other as `tests.<module>`, so they do not run from `scripts/` as they stand. To reuse them, edit the path constants at the top (`REPO_ROOT`, working directory, queue path, packet directory), the import lines, the section count and the file-name pattern for the new corpus.
 

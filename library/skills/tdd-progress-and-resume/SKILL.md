@@ -536,7 +536,7 @@ Paste the recent assistant message here.
 
 Set `source` to the thread actually in use. The timestamp and path in the example are
 placeholders; write the real ones. A copy of the template is in
-[assets/checkpoint-template.md](assets/checkpoint-template.md).
+[Checkpoint Template](reference.md#checkpoint-template).
 
 **Capture modes**
 
